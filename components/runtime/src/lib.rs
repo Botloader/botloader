@@ -1,0 +1,246 @@
+use std::future::Future;
+use std::{cell::RefCell, num::NonZeroU32, rc::Rc, sync::Arc};
+
+use deno_core::{op_sync, Extension, OpState, ResourceId, ResourceTable};
+use governor::{
+    clock::DefaultClock,
+    state::{InMemoryState, NotKeyed},
+    Quota,
+};
+use guild_logger::{GuildLogger, LogEntry};
+use runtime_models::ops::script::ScriptMeta;
+use stores::{bucketstore::BucketStore, config::ConfigStore, timers::TimerStore};
+use tokio::sync::mpsc;
+use tracing::{info, instrument};
+use twilight_model::id::GuildId;
+use vm::{vm::VmRole, AnyError, JsValue};
+
+pub mod dispatchevents;
+pub mod extensions;
+pub mod jsmodules;
+
+pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
+    let mut http_client_builder = reqwest::ClientBuilder::new();
+    if let Some(proxy_addr) = &ctx.script_http_client_proxy {
+        info!("using http client proxy: {}", proxy_addr);
+        let proxy = reqwest::Proxy::all(proxy_addr).expect("valid http proxy address");
+        http_client_builder = http_client_builder.proxy(proxy);
+    } else {
+        #[cfg(not(debug_assertions))]
+        tracing::warn!("no proxy set in release!");
+    }
+    let http_client = http_client_builder.build().expect("valid http client");
+
+    let core_extension = Extension::builder()
+        .ops(vec![
+            // botloader stuff
+            ("op_botloader_script_start", op_sync(op_script_start)),
+        ])
+        .state(move |state| {
+            state.put(RuntimeContext {
+                guild_id: ctx.guild_id,
+                bot_state: ctx.bot_state.clone(),
+                dapi: ctx.dapi.clone(),
+                role: ctx.role,
+                guild_logger: ctx.guild_logger.clone(),
+                script_http_client_proxy: ctx.script_http_client_proxy.clone(),
+                event_tx: ctx.event_tx.clone(),
+
+                bucket_store: ctx.bucket_store.clone(),
+                config_store: ctx.config_store.clone(),
+                timer_store: ctx.timer_store.clone(),
+            });
+            state.put(http_client.clone());
+
+            state.put(Rc::new(RateLimiters::new()));
+
+            Ok(())
+        })
+        .middleware(Box::new(|name, b| match name {
+            // we have our own custom print function
+            "op_print" => op_sync(disabled_op),
+            _ => b,
+        }))
+        .build();
+
+    vec![
+        core_extension,
+        extensions::storage::extension(),
+        extensions::discord::extension(),
+        extensions::console::extension(),
+        extensions::httpclient::extension(),
+        extensions::tasks::extension(),
+    ]
+}
+
+pub fn in_mem_source_load_fn(src: &'static str) -> Box<dyn Fn() -> Result<String, AnyError>> {
+    Box::new(move || Ok(src.to_string()))
+}
+
+pub fn dummy_op(_state: &mut OpState, _args: JsValue, _: ()) -> Result<(), AnyError> {
+    Err(anyhow::anyhow!(
+        "unimplemented, this op is not implemented yet"
+    ))
+}
+
+pub fn disabled_op(_state: &mut OpState, _args: JsValue, _: ()) -> Result<(), AnyError> {
+    Err(anyhow::anyhow!("this op is disabled"))
+}
+
+#[derive(Clone)]
+pub struct RuntimeContext {
+    pub guild_id: GuildId,
+    pub bot_state: dbrokerapi::state_client::Client,
+    pub dapi: Arc<twilight_http::Client>,
+    pub role: VmRole,
+    pub guild_logger: GuildLogger,
+    pub script_http_client_proxy: Option<String>,
+    pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
+
+    pub bucket_store: Arc<dyn BucketStore>,
+    pub config_store: Arc<dyn ConfigStore>,
+    pub timer_store: Arc<dyn TimerStore>,
+}
+
+#[derive(Clone)]
+pub struct CreateRuntimeContext {
+    pub guild_id: GuildId,
+    pub bot_state: dbrokerapi::state_client::Client,
+    pub dapi: Arc<twilight_http::Client>,
+    pub role: VmRole,
+    pub guild_logger: GuildLogger,
+    pub script_http_client_proxy: Option<String>,
+    pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
+
+    pub bucket_store: Arc<dyn BucketStore>,
+    pub config_store: Arc<dyn ConfigStore>,
+    pub timer_store: Arc<dyn TimerStore>,
+}
+
+pub fn op_script_start(state: &mut OpState, args: JsValue, _: ()) -> Result<(), AnyError> {
+    let des: ScriptMeta = serde_json::from_value(args)?;
+
+    info!(
+        "running script! {}, commands: {}",
+        des.script_id.0,
+        des.commands.len() + des.command_groups.len()
+    );
+
+    let ctx = state.borrow::<RuntimeContext>();
+
+    if let Err(err) = validate_script_meta(&des) {
+        // error!(%err, "script meta valication failed");
+        ctx.guild_logger.log(LogEntry::script_error(
+            ctx.guild_id,
+            format!("script meta validation failed: {}", err),
+            format!("{}", des.script_id),
+            None,
+        ));
+        return Err(err);
+    }
+
+    let _ = ctx.event_tx.send(RuntimeEvent::ScriptStarted(des));
+
+    Ok(())
+}
+
+pub(crate) fn validate_script_meta(meta: &ScriptMeta) -> Result<(), anyhow::Error> {
+    let mut outbuf = String::new();
+
+    for command in &meta.commands {
+        if let Err(verrs) = validation::validate(command) {
+            for verr in verrs {
+                outbuf.push_str(format!("\ncommand {}: {}", command.name, verr).as_str());
+            }
+        }
+    }
+
+    for group in &meta.command_groups {
+        if let Err(verrs) = validation::validate(group) {
+            for verr in verrs {
+                outbuf.push_str(format!("\ncommand group {}: {}", group.name, verr).as_str());
+            }
+        }
+    }
+
+    if outbuf.is_empty() {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("failed validating script: {}", outbuf))
+    }
+}
+
+pub fn try_insert_resource_table<T: deno_core::Resource>(
+    table: &mut ResourceTable,
+    v: T,
+) -> Result<ResourceId, AnyError> {
+    let count = table.names().count();
+
+    // todo: give this a proper limit
+    if count > 100 {
+        return Err(anyhow::anyhow!(
+            "exhausted resource table limit, make sure to close your resources when you're done \
+             with them."
+        ));
+    }
+
+    Ok(table.add(v))
+}
+
+pub type RateLimiter = governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
+
+#[derive(Debug)]
+pub enum RatelimiterType {
+    UserHttp,
+    Tasks,
+}
+
+pub struct RateLimiters {
+    user_http: RateLimiter,
+    tasks: RateLimiter,
+}
+
+impl RateLimiters {
+    #[instrument(skip(op_state))]
+    async fn ops_until_ready(op_state: Rc<RefCell<OpState>>, typ: RatelimiterType) {
+        // is the block here needed? i honestly have no idea but better to be on the safe side i guess
+        let ratelimiters = { op_state.borrow().borrow::<Rc<RateLimiters>>().clone() };
+        ratelimiters.until_ready(typ).await
+    }
+}
+
+impl RateLimiters {
+    fn new() -> Self {
+        Self {
+            user_http: RateLimiter::direct(Quota::per_second(NonZeroU32::new(2).unwrap())),
+            tasks: RateLimiter::direct(Quota::per_second(NonZeroU32::new(2).unwrap())),
+        }
+    }
+
+    async fn until_ready(&self, typ: RatelimiterType) {
+        match typ {
+            RatelimiterType::UserHttp => self.user_http.until_ready().await,
+            RatelimiterType::Tasks => self.tasks.until_ready().await,
+        }
+    }
+}
+
+fn wrap_bl_op_async<F, A, B, RV, R>(f: F) -> impl Fn(Rc<RefCell<OpState>>, A, B) -> R
+where
+    F: Fn(Rc<RefCell<OpState>>, RuntimeContext, A, B) -> R + 'static,
+    R: Future<Output = Result<RV, AnyError>>,
+{
+    move |state_rc, b, c| {
+        let rt_ctx = {
+            let state = state_rc.borrow();
+            state.borrow::<RuntimeContext>().clone()
+        };
+
+        f(state_rc, rt_ctx, b, c)
+    }
+}
+
+pub enum RuntimeEvent {
+    ScriptStarted(ScriptMeta),
+    NewTaskScheduled,
+}

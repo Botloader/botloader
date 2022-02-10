@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "module": "ESNext",
+        "noImplicitAny": true,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "sourceMap": false,
+        "target": "ESNext",
+        "declaration": true,
+        "strictNullChecks": true,
+        "emitDeclarationOnly": true,
+        "declarationDir": "typings/",
+        "strict": true,
+        "lib": [
+            "ESNext"
+        ]
+    },
+    "exclude": [
+        "typings"
+    ]
+}

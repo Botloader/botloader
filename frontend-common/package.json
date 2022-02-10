@@ -1,0 +1,16 @@
+{
+    "name": "botloader-common",
+    "version": "1.0.0",
+    "description": "common stuff for interacting with the botloader api!",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "devDependencies": {
+        "typescript": "^4.4.4"
+    },
+    "scripts": {
+        "build": "npx tsc"
+    },
+    "files": [
+        "/dist"
+    ]
+}

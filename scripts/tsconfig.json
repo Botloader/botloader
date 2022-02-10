@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "module": "ES2020",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "sourceMap": false,
+        "target": "ES2020",
+        "alwaysStrict": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "baseUrl": "../",
+        "lib": [
+            "ES2020"
+        ],
+        // "typeRoots": [
+        //     "../typedecls"
+        // ],
+        // "rootDirs": [
+        //     "../typedecls"
+        // ],
+        "paths": {
+            "botloader": [
+                "typings/index"
+            ],
+        }
+    }
+}

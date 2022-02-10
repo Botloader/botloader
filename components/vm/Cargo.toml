@@ -1,0 +1,35 @@
+[package]
+name = "vm"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+vmthread = {path="../../components/vmthread"}
+isolatecell = {path="../../components/isolatecell"}
+stores = {path="../../components/stores"}
+guild-logger = {path="../../components/guild-logger"}
+tscompiler = {path="../../components/tscompiler"}
+
+twilight-model = "0.8"
+
+deno_core = "0.110"
+v8 = "0.36"
+serde_v8 = "0.21"
+
+tracing = "0.1"
+tracing-futures = { version = "0.2.5" }
+
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+anyhow = "1.0"
+url = "2.2"
+serde_json = "1.0"
+async-trait = "0.1"
+lazy_static = "1.4"
+regex = "1.5"
+
+[build-dependencies]
+deno_core = "0.110"

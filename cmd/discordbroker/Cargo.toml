@@ -1,0 +1,26 @@
+[package]
+name = "discordbroker"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+common = {path="../../components/common"}
+simpleproto = {path="../../components/simpleproto"}
+dbrokerapi = {path="../../components/dbrokerapi"}
+ 
+axum = {version = "0.3"}
+tokio = { version = "1", features = ["full"] }
+tokio-stream  = "0.1"
+structopt = "0.3"
+tracing = "0.1"
+futures-util = "0.3"
+tonic = "0.6"
+async-stream = "0.3"
+serde = "1.0"
+serde_json = "1.0"
+
+twilight-model = "0.8"
+twilight-gateway = "0.8"
+twilight-cache-inmemory = "0.8"

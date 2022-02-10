@@ -1,0 +1,39 @@
+[package]
+name = "webapi"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies] 
+stores = {path="../../components/stores"}
+discordoauthwrapper = {path="../../components/discordoauthwrapper"}
+botrpc = {path="../../components/botrpc"}
+guild-logger = {path="../../components/guild-logger"}
+validation = {path="../../components/validation"}
+common = {path="../../components/common"}
+
+oauth2 = "4.1"
+anyhow = "1.0"
+thiserror = "1.0"
+serde = "1.0"
+serde_json = "1.0"
+structopt = "0.3"
+async-trait = "0.1"
+dashmap = "4.0"
+rand = "0.8"
+base64 = "0.13"
+futures="0.3"
+chrono = "0.4"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.1", features = ["trace", "set-header"] }
+tower = "0.4"
+axum = {version = "0.3", features=["ws"]}
+http-body = "0.4"
+tonic = "0.6"
+
+tracing = "0.1"
+tracing-log = "0.1"
+
+twilight-http = {version = "0.8", features = ["tracing"]}
+twilight-model = "0.8"

@@ -1,0 +1,11 @@
+.user-settings {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+}
+
+.user-session-item {
+    display: flex;
+    margin: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+}

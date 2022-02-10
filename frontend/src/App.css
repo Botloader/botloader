@@ -1,0 +1,103 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+.frontpage-links {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.frontpage-intro-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.frontpage-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 70vw;
+}
+
+@media only screen and (max-width: 600px) {
+  .frontpage-intro {
+    width: calc(100vw - 20px);
+  }
+}
+
+.frontpage-intro img {
+  min-width: 10px;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.avatar img,
+img.avatar {
+  border-radius: 100px;
+}
+
+.page-wrapper {
+  margin: 10px;
+}
+
+code {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  color: rgb(247, 85, 85);
+}
+
+a {
+  text-decoration: none;
+  color: white;
+}
+
+button,
+.button {
+  text-decoration: none;
+  background: none;
+  color: white;
+  border: 2px solid black;
+  padding: 1px 10px;
+  font-size: 1em;
+  color: #00e1ff;
+  border-radius: 4px;
+}
+
+button.danger,
+.button.danger {
+  color: rgb(255, 70, 70);
+}
+
+button:hover,
+.button:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+button:active,
+.button:active {
+  background-color: rgba(0, 0, 0, 0.5);
+}

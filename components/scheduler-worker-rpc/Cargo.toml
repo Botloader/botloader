@@ -1,0 +1,17 @@
+[package]
+name = "scheduler-worker-rpc"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+runtime-models = {path="../../components/runtime-models"}
+stores = {path="../../components/stores"}
+guild-logger = {path="../../components/guild-logger"}
+simpleproto = {path="../../components/simpleproto"}
+
+serde = "1.0"
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+twilight-model = "0.8"

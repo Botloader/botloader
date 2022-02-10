@@ -1,0 +1,17 @@
+target
+
+frontend/node_modules
+frontend/build
+frontend/public/docs
+frontend/.env
+
+botloader-vscode/node_modules
+botloader-vscode/out
+
+frontend-common/dist
+frontend-common/node_modules
+
+.env
+
+components/runtime/docgen/node_modules
+components/runtime/docgen/docs

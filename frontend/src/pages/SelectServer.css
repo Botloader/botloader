@@ -1,0 +1,37 @@
+.guild-select-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.guild-select-list img {
+    width: 64px;
+    height: 64px;
+    text-align: center;
+    color: white;
+    font-size: 45px;
+    margin-right: 5px;
+}
+
+.guild-select-list a {
+    text-decoration: none;
+}
+
+.guild-list-item {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    margin: 10px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    padding: 10px;
+
+    color: white;
+}
+
+.user-session-item {
+    display: flex;
+    gap: 10px;
+}

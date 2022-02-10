@@ -1,0 +1,71 @@
+use std::{num::NonZeroU64, path::PathBuf};
+
+use stores::config::{ConfigStore, CreateScript};
+use stores::postgres::Postgres;
+use structopt::StructOpt;
+use tracing::info;
+use twilight_model::id::GuildId;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = RunConfig::from_args();
+    let guild_id = GuildId::from(config.guild_id);
+    common::init_tracing();
+
+    info!("preparing scripts..");
+
+    let config_store = Postgres::new_with_url(&config.database_url).await?;
+
+    let compiled_filter_regex = config.filter.map(|v| regex::Regex::new(&v).unwrap());
+
+    let dir = std::fs::read_dir(config.scripts_path)?;
+    for entry in dir {
+        let unwrapped = entry.unwrap();
+        let os_name = unwrapped.file_name();
+        let name_with_suffix = os_name.to_str().unwrap();
+        if !name_with_suffix.ends_with(".ts") || name_with_suffix.ends_with(".d.ts") {
+            continue;
+        }
+
+        if name_with_suffix != "lib.ts" {
+            if let Some(filter) = &compiled_filter_regex {
+                if !filter.is_match(name_with_suffix) {
+                    info!("filtering active, skipped test {}", name_with_suffix);
+                    continue;
+                }
+            }
+        }
+
+        let contents = std::fs::read_to_string(unwrapped.path())?;
+
+        config_store
+            .create_script(
+                guild_id,
+                CreateScript {
+                    enabled: true,
+                    name: name_with_suffix.strip_suffix(".ts").unwrap().to_string(),
+                    original_source: contents,
+                },
+            )
+            .await?;
+
+        info!("added scrpt {}", name_with_suffix);
+    }
+
+    Ok(())
+}
+
+#[derive(Clone, StructOpt)]
+pub struct RunConfig {
+    #[structopt(long, env = "DATABASE_URL")]
+    database_url: String,
+
+    #[structopt(long, parse(from_os_str))]
+    scripts_path: PathBuf,
+
+    #[structopt(long)]
+    guild_id: NonZeroU64,
+
+    #[structopt(long)]
+    filter: Option<String>,
+}

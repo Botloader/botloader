@@ -1,0 +1,184 @@
+version: 2.1
+orbs:
+  kubernetes: circleci/kubernetes@0.12.0
+executors:
+  main:
+    docker:
+      - image: rust:1.56.1-bullseye
+  postgres-alongside:
+    docker:
+      - image: rust:1.56.1-bullseye
+      - image: cimg/postgres:14.0
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+jobs:
+  build-backend-docker-images:
+    resource_class: large
+    machine:
+      image: ubuntu-2004:202111-01
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - run:
+          name: Build base Docker image
+          command: |
+            docker build -t botloader-base .
+      - run:
+          name: Build bot
+          command: |
+            docker build -t botloader/botloader-bot -f cmd/bot/Dockerfile .
+      - run:
+          name: Build webapi
+          command: |
+            docker build -t botloader/botloader-webapi -f cmd/webapi/Dockerfile .
+      - run:
+          name: Archive images
+          command: |
+            docker save -o image-bot.tar botloader/botloader-bot
+            docker save -o image-webapi.tar botloader/botloader-webapi
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./image-webapi.tar
+            - ./image-bot.tar
+  publish-backend-images:
+    resource_class: medium
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - setup_remote_docker
+      - run:
+          name: Load archived images
+          command: |
+            docker load -i /tmp/workspace/image-webapi.tar
+            docker load -i /tmp/workspace/image-bot.tar
+      - run:
+          name: Docker login
+          command: |
+            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            docker push "botloader/botloader-webapi:latest"
+            docker push "botloader/botloader-bot:latest"
+            docker tag botloader/botloader-webapi:latest "botloader/botloader-webapi:$CIRCLE_BUILD_NUM"
+            docker tag botloader/botloader-bot:latest "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
+            docker push "botloader/botloader-webapi:$CIRCLE_BUILD_NUM"
+            docker push "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
+  build-frontend-image:
+    resource_class: medium
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: 20.10.7
+      - run:
+          name: Build docker image
+          command: |
+            docker build --build-arg BOTLOADER_API_BASE="https://api.botloader.io" --build-arg BOTLOADER_CLIENT_ID="907015513073397870" -t botloader/botloader-frontend . -f frontend/Dockerfile
+      - run:
+          name: Archive image
+          command: |
+            docker save -o image-frontend.tar botloader/botloader-frontend
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./image-frontend.tar
+  publish-frontend-images:
+    resource_class: medium
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Load archived images
+          command: |
+            docker load -i /tmp/workspace/image-frontend.tar
+      - run:
+          name: Docker login
+          command: |
+            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            docker push "botloader/botloader-frontend:latest"
+            docker tag botloader/botloader-frontend:latest "botloader/botloader-frontend:$CIRCLE_BUILD_NUM"
+            docker push "botloader/botloader-frontend:$CIRCLE_BUILD_NUM"
+  build-runtime-types:
+    resource_class: medium
+    docker:
+      - image: cimg/node:17.2.0
+    steps:
+      - checkout
+      - run:
+          name: Create declerations
+          working_directory: components/runtime/src/ts
+          command: |
+            npm install typescript
+            node node_modules/typescript/bin/tsc --version
+            node node_modules/typescript/bin/tsc --build tsconfig.json
+
+            cp -r globals typings
+
+            tar -cf typings.tar typings/
+      - persist_to_workspace:
+          root: components/runtime/src/ts
+          paths:
+            - typings.tar
+  deploy-runtime-types:
+    resource_class: medium
+    docker:
+      - image: d3fk/s3cmd:latest
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Push typings
+          working_directory: /tmp/workspace
+          command: |
+            s3cmd --access_key="$LINODE_OBJ_STORAGE_ACCESS_KEY" --secret_key="$LINODE_OBJ_STORAGE_ACCESS_SECRET" --host "$LINODE_OBJ_STORAGE_CLUSTER" --host-bucket "%(bucket)s.$LINODE_OBJ_STORAGE_CLUSTER" --acl-public put typings.tar "s3://botloader-misc/typings-$CIRCLE_BRANCH.tar"
+
+workflows:
+  build-n-publish-frontend:
+    jobs:
+      - build-frontend-image:
+          filters:
+            branches:
+              only: master
+      - publish-frontend-images:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build-frontend-image
+  build-n-publish-backend:
+    jobs:
+      - build-backend-docker-images:
+          filters:
+            branches:
+              only: master
+      - publish-backend-images:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build-backend-docker-images
+  runtime-types:
+    jobs:
+      - build-runtime-types
+      - deploy-runtime-types:
+          requires:
+            - build-runtime-types
+
+        # filters:
+        #   branches:
+        #     only: master
