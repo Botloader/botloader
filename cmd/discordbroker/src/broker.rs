@@ -107,11 +107,11 @@ impl Broker {
                 return;
             }
             Event::GuildDelete(g) => {
-                metrics::increment_gauge!("bl.broker.connected_guilds_total", 1.0);
+                metrics::decrement_gauge!("bl.broker.connected_guilds_total", 1.0);
                 g.id
             }
             Event::GuildCreate(g) => {
-                metrics::decrement_gauge!("bl.broker.connected_guilds_total", 1.0);
+                metrics::increment_gauge!("bl.broker.connected_guilds_total", 1.0);
                 g.id
             }
             Event::MemberAdd(m) => m.guild_id,
