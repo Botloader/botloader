@@ -80,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     worker_listener::listen_for_workers("/tmp/botloader_scheduler_workers", worker_pool.clone());
     tokio::time::sleep(Duration::from_secs(1)).await;
-    worker_pool.spawn_workers(1);
+    worker_pool.spawn_workers(config.num_workers as usize);
 
     let scheduler = scheduler::Scheduler::new(
         scheduler_rx,
@@ -152,4 +152,7 @@ pub struct SchedulerConfig {
         default_value = "../../target/debug/vmworker"
     )]
     pub vmworker_bin_path: String,
+
+    #[structopt(long, env = "BL_SCHEDULER_NUM_WORKERS", default_value = "2")]
+    pub(crate) num_workers: u16,
 }
