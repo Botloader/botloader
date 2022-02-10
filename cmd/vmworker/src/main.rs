@@ -45,12 +45,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(common::shutdown::wait_shutdown_signal());
 
     let logger = {
-        let builder = guild_logger::GuildLoggerBuilder::new()
-            .add_backend(Arc::new(guild_logger::discord_backend::DiscordLogger::new(
-                discord_config.client.clone(),
-                postgres_store.clone(),
-            )))
-            .add_backend(Arc::new(GuildLogForwarder {
+        let builder =
+            guild_logger::GuildLoggerBuilder::new().add_backend(Arc::new(GuildLogForwarder {
                 tx: scheduler_tx.clone(),
             }));
 
