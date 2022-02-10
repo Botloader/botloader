@@ -4,17 +4,17 @@ orbs:
 executors:
   main:
     docker:
-      - image: rust:1.56.1-bullseye
+      - image: rust:1.58.1-bullseye
   postgres-alongside:
     docker:
-      - image: rust:1.56.1-bullseye
+      - image: rust:1.58.1-bullseye
       - image: cimg/postgres:14.0
         environment:
           POSTGRES_USER: postgres
           POSTGRES_HOST_AUTH_METHOD: trust
 
 jobs:
-  build-backend-docker-images:
+  build-publish-backend-docker-images:
     resource_class: large
     machine:
       image: ubuntu-2004:202111-01
@@ -26,36 +26,29 @@ jobs:
           command: |
             docker build -t botloader-base .
       - run:
-          name: Build bot
+          name: Build broker
           command: |
-            docker build -t botloader/botloader-bot -f cmd/bot/Dockerfile .
+            docker build -t botloader/bl-discordbroker -f cmd/discordbroker/Dockerfile .
+      - run:
+          name: Build scheduler and worker
+          command: |
+            docker build -t botloader/bl-schedulerwithworker -f cmd/schedulerwithworker/Dockerfile .
       - run:
           name: Build webapi
           command: |
-            docker build -t botloader/botloader-webapi -f cmd/webapi/Dockerfile .
-      - run:
-          name: Archive images
-          command: |
-            docker save -o image-bot.tar botloader/botloader-bot
-            docker save -o image-webapi.tar botloader/botloader-webapi
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./image-webapi.tar
-            - ./image-bot.tar
-  publish-backend-images:
-    resource_class: medium
-    docker:
-      - image: cimg/base:2021.04
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - setup_remote_docker
-      - run:
-          name: Load archived images
-          command: |
-            docker load -i /tmp/workspace/image-webapi.tar
-            docker load -i /tmp/workspace/image-bot.tar
+            docker build -t botloader/bl-webapi -f cmd/webapi/Dockerfile .
+      # - run:
+      #     name: Archive images
+      #     command: |
+      #       docker save -o image-broker.tar botloader/bl-discordbroker
+      #       docker save -o image-scheduler.tar botloader/bl-schedulerwithworker
+      #       docker save -o image-webapi.tar botloader/bl-webapi
+      # - persist_to_workspace:
+      #     root: .
+      #     paths:
+      #       - ./image-webapi.tar
+      #       - ./image-broker.tar
+      #       - ./image-scheduler.tar
       - run:
           name: Docker login
           command: |
@@ -63,12 +56,40 @@ jobs:
       - run:
           name: Publish Docker Image to Docker Hub
           command: |
-            docker push "botloader/botloader-webapi:latest"
-            docker push "botloader/botloader-bot:latest"
-            docker tag botloader/botloader-webapi:latest "botloader/botloader-webapi:$CIRCLE_BUILD_NUM"
-            docker tag botloader/botloader-bot:latest "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
-            docker push "botloader/botloader-webapi:$CIRCLE_BUILD_NUM"
-            docker push "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
+            # tag with build number
+            docker tag botloader/bl-webapi:latest "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
+            docker tag botloader/bl-discordbroker:latest "botloader/bl-discordbroker:$CIRCLE_BUILD_NUM"
+            docker tag botloader/bl-schedulerwithworker:latest "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
+            # push
+            docker push "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
+            docker push "botloader/bl-discordbroker:$CIRCLE_BUILD_NUM"
+            docker push "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
+  # publish-backend-images:
+  #   resource_class: medium
+  #   docker:
+  #     - image: cimg/base:2021.04
+  #   steps:
+  #     - attach_workspace:
+  #         at: /tmp/workspace
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Load archived images
+  #         command: |
+  #           docker load -i /tmp/workspace/image-webapi.tar
+  #           docker load -i /tmp/workspace/image-bot.tar
+  #     - run:
+  #         name: Docker login
+  #         command: |
+  #           echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  #     - run:
+  #         name: Publish Docker Image to Docker Hub
+  #         command: |
+  #           docker push "botloader/bl-webapi:latest"
+  #           docker push "botloader/botloader-bot:latest"
+  #           docker tag botloader/bl-webapi:latest "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
+  #           docker tag botloader/botloader-bot:latest "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
+  #           docker push "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
+  #           docker push "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
   build-frontend-image:
     resource_class: medium
     docker:
@@ -81,11 +102,11 @@ jobs:
       - run:
           name: Build docker image
           command: |
-            docker build --build-arg BOTLOADER_API_BASE="https://api.botloader.io" --build-arg BOTLOADER_CLIENT_ID="907015513073397870" -t botloader/botloader-frontend . -f frontend/Dockerfile
+            docker build --build-arg BOTLOADER_API_BASE="https://api.botloader.io" --build-arg BOTLOADER_CLIENT_ID="907015513073397870" -t botloader/bl-frontend . -f frontend/Dockerfile
       - run:
           name: Archive image
           command: |
-            docker save -o image-frontend.tar botloader/botloader-frontend
+            docker save -o image-frontend.tar botloader/bl-frontend
       - persist_to_workspace:
           root: .
           paths:
@@ -110,9 +131,9 @@ jobs:
       - run:
           name: Publish Docker Image to Docker Hub
           command: |
-            docker push "botloader/botloader-frontend:latest"
-            docker tag botloader/botloader-frontend:latest "botloader/botloader-frontend:$CIRCLE_BUILD_NUM"
-            docker push "botloader/botloader-frontend:$CIRCLE_BUILD_NUM"
+            docker push "botloader/bl-frontend:latest"
+            docker tag botloader/bl-frontend:latest "botloader/bl-frontend:$CIRCLE_BUILD_NUM"
+            docker push "botloader/bl-frontend:$CIRCLE_BUILD_NUM"
   build-runtime-types:
     resource_class: medium
     docker:
@@ -162,16 +183,10 @@ workflows:
             - build-frontend-image
   build-n-publish-backend:
     jobs:
-      - build-backend-docker-images:
+      - build-publish-backend-docker-images:
           filters:
             branches:
               only: master
-      - publish-backend-images:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build-backend-docker-images
   runtime-types:
     jobs:
       - build-runtime-types
