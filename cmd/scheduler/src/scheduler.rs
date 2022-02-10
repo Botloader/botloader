@@ -213,13 +213,27 @@ impl Scheduler {
                     return;
                 }
 
-                if let DispatchEvent::GuildDelete(_) = *evt.event {
+                if let DispatchEvent::GuildCreate(gc) = &*evt.event {
+                    let _ = self
+                        .stores
+                        .add_update_joined_guild(stores::config::JoinedGuild {
+                            id: gc.id,
+                            name: gc.name.clone(),
+                            icon: gc.icon.clone().unwrap_or_default(),
+                            owner_id: gc.owner_id,
+                        })
+                        .await;
+                }
+
+                if let DispatchEvent::GuildDelete(del) = *evt.event {
                     if let Some(worker) = self.guilds.get_mut(&evt.guild_id) {
                         // this will signal the worker to shut down
                         if let Some(tx) = worker.tx.take() {
                             let _ = tx.send(GuildCommand::Shutdown);
                         }
                     }
+
+                    let _ = self.stores.remove_joined_guild(del.id).await;
                 } else {
                     self.send_or_queue_broker_evt(evt)
                 }
