@@ -19,7 +19,15 @@ pub async fn run_broker(
     token: String,
     discord_state: Arc<InMemoryCache>,
 ) -> Result<BrokerHandle, Box<dyn std::error::Error>> {
-    let intents = Intents::GUILD_MESSAGES | Intents::GUILDS | Intents::GUILD_VOICE_STATES;
+    let intents = Intents::GUILD_MESSAGES
+        | Intents::GUILDS
+        | Intents::GUILD_MEMBERS
+        | Intents::GUILD_BANS
+        | Intents::GUILD_INVITES
+        | Intents::GUILD_VOICE_STATES
+        | Intents::GUILD_MESSAGES
+        | Intents::GUILD_MESSAGE_REACTIONS;
+
     let (cluster, events) = Cluster::new(token, intents).await?;
     let cluster = Arc::new(cluster);
 
