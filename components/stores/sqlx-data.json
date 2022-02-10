@@ -38,6 +38,28 @@
       ]
     }
   },
+  "0a2a8cbd6594d3624e972813d114f25a386090a4b4eb82e26c8b6adee94ecf68": {
+    "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = ANY($2::TEXT[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "exec_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "TextArray",
+          "Int8Array"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "0b53c6ad030a9a0353c25d88165bce7c455f35a5903595111bb425291e73dfef": {
     "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now());",
     "describe": {
@@ -411,57 +433,6 @@
         false,
         false,
         false,
-        false,
-        false
-      ]
-    }
-  },
-  "1c14a83c7c2dd21cf962e86bed9aa1030d9b36852fe05d867167c5fba35820ac": {
-    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND exec_at < $2",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "guild_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "unique_key",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "value",
-          "type_info": "Jsonb"
-        },
-        {
-          "ordinal": 5,
-          "name": "exec_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Timestamptz"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
         false,
         false
       ]
@@ -964,26 +935,6 @@
       ]
     }
   },
-  "55d14d57d4f8e9153f1fd5f6abfd0c1aaca56534c82749d817d1889b51d73a93": {
-    "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 ORDER BY exec_at ASC LIMIT 1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "exec_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "6834107f343e172f08ced4bc64e7099b7e27bd3e9a5ae96f77761fe12be375ff": {
     "query": "DELETE FROM discord_oauth_tokens WHERE user_id= $1",
     "describe": {
@@ -1273,6 +1224,59 @@
         true,
         true,
         true
+      ]
+    }
+  },
+  "958fe1fbab976cc0568657a67df83dd587ab8d81553c7d279030d3d8fe002138": {
+    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND exec_at < $2 AND name = ANY($3::TEXT[]) AND (NOT id = ANY ($4::BIGINT[]))",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "unique_key",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "value",
+          "type_info": "Jsonb"
+        },
+        {
+          "ordinal": 5,
+          "name": "exec_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Timestamptz",
+          "TextArray",
+          "Int8Array"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
       ]
     }
   },
