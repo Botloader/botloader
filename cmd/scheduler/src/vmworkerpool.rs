@@ -56,6 +56,7 @@ impl VmWorkerPool {
                 .map(|(i, _)| i);
 
             if let Some(pref_worker) = pref_worker {
+                metrics::decrement_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
                 return w.pool.remove(pref_worker);
             }
 
@@ -71,6 +72,7 @@ impl VmWorkerPool {
             }
 
             if let Some(can) = candidate {
+                metrics::decrement_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
                 return w.pool.remove(can);
             }
 
@@ -97,6 +99,7 @@ impl VmWorkerPool {
                 "returned broken worker to the pool: {:?}",
                 worker.last_active_guild
             );
+            metrics::counter!("bl.scheduler.broken_workers_total", 1);
             self.spawn_worker();
         } else {
             info!("returned worker to the pool");
@@ -113,6 +116,7 @@ impl VmWorkerPool {
                 panic!("worker request dropped")
             }
         } else {
+            metrics::increment_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
             w.pool.push(worker);
         }
     }
