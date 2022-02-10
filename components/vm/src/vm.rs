@@ -4,7 +4,7 @@ use crate::{
     prepend_script_source_header, AnyError, ScriptLoadState, ScriptState, ScriptsStateStore,
     ScriptsStateStoreHandle,
 };
-use deno_core::{op_sync, Extension, OpState, RuntimeOptions, Snapshot};
+use deno_core::{Extension, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
 use guild_logger::{GuildLogger, LogEntry};
 use isolatecell::{IsolateCell, ManagedIsolate};
@@ -144,13 +144,8 @@ impl Vm {
                   prefix "bl:core",
                   "src/botloader-core.js",
                 ))
-                .ops(vec![(
-                    "op_botloader_sync_pending_handlers",
-                    op_sync(op_sync_pending_handlers),
-                )])
                 .state(move |op| {
                     op.put(script_load_states.clone());
-                    op.put(PendingDispatchHandlers { pending: 0 });
                     Ok(())
                 })
                 .build(),
@@ -678,18 +673,19 @@ impl<'a> core::future::Future for RunUntilCompletion<'a> {
         let mut rt = self.cell.enter_isolate(self.rt);
 
         match rt.poll_event_loop(cx, false) {
-            Poll::Pending => {
-                let state_rc = rt.op_state();
-                let op_state = state_rc.borrow();
-                let pending_state = op_state.borrow::<PendingDispatchHandlers>();
+            // Poll::Pending => {
+            //     let state_rc = rt.op_state();
+            //     let op_state = state_rc.borrow();
+            //     let pending_state = op_state.borrow::<PendingDispatchHandlers>();
 
-                if pending_state.pending == 0 {
-                    info!("force killed vm that was ready from non-important handlers");
-                    Poll::Ready(Ok(()))
-                } else {
-                    Poll::Pending
-                }
-            }
+            //     if pending_state.pending == 0 {
+            //         info!("force killed vm that was ready from non-important handlers");
+            //         Poll::Ready(Ok(()))
+            //     } else {
+            //         Poll::Pending
+            //     }
+            // }
+            Poll::Pending => Poll::Pending,
             Poll::Ready(Ok(_)) => Poll::Ready(Ok(())),
             Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
         }
@@ -838,17 +834,4 @@ struct NoOpWaker;
 
 impl Wake for NoOpWaker {
     fn wake(self: Arc<Self>) {}
-}
-
-pub struct PendingDispatchHandlers {
-    pending: u32,
-}
-
-fn op_sync_pending_handlers(state: &mut OpState, num_pending: u32, _: ()) -> Result<(), AnyError> {
-    let tracker = state.borrow_mut::<PendingDispatchHandlers>();
-    tracker.pending = num_pending;
-
-    info!("pending handlers: {}", num_pending);
-
-    Ok(())
 }

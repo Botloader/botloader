@@ -35,11 +35,9 @@ export namespace InternalEventSystem {
     }
 
     export function dispatchEvent(evt: DispatchEvent) {
-        let promises: Promise<unknown>[] = [];
         for (let muxer of eventMuxers) {
-            promises.push(muxer.handleEvent(evt));
+            muxer.handleEvent(evt)
         }
-        return Promise.allSettled(promises);
     }
 }
 
@@ -63,18 +61,12 @@ export class EventMuxer {
      */
     async handleEvent(evt: DispatchEvent) {
         let handlers = this.listeners[evt.name as keyof EventTypes];
-        let promises: Promise<unknown>[] = [];
+
         if (handlers) {
             for (let handler of handlers) {
-                let ret = handler(evt.data) as unknown as Promise<unknown>;
-                if (ret && 'finally' in ret && 'then' in ret) {
-                    let promise = ret as unknown as Promise<unknown>
-                    promises.push(promise);
-                }
+                handler(evt.data);
             }
         }
-
-        return PromiseAllSettledHack(promises);
     }
 
     /**
@@ -91,27 +83,4 @@ export class EventMuxer {
         }
     }
 
-}
-
-// This is basically my own implementation of Promise.allSettled.
-// The problem with Promise.allSettled is that it seems to catch all exceptions
-// while this dosen't.
-function PromiseAllSettledHack(promises: Promise<unknown>[]) {
-    let pending = promises.length;
-
-    if (pending === 0) {
-        return Promise.resolve(undefined);
-    }
-
-    return new Promise((resolved, _) => {
-        for (let promise of promises) {
-            promise.finally(() => {
-                pending--;
-                if (pending === 0) {
-                    // all of them resolved
-                    resolved(undefined);
-                }
-            })
-        }
-    })
 }
