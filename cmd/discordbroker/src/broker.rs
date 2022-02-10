@@ -137,6 +137,7 @@ impl Broker {
         };
 
         if let Ok(dispatch) = DispatchEvent::try_from(evt) {
+            metrics::counter!("bl.broker.handled_events_total", 1);
             self.dispatch_or_queue_event(guild_id, dispatch).await;
         }
     }

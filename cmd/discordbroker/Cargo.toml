@@ -9,6 +9,7 @@ edition = "2021"
 common = {path="../../components/common"}
 simpleproto = {path="../../components/simpleproto"}
 dbrokerapi = {path="../../components/dbrokerapi"}
+axum-metrics-layer = {path="../../components/axum-metrics-layer"}
  
 axum = {version = "0.3"}
 tokio = { version = "1", features = ["full"] }
@@ -20,6 +21,7 @@ tonic = "0.6"
 async-stream = "0.3"
 serde = "1.0"
 serde_json = "1.0"
+metrics = "0.18"
 
 twilight-model = "0.8"
 twilight-gateway = "0.8"

@@ -8,6 +8,7 @@ members = [
     "components/simpleproto",
     "components/botrpc",
     "components/dbrokerapi",
+    "components/axum-metrics-layer",
     # "components/vm-manager",
     "components/guild-logger",
     "components/runtime-models",

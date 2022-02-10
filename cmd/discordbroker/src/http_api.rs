@@ -25,7 +25,10 @@ pub async fn run_http_server(conf: crate::BrokerConfig, discord_state: Arc<InMem
             get(handle_get_channel),
         )
         .route("/guilds/:guild_id", get(handle_get_guild))
-        .layer(AddExtensionLayer::new(discord_state));
+        .layer(AddExtensionLayer::new(discord_state))
+        .layer(axum_metrics_layer::MetricsLayer {
+            name: "bl.broker.http_api_hits_total",
+        });
 
     let make_service = app.into_make_service();
 

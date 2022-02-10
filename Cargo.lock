@@ -354,6 +354,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-metrics-layer"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "metrics",
+ "tower",
+]
+
+[[package]]
 name = "base64"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -781,9 +790,11 @@ version = "0.1.0"
 dependencies = [
  "async-stream",
  "axum",
+ "axum-metrics-layer",
  "common",
  "dbrokerapi",
  "futures-util",
+ "metrics",
  "serde",
  "serde_json",
  "simpleproto",
