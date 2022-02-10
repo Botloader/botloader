@@ -90,10 +90,22 @@ impl Broker {
 
     async fn handle_event(&mut self, evt: Event) {
         self.discord_state.update(&evt);
+        metrics::counter!("bl.broker.handled_events_total", 1);
 
         let guild_id = match &evt {
-            Event::GuildDelete(g) => g.id,
-            Event::GuildCreate(g) => g.id,
+            Event::Ready(_) => {
+                metrics::gauge!("bl.broker.connected_guilds_total", 0.0);
+                info!("received ready!");
+                return;
+            }
+            Event::GuildDelete(g) => {
+                metrics::increment_gauge!("bl.broker.connected_guilds_total", 1.0);
+                g.id
+            }
+            Event::GuildCreate(g) => {
+                metrics::decrement_gauge!("bl.broker.connected_guilds_total", 1.0);
+                g.id
+            }
             Event::MemberAdd(m) => m.guild_id,
             Event::MemberRemove(m) => m.guild_id,
             Event::MemberUpdate(m) => m.guild_id,
@@ -137,7 +149,7 @@ impl Broker {
         };
 
         if let Ok(dispatch) = DispatchEvent::try_from(evt) {
-            metrics::counter!("bl.broker.handled_events_total", 1);
+            metrics::counter!("bl.broker.dispatched_events", 1);
             self.dispatch_or_queue_event(guild_id, dispatch).await;
         }
     }
