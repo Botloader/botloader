@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
+use stores::postgres::Postgres;
 use tracing::info;
 use twilight_cache_inmemory::InMemoryCacheBuilder;
 
@@ -25,7 +26,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let scheduler_client =
     //     Arc::new(new_scheuler_rpc_client(config.scheduler_rpc_broker_connect_addr.clone()).await?);
 
-    let handle = run_broker(config.common.discord_token.clone(), discord_state.clone()).await?;
+    let postgres_store = Arc::new(
+        Postgres::new_with_url(&config.common.database_url)
+            .await
+            .unwrap(),
+    );
+
+    let handle = run_broker(
+        config.common.discord_token.clone(),
+        discord_state.clone(),
+        postgres_store,
+    )
+    .await?;
 
     tokio::spawn(dispatch_server::start_server(
         config.broker_rpc_listen_addr.clone(),

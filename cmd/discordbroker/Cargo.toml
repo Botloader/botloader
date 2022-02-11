@@ -10,6 +10,7 @@ common = {path="../../components/common"}
 simpleproto = {path="../../components/simpleproto"}
 dbrokerapi = {path="../../components/dbrokerapi"}
 axum-metrics-layer = {path="../../components/axum-metrics-layer"}
+stores = {path="../../components/stores"}
  
 axum = {version = "0.3"}
 tokio = { version = "1", features = ["full"] }

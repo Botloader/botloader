@@ -6,6 +6,7 @@ use std::{
 use dbrokerapi::broker_scheduler_rpc::{HelloData, RawDiscordEvent};
 use futures_util::StreamExt;
 
+use stores::config::ConfigStore;
 use tokio::{
     net::TcpStream,
     sync::mpsc::{self},
@@ -18,6 +19,7 @@ use twilight_model::{gateway::event::DispatchEvent, id::GuildId};
 pub async fn run_broker(
     token: String,
     discord_state: Arc<InMemoryCache>,
+    stores: Arc<dyn ConfigStore>,
 ) -> Result<BrokerHandle, Box<dyn std::error::Error>> {
     let intents = Intents::GUILD_MESSAGES
         | Intents::GUILDS
@@ -43,6 +45,7 @@ pub async fn run_broker(
         discord_state,
         events,
         cmd_rx,
+        stores,
         connected_scheduler: None,
         queued_events: Vec::new(),
         scheduler_discconected_at: Instant::now(),
@@ -64,6 +67,7 @@ struct Broker {
     connected_scheduler: Option<TcpStream>,
     queued_events: Vec<(GuildId, DispatchEvent)>,
     scheduler_discconected_at: Instant,
+    stores: Arc<dyn ConfigStore>,
     // scheduler_client: Option<BrokerSchedulerServiceClient>,
     // scheduler_addr: String,
 }
@@ -108,11 +112,27 @@ impl Broker {
             }
             Event::GuildDelete(g) => {
                 metrics::decrement_gauge!("bl.broker.connected_guilds_total", 1.0);
+
+                if !g.unavailable {
+                    let _ = self.stores.set_guild_left_status(g.id, true).await;
+                }
+
                 g.id
             }
-            Event::GuildCreate(g) => {
+            Event::GuildCreate(gc) => {
+                let _ = self
+                    .stores
+                    .add_update_joined_guild(stores::config::JoinedGuild {
+                        id: gc.id,
+                        name: gc.name.clone(),
+                        icon: gc.icon.clone().unwrap_or_default(),
+                        owner_id: gc.owner_id,
+                        left_at: None,
+                    })
+                    .await;
+
                 metrics::increment_gauge!("bl.broker.connected_guilds_total", 1.0);
-                g.id
+                gc.id
             }
             Event::MemberAdd(m) => m.guild_id,
             Event::MemberRemove(m) => m.guild_id,

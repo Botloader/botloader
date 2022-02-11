@@ -814,6 +814,7 @@ dependencies = [
  "serde",
  "serde_json",
  "simpleproto",
+ "stores",
  "tokio",
  "tokio-stream",
  "tonic",
