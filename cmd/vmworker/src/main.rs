@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
+use clap::Parser;
 use guild_logger::GuildLogger;
 use runtime::{CreateRuntimeContext, RuntimeEvent};
 use scheduler_worker_rpc::{
     RunStateChangeReq, SchedulerMessage, ShutdownReason, UpdateRunStateRequest, WorkerMessage,
 };
 use stores::postgres::Postgres;
-use structopt::StructOpt;
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::GuildId;
@@ -18,7 +18,7 @@ mod metrics_forwarder;
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     common::common_init(None);
-    let config = WorkerConfig::from_args();
+    let config = WorkerConfig::parse();
     let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
         .await
         .expect("failed fetching discord config");
@@ -71,19 +71,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, clap::Parser)]
 pub struct WorkerConfig {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub(crate) common: common::config::RunConfig,
 
-    #[structopt(
+    #[clap(
         long,
         env = "BL_BROKER_API_ADDR",
         default_value = "http://0.0.0.0:7449"
     )]
     pub(crate) broker_api_addr: String,
 
-    #[structopt(long, env = "BL_WORKER_ID")]
+    #[clap(long, env = "BL_WORKER_ID")]
     pub(crate) worker_id: u64,
 }
 

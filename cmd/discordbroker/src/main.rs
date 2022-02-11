@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::info;
 use twilight_cache_inmemory::InMemoryCacheBuilder;
 
@@ -13,7 +13,7 @@ mod http_api;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     common::common_init(Some("0.0.0.0:7802"));
-    let config = BrokerConfig::from_args();
+    let config = BrokerConfig::parse();
     // let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
     //     .await
     //     .expect("failed fetching discord config");
@@ -37,19 +37,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, clap::Parser)]
 pub struct BrokerConfig {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub(crate) common: common::config::RunConfig,
 
-    #[structopt(
+    #[clap(
         long,
         env = "BL_BROKER_RPC_LISTEN_ADDR",
         default_value = "127.0.0.1:7480"
     )]
     pub(crate) broker_rpc_listen_addr: String,
 
-    #[structopt(
+    #[clap(
         long,
         env = "BL_BROKER_HTTP_API_LISTEN_ADDR",
         default_value = "127.0.0.1:7449"

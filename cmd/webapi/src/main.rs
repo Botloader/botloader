@@ -6,10 +6,10 @@ use axum::{
     routing::{delete, get, patch, post},
     AddExtensionLayer, BoxError, Router,
 };
+use clap::Parser;
 use oauth2::basic::BasicClient;
 use routes::auth::AuthHandlers;
 use stores::{inmemory::web::InMemoryCsrfStore, postgres::Postgres};
-use structopt::StructOpt;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
@@ -37,7 +37,7 @@ type ApiResult<T> = Result<T, ApiErrorResponse>;
 #[tokio::main]
 async fn main() {
     common::common_init(Some("0.0.0.0:7801"));
-    let conf = common::config::RunConfig::from_args();
+    let conf = common::config::RunConfig::parse();
 
     info!("starting...");
 

@@ -1,14 +1,14 @@
 use std::{num::NonZeroU64, path::PathBuf};
 
+use clap::Parser;
 use stores::config::{ConfigStore, CreateScript};
 use stores::postgres::Postgres;
-use structopt::StructOpt;
 use tracing::info;
 use twilight_model::id::GuildId;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = RunConfig::from_args();
+    let config = RunConfig::parse();
     let guild_id = GuildId::from(config.guild_id);
     common::init_tracing();
 
@@ -55,17 +55,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, clap::Parser)]
 pub struct RunConfig {
-    #[structopt(long, env = "DATABASE_URL")]
+    #[clap(long, env = "DATABASE_URL")]
     database_url: String,
 
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     scripts_path: PathBuf,
 
-    #[structopt(long)]
+    #[clap(long)]
     guild_id: NonZeroU64,
 
-    #[structopt(long)]
+    #[clap(long)]
     filter: Option<String>,
 }

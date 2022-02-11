@@ -1,7 +1,7 @@
 use std::{num::NonZeroU64, sync::Arc, time::Duration};
 
+use clap::Parser;
 use stores::{config::ConfigStore, postgres::Postgres};
-use structopt::StructOpt;
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::GuildId;
@@ -23,7 +23,7 @@ mod worker_listener;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     common::common_init(Some("0.0.0.0:7803"));
-    let config = SchedulerConfig::from_args();
+    let config = SchedulerConfig::parse();
     let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
         .await
         .expect("failed fetching discord config");
@@ -132,28 +132,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, clap::Parser)]
 pub struct SchedulerConfig {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub(crate) common: common::config::RunConfig,
 
-    #[structopt(
+    #[clap(
         long,
         env = "BL_BROKER_RPC_CONNECT_ADDR",
         default_value = "0.0.0.0:7480"
     )]
     pub(crate) broker_rpc_connect_adddr: String,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub integration_tests_guild: Option<NonZeroU64>,
 
-    #[structopt(
+    #[clap(
         long,
         env = "BL_VMWORKER_BIN_PATH",
         default_value = "../../target/debug/vmworker"
     )]
     pub vmworker_bin_path: String,
 
-    #[structopt(long, env = "BL_SCHEDULER_NUM_WORKERS", default_value = "2")]
+    #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS", default_value = "2")]
     pub(crate) num_workers: u16,
 }
