@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use twilight_model::id::{ChannelId, GuildId, UserId};
@@ -69,8 +70,11 @@ pub trait ConfigStore: Send + Sync {
     }
 
     async fn add_update_joined_guild(&self, guild: JoinedGuild) -> ConfigStoreResult<JoinedGuild>;
-
-    async fn remove_joined_guild(&self, guild_id: GuildId) -> ConfigStoreResult<bool>;
+    async fn set_guild_left_status(
+        &self,
+        guild_id: GuildId,
+        left: bool,
+    ) -> ConfigStoreResult<JoinedGuild>;
 
     async fn get_joined_guilds(&self, ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>>;
 
@@ -141,4 +145,5 @@ pub struct JoinedGuild {
     pub name: String,
     pub icon: String,
     pub owner_id: UserId,
+    pub left_at: Option<DateTime<Utc>>,
 }

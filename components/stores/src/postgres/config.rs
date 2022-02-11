@@ -1,5 +1,6 @@
 use super::Postgres;
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use twilight_model::id::{ChannelId, GuildId, UserId};
 
 use crate::config::{
@@ -263,10 +264,11 @@ impl crate::config::ConfigStore for Postgres {
     async fn add_update_joined_guild(&self, guild: JoinedGuild) -> ConfigStoreResult<JoinedGuild> {
         let db_guild = sqlx::query_as!(
             DbJoinedGuild,
-            "INSERT INTO joined_guilds (id, name, icon, owner_id) VALUES ($1, $2, $3, $4)
+            "INSERT INTO joined_guilds (id, name, icon, owner_id, left_at) VALUES ($1, $2, $3, \
+             $4, null)
             ON CONFLICT (id) DO UPDATE SET 
-            name = $2, icon = $3, owner_id = $4
-            RETURNING id, name, icon, owner_id;",
+            name = $2, icon = $3, owner_id = $4, left_at = null
+            RETURNING id, name, icon, owner_id, left_at;",
             guild.id.0.get() as i64,
             &guild.name,
             &guild.icon,
@@ -278,21 +280,32 @@ impl crate::config::ConfigStore for Postgres {
         Ok(db_guild.into())
     }
 
-    async fn remove_joined_guild(&self, guild_id: GuildId) -> ConfigStoreResult<bool> {
-        let res = sqlx::query!(
-            "DELETE FROM joined_guilds WHERE id = $1;",
+    async fn set_guild_left_status(
+        &self,
+        guild_id: GuildId,
+        left: bool,
+    ) -> ConfigStoreResult<JoinedGuild> {
+        let db_guild = sqlx::query_as!(
+            DbJoinedGuild,
+            "UPDATE joined_guilds SET left_at = CASE 
+                WHEN left_at IS NULL AND $2 = true THEN now()
+                WHEN $2 = false THEN null
+                ELSE left_at
+                END
+            WHERE id = $1 RETURNING id, name, icon, owner_id, left_at;",
             guild_id.0.get() as i64,
+            left
         )
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await?;
 
-        Ok(res.rows_affected() > 0)
+        Ok(db_guild.into())
     }
 
     async fn get_joined_guilds(&self, ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>> {
         let guilds = sqlx::query_as!(
             DbJoinedGuild,
-            "SELECT id, name, icon, owner_id FROM joined_guilds WHERE id = ANY ($1)",
+            "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1)",
             &ids.into_iter()
                 .map(|e| e.0.get() as i64)
                 .collect::<Vec<_>>(),
@@ -368,6 +381,7 @@ pub struct DbJoinedGuild {
     pub name: String,
     pub icon: String,
     pub owner_id: i64,
+    pub left_at: Option<DateTime<Utc>>,
 }
 
 impl From<DbJoinedGuild> for JoinedGuild {
@@ -377,6 +391,7 @@ impl From<DbJoinedGuild> for JoinedGuild {
             name: g.name,
             icon: g.icon,
             owner_id: UserId::new(g.owner_id as u64).unwrap(),
+            left_at: g.left_at,
         }
     }
 }

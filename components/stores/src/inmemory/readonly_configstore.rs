@@ -103,11 +103,15 @@ impl ConfigStore for ReadOnlyConfigStore {
         Ok(guild)
     }
 
-    async fn remove_joined_guild(&self, _guild_id: GuildId) -> ConfigStoreResult<bool> {
-        Ok(false)
+    async fn get_joined_guilds(&self, _ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>> {
+        todo!();
     }
 
-    async fn get_joined_guilds(&self, _ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>> {
+    async fn set_guild_left_status(
+        &self,
+        guild_id: GuildId,
+        left: bool,
+    ) -> ConfigStoreResult<JoinedGuild> {
         todo!();
     }
 

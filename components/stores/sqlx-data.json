@@ -1,43 +1,5 @@
 {
   "db": "PostgreSQL",
-  "0795f36feabaf53a1c491cbbbd18cd43692ce7265ff243c427cb7d1f2e3beee3": {
-    "query": "SELECT id, name, icon, owner_id FROM joined_guilds WHERE id = ANY ($1)",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "icon",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "owner_id",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8Array"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "0a2a8cbd6594d3624e972813d114f25a386090a4b4eb82e26c8b6adee94ecf68": {
     "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = ANY($2::TEXT[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
     "describe": {
@@ -173,18 +135,6 @@
         false,
         false
       ]
-    }
-  },
-  "0d1be72462bf9559ba071f3b07b3d49006abff6585be3aa14b1d8ff1c2dde493": {
-    "query": "DELETE FROM joined_guilds WHERE id = $1;",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": []
     }
   },
   "0fb83131d557439fd5c1f683a6d135c43a9be1efd845080b98d7e44036c2701f": {
@@ -935,6 +885,53 @@
       ]
     }
   },
+  "56c8f5afadce3129b07621c6dd478a18f091bf2b3416032e01b0b9765ab81244": {
+    "query": "INSERT INTO joined_guilds (id, name, icon, owner_id, left_at) VALUES ($1, $2, $3, $4, null)\n            ON CONFLICT (id) DO UPDATE SET \n            name = $2, icon = $3, owner_id = $4, left_at = null\n            RETURNING id, name, icon, owner_id, left_at;",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "icon",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "owner_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
   "6834107f343e172f08ced4bc64e7099b7e27bd3e9a5ae96f77761fe12be375ff": {
     "query": "DELETE FROM discord_oauth_tokens WHERE user_id= $1",
     "describe": {
@@ -1333,6 +1330,51 @@
         false,
         false,
         false
+      ]
+    }
+  },
+  "9715f62dbaae02fd4f9ce3a7652adfa89268f3fbd546d9508adfe52a823686e2": {
+    "query": "UPDATE joined_guilds SET left_at = CASE \n                WHEN left_at IS NULL AND $2 = true THEN now()\n                WHEN $2 = false THEN null\n                ELSE left_at\n                END\n            WHERE id = $1 RETURNING id, name, icon, owner_id, left_at;",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "icon",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "owner_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true
       ]
     }
   },
@@ -1797,47 +1839,6 @@
       "nullable": []
     }
   },
-  "d7d3a49166245db1bc05a458f20502aa3d029e3949562111a9520d204933cabd": {
-    "query": "INSERT INTO joined_guilds (id, name, icon, owner_id) VALUES ($1, $2, $3, $4)\n            ON CONFLICT (id) DO UPDATE SET \n            name = $2, icon = $3, owner_id = $4\n            RETURNING id, name, icon, owner_id;",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "icon",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "owner_id",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Text",
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "dffe4939ea31c98c187d18d61743102ae3c9f8b0f4ffe34580a78c29b32fec7e": {
     "query": "SELECT count(*) FROM guild_whitelist WHERE guild_id = $1;",
     "describe": {
@@ -1983,6 +1984,50 @@
         false,
         false,
         false
+      ]
+    }
+  },
+  "efe8a904990ceea663910d2e67340a3f75bee0d610d3ed211b93d83c87a37c37": {
+    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1)",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "icon",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "owner_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8Array"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true
       ]
     }
   },

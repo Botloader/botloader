@@ -221,6 +221,7 @@ impl Scheduler {
                             name: gc.name.clone(),
                             icon: gc.icon.clone().unwrap_or_default(),
                             owner_id: gc.owner_id,
+                            left_at: None,
                         })
                         .await;
                 }
@@ -233,7 +234,7 @@ impl Scheduler {
                         }
                     }
 
-                    let _ = self.stores.remove_joined_guild(del.id).await;
+                    let _ = self.stores.set_guild_left_status(del.id, true).await;
                 } else {
                     self.send_or_queue_broker_evt(evt)
                 }
