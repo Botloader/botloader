@@ -100,6 +100,8 @@ pub trait TimerStore: Send + Sync {
         ignore_ids: &[u64],
         names: &[String],
     ) -> TimerStoreResult<Vec<ScheduledTask>>;
+
+    async fn delete_guild_timer_data(&self, id: GuildId) -> TimerStoreResult<()>;
 }
 
 #[derive(Clone)]

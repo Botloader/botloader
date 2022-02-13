@@ -83,6 +83,8 @@ pub trait ConfigStore: Send + Sync {
     ) -> ConfigStoreResult<Vec<JoinedGuild>>;
 
     async fn is_guild_whitelisted(&self, id: GuildId) -> ConfigStoreResult<bool>;
+
+    async fn delete_guild_config_data(&self, id: GuildId) -> ConfigStoreResult<()>;
 }
 
 /// Struct you get back from the store

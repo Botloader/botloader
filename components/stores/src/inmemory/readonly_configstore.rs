@@ -125,4 +125,8 @@ impl ConfigStore for ReadOnlyConfigStore {
     async fn is_guild_whitelisted(&self, _id: GuildId) -> ConfigStoreResult<bool> {
         Ok(true)
     }
+
+    async fn delete_guild_config_data(&self, id: GuildId) -> ConfigStoreResult<()> {
+        Ok(())
+    }
 }

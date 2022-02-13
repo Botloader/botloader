@@ -78,6 +78,8 @@ pub trait BucketStore: Send + Sync {
         offset: u32,
         limit: u32,
     ) -> StoreResult<Vec<Entry>>;
+
+    async fn delete_guild_bucket_store_data(&self, id: GuildId) -> StoreResult<()>;
 }
 
 pub enum SetCondition {

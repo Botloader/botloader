@@ -345,6 +345,16 @@ impl crate::config::ConfigStore for Postgres {
 
         Ok(result.count.unwrap_or_default() > 0)
     }
+
+    async fn delete_guild_config_data(&self, id: GuildId) -> ConfigStoreResult<()> {
+        sqlx::query!("DELETE FROM joined_guilds WHERE id = $1;", id.get() as i64)
+            .execute(&self.pool)
+            .await?;
+
+        // TODO: should we delete guild scripts as well?
+
+        Ok(())
+    }
 }
 
 #[allow(dead_code)]

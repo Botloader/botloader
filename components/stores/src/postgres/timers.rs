@@ -293,6 +293,24 @@ impl crate::timers::TimerStore for Postgres {
 
         Ok(res.count.unwrap_or_default() as u64)
     }
+
+    async fn delete_guild_timer_data(&self, id: GuildId) -> TimerStoreResult<()> {
+        sqlx::query!(
+            "DELETE FROM scheduled_tasks WHERE guild_id = $1;",
+            id.get() as i64
+        )
+        .execute(&self.pool)
+        .await?;
+
+        sqlx::query!(
+            "DELETE FROM interval_timers WHERE guild_id = $1;",
+            id.get() as i64
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
 }
 
 struct DbIntervalTimer {

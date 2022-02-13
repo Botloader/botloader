@@ -303,6 +303,17 @@ impl crate::bucketstore::BucketStore for Postgres {
 
         Ok(res.into_iter().map(Into::into).collect())
     }
+
+    async fn delete_guild_bucket_store_data(&self, id: GuildId) -> StoreResult<()> {
+        sqlx::query!(
+            "DELETE FROM bucket_store WHERE guild_id = $1",
+            id.get() as i64
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[allow(dead_code)]
