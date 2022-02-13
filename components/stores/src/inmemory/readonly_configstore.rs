@@ -107,6 +107,13 @@ impl ConfigStore for ReadOnlyConfigStore {
         todo!();
     }
 
+    async fn get_joined_guilds_not_in(
+        &self,
+        ids: &[GuildId],
+    ) -> ConfigStoreResult<Vec<JoinedGuild>> {
+        todo!();
+    }
+
     async fn set_guild_left_status(
         &self,
         guild_id: GuildId,

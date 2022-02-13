@@ -77,6 +77,10 @@ pub trait ConfigStore: Send + Sync {
     ) -> ConfigStoreResult<JoinedGuild>;
 
     async fn get_joined_guilds(&self, ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>>;
+    async fn get_joined_guilds_not_in(
+        &self,
+        ids: &[GuildId],
+    ) -> ConfigStoreResult<Vec<JoinedGuild>>;
 
     async fn is_guild_whitelisted(&self, id: GuildId) -> ConfigStoreResult<bool>;
 }

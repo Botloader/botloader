@@ -317,6 +317,24 @@ impl crate::config::ConfigStore for Postgres {
         Ok(guilds.into_iter().map(|e| e.into()).collect())
     }
 
+    async fn get_joined_guilds_not_in(
+        &self,
+        ids: &[GuildId],
+    ) -> ConfigStoreResult<Vec<JoinedGuild>> {
+        let guilds = sqlx::query_as!(
+            DbJoinedGuild,
+            "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE NOT id = ANY ($1) \
+             AND left_at IS NULL",
+            &ids.into_iter()
+                .map(|e| e.0.get() as i64)
+                .collect::<Vec<_>>(),
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(guilds.into_iter().map(|e| e.into()).collect())
+    }
+
     async fn is_guild_whitelisted(&self, guild_id: GuildId) -> ConfigStoreResult<bool> {
         let result = sqlx::query!(
             "SELECT count(*) FROM guild_whitelist WHERE guild_id = $1;",
