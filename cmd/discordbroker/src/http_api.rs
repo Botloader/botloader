@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use axum::{
     extract::{Extension, Path},
@@ -6,6 +9,7 @@ use axum::{
     routing::get,
     AddExtensionLayer, Json, Router,
 };
+use dbrokerapi::state_client::ConnectedGuildsResponse;
 use tracing::info;
 use twilight_cache_inmemory::{model::CachedGuild, InMemoryCache};
 use twilight_model::{
@@ -14,7 +18,16 @@ use twilight_model::{
     id::{ChannelId, GuildId, RoleId},
 };
 
-pub async fn run_http_server(conf: crate::BrokerConfig, discord_state: Arc<InMemoryCache>) {
+#[derive(Clone)]
+struct ReadyTracker {
+    ready: Arc<AtomicBool>,
+}
+
+pub async fn run_http_server(
+    conf: crate::BrokerConfig,
+    discord_state: Arc<InMemoryCache>,
+    ready: Arc<AtomicBool>,
+) {
     let app = Router::new()
         // .route("/guilds/:guild_id/stream_events", get(handle_stream_events))
         .route("/guilds/:guild_id/roles", get(handle_get_roles))
@@ -25,7 +38,9 @@ pub async fn run_http_server(conf: crate::BrokerConfig, discord_state: Arc<InMem
             get(handle_get_channel),
         )
         .route("/guilds/:guild_id", get(handle_get_guild))
+        .route("/connected_guilds", get(handle_get_connected_guilds))
         .layer(AddExtensionLayer::new(discord_state))
+        .layer(AddExtensionLayer::new(ReadyTracker { ready }))
         .layer(axum_metrics_layer::MetricsLayer {
             name: "bl.broker.http_api_hits_total",
         });
@@ -122,4 +137,21 @@ async fn handle_get_roles(
     }
 
     Ok((StatusCode::NOT_FOUND, Json(None)))
+}
+
+async fn handle_get_connected_guilds(
+    Extension(ready_tracker): Extension<ReadyTracker>,
+    Extension(discord_state): Extension<Arc<InMemoryCache>>,
+) -> Json<ConnectedGuildsResponse> {
+    if !ready_tracker.ready.load(Ordering::SeqCst) {
+        return Json(ConnectedGuildsResponse::NotReady);
+    }
+
+    let guilds = discord_state
+        .iter()
+        .guilds()
+        .map(|v| v.id())
+        .collect::<Vec<_>>();
+
+    Json(ConnectedGuildsResponse::Ready(guilds))
 }

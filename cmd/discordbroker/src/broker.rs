@@ -1,5 +1,5 @@
 use std::{
-    sync::Arc,
+    sync::{atomic::AtomicBool, Arc},
     time::{Duration, Instant},
 };
 
@@ -20,6 +20,7 @@ pub async fn run_broker(
     token: String,
     discord_state: Arc<InMemoryCache>,
     stores: Arc<dyn ConfigStore>,
+    ready: Arc<AtomicBool>,
 ) -> Result<BrokerHandle, Box<dyn std::error::Error>> {
     let intents = Intents::GUILD_MESSAGES
         | Intents::GUILDS
@@ -46,6 +47,7 @@ pub async fn run_broker(
         events,
         cmd_rx,
         stores,
+        ready,
         connected_scheduler: None,
         queued_events: Vec::new(),
         scheduler_discconected_at: Instant::now(),
@@ -68,6 +70,7 @@ struct Broker {
     queued_events: Vec<(GuildId, DispatchEvent)>,
     scheduler_discconected_at: Instant,
     stores: Arc<dyn ConfigStore>,
+    ready: Arc<AtomicBool>,
     // scheduler_client: Option<BrokerSchedulerServiceClient>,
     // scheduler_addr: String,
 }
@@ -106,6 +109,8 @@ impl Broker {
 
         let guild_id = match &evt {
             Event::Ready(_) => {
+                self.ready.store(true, std::sync::atomic::Ordering::SeqCst);
+
                 metrics::gauge!("bl.broker.connected_guilds_total", 0.0);
                 info!("received ready!");
                 return;

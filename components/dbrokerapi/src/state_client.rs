@@ -1,5 +1,6 @@
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use twilight_model::{
     channel::GuildChannel,
@@ -82,4 +83,16 @@ impl Client {
             .await
             .map(|v| v.unwrap_or_default())
     }
+
+    pub async fn get_connected_guilds(&self) -> ApiResult<ConnectedGuildsResponse> {
+        self.get(format!("{}/connected_guilds", self.server_addr))
+            .await
+            .map(|inner| inner.unwrap())
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ConnectedGuildsResponse {
+    NotReady,
+    Ready(Vec<GuildId>),
 }

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{atomic::AtomicBool, Arc};
 
 use clap::Parser;
 use stores::postgres::Postgres;
@@ -32,10 +32,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap(),
     );
 
+    let ready = Arc::new(AtomicBool::new(false));
     let handle = run_broker(
         config.common.discord_token.clone(),
         discord_state.clone(),
         postgres_store,
+        ready.clone(),
     )
     .await?;
 
@@ -43,8 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.broker_rpc_listen_addr.clone(),
         handle,
     ));
-
-    run_http_server(config, discord_state).await;
+    run_http_server(config, discord_state, ready.clone()).await;
 
     Ok(())
 }
