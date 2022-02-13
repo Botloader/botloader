@@ -1494,6 +1494,50 @@
       ]
     }
   },
+  "a6b42b45300551f880dc21a0ce2a8b406ef191ccfe7c3991835bd17fcc59e485": {
+    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1) AND left_at IS NULL",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "icon",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "owner_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8Array"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
   "abb47ada0a375bab61b6af5397237afa44143194976edbaeac14cae05038a493": {
     "query": "SELECT user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at\n            FROM discord_oauth_tokens WHERE user_id = $1",
     "describe": {
@@ -1984,50 +2028,6 @@
         false,
         false,
         false
-      ]
-    }
-  },
-  "efe8a904990ceea663910d2e67340a3f75bee0d610d3ed211b93d83c87a37c37": {
-    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1)",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "icon",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "owner_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 4,
-          "name": "left_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8Array"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true
       ]
     }
   },

@@ -305,7 +305,8 @@ impl crate::config::ConfigStore for Postgres {
     async fn get_joined_guilds(&self, ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>> {
         let guilds = sqlx::query_as!(
             DbJoinedGuild,
-            "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1)",
+            "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1) AND \
+             left_at IS NULL",
             &ids.into_iter()
                 .map(|e| e.0.get() as i64)
                 .collect::<Vec<_>>(),
