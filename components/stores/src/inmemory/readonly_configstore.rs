@@ -129,4 +129,8 @@ impl ConfigStore for ReadOnlyConfigStore {
     async fn delete_guild_config_data(&self, id: GuildId) -> ConfigStoreResult<()> {
         Ok(())
     }
+
+    async fn get_left_guilds(&self, threshold_hours: u64) -> ConfigStoreResult<Vec<JoinedGuild>> {
+        todo!();
+    }
 }

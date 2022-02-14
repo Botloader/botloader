@@ -1,6 +1,8 @@
 use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use sqlx::postgres::types::PgInterval;
+use std::time::Duration;
 use twilight_model::id::{ChannelId, GuildId, UserId};
 
 use crate::config::{
@@ -328,6 +330,25 @@ impl crate::config::ConfigStore for Postgres {
             &ids.into_iter()
                 .map(|e| e.0.get() as i64)
                 .collect::<Vec<_>>(),
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(guilds.into_iter().map(|e| e.into()).collect())
+    }
+
+    async fn get_left_guilds(&self, threshold_hours: u64) -> ConfigStoreResult<Vec<JoinedGuild>> {
+        let interval = PgInterval {
+            days: 0,
+            months: 0,
+            microseconds: threshold_hours as i64 * 1000 * 1000 * 60 * 60,
+        };
+
+        let guilds = sqlx::query_as!(
+            DbJoinedGuild,
+            "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE left_at IS NOT \
+             NULL AND left_at < (now() - $1::interval);",
+            interval,
         )
         .fetch_all(&self.pool)
         .await?;
