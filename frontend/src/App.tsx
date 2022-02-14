@@ -77,7 +77,7 @@ function LandingPage() {
     <header className="App-header">
       <p>Botloader coming soon™</p>
       <img src="/logo192.png" alt="zzz" className="avatar"></img>
-      <div className='frontpage-links'><Link to="/servers" className='button' >Control panel</Link><a className='button' href="https://discord.gg/botloader">Discord server</a></div>
+      <div className='frontpage-links'><Link to="/servers" className='button' >Control panel</Link><a className='button' href="https://discord.gg/HJM3MqVBfw">Discord server</a></div>
     </header>
     <div className='frontpage-intro-container'>
       <div className='frontpage-intro'>
