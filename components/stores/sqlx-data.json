@@ -1,5 +1,49 @@
 {
   "db": "PostgreSQL",
+  "020ff8ad3794c6bd8072019d166f18606cb7f75cfbabe6407da24a3134d01a82": {
+    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE NOT id = ANY ($1) AND left_at IS NULL",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "icon",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "owner_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8Array"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
   "0a2a8cbd6594d3624e972813d114f25a386090a4b4eb82e26c8b6adee94ecf68": {
     "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = ANY($2::TEXT[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
     "describe": {
@@ -135,6 +179,18 @@
         false,
         false
       ]
+    }
+  },
+  "0d1be72462bf9559ba071f3b07b3d49006abff6585be3aa14b1d8ff1c2dde493": {
+    "query": "DELETE FROM joined_guilds WHERE id = $1;",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "0fb83131d557439fd5c1f683a6d135c43a9be1efd845080b98d7e44036c2701f": {
@@ -327,6 +383,18 @@
         true,
         true
       ]
+    }
+  },
+  "15ceb47518db60042e48a5ce5b07d958cb05343655742628c3720ad730ee4171": {
+    "query": "DELETE FROM interval_timers WHERE guild_id = $1;",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "17300153acd4a935735f26142bd65687b493344206b6096f911e94f6cba8cd2f": {
@@ -964,6 +1032,18 @@
       ]
     }
   },
+  "748ac769d3e4dfc3df429382f457413f3406f1fcb883171d1d0a2d24751631aa": {
+    "query": "DELETE FROM bucket_store WHERE guild_id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "7d64e191ab05b594bf2b195fe4c488d994915ce424bbe7c368a9f29de6eb2839": {
     "query": "INSERT INTO bucket_store \n         (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n         VALUES \n         ($1,         $2,    $3,   now(),      now(),      null,         null,         $4) \n         ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n         created_at = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n            THEN now()\n            ELSE bucket_store.created_at\n            END,\n         updated_at = now(),\n         expires_at = excluded.expires_at,\n         value_json = excluded.value_json,\n         value_float = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n            THEN excluded.value_float\n            ELSE excluded.value_float + bucket_store.value_float\n            END\n         RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
     "describe": {
@@ -1220,6 +1300,50 @@
         false,
         true,
         true,
+        true
+      ]
+    }
+  },
+  "88dfd802c80088d5cfc801c71fa5afb970f17bad1b7e2afe17ec285de45d6f97": {
+    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE left_at IS NOT NULL AND left_at < (now() - $1::interval);",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "icon",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "owner_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Interval"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
         true
       ]
     }
@@ -1968,6 +2092,18 @@
         true,
         true
       ]
+    }
+  },
+  "e79c15d9c1c9d4ad7413273d111170121bf1321ec30a2dd6469de54f4ef6c9aa": {
+    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1;",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "efcef792696e6d74041f87034d00c9b7a59b6aea8b6f78a5fb9ae8466a826a9b": {
