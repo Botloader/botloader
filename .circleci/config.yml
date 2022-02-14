@@ -15,7 +15,7 @@ executors:
 
 jobs:
   build-publish-backend-docker-images:
-    resource_class: large
+    resource_class: xlarge
     machine:
       image: ubuntu-2004:202111-01
       docker_layer_caching: true
