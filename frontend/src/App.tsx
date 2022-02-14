@@ -15,6 +15,8 @@ import { SelectServerPage } from './pages/SelectServer';
 import { UserSettingsPage } from './pages/UserSettings';
 import { GuildPage } from './pages/GuildPage';
 import loaderScreenshot from './img/loaderscreenshot.png';
+import { TosPage } from './pages/TOS';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicy';
 
 function App() {
   return (
@@ -22,6 +24,12 @@ function App() {
       <Switch>
         <Route path="/confirm_login">
           <ConfirmLoginPage />
+        </Route>
+        <Route path="/tos">
+          <TosPage></TosPage>
+        </Route>
+        <Route path="/privacy">
+          <PrivacyPolicyPage></PrivacyPolicyPage>
         </Route>
         <Route path="/">
           <SessionProvider>
