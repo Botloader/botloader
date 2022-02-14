@@ -1,7 +1,9 @@
 use clap::{Args, Parser, Subcommand};
 use common::DiscordConfig;
 use dbrokerapi::state_client::ConnectedGuildsResponse;
-use stores::{config::ConfigStore, postgres::Postgres};
+use stores::{
+    bucketstore::BucketStore, config::ConfigStore, postgres::Postgres, timers::TimerStore,
+};
 use tracing::{info, warn};
 use twilight_http::error::ErrorType;
 
@@ -22,7 +24,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match &config.command {
         Command::ScanForLeftGuilds => scan_for_left_guilds(config, db, discord_config).await,
-        Command::DeleteLeftGuilds(opts) => delete_left_guilds(config.clone(), opts.clone()).await,
+        Command::DeleteLeftGuilds(opts) => {
+            delete_left_guilds(config.clone(), opts.clone(), db).await
+        }
     }
 }
 
@@ -104,10 +108,25 @@ async fn scan_for_left_guilds(
 async fn delete_left_guilds(
     _conf: Config,
     opts: DeleteSettings,
+    db: Postgres,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!(
         "Deleting left guilds, min left age days: {}",
         opts.min_age_days
     );
+
+    if opts.min_age_days < 1 {
+        panic!("min-age-days needs to be above 0");
+    }
+
+    let guilds = db.get_left_guilds(opts.min_age_days as u64 * 24).await?;
+    for g in guilds {
+        info!("deleting {}", g.id);
+
+        db.delete_guild_bucket_store_data(g.id).await?;
+        db.delete_guild_timer_data(g.id).await?;
+        db.delete_guild_config_data(g.id).await?;
+    }
+
     Ok(())
 }
