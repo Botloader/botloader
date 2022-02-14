@@ -36,7 +36,11 @@ jobs:
       - run:
           name: Build webapi
           command: |
-            docker build -t botloader/bl-webapi -f cmd/webapi/Dockerfile .
+            docker build -t botloader/bl-webapi -f cmd/webapi/Dockerfile
+      - run:
+          name: Build jobs
+          command: |
+            docker build -t botloader/bl-jobs -f cmd/jobs/Dockerfile .
       # - run:
       #     name: Archive images
       #     command: |
@@ -60,10 +64,12 @@ jobs:
             docker tag botloader/bl-webapi:latest "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
             docker tag botloader/bl-discordbroker:latest "botloader/bl-discordbroker:$CIRCLE_BUILD_NUM"
             docker tag botloader/bl-schedulerwithworker:latest "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
+            docker tag botloader/bl-jobs:latest "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
             # push
             docker push "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
             docker push "botloader/bl-discordbroker:$CIRCLE_BUILD_NUM"
             docker push "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
+            docker push "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
   # publish-backend-images:
   #   resource_class: medium
   #   docker:
