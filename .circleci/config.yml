@@ -36,7 +36,7 @@ jobs:
       - run:
           name: Build webapi
           command: |
-            docker build -t botloader/bl-webapi -f cmd/webapi/Dockerfile
+            docker build -t botloader/bl-webapi -f cmd/webapi/Dockerfile .
       - run:
           name: Build jobs
           command: |
