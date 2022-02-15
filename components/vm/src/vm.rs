@@ -156,7 +156,11 @@ impl Vm {
             module_loader: Some(module_manager),
             // yeah i have no idea what these values needs to be aligned to, but this seems to work so whatever
             // if it breaks when you update deno or v8 try different values until it works, if only they'd document the alignment requirements somewhere...
-            create_params: Some(CreateParams::default().heap_limits(512 * 1024, 60 * 512 * 1024)),
+            create_params: Some(
+                CreateParams::default()
+                    .heap_limits(512 * 1024, 60 * 512 * 1024)
+                    .allow_atomics_wait(false),
+            ),
             startup_snapshot: Some(Snapshot::Static(crate::BOTLOADER_CORE_SNAPSHOT)),
             js_error_create_fn: Some(create_err_fn),
             ..Default::default()
