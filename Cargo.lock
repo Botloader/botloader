@@ -3101,7 +3101,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "chrono",
- "dashmap 4.0.2",
+ "dashmap 5.1.0",
  "oauth2",
  "rand 0.8.5",
  "serde",
