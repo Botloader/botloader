@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # swc = "0.24"
-swc_common = {version = "0.14", features=["sourcemap"]}
+swc_common = {version = "0.17.5", features=["sourcemap"]}
 # swc_ecma_parser = "0.60"
-swc_ecmascript = {version = "0.89.0", features=["codegen", "parser", "transforms", "typescript", "visit", "compat"]}
+swc_ecmascript = {version = "0.114.2", features=["codegen", "parser", "transforms", "typescript", "visit", "compat"]}
 sourcemap = "6.0"

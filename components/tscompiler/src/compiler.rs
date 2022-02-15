@@ -13,7 +13,7 @@ use swc_ecmascript::{
     parser::TsConfig,
     transforms::{
         compat::{self, es2020::export_namespace_from},
-        fixer, helpers, resolver_with_mark,
+        fixer, helpers, hygiene, resolver_with_mark,
         typescript::strip,
     },
 };
@@ -71,11 +71,12 @@ fn compile_typescript_inner(input: &str) -> Result<CompiledItem, String> {
             };
 
             let mut pass = chain!(
-                compat::es2021::es2021(),
-                strip(),
-                export_namespace_from(),
                 resolver_with_mark(global_mark),
-                compat::reserved_words::reserved_words(),
+                strip(global_mark),
+                hygiene(),
+                // compat::es2021::es2021(),
+                // export_namespace_from(),
+                // compat::reserved_words::reserved_words(),
                 fixer(None),
             );
 
