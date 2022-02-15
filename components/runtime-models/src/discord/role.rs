@@ -25,7 +25,7 @@ impl From<&TwilightRole> for Role {
         Self {
             color: v.color,
             hoist: v.hoist,
-            icon: v.icon.clone(),
+            icon: v.icon.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
             managed: v.managed,
             mentionable: v.mentionable,
@@ -43,7 +43,7 @@ impl From<TwilightRole> for Role {
         Self {
             color: v.color,
             hoist: v.hoist,
-            icon: v.icon,
+            icon: v.icon.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
             managed: v.managed,
             mentionable: v.mentionable,

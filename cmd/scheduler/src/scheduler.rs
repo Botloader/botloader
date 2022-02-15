@@ -9,6 +9,7 @@ use crate::{
     command_manager,
     guild_handler::{GuildCommand, GuildHandle, GuildHandler, GuildHandlerEvent},
 };
+use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::{GuildEvent, HelloData};
 use std::future::Future;
 use tokio::sync::mpsc;
@@ -33,7 +34,7 @@ pub struct Scheduler {
     logger: guild_logger::GuildLogger,
     cmd_manager_handle: command_manager::Handle,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
-    discord_client: Arc<twilight_http::Client>,
+    discord_config: Arc<DiscordConfig>,
 
     // guilds that had their vm's forcibly shut down
     shutdown_guilds: HashSet<GuildId>,
@@ -46,14 +47,14 @@ impl Scheduler {
         logger: guild_logger::GuildLogger,
         cmd_manager_handle: command_manager::Handle,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
-        discord_client: Arc<twilight_http::Client>,
+        discord_config: Arc<DiscordConfig>,
     ) -> Self {
         Self {
             stores,
             logger,
             cmd_manager_handle,
             worker_pool,
-            discord_client,
+            discord_config,
 
             guilds: HashMap::new(),
             cmd_rx: scheduler_rx,
@@ -268,7 +269,7 @@ impl Scheduler {
                 self.logger.clone(),
                 self.worker_pool.clone(),
                 self.cmd_manager_handle.clone(),
-                self.discord_client.clone(),
+                self.discord_config.clone(),
             );
             e.insert(handle);
             return self.guilds.get(&guild_id).unwrap();

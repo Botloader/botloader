@@ -1,6 +1,7 @@
 use std::future::Future;
 use std::{cell::RefCell, num::NonZeroU32, rc::Rc, sync::Arc};
 
+use common::DiscordConfig;
 use deno_core::{op_sync, Extension, OpState, ResourceId, ResourceTable};
 use governor::{
     clock::DefaultClock,
@@ -40,7 +41,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             state.put(RuntimeContext {
                 guild_id: ctx.guild_id,
                 bot_state: ctx.bot_state.clone(),
-                dapi: ctx.dapi.clone(),
+                discord_config: ctx.discord_config.clone(),
                 role: ctx.role,
                 guild_logger: ctx.guild_logger.clone(),
                 script_http_client_proxy: ctx.script_http_client_proxy.clone(),
@@ -91,7 +92,7 @@ pub fn disabled_op(_state: &mut OpState, _args: JsValue, _: ()) -> Result<(), An
 pub struct RuntimeContext {
     pub guild_id: GuildId,
     pub bot_state: dbrokerapi::state_client::Client,
-    pub dapi: Arc<twilight_http::Client>,
+    pub discord_config: Arc<DiscordConfig>,
     pub role: VmRole,
     pub guild_logger: GuildLogger,
     pub script_http_client_proxy: Option<String>,
@@ -106,7 +107,7 @@ pub struct RuntimeContext {
 pub struct CreateRuntimeContext {
     pub guild_id: GuildId,
     pub bot_state: dbrokerapi::state_client::Client,
-    pub dapi: Arc<twilight_http::Client>,
+    pub discord_config: Arc<DiscordConfig>,
     pub role: VmRole,
     pub guild_logger: GuildLogger,
     pub script_http_client_proxy: Option<String>,

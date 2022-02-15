@@ -130,7 +130,11 @@ impl Broker {
                     .add_update_joined_guild(stores::config::JoinedGuild {
                         id: gc.id,
                         name: gc.name.clone(),
-                        icon: gc.icon.clone().unwrap_or_default(),
+                        icon: gc
+                            .icon
+                            .as_ref()
+                            .map(ToString::to_string)
+                            .unwrap_or_default(),
                         owner_id: gc.owner_id,
                         left_at: None,
                     })

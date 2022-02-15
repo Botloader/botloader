@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use common::DiscordConfig;
 use guild_logger::{GuildLogger, LogEntry};
 use stores::config::Script;
 use tokio::sync::mpsc;
@@ -28,7 +29,7 @@ impl Handle {
 
 pub struct Manager {
     config_store: Arc<dyn scheduler::Store>,
-    discord_client: Arc<twilight_http::Client>,
+    discord_config: Arc<DiscordConfig>,
     rcv_loaded_script: mpsc::UnboundedReceiver<LoadedScript>,
     pending_checks: Vec<PendingCheckGroup>,
     guild_logger: GuildLogger,
@@ -36,7 +37,7 @@ pub struct Manager {
 
 pub fn create_manager_pair(
     config_store: Arc<dyn scheduler::Store>,
-    discord_client: Arc<twilight_http::Client>,
+    discord_config: Arc<DiscordConfig>,
     guild_logger: GuildLogger,
 ) -> (Manager, Handle) {
     let (send, rcv) = mpsc::unbounded_channel();
@@ -44,7 +45,7 @@ pub fn create_manager_pair(
     (
         Manager {
             config_store,
-            discord_client,
+            discord_config,
             rcv_loaded_script: rcv,
             pending_checks: Vec::new(),
             guild_logger,
@@ -145,10 +146,10 @@ impl Manager {
             ),
         ));
 
-        if let Err(err) = self
-            .discord_client
+        let interaction_client = self.discord_config.interaction_client();
+
+        if let Err(err) = interaction_client
             .set_guild_commands(guild_id, &merged)
-            .unwrap()
             .exec()
             .await
         {
@@ -193,7 +194,7 @@ pub fn to_twilight_commands(
             default_permission: None,
             id: None,
             kind: TwilightCommandType::ChatInput,
-            version: twilight_model::id::CommandVersionId::new(1).unwrap(),
+            version: twilight_model::id::CommandVersionId::new(1),
         })
         .collect::<Vec<_>>();
 
@@ -265,7 +266,7 @@ fn make_unknown_group(guild_id: GuildId, name: String) -> TwilightCommand {
         kind: TwilightCommandType::ChatInput,
         options: Vec::new(),
         name,
-        version: twilight_model::id::CommandVersionId::new(1).unwrap(),
+        version: twilight_model::id::CommandVersionId::new(1),
     }
 }
 
@@ -292,7 +293,7 @@ pub fn group_to_twilight_command(guild_id: GuildId, group: &CommandGroup) -> Twi
         kind: TwilightCommandType::ChatInput,
         name: group.name.clone(),
         options: opts,
-        version: twilight_model::id::CommandVersionId::new(1).unwrap(),
+        version: twilight_model::id::CommandVersionId::new(1),
     }
 }
 

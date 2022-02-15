@@ -13,4 +13,4 @@ dbrokerapi = {path="../../components/dbrokerapi"}
 tracing = "0.1"
 clap = {version = "3.0.14", features = ["derive", "env"]}
 tokio = { version = "1", features = ["full"] }
-twilight-http = {version = "0.8", features = ["tracing"]}
+twilight-http = {version = "0.9.1", features = ["tracing"]}

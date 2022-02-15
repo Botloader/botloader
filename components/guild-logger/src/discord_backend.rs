@@ -1,22 +1,20 @@
 use std::sync::Arc;
 
 use crate::{LogEntry, LogLevel};
+use common::DiscordConfig;
 use stores::config::ConfigStore;
 use tracing::error;
 
 pub struct DiscordLogger {
-    discord_client: Arc<twilight_http::Client>,
+    discord_config: Arc<DiscordConfig>,
     config_store: Arc<dyn ConfigStore>,
 }
 
 impl DiscordLogger {
-    pub fn new(
-        discord_client: Arc<twilight_http::Client>,
-        config_store: Arc<dyn ConfigStore>,
-    ) -> Self {
+    pub fn new(discord_config: Arc<DiscordConfig>, config_store: Arc<dyn ConfigStore>) -> Self {
         Self {
             config_store,
-            discord_client,
+            discord_config,
         }
     }
 }
@@ -44,7 +42,8 @@ impl crate::GuildLoggerBackend for DiscordLogger {
 
         if let Some(channel_id) = conf.error_channel_id {
             if let Ok(next) = self
-                .discord_client
+                .discord_config
+                .client
                 .create_message(channel_id)
                 .content(&message)
             {

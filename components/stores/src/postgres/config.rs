@@ -39,7 +39,7 @@ impl Postgres {
             DbScript,
             "SELECT id, guild_id, name, original_source, enabled, contributes_commands, \
              contributes_interval_timers FROM guild_scripts WHERE guild_id = $1 AND id = $2;",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
             id
         )
         .fetch_one(&self.pool)
@@ -49,7 +49,7 @@ impl Postgres {
     async fn get_guild_script_count(&self, guild_id: GuildId) -> ConfigStoreResult<i64> {
         let result = sqlx::query!(
             "SELECT count(*) FROM guild_scripts WHERE guild_id = $1;",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -103,7 +103,7 @@ impl crate::config::ConfigStore for Postgres {
                 RETURNING id, guild_id, name, original_source, enabled, contributes_commands, \
              contributes_interval_timers;
             ",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
             script.name,
             script.original_source,
             script.enabled,
@@ -133,7 +133,7 @@ impl crate::config::ConfigStore for Postgres {
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
                  contributes_interval_timers;
                 ",
-                guild_id.0.get() as i64,
+                guild_id.get() as i64,
                 script.id as i64,
                 script.original_source,
                 script.enabled,
@@ -152,7 +152,7 @@ impl crate::config::ConfigStore for Postgres {
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
                  contributes_interval_timers;
                 ",
-                guild_id.0.get() as i64,
+                guild_id.get() as i64,
                 script.id as i64,
                 script.original_source,
                 script.enabled,
@@ -183,7 +183,7 @@ impl crate::config::ConfigStore for Postgres {
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
              contributes_interval_timers;
                 ",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
             script_id as i64,
             commands_enc,
             intervals_enc,
@@ -197,7 +197,7 @@ impl crate::config::ConfigStore for Postgres {
     async fn del_script(&self, guild_id: GuildId, script_name: String) -> ConfigStoreResult<()> {
         let res = sqlx::query!(
             "DELETE FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
             script_name
         )
         .execute(&self.pool)
@@ -215,7 +215,7 @@ impl crate::config::ConfigStore for Postgres {
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
              contributes_interval_timers FROM guild_scripts WHERE guild_id = $1",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -231,7 +231,7 @@ impl crate::config::ConfigStore for Postgres {
             DbGuildMetaConfig,
             "SELECT guild_id, error_channel_id FROM guild_meta_configs
         WHERE guild_id = $1;",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
         )
         .fetch_one(&self.pool)
         .await
@@ -252,9 +252,9 @@ impl crate::config::ConfigStore for Postgres {
             ON CONFLICT (guild_id) DO UPDATE SET
             error_channel_id = $2
             RETURNING guild_id, error_channel_id;",
-            conf.guild_id.0.get() as i64,
+            conf.guild_id.get() as i64,
             conf.error_channel_id
-                .map(|e| e.0.get() as i64)
+                .map(|e| e.get() as i64)
                 .unwrap_or_default(),
         )
         .fetch_one(&self.pool)
@@ -271,10 +271,10 @@ impl crate::config::ConfigStore for Postgres {
             ON CONFLICT (id) DO UPDATE SET 
             name = $2, icon = $3, owner_id = $4, left_at = null
             RETURNING id, name, icon, owner_id, left_at;",
-            guild.id.0.get() as i64,
+            guild.id.get() as i64,
             &guild.name,
             &guild.icon,
-            guild.owner_id.0.get() as i64,
+            guild.owner_id.get() as i64,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -295,7 +295,7 @@ impl crate::config::ConfigStore for Postgres {
                 ELSE left_at
                 END
             WHERE id = $1 RETURNING id, name, icon, owner_id, left_at;",
-            guild_id.0.get() as i64,
+            guild_id.get() as i64,
             left
         )
         .fetch_one(&self.pool)
@@ -309,9 +309,7 @@ impl crate::config::ConfigStore for Postgres {
             DbJoinedGuild,
             "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1) AND \
              left_at IS NULL",
-            &ids.into_iter()
-                .map(|e| e.0.get() as i64)
-                .collect::<Vec<_>>(),
+            &ids.into_iter().map(|e| e.get() as i64).collect::<Vec<_>>(),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -327,9 +325,7 @@ impl crate::config::ConfigStore for Postgres {
             DbJoinedGuild,
             "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE NOT id = ANY ($1) \
              AND left_at IS NULL",
-            &ids.into_iter()
-                .map(|e| e.0.get() as i64)
-                .collect::<Vec<_>>(),
+            &ids.into_iter().map(|e| e.get() as i64).collect::<Vec<_>>(),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -416,9 +412,9 @@ struct DbGuildMetaConfig {
 impl From<DbGuildMetaConfig> for GuildMetaConfig {
     fn from(mc: DbGuildMetaConfig) -> Self {
         Self {
-            guild_id: GuildId::new(mc.guild_id as u64).unwrap(),
+            guild_id: GuildId::new(mc.guild_id as u64),
             error_channel_id: if mc.error_channel_id != 0 {
-                Some(ChannelId::new(mc.error_channel_id as u64).unwrap())
+                Some(ChannelId::new(mc.error_channel_id as u64))
             } else {
                 None
             },
@@ -437,10 +433,10 @@ pub struct DbJoinedGuild {
 impl From<DbJoinedGuild> for JoinedGuild {
     fn from(g: DbJoinedGuild) -> Self {
         Self {
-            id: GuildId::new(g.id as u64).unwrap(),
+            id: GuildId::new(g.id as u64),
             name: g.name,
             icon: g.icon,
-            owner_id: UserId::new(g.owner_id as u64).unwrap(),
+            owner_id: UserId::new(g.owner_id as u64),
             left_at: g.left_at,
         }
     }

@@ -1,8 +1,10 @@
+use std::str::FromStr;
+
 use crate::web::{gen_token, DiscordOauthToken, Session, SessionType};
 
 use super::Postgres;
 use async_trait::async_trait;
-use twilight_model::{id::UserId, user::CurrentUser};
+use twilight_model::{id::UserId, user::CurrentUser, util::ImageHash};
 
 const USER_API_KEY_LIMIT: i64 = 100;
 
@@ -22,7 +24,7 @@ impl Postgres {
     async fn get_api_key_count(&self, user_id: UserId) -> Result<i64, Error> {
         let result = sqlx::query!(
             "SELECT count(*) FROM web_sessions WHERE user_id = $1 AND kind = $2;",
-            user_id.0.get() as i64,
+            user_id.get() as i64,
             i16::from(SessionType::ApiKey),
         )
         .fetch_one(&self.pool)
@@ -107,7 +109,7 @@ impl crate::web::SessionStore for Postgres {
             user.id.get() as i64,
             user.discriminator as i16,
             user.name,
-            user.avatar,
+            user.avatar.as_ref().map(ToString::to_string),
         )
         .fetch_one(&self.pool)
         .await?;
@@ -230,7 +232,7 @@ impl From<DbOauthToken> for DiscordOauthToken {
             access_token: db_t.discord_bearer_token,
             refresh_token: db_t.discord_refresh_token,
             token_expires: db_t.discord_token_expires_at,
-            user_id: UserId::new(db_t.user_id as u64).unwrap(),
+            user_id: UserId::new(db_t.user_id as u64),
         }
     }
 }
@@ -249,7 +251,7 @@ impl From<DbSession> for CurrentUser {
     fn from(db_u: DbSession) -> Self {
         Self {
             avatar: if !db_u.avatar.is_empty() {
-                Some(db_u.avatar)
+                Some(ImageHash::from_str(&db_u.avatar).ok()).flatten()
             } else {
                 None
             },
@@ -257,7 +259,7 @@ impl From<DbSession> for CurrentUser {
             discriminator: db_u.discriminator as u16,
             email: None,
             flags: None,
-            id: UserId::new(db_u.user_id as u64).unwrap(),
+            id: UserId::new(db_u.user_id as u64),
             locale: None,
             mfa_enabled: false,
             name: db_u.username,

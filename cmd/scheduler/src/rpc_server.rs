@@ -48,7 +48,7 @@ impl proto::bot_service_server::BotService for Server {
         &self,
         request: tonic::Request<proto::GuildScriptSpecifier>,
     ) -> Result<Response<proto::Empty>, Status> {
-        let guild_id = GuildId::new(request.into_inner().guild_id).unwrap();
+        let guild_id = GuildId::new(request.into_inner().guild_id);
 
         let _ = self
             .scheduler_tx
@@ -63,7 +63,7 @@ impl proto::bot_service_server::BotService for Server {
         &self,
         request: tonic::Request<proto::GuildSpecifier>,
     ) -> Result<Response<Self::StreamGuildLogsStream>, Status> {
-        let guild_id = GuildId::new(request.into_inner().guild_id).unwrap();
+        let guild_id = GuildId::new(request.into_inner().guild_id);
 
         let mut rx = self.log_subscriber.subscribe(guild_id);
         let out = async_stream::try_stream! {

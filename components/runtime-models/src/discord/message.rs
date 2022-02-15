@@ -124,9 +124,9 @@ pub struct MessageApplication {
 impl From<twilight_model::channel::message::MessageApplication> for MessageApplication {
     fn from(v: twilight_model::channel::message::MessageApplication) -> Self {
         Self {
-            cover_image: v.cover_image,
+            cover_image: v.cover_image.as_ref().map(ToString::to_string),
             description: v.description,
-            icon: v.icon,
+            icon: v.icon.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
             name: v.name,
         }
@@ -280,7 +280,7 @@ pub struct Mention {
 impl From<twilight_model::channel::message::Mention> for Mention {
     fn from(v: twilight_model::channel::message::Mention) -> Self {
         Self {
-            avatar: v.avatar,
+            avatar: v.avatar.as_ref().map(ToString::to_string),
             bot: v.bot,
             discriminator: v.discriminator,
             id: v.id.to_string(),

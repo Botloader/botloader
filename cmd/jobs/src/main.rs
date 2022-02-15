@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use clap::{Args, Parser, Subcommand};
 use common::DiscordConfig;
 use dbrokerapi::state_client::ConnectedGuildsResponse;
@@ -60,7 +62,7 @@ struct DeleteSettings {
 async fn scan_for_left_guilds(
     conf: Config,
     db: Postgres,
-    discord_config: DiscordConfig,
+    discord_config: Arc<DiscordConfig>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!("Scanning for left guilds");
 

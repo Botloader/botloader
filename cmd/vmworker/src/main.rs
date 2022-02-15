@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
+use common::DiscordConfig;
 use guild_logger::GuildLogger;
 use runtime::{CreateRuntimeContext, RuntimeEvent};
 use scheduler_worker_rpc::{
@@ -60,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         scheduler_tx,
         postgres_store,
         logger,
-        discord_config.client.clone(),
+        discord_config,
         config.common.user_script_http_proxy.clone(),
         broker_client,
     );
@@ -101,7 +102,7 @@ struct Worker {
     runtime_evt_tx: mpsc::UnboundedSender<RuntimeEvent>,
 
     guild_logger: guild_logger::GuildLogger,
-    twilight_http_client: Arc<twilight_http::Client>,
+    discord_config: Arc<DiscordConfig>,
     user_http_proxy: Option<String>,
     broker_client: dbrokerapi::state_client::Client,
 
@@ -115,7 +116,7 @@ impl Worker {
         scheduler_tx: mpsc::UnboundedSender<WorkerMessage>,
         stores: Arc<Postgres>,
         guild_logger: GuildLogger,
-        twilight_http_client: Arc<twilight_http::Client>,
+        discord_config: Arc<DiscordConfig>,
         user_http_proxy: Option<String>,
         broker_client: dbrokerapi::state_client::Client,
     ) -> Self {
@@ -128,7 +129,7 @@ impl Worker {
             runtime_evt_tx,
             stores,
             guild_logger,
-            twilight_http_client,
+            discord_config,
             user_http_proxy,
             broker_client,
             current_state: None,
@@ -306,7 +307,7 @@ impl Worker {
 
                 let rt_ctx = CreateRuntimeContext {
                     bot_state: self.broker_client.clone(),
-                    dapi: self.twilight_http_client.clone(),
+                    discord_config: self.discord_config.clone(),
                     guild_id: req.guild_id,
                     role: VmRole::Main,
                     guild_logger: self.guild_logger.clone(),

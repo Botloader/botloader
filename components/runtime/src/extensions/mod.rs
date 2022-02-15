@@ -17,7 +17,7 @@ pub(crate) async fn get_guild_channel(
     rt_ctx: &RuntimeContext,
     channel_id_str: &str,
 ) -> Result<GuildChannel, AnyError> {
-    let channel_id = if let Some(channel_id) = ChannelId::new(channel_id_str.parse()?) {
+    let channel_id = if let Some(channel_id) = ChannelId::new_checked(channel_id_str.parse()?) {
         channel_id
     } else {
         return Err(anyhow::anyhow!("invalid channel id"));
@@ -37,7 +37,8 @@ pub(crate) async fn get_guild_channel(
         }
         None => {
             let channel = rt_ctx
-                .dapi
+                .discord_config
+                .client
                 .channel(channel_id)
                 .exec()
                 .await?
@@ -59,7 +60,7 @@ pub(crate) async fn get_guild_channel(
 }
 
 pub(crate) fn parse_str_snowflake_id(id_str: &str) -> Result<GenericId, AnyError> {
-    if let Some(id) = GenericId::new(id_str.parse()?) {
+    if let Some(id) = GenericId::new_checked(id_str.parse()?) {
         Ok(id)
     } else {
         Err(anyhow::anyhow!("invalid channel id"))

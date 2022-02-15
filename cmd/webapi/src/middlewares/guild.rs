@@ -77,7 +77,7 @@ where
             let mut span = None;
 
             if let (Some(s), Ok(gp)) = (session, guild_path) {
-                if let Some(guild_id) = GuildId::new(gp.guild) {
+                if let Some(guild_id) = GuildId::new_checked(gp.guild) {
                     if let Some(g) = fetch_guild(s, guild_id).await? {
                         span = Some(tracing::debug_span!("guild", guild_id=%g.id));
 

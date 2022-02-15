@@ -25,7 +25,7 @@ pub struct User {
 impl From<twilight_model::user::User> for User {
     fn from(v: twilight_model::user::User) -> Self {
         Self {
-            avatar: v.avatar,
+            avatar: v.avatar.as_ref().map(ToString::to_string),
             bot: v.bot,
             discriminator: v.discriminator,
             email: v.email,

@@ -16,5 +16,5 @@ async-sse = "5.1"
 serde_json = "1.0"
 tarpc = { version = "0.27", features = ["tokio1"] }
 
-twilight-model = "0.8"
-twilight-cache-inmemory = "0.8"
+twilight-model = "0.9.1"
+twilight-cache-inmemory = "0.9.1"

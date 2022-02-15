@@ -103,14 +103,15 @@ pub async fn op_get_message(
     };
 
     let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
-    let message_id = if let Some(id) = MessageId::new(args.message_id.parse()?) {
+    let message_id = if let Some(id) = MessageId::new_checked(args.message_id.parse()?) {
         id
     } else {
         return Err(anyhow::anyhow!("invalid message id"));
     };
 
     let message = rt_ctx
-        .dapi
+        .discord_config
+        .client
         .message(channel.id(), message_id)
         .exec()
         .await?
@@ -145,13 +146,14 @@ pub async fn op_get_messages(
     };
 
     let req = rt_ctx
-        .dapi
+        .discord_config
+        .client
         .channel_messages(channel.id())
         .limit(limit as u64)
         .unwrap();
 
     let res = if let Some(before) = args.before {
-        let message_id = if let Some(id) = MessageId::new(before.parse()?) {
+        let message_id = if let Some(id) = MessageId::new_checked(before.parse()?) {
             id
         } else {
             return Err(anyhow::anyhow!("invalid message id"));
@@ -159,7 +161,7 @@ pub async fn op_get_messages(
 
         req.before(message_id).exec().await
     } else if let Some(after) = args.after {
-        let message_id = if let Some(id) = MessageId::new(after.parse()?) {
+        let message_id = if let Some(id) = MessageId::new_checked(after.parse()?) {
             id
         } else {
             return Err(anyhow::anyhow!("invalid message id"));
@@ -195,7 +197,8 @@ pub async fn op_create_channel_message(
         .collect::<Vec<_>>();
 
     let mut mc = rt_ctx
-        .dapi
+        .discord_config
+        .client
         .create_message(channel.id())
         .embeds(&maybe_embeds)?;
 
@@ -229,8 +232,9 @@ pub async fn op_edit_channel_message(
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
     let mut mc = rt_ctx
-        .dapi
-        .update_message(channel.id(), message_id.0.into())
+        .discord_config
+        .client
+        .update_message(channel.id(), message_id.cast())
         .content(args.fields.content.as_deref())?;
 
     if let Some(embeds) = &maybe_embeds {
@@ -262,14 +266,14 @@ pub async fn op_create_followup_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
-    let mut mc = rt_ctx
-        .dapi
+    let interaction_client = rt_ctx.discord_config.interaction_client();
+
+    let mut mc = interaction_client
         .create_followup_message(&args.interaction_token)
-        .unwrap()
-        .embeds(&maybe_embeds);
+        .embeds(&maybe_embeds)?;
 
     if let Some(content) = &args.fields.content {
-        mc = mc.content(content)
+        mc = mc.content(content)?
     }
 
     Ok(mc.exec().await?.model().await?.into())
@@ -289,8 +293,9 @@ pub async fn op_delete_message(
     let message_id = parse_str_snowflake_id(&args.message_id)?;
 
     rt_ctx
-        .dapi
-        .delete_message(channel.id(), message_id.0.into())
+        .discord_config
+        .client
+        .delete_message(channel.id(), message_id.cast())
         .exec()
         .await?;
 
@@ -312,11 +317,12 @@ pub async fn op_delete_messages_bulk(
         .message_ids
         .iter()
         .filter_map(|v| parse_str_snowflake_id(v).ok())
-        .map(|v| v.0.into())
+        .map(|v| v.cast())
         .collect::<Vec<_>>();
 
     rt_ctx
-        .dapi
+        .discord_config
+        .client
         .delete_messages(channel.id(), &message_ids)
         .exec()
         .await?;
@@ -402,7 +408,7 @@ pub async fn op_get_members(
 
     let ids = user_ids
         .into_iter()
-        .map(|v| v.parse().map(UserId::new).ok().flatten())
+        .map(|v| v.parse().map(UserId::new_checked).ok().flatten())
         .collect::<Vec<_>>();
 
     let mut res = Vec::new();
@@ -410,7 +416,8 @@ pub async fn op_get_members(
         if let Some(id) = item {
             // fall back to http api
             let member = rt_ctx
-                .dapi
+                .discord_config
+                .client
                 .guild_member(rt_ctx.guild_id, id)
                 .exec()
                 .await?
@@ -437,7 +444,8 @@ pub async fn discord_add_member_role(
     };
 
     rt_ctx
-        .dapi
+        .discord_config
+        .client
         .add_guild_member_role(rt_ctx.guild_id, user_id, role_id)
         .exec()
         .await?;
@@ -456,7 +464,8 @@ pub async fn discord_remove_member_role(
     };
 
     rt_ctx
-        .dapi
+        .discord_config
+        .client
         .remove_guild_member_role(rt_ctx.guild_id, user_id, role_id)
         .exec()
         .await?;
@@ -473,7 +482,10 @@ pub async fn discord_update_member(
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
     };
-    let mut builder = rt_ctx.dapi.update_guild_member(rt_ctx.guild_id, user_id);
+    let mut builder = rt_ctx
+        .discord_config
+        .client
+        .update_guild_member(rt_ctx.guild_id, user_id);
 
     if let Some(maybe_cid) = fields.channel_id {
         builder = builder.channel_id(maybe_cid);

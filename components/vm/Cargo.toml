@@ -12,7 +12,7 @@ stores = {path="../../components/stores"}
 guild-logger = {path="../../components/guild-logger"}
 tscompiler = {path="../../components/tscompiler"}
 
-twilight-model = "0.8"
+twilight-model = "0.9.1"
 
 deno_core = "0.110"
 v8 = "0.36"

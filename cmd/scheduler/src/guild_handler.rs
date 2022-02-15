@@ -5,6 +5,7 @@ use crate::{
     vmworkerpool::WorkerHandle,
 };
 use chrono::{DateTime, Utc};
+use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::{GuildLogger, LogEntry};
 use runtime_models::ops::script::ScriptMeta;
@@ -35,7 +36,7 @@ pub enum GuildCommand {
 pub struct GuildHandler {
     guild_id: GuildId,
 
-    discord_client: Arc<twilight_http::Client>,
+    discord_config: Arc<DiscordConfig>,
     stores: Arc<dyn Store>,
     logger: GuildLogger,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
@@ -59,7 +60,7 @@ impl GuildHandler {
         logger: GuildLogger,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
         cmd_manager_handle: crate::command_manager::Handle,
-        discord_client: Arc<twilight_http::Client>,
+        discord_config: Arc<DiscordConfig>,
     ) -> GuildHandle {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (evt_tx, evt_rx) = mpsc::unbounded_channel();
@@ -80,7 +81,7 @@ impl GuildHandler {
             guild_id,
             logger,
             worker_pool,
-            discord_client,
+            discord_config,
 
             guild_rx: cmd_rx,
             scheduler_tx: evt_tx,
@@ -100,7 +101,7 @@ impl GuildHandler {
         handle
     }
 
-    #[instrument(skip(self), fields(guild_id = self.guild_id.0))]
+    #[instrument(skip(self), fields(guild_id = self.guild_id.get()))]
     async fn run(mut self) {
         self.try_retry_load_scripts().await;
         self.load_contribs().await;
@@ -298,7 +299,7 @@ impl GuildHandler {
             .map(|(k, v)| metrics::Label::new(k, v))
             .collect::<Vec<_>>();
 
-        labels.push(metrics::Label::new("guild_id", self.guild_id.0.to_string()));
+        labels.push(metrics::Label::new("guild_id", self.guild_id.to_string()));
 
         let key = metrics::Key::from_parts(name, labels);
 
@@ -381,8 +382,8 @@ impl GuildHandler {
                     interaction,
                 ) = &interaction.0
                 {
-                    if let Err(err) = self
-                        .discord_client
+                    let interaction_client = self.discord_config.interaction_client();
+                    if let Err(err) = interaction_client
                         .interaction_callback(
                             interaction.id,
                             &interaction.token,

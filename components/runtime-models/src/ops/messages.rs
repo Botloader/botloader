@@ -105,12 +105,12 @@ impl From<AllowedMentions> for TwilightAllowedMentions {
             users: v
                 .users
                 .iter()
-                .filter_map(|s| UserId::new(s.parse().ok()?))
+                .filter_map(|s| UserId::new_checked(s.parse().ok()?))
                 .collect(),
             roles: v
                 .roles
                 .iter()
-                .filter_map(|s| RoleId::new(s.parse().ok()?))
+                .filter_map(|s| RoleId::new_checked(s.parse().ok()?))
                 .collect(),
             replied_user: v.replied_user,
         }

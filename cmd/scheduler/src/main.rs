@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (logger, ig_testing_tracker) = {
         let mut builder = guild_logger::GuildLoggerBuilder::new()
             .add_backend(Arc::new(guild_logger::discord_backend::DiscordLogger::new(
-                discord_config.client.clone(),
+                discord_config.clone(),
                 postgres_store.clone(),
             )))
             .add_backend(guild_log_sub_backend.clone());
@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (manager, cmd_man_handle) = command_manager::create_manager_pair(
         postgres_store.clone(),
-        discord_config.client.clone(),
+        discord_config.clone(),
         logger.clone(),
     );
 
@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         logger,
         cmd_man_handle,
         worker_pool,
-        discord_config.client.clone(),
+        discord_config.clone(),
     );
     let task = tokio::spawn(scheduler.run());
 
