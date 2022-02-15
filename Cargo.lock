@@ -201,20 +201,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-sse"
-version = "5.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e6fa871e4334a622afd6bb2f611635e8083a6f5e2936c0f90f37c7ef9856298"
-dependencies = [
- "async-channel",
- "futures-lite",
- "http-types",
- "log",
- "memchr",
- "pin-project-lite",
-]
-
-[[package]]
 name = "async-std"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -407,7 +393,6 @@ dependencies = [
 name = "botrpc"
 version = "0.1.0"
 dependencies = [
- "async-stream",
  "async-trait",
  "futures",
  "guild-logger",
@@ -533,14 +518,13 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "dotenv",
- "futures-core",
  "metrics",
  "metrics-exporter-prometheus",
  "oauth2",
  "tokio",
  "tracing",
  "tracing-log",
- "tracing-subscriber 0.3.8",
+ "tracing-subscriber",
  "twilight-http",
  "twilight-model",
 ]
@@ -748,12 +732,10 @@ name = "dbrokerapi"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-sse",
  "futures",
  "reqwest",
  "serde",
  "serde_json",
- "tarpc",
  "thiserror",
  "tokio",
  "twilight-cache-inmemory",
@@ -814,7 +796,6 @@ dependencies = [
 name = "discordbroker"
 version = "0.1.0"
 dependencies = [
- "async-stream",
  "axum",
  "axum-metrics-layer",
  "clap",
@@ -827,8 +808,6 @@ dependencies = [
  "simpleproto",
  "stores",
  "tokio",
- "tokio-stream",
- "tonic",
  "tracing",
  "twilight-cache-inmemory",
  "twilight-gateway",
@@ -1211,7 +1190,6 @@ dependencies = [
  "async-trait",
  "common",
  "serde",
- "serde_json",
  "stores",
  "tokio",
  "tracing",
@@ -1335,26 +1313,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "http-types"
-version = "2.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e9b187a72d63adbfba487f48095306ac823049cb504ee195541e91c7775f5ad"
-dependencies = [
- "anyhow",
- "async-channel",
- "base64 0.13.0",
- "futures-lite",
- "infer",
- "pin-project-lite",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "serde_qs",
- "serde_urlencoded",
- "url",
-]
-
-[[package]]
 name = "httparse"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1365,12 +1323,6 @@ name = "httpdate"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
-
-[[package]]
-name = "humantime"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
@@ -1467,12 +1419,6 @@ dependencies = [
  "autocfg",
  "hashbrown 0.9.1",
 ]
-
-[[package]]
-name = "infer"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64e9829a50b42bb782c1df523f78d332fe371b10c661e78b7a3c34b0198e9fac"
 
 [[package]]
 name = "instant"
@@ -1990,23 +1936,6 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
-]
-
-[[package]]
-name = "opentelemetry"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1cf9b1c4e9a6c4de793c632496fa490bdc0e1eea73f0c91394f7b6990935d22"
-dependencies = [
- "async-trait",
- "crossbeam-channel",
- "futures",
- "js-sys",
- "lazy_static",
- "percent-encoding",
- "pin-project",
- "rand 0.8.5",
- "thiserror",
 ]
 
 [[package]]
@@ -2605,7 +2534,6 @@ dependencies = [
  "bytes",
  "chrono",
  "common",
- "cron",
  "dbrokerapi",
  "deno_core",
  "futures",
@@ -2621,7 +2549,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
- "ts-rs",
  "tscompiler",
  "twilight-cache-inmemory",
  "twilight-http",
@@ -2737,7 +2664,6 @@ dependencies = [
  "cron",
  "dbrokerapi",
  "futures",
- "futures-util",
  "guild-logger",
  "metrics",
  "runtime-models",
@@ -2747,7 +2673,6 @@ dependencies = [
  "simpleproto",
  "stores",
  "tokio",
- "tokio-stream",
  "tonic",
  "tracing",
  "twilight-http",
@@ -2896,17 +2821,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7868ad3b8196a8a0aea99a8220b124278ee5320a55e4fde97794b6f85b1a377"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "serde_qs"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7715380eec75f029a4ef7de39a9200e0a63823176b759d055b613f5a87df6a6"
-dependencies = [
- "percent-encoding",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -3685,39 +3599,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20518fe4a4c9acf048008599e464deb21beeae3d3578418951a189c235a7a9a8"
 
 [[package]]
-name = "tarpc"
-version = "0.27.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b85d0a9369a919ba0db919b142a2b704cd207dfc676f7a43c2d105d0bc225487"
-dependencies = [
- "anyhow",
- "fnv",
- "futures",
- "humantime",
- "opentelemetry",
- "pin-project",
- "rand 0.8.5",
- "static_assertions",
- "tarpc-plugins",
- "thiserror",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-opentelemetry",
-]
-
-[[package]]
-name = "tarpc-plugins"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ee42b4e559f17bce0385ebf511a7beb67d5cc33c12c96b7f4e9789919d9c10f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "tempfile"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3922,7 +3803,6 @@ dependencies = [
  "futures-sink",
  "log",
  "pin-project-lite",
- "slab",
  "tokio",
 ]
 
@@ -4071,29 +3951,6 @@ checksum = "a6923477a48e41c1951f1999ef8bb5a3023eb723ceadafe78ffb65dc366761e3"
 dependencies = [
  "lazy_static",
  "log",
- "tracing-core",
-]
-
-[[package]]
-name = "tracing-opentelemetry"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "599f388ecb26b28d9c1b2e4437ae019a7b336018b45ed911458cd9ebf91129f6"
-dependencies = [
- "opentelemetry",
- "tracing",
- "tracing-core",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
-name = "tracing-subscriber"
-version = "0.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
-dependencies = [
- "sharded-slab",
- "thread_local",
  "tracing-core",
 ]
 
@@ -4476,8 +4333,6 @@ dependencies = [
  "stores",
  "tokio",
  "tracing",
- "twilight-cache-inmemory",
- "twilight-gateway",
  "twilight-http",
  "twilight-model",
  "vm",
@@ -4595,18 +4450,15 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
- "base64 0.13.0",
  "botrpc",
  "chrono",
  "clap",
  "common",
- "dashmap 4.0.2",
  "discordoauthwrapper",
  "futures",
  "guild-logger",
  "http-body",
  "oauth2",
- "rand 0.8.5",
  "serde",
  "serde_json",
  "stores",

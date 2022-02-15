@@ -14,7 +14,6 @@ tracing-subscriber = {version = "0.3", features = ["env-filter"]}
 tracing-log = "0.1"
 
 tokio = { version = "1", features = ["full"] }
-futures-core = "0.3"
 dotenv = "0.15"
 clap = {version = "3.0.14", features = ["derive", "env"]}
 oauth2 = "4.1"

@@ -16,10 +16,8 @@ dbrokerapi = {path="../../components/dbrokerapi"}
 botrpc = {path="../../components/botrpc"}
 
 tokio = { version = "1", features = ["full"] }
-tokio-stream  = "0.1"
 tonic = "0.6"
 tracing = "0.1"
-futures-util = "0.3"
 futures = "0.3"
 async-stream = "0.3"
 serde = "1.0"
