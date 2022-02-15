@@ -744,16 +744,16 @@ dependencies = [
 
 [[package]]
 name = "deno_core"
-version = "0.110.0"
+version = "0.118.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffca9c7f3b54e5a63124fc13825d70f20f1c286fcb7440922f86566bc65edd99"
+checksum = "68be6990e070141d1413797b84d8a05d3eb426fa18a9962ecf21d2f045014db4"
 dependencies = [
  "anyhow",
  "futures",
  "indexmap",
- "lazy_static",
  "libc",
  "log",
+ "once_cell",
  "parking_lot 0.11.2",
  "pin-project",
  "serde",
@@ -1228,12 +1228,6 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
-
-[[package]]
-name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
@@ -1412,12 +1406,12 @@ checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
 name = "indexmap"
-version = "1.6.2"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
+checksum = "282a6247722caba404c065016bbfa522806e51714c34f5dfc3e4a3a46fcb4223"
 dependencies = [
  "autocfg",
- "hashbrown 0.9.1",
+ "hashbrown 0.11.2",
 ]
 
 [[package]]
@@ -2848,9 +2842,9 @@ dependencies = [
 
 [[package]]
 name = "serde_v8"
-version = "0.21.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6217b505e32edf22e28516ac16ad36dc783f13053311f5fa11fbe95d47ec633"
+checksum = "27266c014ef9b11fcf7f1a248f25603529432aab4d0ce777d6c6f6aea2b367bb"
 dependencies = [
  "serde",
  "serde_bytes",
@@ -4228,9 +4222,9 @@ checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
 name = "v8"
-version = "0.36.0"
+version = "0.38.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "506523e86ccc15982be412bdde87a142771c139e94a8ecedda1da051a079b81d"
+checksum = "684e95fe02e0acfeaf630df3a1623f6ad02145f9a92c54ceae8a1923319d3273"
 dependencies = [
  "bitflags",
  "fslock",

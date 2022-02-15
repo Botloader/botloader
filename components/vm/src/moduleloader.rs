@@ -1,4 +1,4 @@
-use deno_core::{ModuleLoader, ModuleSource};
+use deno_core::{ModuleLoader, ModuleSource, ModuleType};
 use futures::future::ready;
 use url::Url;
 
@@ -21,6 +21,7 @@ impl ModuleManager {
                 code: e.source.to_string(),
                 module_url_found: module_specifier.to_string(),
                 module_url_specified: module_specifier.to_string(),
+                module_type: ModuleType::JavaScript,
             })
     }
 
@@ -48,6 +49,7 @@ impl ModuleManager {
                 code: source,
                 module_url_found: module_specifier.to_string(),
                 module_url_specified: module_specifier.to_string(),
+                module_type: ModuleType::JavaScript,
             });
         }
 
