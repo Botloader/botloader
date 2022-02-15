@@ -1,4 +1,4 @@
-use std::{convert::Infallible, sync::Arc};
+use std::sync::Arc;
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -159,15 +159,15 @@ async fn todo_route() -> &'static str {
     "todo"
 }
 
-fn handle_mw_err_internal_err(err: BoxError) -> Result<impl IntoResponse, Infallible> {
+async fn handle_mw_err_internal_err(err: BoxError) -> impl IntoResponse {
     error!("internal error occured: {}", err);
 
-    Ok(ApiErrorResponse::InternalError)
+    ApiErrorResponse::InternalError
 }
 
-fn handle_mw_err_no_auth(err: BoxError) -> Result<impl IntoResponse, Infallible> {
+async fn handle_mw_err_no_auth(err: BoxError) -> impl IntoResponse {
     match err.downcast::<NoSession>() {
-        Ok(_) => Ok(ApiErrorResponse::SessionExpired),
-        Err(_) => Ok(ApiErrorResponse::InternalError),
+        Ok(_) => ApiErrorResponse::SessionExpired,
+        Err(_) => ApiErrorResponse::InternalError,
     }
 }

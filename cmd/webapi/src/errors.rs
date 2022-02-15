@@ -1,5 +1,5 @@
 use axum::{
-    body::Body,
+    body::{self, BoxBody},
     http::{header, Response, StatusCode},
     response::IntoResponse,
 };
@@ -37,10 +37,7 @@ impl ApiErrorResponse {
 }
 
 impl IntoResponse for ApiErrorResponse {
-    type Body = Body;
-    type BodyError = <Self::Body as axum::body::HttpBody>::Error;
-
-    fn into_response(self) -> Response<Self::Body> {
+    fn into_response(self) -> Response<BoxBody> {
         let (resp_code, err_code, msg) = self.public_desc();
 
         let body = json!({
@@ -52,7 +49,7 @@ impl IntoResponse for ApiErrorResponse {
         Response::builder()
             .status(resp_code)
             .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(body))
+            .body(body::boxed(body::Full::from(body)))
             .unwrap()
     }
 }

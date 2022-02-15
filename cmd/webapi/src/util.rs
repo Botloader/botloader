@@ -1,7 +1,5 @@
-use std::convert::Infallible;
-
 use axum::{
-    body::Bytes,
+    body::{self, BoxBody},
     http::{Response, StatusCode},
     response::IntoResponse,
 };
@@ -10,13 +8,10 @@ use http_body::Empty;
 pub struct EmptyResponse;
 
 impl IntoResponse for EmptyResponse {
-    type Body = Empty<Bytes>;
-    type BodyError = Infallible;
-
-    fn into_response(self) -> axum::http::Response<Self::Body> {
+    fn into_response(self) -> axum::http::Response<BoxBody> {
         Response::builder()
             .status(StatusCode::NO_CONTENT)
-            .body(Empty::new())
+            .body(body::boxed(Empty::new()))
             .unwrap()
     }
 }

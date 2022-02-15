@@ -23,9 +23,9 @@ async-trait = "0.1"
 futures= "0.3"
 chrono = "0.4"
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.1", features = ["trace", "set-header"] }
+tower-http = { version = "0.2.0", features = ["trace", "set-header"] }
 tower = "0.4"
-axum = {version = "0.3", features=["ws"]}
+axum = {version = "0.4.5", features=["ws"]}
 http-body = "0.4"
 tonic = "0.6"
 
