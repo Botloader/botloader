@@ -7,7 +7,7 @@ use crate::timers::{
 use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -31,7 +31,7 @@ impl From<sqlx::Error> for TimerStoreError {
 impl crate::timers::TimerStore for Postgres {
     async fn get_all_interval_timers(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
     ) -> TimerStoreResult<Vec<IntervalTimer>> {
         let res = sqlx::query_as!(
             DbIntervalTimer,
@@ -51,7 +51,7 @@ impl crate::timers::TimerStore for Postgres {
 
     async fn update_interval_timer(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         timer: IntervalTimer,
     ) -> TimerStoreResult<IntervalTimer> {
         let (interval_minutes, interval_cron) = match timer.interval {
@@ -89,7 +89,7 @@ impl crate::timers::TimerStore for Postgres {
 
     async fn del_interval_timer(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_id: u64,
         timer_name: String,
     ) -> TimerStoreResult<bool> {
@@ -107,7 +107,7 @@ impl crate::timers::TimerStore for Postgres {
 
     async fn create_task(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: String,
         unique_key: Option<String>,
         data: serde_json::Value,
@@ -135,7 +135,7 @@ impl crate::timers::TimerStore for Postgres {
 
     async fn get_task_by_id(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         id: u64,
     ) -> TimerStoreResult<Option<ScheduledTask>> {
         let res = sqlx::query_as!(
@@ -152,7 +152,7 @@ impl crate::timers::TimerStore for Postgres {
     }
     async fn get_task_by_key(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: String,
         key: String,
     ) -> TimerStoreResult<Option<ScheduledTask>> {
@@ -172,7 +172,7 @@ impl crate::timers::TimerStore for Postgres {
 
     async fn get_tasks(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: Option<String>,
         id_after: u64,
         limit: usize,
@@ -193,7 +193,7 @@ impl crate::timers::TimerStore for Postgres {
     }
 
     /// Delete a task by the global unique ID
-    async fn del_task_by_id(&self, guild_id: GuildId, id: u64) -> TimerStoreResult<u64> {
+    async fn del_task_by_id(&self, guild_id: Id<GuildMarker>, id: u64) -> TimerStoreResult<u64> {
         let res = sqlx::query!(
             "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND id = $2",
             guild_id.get() as i64,
@@ -209,7 +209,7 @@ impl crate::timers::TimerStore for Postgres {
     /// (does nothing to key = null tasks)
     async fn del_task_by_key(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: String,
         key: String,
     ) -> TimerStoreResult<u64> {
@@ -228,7 +228,7 @@ impl crate::timers::TimerStore for Postgres {
     /// Delete all tasks on a guild, optionally filtered by name
     async fn del_all_tasks(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: Option<String>,
     ) -> TimerStoreResult<u64> {
         let res = sqlx::query!(
@@ -244,7 +244,7 @@ impl crate::timers::TimerStore for Postgres {
 
     async fn get_next_task_time(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         ignore_ids: &[u64],
         names: &[String],
     ) -> TimerStoreResult<Option<DateTime<Utc>>> {
@@ -262,7 +262,7 @@ impl crate::timers::TimerStore for Postgres {
     }
     async fn get_triggered_tasks(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         t: DateTime<Utc>,
         ignore_ids: &[u64],
         names: &[String],
@@ -283,7 +283,7 @@ impl crate::timers::TimerStore for Postgres {
         Ok(res.into_iter().map(Into::into).collect())
     }
 
-    async fn get_task_count(&self, guild_id: GuildId) -> TimerStoreResult<u64> {
+    async fn get_task_count(&self, guild_id: Id<GuildMarker>) -> TimerStoreResult<u64> {
         let res = sqlx::query!(
             "SELECT COUNT(*) FROM scheduled_tasks WHERE guild_id = $1;",
             guild_id.get() as i64,
@@ -294,7 +294,7 @@ impl crate::timers::TimerStore for Postgres {
         Ok(res.count.unwrap_or_default() as u64)
     }
 
-    async fn delete_guild_timer_data(&self, id: GuildId) -> TimerStoreResult<()> {
+    async fn delete_guild_timer_data(&self, id: Id<GuildMarker>) -> TimerStoreResult<()> {
         sqlx::query!(
             "DELETE FROM scheduled_tasks WHERE guild_id = $1;",
             id.get() as i64

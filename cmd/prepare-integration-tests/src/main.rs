@@ -4,12 +4,12 @@ use clap::Parser;
 use stores::config::{ConfigStore, CreateScript};
 use stores::postgres::Postgres;
 use tracing::info;
-use twilight_model::id::GuildId;
+use twilight_model::id::Id;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = RunConfig::parse();
-    let guild_id = GuildId::from(config.guild_id);
+    let guild_id = Id::from(config.guild_id);
     common::init_tracing();
 
     info!("preparing scripts..");

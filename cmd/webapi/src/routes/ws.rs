@@ -13,7 +13,11 @@ use guild_logger::LogEntry;
 use oauth2::basic::BasicClient;
 use serde::{Deserialize, Serialize};
 use stores::web::SessionStore;
-use twilight_model::{guild::Permissions, id::GuildId, user::CurrentUser};
+use twilight_model::{
+    guild::Permissions,
+    id::{marker::GuildMarker, Id},
+    user::CurrentUser,
+};
 
 use crate::{middlewares::LoggedInSession, ConfigData};
 
@@ -253,7 +257,7 @@ impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
         }
     }
 
-    async fn subscribe_logs(&mut self, guild_id: GuildId) -> WsResult {
+    async fn subscribe_logs(&mut self, guild_id: Id<GuildMarker>) -> WsResult {
         if self
             .active_log_streams
             .iter()
@@ -279,7 +283,7 @@ impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
         self.emit_subscriptions().await
     }
 
-    async fn unsubscribe_logs(&mut self, guild_id: GuildId) -> WsResult {
+    async fn unsubscribe_logs(&mut self, guild_id: Id<GuildMarker>) -> WsResult {
         let current_streams = std::mem::replace(&mut self.active_log_streams, SelectAll::new());
 
         self.active_log_streams = current_streams
@@ -300,7 +304,7 @@ impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
         self.send_event(WsEvent::SubscriptionsUpdated(ids)).await
     }
 
-    async fn check_guild_acces(&mut self, guild_id: GuildId) -> WsResult {
+    async fn check_guild_acces(&mut self, guild_id: Id<GuildMarker>) -> WsResult {
         let session = match &self.state {
             WsState::Authorized(s) => s,
             _ => panic!("can't check guild access when not authorized"),
@@ -371,7 +375,7 @@ struct AuthorizedWsState<ST> {
 #[serde(tag = "t", content = "d")]
 enum WsEvent {
     AuthSuccess(CurrentUser),
-    SubscriptionsUpdated(Vec<GuildId>),
+    SubscriptionsUpdated(Vec<Id<GuildMarker>>),
     ScriptLogMessage(LogEntry),
     // GeneralLogMEssage(String)
 }
@@ -383,8 +387,8 @@ enum WsCommand {
     Authorize(String),
 
     // below commands requires authorization
-    SubscribeLogs(GuildId),
-    UnSubscribeLogs(GuildId),
+    SubscribeLogs(Id<GuildMarker>),
+    UnSubscribeLogs(Id<GuildMarker>),
 }
 
 #[derive(Serialize)]
@@ -453,7 +457,7 @@ impl WsCloseReason {
 }
 
 struct GuildLogStream {
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     inner: Pin<Box<dyn Stream<Item = Result<LogEntry, tonic::Status>> + Send>>,
 }
 

@@ -4,7 +4,11 @@ use crate::web::{gen_token, DiscordOauthToken, Session, SessionType};
 
 use super::Postgres;
 use async_trait::async_trait;
-use twilight_model::{id::UserId, user::CurrentUser, util::ImageHash};
+use twilight_model::{
+    id::{marker::UserMarker, Id},
+    user::CurrentUser,
+    util::ImageHash,
+};
 
 const USER_API_KEY_LIMIT: i64 = 100;
 
@@ -21,7 +25,7 @@ pub enum Error {
 }
 
 impl Postgres {
-    async fn get_api_key_count(&self, user_id: UserId) -> Result<i64, Error> {
+    async fn get_api_key_count(&self, user_id: Id<UserMarker>) -> Result<i64, Error> {
         let result = sqlx::query!(
             "SELECT count(*) FROM web_sessions WHERE user_id = $1 AND kind = $2;",
             user_id.get() as i64,
@@ -123,7 +127,10 @@ impl crate::web::SessionStore for Postgres {
         })
     }
 
-    async fn get_oauth_token(&self, user_id: UserId) -> Result<DiscordOauthToken, Self::Error> {
+    async fn get_oauth_token(
+        &self,
+        user_id: Id<UserMarker>,
+    ) -> Result<DiscordOauthToken, Self::Error> {
         Ok(sqlx::query_as!(
             DbOauthToken,
             "SELECT user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at
@@ -167,7 +174,7 @@ impl crate::web::SessionStore for Postgres {
             user: session.into(),
         }))
     }
-    async fn get_all_sessions(&self, user_id: UserId) -> Result<Vec<Session>, Self::Error> {
+    async fn get_all_sessions(&self, user_id: Id<UserMarker>) -> Result<Vec<Session>, Self::Error> {
         let oauth_token: DiscordOauthToken = sqlx::query_as!(
             DbOauthToken,
             "SELECT user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at
@@ -207,7 +214,7 @@ impl crate::web::SessionStore for Postgres {
         Ok(res.rows_affected() > 0)
     }
 
-    async fn del_all_sessions(&self, user_id: UserId) -> Result<(), Self::Error> {
+    async fn del_all_sessions(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error> {
         sqlx::query!(
             "DELETE FROM discord_oauth_tokens WHERE user_id= $1",
             user_id.get() as i64
@@ -232,7 +239,7 @@ impl From<DbOauthToken> for DiscordOauthToken {
             access_token: db_t.discord_bearer_token,
             refresh_token: db_t.discord_refresh_token,
             token_expires: db_t.discord_token_expires_at,
-            user_id: UserId::new(db_t.user_id as u64),
+            user_id: Id::new(db_t.user_id as u64),
         }
     }
 }
@@ -259,7 +266,7 @@ impl From<DbSession> for CurrentUser {
             discriminator: db_u.discriminator as u16,
             email: None,
             flags: None,
-            id: UserId::new(db_u.user_id as u64),
+            id: Id::new(db_u.user_id as u64),
             locale: None,
             mfa_enabled: false,
             name: db_u.username,

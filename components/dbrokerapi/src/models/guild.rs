@@ -5,7 +5,10 @@ use twilight_model::{
         DefaultMessageNotificationLevel, ExplicitContentFilter, MfaLevel, NSFWLevel, Permissions,
         PremiumTier, SystemChannelFlags, VerificationLevel,
     },
-    id::{ApplicationId, ChannelId, GuildId, UserId},
+    id::{
+        marker::{ApplicationMarker, ChannelMarker, GuildMarker, UserMarker},
+        Id,
+    },
 };
 
 /// Represents a cached [`Guild`].
@@ -13,9 +16,9 @@ use twilight_model::{
 /// [`Guild`]: twilight_model::guild::Guild
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
 pub struct BrokerGuild {
-    pub afk_channel_id: Option<ChannelId>,
+    pub afk_channel_id: Option<Id<ChannelMarker>>,
     pub afk_timeout: u64,
-    pub application_id: Option<ApplicationId>,
+    pub application_id: Option<Id<ApplicationMarker>>,
     pub banner: Option<String>,
     pub default_message_notifications: DefaultMessageNotificationLevel,
     pub description: Option<String>,
@@ -23,7 +26,7 @@ pub struct BrokerGuild {
     pub explicit_content_filter: ExplicitContentFilter,
     pub features: Vec<String>,
     pub icon: Option<String>,
-    pub id: GuildId,
+    pub id: Id<GuildMarker>,
     pub joined_at: Option<Timestamp>,
     pub large: bool,
     pub max_members: Option<u64>,
@@ -32,20 +35,20 @@ pub struct BrokerGuild {
     pub mfa_level: MfaLevel,
     pub name: String,
     pub nsfw_level: NSFWLevel,
-    pub owner_id: UserId,
+    pub owner_id: Id<UserMarker>,
     pub owner: Option<bool>,
     pub permissions: Option<Permissions>,
     pub preferred_locale: String,
     pub premium_progress_bar_enabled: bool,
     pub premium_subscription_count: Option<u64>,
     pub premium_tier: PremiumTier,
-    pub rules_channel_id: Option<ChannelId>,
+    pub rules_channel_id: Option<Id<ChannelMarker>>,
     pub splash: Option<String>,
-    pub system_channel_id: Option<ChannelId>,
+    pub system_channel_id: Option<Id<ChannelMarker>>,
     pub system_channel_flags: SystemChannelFlags,
     pub unavailable: bool,
     pub vanity_url_code: Option<String>,
     pub verification_level: VerificationLevel,
-    pub widget_channel_id: Option<ChannelId>,
+    pub widget_channel_id: Option<Id<ChannelMarker>>,
     pub widget_enabled: Option<bool>,
 }

@@ -11,7 +11,11 @@ use std::{
 };
 use tower::{Layer, Service};
 use tracing::Instrument;
-use twilight_model::{guild::Permissions, id::GuildId, user::CurrentUserGuild};
+use twilight_model::{
+    guild::Permissions,
+    id::{marker::GuildMarker, Id},
+    user::CurrentUserGuild,
+};
 
 use stores::web::SessionStore;
 
@@ -77,7 +81,7 @@ where
             let mut span = None;
 
             if let (Some(s), Ok(gp)) = (session, guild_path) {
-                if let Some(guild_id) = GuildId::new_checked(gp.guild) {
+                if let Some(guild_id) = Id::<GuildMarker>::new_checked(gp.guild) {
                     if let Some(g) = fetch_guild(s, guild_id).await? {
                         span = Some(tracing::debug_span!("guild", guild_id=%g.id));
 
@@ -99,7 +103,7 @@ where
 
 async fn fetch_guild<ST: SessionStore + Send + 'static>(
     session: &LoggedInSession<ST>,
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
 ) -> Result<Option<CurrentUserGuild>, BoxError> {
     let user_guilds = session.api_client.current_user_guilds().await?;
     Ok(user_guilds.into_iter().find(|e| e.id == guild_id))

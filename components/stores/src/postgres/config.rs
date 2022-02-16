@@ -2,8 +2,7 @@ use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::postgres::types::PgInterval;
-use std::time::Duration;
-use twilight_model::id::{ChannelId, GuildId, UserId};
+use twilight_model::id::{marker::GuildMarker, Id};
 
 use crate::config::{
     ConfigStoreError, ConfigStoreResult, CreateScript, GuildMetaConfig, JoinedGuild, Script,
@@ -15,7 +14,7 @@ const GUILD_SCRIPT_COUNT_LIMIT: i64 = 100;
 impl Postgres {
     async fn get_db_script_by_name(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_name: &str,
     ) -> ConfigStoreResult<DbScript> {
         match sqlx::query_as!(
@@ -34,7 +33,11 @@ impl Postgres {
         }
     }
 
-    async fn get_db_script_by_id(&self, guild_id: GuildId, id: i64) -> ConfigStoreResult<DbScript> {
+    async fn get_db_script_by_id(
+        &self,
+        guild_id: Id<GuildMarker>,
+        id: i64,
+    ) -> ConfigStoreResult<DbScript> {
         Ok(sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, name, original_source, enabled, contributes_commands, \
@@ -46,7 +49,7 @@ impl Postgres {
         .await?)
     }
 
-    async fn get_guild_script_count(&self, guild_id: GuildId) -> ConfigStoreResult<i64> {
+    async fn get_guild_script_count(&self, guild_id: Id<GuildMarker>) -> ConfigStoreResult<i64> {
         let result = sqlx::query!(
             "SELECT count(*) FROM guild_scripts WHERE guild_id = $1;",
             guild_id.get() as i64,
@@ -62,7 +65,7 @@ impl Postgres {
 impl crate::config::ConfigStore for Postgres {
     async fn get_script(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_name: String,
     ) -> ConfigStoreResult<Script> {
         Ok(self
@@ -73,7 +76,7 @@ impl crate::config::ConfigStore for Postgres {
 
     async fn get_script_by_id(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_id: u64,
     ) -> ConfigStoreResult<Script> {
         Ok(self
@@ -84,7 +87,7 @@ impl crate::config::ConfigStore for Postgres {
 
     async fn create_script(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script: CreateScript,
     ) -> ConfigStoreResult<Script> {
         let count = self.get_guild_script_count(guild_id).await?;
@@ -116,7 +119,7 @@ impl crate::config::ConfigStore for Postgres {
 
     async fn update_script(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script: UpdateScript,
     ) -> ConfigStoreResult<Script> {
         let res = if let Some(contribs) = script.contributes {
@@ -166,7 +169,7 @@ impl crate::config::ConfigStore for Postgres {
 
     async fn update_script_contributes(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_id: u64,
         contribs: ScriptContributes,
     ) -> ConfigStoreResult<Script> {
@@ -194,7 +197,11 @@ impl crate::config::ConfigStore for Postgres {
         Ok(res.into())
     }
 
-    async fn del_script(&self, guild_id: GuildId, script_name: String) -> ConfigStoreResult<()> {
+    async fn del_script(
+        &self,
+        guild_id: Id<GuildMarker>,
+        script_name: String,
+    ) -> ConfigStoreResult<()> {
         let res = sqlx::query!(
             "DELETE FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
             guild_id.get() as i64,
@@ -210,7 +217,7 @@ impl crate::config::ConfigStore for Postgres {
         }
     }
 
-    async fn list_scripts(&self, guild_id: GuildId) -> ConfigStoreResult<Vec<Script>> {
+    async fn list_scripts(&self, guild_id: Id<GuildMarker>) -> ConfigStoreResult<Vec<Script>> {
         let res = sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
@@ -225,7 +232,7 @@ impl crate::config::ConfigStore for Postgres {
 
     async fn get_guild_meta_config(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
     ) -> ConfigStoreResult<Option<GuildMetaConfig>> {
         match sqlx::query_as!(
             DbGuildMetaConfig,
@@ -284,7 +291,7 @@ impl crate::config::ConfigStore for Postgres {
 
     async fn set_guild_left_status(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         left: bool,
     ) -> ConfigStoreResult<JoinedGuild> {
         let db_guild = sqlx::query_as!(
@@ -304,7 +311,10 @@ impl crate::config::ConfigStore for Postgres {
         Ok(db_guild.into())
     }
 
-    async fn get_joined_guilds(&self, ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>> {
+    async fn get_joined_guilds(
+        &self,
+        ids: &[Id<GuildMarker>],
+    ) -> ConfigStoreResult<Vec<JoinedGuild>> {
         let guilds = sqlx::query_as!(
             DbJoinedGuild,
             "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1) AND \
@@ -319,7 +329,7 @@ impl crate::config::ConfigStore for Postgres {
 
     async fn get_joined_guilds_not_in(
         &self,
-        ids: &[GuildId],
+        ids: &[Id<GuildMarker>],
     ) -> ConfigStoreResult<Vec<JoinedGuild>> {
         let guilds = sqlx::query_as!(
             DbJoinedGuild,
@@ -352,7 +362,7 @@ impl crate::config::ConfigStore for Postgres {
         Ok(guilds.into_iter().map(|e| e.into()).collect())
     }
 
-    async fn is_guild_whitelisted(&self, guild_id: GuildId) -> ConfigStoreResult<bool> {
+    async fn is_guild_whitelisted(&self, guild_id: Id<GuildMarker>) -> ConfigStoreResult<bool> {
         let result = sqlx::query!(
             "SELECT count(*) FROM guild_whitelist WHERE guild_id = $1;",
             guild_id.get() as i64,
@@ -363,7 +373,7 @@ impl crate::config::ConfigStore for Postgres {
         Ok(result.count.unwrap_or_default() > 0)
     }
 
-    async fn delete_guild_config_data(&self, id: GuildId) -> ConfigStoreResult<()> {
+    async fn delete_guild_config_data(&self, id: Id<GuildMarker>) -> ConfigStoreResult<()> {
         sqlx::query!("DELETE FROM joined_guilds WHERE id = $1;", id.get() as i64)
             .execute(&self.pool)
             .await?;
@@ -412,9 +422,9 @@ struct DbGuildMetaConfig {
 impl From<DbGuildMetaConfig> for GuildMetaConfig {
     fn from(mc: DbGuildMetaConfig) -> Self {
         Self {
-            guild_id: GuildId::new(mc.guild_id as u64),
+            guild_id: Id::new(mc.guild_id as u64),
             error_channel_id: if mc.error_channel_id != 0 {
-                Some(ChannelId::new(mc.error_channel_id as u64))
+                Some(Id::new(mc.error_channel_id as u64))
             } else {
                 None
             },
@@ -433,10 +443,10 @@ pub struct DbJoinedGuild {
 impl From<DbJoinedGuild> for JoinedGuild {
     fn from(g: DbJoinedGuild) -> Self {
         Self {
-            id: GuildId::new(g.id as u64),
+            id: Id::new(g.id as u64),
             name: g.name,
             icon: g.icon,
-            owner_id: UserId::new(g.owner_id as u64),
+            owner_id: Id::new(g.owner_id as u64),
             left_at: g.left_at,
         }
     }

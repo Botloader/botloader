@@ -13,7 +13,8 @@ use runtime_models::ops::script::ScriptMeta;
 use stores::{bucketstore::BucketStore, config::ConfigStore, timers::TimerStore};
 use tokio::sync::mpsc;
 use tracing::{info, instrument};
-use twilight_model::id::GuildId;
+use twilight_model::id::marker::GuildMarker;
+use twilight_model::id::Id;
 use vm::{vm::VmRole, AnyError, JsValue};
 
 pub mod dispatchevents;
@@ -90,7 +91,7 @@ pub fn disabled_op(_state: &mut OpState, _args: JsValue, _: ()) -> Result<(), An
 
 #[derive(Clone)]
 pub struct RuntimeContext {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub bot_state: dbrokerapi::state_client::Client,
     pub discord_config: Arc<DiscordConfig>,
     pub role: VmRole,
@@ -105,7 +106,7 @@ pub struct RuntimeContext {
 
 #[derive(Clone)]
 pub struct CreateRuntimeContext {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub bot_state: dbrokerapi::state_client::Client,
     pub discord_config: Arc<DiscordConfig>,
     pub role: VmRole,

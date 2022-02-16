@@ -14,7 +14,10 @@ use dbrokerapi::broker_scheduler_rpc::{GuildEvent, HelloData};
 use std::future::Future;
 use tokio::sync::mpsc;
 use tracing::info;
-use twilight_model::{gateway::event::DispatchEvent, id::GuildId};
+use twilight_model::{
+    gateway::event::DispatchEvent,
+    id::{marker::GuildMarker, Id},
+};
 
 pub enum SchedulerCommand {
     BrokerConnected,
@@ -22,14 +25,14 @@ pub enum SchedulerCommand {
     BrokerHello(HelloData),
     DiscordEvent(GuildEvent),
     Shutdown,
-    ReloadGuildScripts(GuildId),
+    ReloadGuildScripts(Id<GuildMarker>),
 }
 
 pub struct Scheduler {
-    guilds: HashMap<GuildId, GuildHandle>,
+    guilds: HashMap<Id<GuildMarker>, GuildHandle>,
     cmd_rx: mpsc::UnboundedReceiver<SchedulerCommand>,
     queued_events: Vec<GuildEvent>,
-    pending_starts: Vec<GuildId>,
+    pending_starts: Vec<Id<GuildMarker>>,
     stores: Arc<dyn Store>,
     logger: guild_logger::GuildLogger,
     cmd_manager_handle: command_manager::Handle,
@@ -37,7 +40,7 @@ pub struct Scheduler {
     discord_config: Arc<DiscordConfig>,
 
     // guilds that had their vm's forcibly shut down
-    shutdown_guilds: HashSet<GuildId>,
+    shutdown_guilds: HashSet<Id<GuildMarker>>,
 }
 
 impl Scheduler {
@@ -116,7 +119,7 @@ impl Scheduler {
         SchedulerNextActionFuture { scheduler: self }.await
     }
 
-    async fn check_queue_start_worker(&mut self, guild_id: GuildId) {
+    async fn check_queue_start_worker(&mut self, guild_id: Id<GuildMarker>) {
         if let Some(index) = self
             .pending_starts
             .iter()
@@ -158,7 +161,7 @@ impl Scheduler {
         }
     }
 
-    fn handle_guild_handler_event(&mut self, guild_id: GuildId, event: GuildHandlerEvent) {
+    fn handle_guild_handler_event(&mut self, guild_id: Id<GuildMarker>, event: GuildHandlerEvent) {
         match event {
             GuildHandlerEvent::ForciblyShutdown => {
                 info!("guild {} forcibly shut down, blacklisting it", guild_id);
@@ -261,7 +264,7 @@ impl Scheduler {
 
     // if this function body looks weird to you, then you're correct, it is weird.
     // reason for that being the borrow checker, try to make it look prettier, i dare you.
-    fn get_or_start_guild(&mut self, guild_id: GuildId) -> &GuildHandle {
+    fn get_or_start_guild(&mut self, guild_id: Id<GuildMarker>) -> &GuildHandle {
         if let std::collections::hash_map::Entry::Vacant(e) = self.guilds.entry(guild_id) {
             let handle = GuildHandler::new_run(
                 self.stores.clone(),
@@ -293,7 +296,7 @@ impl Scheduler {
 
 enum SchedulerAction {
     Cmd(Option<SchedulerCommand>),
-    GuildHandler(GuildId, Option<GuildHandlerEvent>),
+    GuildHandler(Id<GuildMarker>, Option<GuildHandlerEvent>),
 }
 
 struct SchedulerNextActionFuture<'a> {

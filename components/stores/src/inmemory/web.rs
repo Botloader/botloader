@@ -3,14 +3,17 @@ use std::{convert::Infallible, sync::Arc};
 use async_trait::async_trait;
 use dashmap::{mapref::entry::Entry, DashMap};
 use oauth2::CsrfToken;
-use twilight_model::{id::UserId, user::CurrentUser};
+use twilight_model::{
+    id::{marker::UserMarker, Id},
+    user::CurrentUser,
+};
 
 use crate::web::{gen_token, CsrfStore, DiscordOauthToken, Session, SessionType};
 
 #[derive(Default, Clone)]
 pub struct InMemorySessionStore {
     sessions: Arc<DashMap<String, BareSession>>,
-    tokens: Arc<DashMap<UserId, DiscordOauthToken>>,
+    tokens: Arc<DashMap<Id<UserMarker>, DiscordOauthToken>>,
 }
 pub struct BareSession {
     pub token: String,
@@ -86,7 +89,10 @@ impl crate::web::SessionStore for InMemorySessionStore {
         }
     }
 
-    async fn get_oauth_token(&self, user_id: UserId) -> Result<DiscordOauthToken, Self::Error> {
+    async fn get_oauth_token(
+        &self,
+        user_id: Id<UserMarker>,
+    ) -> Result<DiscordOauthToken, Self::Error> {
         let token = match self.tokens.get(&user_id) {
             Some(s) => s,
             None => return Err(Error::OauthTokenNotFound),
@@ -115,7 +121,7 @@ impl crate::web::SessionStore for InMemorySessionStore {
         }))
     }
 
-    async fn get_all_sessions(&self, user_id: UserId) -> Result<Vec<Session>, Self::Error> {
+    async fn get_all_sessions(&self, user_id: Id<UserMarker>) -> Result<Vec<Session>, Self::Error> {
         let token = match self.tokens.get(&user_id) {
             Some(s) => s,
             None => return Ok(vec![]),
@@ -139,7 +145,7 @@ impl crate::web::SessionStore for InMemorySessionStore {
         Ok(self.sessions.remove(token).is_some())
     }
 
-    async fn del_all_sessions(&self, user_id: UserId) -> Result<(), Self::Error> {
+    async fn del_all_sessions(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error> {
         self.sessions.retain(|_, v| v.user.id != user_id);
         Ok(())
     }

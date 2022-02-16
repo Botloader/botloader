@@ -7,7 +7,7 @@ use runtime_models::ops::storage::{
     OpStorageBucketSetIf, OpStorageBucketSetValue, OpStorageBucketSortedList, OpStorageBucketValue,
 };
 use tracing::{info, instrument};
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 use vm::AnyError;
 
 use crate::RuntimeContext;
@@ -267,7 +267,7 @@ fn check_validate_key_len(key: &str) -> Result<(), AnyError> {
 
 #[instrument(skip(ctx, state_rc))]
 async fn check_validate_storage_usage(
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     ctx: &RuntimeContext,
     state_rc: Rc<RefCell<OpState>>,
 ) -> Result<(), AnyError> {

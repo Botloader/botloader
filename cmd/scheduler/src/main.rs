@@ -4,7 +4,7 @@ use clap::Parser;
 use stores::{config::ConfigStore, postgres::Postgres};
 use tokio::sync::mpsc;
 use tracing::{error, info};
-use twilight_model::id::GuildId;
+use twilight_model::id::Id;
 
 use crate::vmworkerpool::WorkerLaunchConfig;
 
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
         .await
         .expect("failed fetching discord config");
-    let integration_testing_guild = config.integration_tests_guild.map(GuildId::from);
+    let integration_testing_guild = config.integration_tests_guild.map(Id::from);
 
     info!("launching scheduler!");
     let postgres_store = Arc::new(

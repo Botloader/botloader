@@ -2,15 +2,15 @@ use std::{collections::HashMap, sync::RwLock};
 
 use crate::LogEntry;
 use tokio::sync::broadcast::{self, Receiver};
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Default)]
 pub struct GuildSubscriberBackend {
-    subscriptions: RwLock<HashMap<GuildId, broadcast::Sender<LogEntry>>>,
+    subscriptions: RwLock<HashMap<Id<GuildMarker>, broadcast::Sender<LogEntry>>>,
 }
 
 impl GuildSubscriberBackend {
-    pub fn subscribe(&self, guild_id: GuildId) -> Receiver<LogEntry> {
+    pub fn subscribe(&self, guild_id: Id<GuildMarker>) -> Receiver<LogEntry> {
         let mut subs = self.subscriptions.write().unwrap();
         if let Some(entry) = subs.get(&guild_id) {
             entry.subscribe()

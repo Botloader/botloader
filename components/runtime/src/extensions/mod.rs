@@ -1,6 +1,6 @@
 use twilight_model::{
     channel::GuildChannel,
-    id::{ChannelId, GenericId},
+    id::{marker::GenericMarker, Id},
 };
 use vm::AnyError;
 
@@ -17,7 +17,7 @@ pub(crate) async fn get_guild_channel(
     rt_ctx: &RuntimeContext,
     channel_id_str: &str,
 ) -> Result<GuildChannel, AnyError> {
-    let channel_id = if let Some(channel_id) = ChannelId::new_checked(channel_id_str.parse()?) {
+    let channel_id = if let Some(channel_id) = Id::new_checked(channel_id_str.parse()?) {
         channel_id
     } else {
         return Err(anyhow::anyhow!("invalid channel id"));
@@ -59,8 +59,8 @@ pub(crate) async fn get_guild_channel(
     }
 }
 
-pub(crate) fn parse_str_snowflake_id(id_str: &str) -> Result<GenericId, AnyError> {
-    if let Some(id) = GenericId::new_checked(id_str.parse()?) {
+pub(crate) fn parse_str_snowflake_id(id_str: &str) -> Result<Id<GenericMarker>, AnyError> {
+    if let Some(id) = Id::new_checked(id_str.parse()?) {
         Ok(id)
     } else {
         Err(anyhow::anyhow!("invalid channel id"))

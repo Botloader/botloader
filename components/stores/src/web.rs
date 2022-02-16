@@ -6,7 +6,10 @@ use oauth2::{
 };
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use twilight_model::{id::UserId, user::CurrentUser};
+use twilight_model::{
+    id::{marker::UserMarker, Id},
+    user::CurrentUser,
+};
 
 pub type OauthToken = StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>;
 
@@ -38,11 +41,14 @@ pub trait SessionStore {
         kind: SessionType,
     ) -> Result<Session, Self::Error>;
 
-    async fn get_oauth_token(&self, user_id: UserId) -> Result<DiscordOauthToken, Self::Error>;
+    async fn get_oauth_token(
+        &self,
+        user_id: Id<UserMarker>,
+    ) -> Result<DiscordOauthToken, Self::Error>;
     async fn get_session(&self, token: &str) -> Result<Option<Session>, Self::Error>;
-    async fn get_all_sessions(&self, user_id: UserId) -> Result<Vec<Session>, Self::Error>;
+    async fn get_all_sessions(&self, user_id: Id<UserMarker>) -> Result<Vec<Session>, Self::Error>;
     async fn del_session(&self, token: &str) -> Result<bool, Self::Error>;
-    async fn del_all_sessions(&self, user_id: UserId) -> Result<(), Self::Error>;
+    async fn del_all_sessions(&self, user_id: Id<UserMarker>) -> Result<(), Self::Error>;
 }
 
 #[async_trait]
@@ -69,14 +75,14 @@ pub struct Session {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DiscordOauthToken {
-    pub user_id: UserId,
+    pub user_id: Id<UserMarker>,
     pub access_token: String,
     pub refresh_token: String,
     pub token_expires: chrono::DateTime<chrono::Utc>,
 }
 
 impl DiscordOauthToken {
-    pub fn new(user_id: UserId, oauth2_token: OauthToken) -> DiscordOauthToken {
+    pub fn new(user_id: Id<UserMarker>, oauth2_token: OauthToken) -> DiscordOauthToken {
         DiscordOauthToken {
             access_token: oauth2_token.access_token().secret().clone(),
             refresh_token: oauth2_token

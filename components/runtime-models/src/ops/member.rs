@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use ts_rs::TS;
-use twilight_model::id::{ChannelId, RoleId};
+use twilight_model::id::{
+    marker::{ChannelMarker, RoleMarker},
+    Id,
+};
 
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
@@ -10,7 +13,7 @@ pub struct UpdateGuildMemberFields {
     #[ts(optional)]
     #[ts(type = "string|null")]
     #[serde(deserialize_with = "crate::deserialize_optional_field")]
-    pub channel_id: Option<Option<ChannelId>>,
+    pub channel_id: Option<Option<Id<ChannelMarker>>>,
 
     #[ts(optional)]
     pub deaf: Option<bool>,
@@ -24,5 +27,5 @@ pub struct UpdateGuildMemberFields {
 
     #[ts(optional)]
     #[ts(type = "string[]")]
-    pub roles: Option<Vec<RoleId>>,
+    pub roles: Option<Vec<Id<RoleMarker>>>,
 }

@@ -6,7 +6,7 @@ use twilight_model::{
         allowed_mentions::ParseTypes as TwilightParseTypes,
         AllowedMentions as TwilightAllowedMentions,
     },
-    id::{RoleId, UserId},
+    id::Id,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -105,12 +105,12 @@ impl From<AllowedMentions> for TwilightAllowedMentions {
             users: v
                 .users
                 .iter()
-                .filter_map(|s| UserId::new_checked(s.parse().ok()?))
+                .filter_map(|s| Id::new_checked(s.parse().ok()?))
                 .collect(),
             roles: v
                 .roles
                 .iter()
-                .filter_map(|s| RoleId::new_checked(s.parse().ok()?))
+                .filter_map(|s| Id::new_checked(s.parse().ok()?))
                 .collect(),
             replied_user: v.replied_user,
         }

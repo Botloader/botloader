@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use runtime_models::ops::script::ScriptMeta;
 use serde::{Deserialize, Serialize};
 use stores::config::Script;
-
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Deserialize, Serialize)]
 pub enum SchedulerMessage {
@@ -35,7 +34,7 @@ pub enum WorkerMessage {
 
 #[derive(Deserialize, Serialize)]
 pub struct UpdateRunStateRequest {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub guild_scripts: RunStateChangeReq<Vec<Script>>,
     pub packs: RunStateChangeReq<()>,
 }

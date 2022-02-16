@@ -8,7 +8,7 @@ use std::{
 use oauth2::reqwest::async_http_client;
 use stores::web::{DiscordOauthToken, SessionStore};
 use twilight_model::{
-    id::UserId,
+    id::{marker::UserMarker, Id},
     user::{CurrentUser, CurrentUserGuild},
 };
 
@@ -20,7 +20,7 @@ pub use cache::ClientCache;
 pub use twilight_api_provider::TwilightApiProvider;
 
 struct ApiClientInner<T, TU, ST> {
-    user_id: UserId,
+    user_id: Id<UserMarker>,
     api_provider: T,
     token_refresher: TU,
     session_store: ST,
@@ -47,7 +47,7 @@ where
     ST: SessionStore,
 {
     pub fn new_twilight(
-        user_id: UserId,
+        user_id: Id<UserMarker>,
         bearer_token: String,
         token_refresher: TU,
         session_store: ST,
@@ -74,7 +74,12 @@ where
     ST: SessionStore + 'static,
     T::OtherError: Debug + Display + Send + Sync + 'static,
 {
-    pub fn new(user_id: UserId, api_provider: T, token_refresher: TU, session_store: ST) -> Self {
+    pub fn new(
+        user_id: Id<UserMarker>,
+        api_provider: T,
+        token_refresher: TU,
+        session_store: ST,
+    ) -> Self {
         Self {
             inner: Arc::new(ApiClientInner {
                 user_id,

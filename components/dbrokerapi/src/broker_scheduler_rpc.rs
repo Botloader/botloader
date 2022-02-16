@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 use twilight_model::{
     gateway::event::{DispatchEvent, DispatchEventWithTypeDeserializer},
-    id::GuildId,
+    id::{marker::GuildMarker, Id},
 };
 
 use serde::de::DeserializeSeed;
 
 pub struct GuildEvent {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub t: String,
     pub event: Box<DispatchEvent>,
 }
@@ -29,14 +29,14 @@ impl TryFrom<RawDiscordEvent> for GuildEvent {
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RawDiscordEvent {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub t: String,
     pub event: serde_json::Value,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HelloData {
-    pub connected_guilds: Vec<GuildId>,
+    pub connected_guilds: Vec<Id<GuildMarker>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

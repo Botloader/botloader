@@ -10,7 +10,7 @@ use scheduler_worker_rpc::{
 use stores::postgres::Postgres;
 use tokio::sync::mpsc;
 use tracing::{error, info};
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 use vm::vm::{CreateRt, GuildVmEvent, Vm, VmCommand, VmContext, VmEvent, VmRole};
 use vmthread::{VmThreadCommand, VmThreadFuture, VmThreadHandle};
 
@@ -89,10 +89,10 @@ pub struct WorkerConfig {
 }
 
 struct WorkerState {
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     vm_thread: VmThreadHandle<Vm>,
     scripts_vm: mpsc::UnboundedSender<VmCommand>,
-    evt_rx: mpsc::UnboundedReceiver<(GuildId, VmRole, VmEvent)>,
+    evt_rx: mpsc::UnboundedReceiver<(Id<GuildMarker>, VmRole, VmEvent)>,
 }
 
 struct Worker {

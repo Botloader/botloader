@@ -14,7 +14,10 @@ use tokio::{
 use tracing::{error, info, warn};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{cluster::Events, Cluster, Event, Intents};
-use twilight_model::{gateway::event::DispatchEvent, id::GuildId};
+use twilight_model::{
+    gateway::event::DispatchEvent,
+    id::{marker::GuildMarker, Id},
+};
 
 pub async fn run_broker(
     token: String,
@@ -67,7 +70,7 @@ struct Broker {
     cmd_rx: mpsc::UnboundedReceiver<BrokerCommand>,
 
     connected_scheduler: Option<TcpStream>,
-    queued_events: Vec<(GuildId, DispatchEvent)>,
+    queued_events: Vec<(Id<GuildMarker>, DispatchEvent)>,
     scheduler_discconected_at: Instant,
     stores: Arc<dyn ConfigStore>,
     ready: Arc<AtomicBool>,
@@ -240,7 +243,7 @@ impl Broker {
         }
     }
 
-    async fn dispatch_or_queue_event(&mut self, guild_id: GuildId, evt: DispatchEvent) {
+    async fn dispatch_or_queue_event(&mut self, guild_id: Id<GuildMarker>, evt: DispatchEvent) {
         if self.connected_scheduler.is_some() {
             info!("dispatching event");
             let v = serde_json::to_value(&evt).unwrap();
@@ -267,7 +270,7 @@ impl Broker {
         }
     }
 
-    fn queue_event(&mut self, guild_id: GuildId, evt: DispatchEvent) {
+    fn queue_event(&mut self, guild_id: Id<GuildMarker>, evt: DispatchEvent) {
         if Instant::elapsed(&self.scheduler_discconected_at) > Duration::from_secs(60) {
             warn!("event queue too old, expired, clearing");
             self.queued_events = Vec::new();

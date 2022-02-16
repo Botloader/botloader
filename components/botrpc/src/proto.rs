@@ -1,4 +1,4 @@
-use twilight_model::id::GuildId;
+use twilight_model::id::Id;
 
 tonic::include_proto!("botrpc");
 
@@ -16,7 +16,7 @@ impl From<guild_logger::LogEntry> for GuildLogItem {
 impl From<GuildLogItem> for guild_logger::LogEntry {
     fn from(entry: GuildLogItem) -> Self {
         Self {
-            guild_id: GuildId::new(entry.guild_id),
+            guild_id: Id::new(entry.guild_id),
             level: match entry.level {
                 0 => guild_logger::LogLevel::Critical,
                 1 => guild_logger::LogLevel::Error,

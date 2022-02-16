@@ -6,13 +6,13 @@ use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use tracing::error;
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[async_trait]
 impl crate::bucketstore::BucketStore for Postgres {
     async fn get(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         bucket: String,
         key: String,
     ) -> StoreResult<Option<Entry>> {
@@ -33,7 +33,7 @@ impl crate::bucketstore::BucketStore for Postgres {
 
     async fn set(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         bucket: String,
         key: String,
         value: StoreValue,
@@ -86,7 +86,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     }
     async fn set_if(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         bucket: String,
         key: String,
         value: StoreValue,
@@ -163,7 +163,7 @@ impl crate::bucketstore::BucketStore for Postgres {
 
     async fn del(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         bucket: String,
         key: String,
     ) -> StoreResult<Option<Entry>> {
@@ -184,7 +184,7 @@ impl crate::bucketstore::BucketStore for Postgres {
 
     async fn get_many(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         bucket: String,
         key_pattern: String,
         after: String,
@@ -208,7 +208,7 @@ impl crate::bucketstore::BucketStore for Postgres {
         Ok(res.into_iter().map(Into::into).collect())
     }
 
-    async fn guild_storage_usage_bytes(&self, guild_id: GuildId) -> StoreResult<u64> {
+    async fn guild_storage_usage_bytes(&self, guild_id: Id<GuildMarker>) -> StoreResult<u64> {
         let res = sqlx::query!(
             "SELECT sum(pg_column_size(t)) FROM bucket_store t WHERE guild_id=$1 AND (expires_at \
              IS NULL OR expires_at > now())",
@@ -223,7 +223,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     // the below should only be used for float values
     async fn incr(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         bucket: String,
         key: String,
         incr_by: f64,
@@ -262,7 +262,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     }
     async fn sorted_entries(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         bucket: String,
         order: SortedOrder,
         offset: u32,
@@ -304,7 +304,7 @@ impl crate::bucketstore::BucketStore for Postgres {
         Ok(res.into_iter().map(Into::into).collect())
     }
 
-    async fn delete_guild_bucket_store_data(&self, id: GuildId) -> StoreResult<()> {
+    async fn delete_guild_bucket_store_data(&self, id: Id<GuildMarker>) -> StoreResult<()> {
         sqlx::query!(
             "DELETE FROM bucket_store WHERE guild_id = $1",
             id.get() as i64

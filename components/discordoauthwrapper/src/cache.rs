@@ -4,11 +4,11 @@ use std::{
 };
 
 use lru::LruCache;
-use twilight_model::id::UserId;
+use twilight_model::id::{marker::UserMarker, Id};
 
 use crate::DiscordOauthApiClient;
 
-type CacheInner<T, TU, ST> = LruCache<UserId, DiscordOauthApiClient<T, TU, ST>>;
+type CacheInner<T, TU, ST> = LruCache<Id<UserMarker>, DiscordOauthApiClient<T, TU, ST>>;
 
 pub struct ClientCache<T, TU, ST> {
     inner: Arc<RwLock<CacheInner<T, TU, ST>>>,
@@ -43,7 +43,7 @@ where
         }
     }
 
-    pub fn get(&self, user_id: UserId) -> Option<DiscordOauthApiClient<T, TU, ST>> {
+    pub fn get(&self, user_id: Id<UserMarker>) -> Option<DiscordOauthApiClient<T, TU, ST>> {
         let mut write = self.inner.write().unwrap();
         let client = write.get(&user_id);
         client.cloned()
@@ -51,7 +51,7 @@ where
 
     pub fn fetch<F, FR>(
         &self,
-        user_id: UserId,
+        user_id: Id<UserMarker>,
         f: F,
     ) -> Result<DiscordOauthApiClient<T, TU, ST>, FR>
     where
@@ -71,7 +71,7 @@ where
         }
     }
 
-    pub fn del(&self, user_id: UserId) {
+    pub fn del(&self, user_id: Id<UserMarker>) {
         let mut write = self.inner.write().unwrap();
         write.pop(&user_id);
     }

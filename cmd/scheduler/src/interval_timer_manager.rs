@@ -6,7 +6,7 @@ use stores::{
     timers::{IntervalTimer, IntervalType},
 };
 use tracing::info;
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 use crate::scheduler;
 
@@ -18,13 +18,13 @@ pub enum Error {
 
 pub struct Manager {
     storage: Arc<dyn scheduler::Store>,
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     loaded_intervals: HashMap<String, WrappedIntervalTimer>,
     pending: Vec<String>,
 }
 
 impl Manager {
-    pub fn new(guild_id: GuildId, storage: Arc<dyn scheduler::Store>) -> Self {
+    pub fn new(guild_id: Id<GuildMarker>, storage: Arc<dyn scheduler::Store>) -> Self {
         Self {
             storage,
             guild_id,

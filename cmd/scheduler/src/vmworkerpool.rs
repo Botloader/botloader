@@ -15,7 +15,7 @@ use tokio::{
     },
 };
 use tracing::{error, info};
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 struct PoolInner {
     pool: Vec<WorkerHandle>,
@@ -43,7 +43,7 @@ impl VmWorkerPool {
         }
     }
 
-    pub async fn req_worker(&self, guild_id: GuildId) -> WorkerHandle {
+    pub async fn req_worker(&self, guild_id: Id<GuildMarker>) -> WorkerHandle {
         let rx = {
             let mut w = self.inner.lock().unwrap();
 
@@ -165,7 +165,7 @@ pub struct WorkerHandle {
     pub child: Child,
     pub tx: UnboundedSender<scheduler_worker_rpc::SchedulerMessage>,
     pub rx: UnboundedReceiver<scheduler_worker_rpc::WorkerMessage>,
-    pub last_active_guild: Option<GuildId>,
+    pub last_active_guild: Option<Id<GuildMarker>>,
     pub returned_at: Instant,
     pub worker_id: u64,
 }

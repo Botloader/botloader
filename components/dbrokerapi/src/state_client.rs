@@ -2,11 +2,9 @@ use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use twilight_model::{
-    channel::GuildChannel,
-    guild::Role,
-    id::{ChannelId, GuildId, RoleId},
-};
+use twilight_model::id::marker::{ChannelMarker, GuildMarker, RoleMarker};
+use twilight_model::id::Id;
+use twilight_model::{channel::GuildChannel, guild::Role};
 
 #[derive(Clone)]
 pub struct Client {
@@ -48,15 +46,15 @@ impl Client {
 
     pub async fn get_guild(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
     ) -> ApiResult<Option<crate::models::BrokerGuild>> {
         self.get(format!("{}/guilds/{}", self.server_addr, guild_id))
             .await
     }
     pub async fn get_channel(
         &self,
-        guild_id: GuildId,
-        channel_id: ChannelId,
+        guild_id: Id<GuildMarker>,
+        channel_id: Id<ChannelMarker>,
     ) -> ApiResult<Option<GuildChannel>> {
         self.get(format!(
             "{}/guilds/{}/channels/{}",
@@ -65,20 +63,24 @@ impl Client {
         .await
     }
 
-    pub async fn get_channels(&self, guild_id: GuildId) -> ApiResult<Vec<GuildChannel>> {
+    pub async fn get_channels(&self, guild_id: Id<GuildMarker>) -> ApiResult<Vec<GuildChannel>> {
         self.get(format!("{}/guilds/{}/channels", self.server_addr, guild_id))
             .await
             .map(|v| v.unwrap_or_default())
     }
 
-    pub async fn get_role(&self, guild_id: GuildId, role_id: RoleId) -> ApiResult<Option<Role>> {
+    pub async fn get_role(
+        &self,
+        guild_id: Id<GuildMarker>,
+        role_id: Id<RoleMarker>,
+    ) -> ApiResult<Option<Role>> {
         self.get(format!(
             "{}/guilds/{}/roles/{}",
             self.server_addr, guild_id, role_id
         ))
         .await
     }
-    pub async fn get_roles(&self, guild_id: GuildId) -> ApiResult<Vec<Role>> {
+    pub async fn get_roles(&self, guild_id: Id<GuildMarker>) -> ApiResult<Vec<Role>> {
         self.get(format!("{}/guilds/{}/roles", self.server_addr, guild_id))
             .await
             .map(|v| v.unwrap_or_default())
@@ -94,5 +96,5 @@ impl Client {
 #[derive(Serialize, Deserialize)]
 pub enum ConnectedGuildsResponse {
     NotReady,
-    Ready(Vec<GuildId>),
+    Ready(Vec<Id<GuildMarker>>),
 }

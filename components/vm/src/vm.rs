@@ -20,7 +20,7 @@ use std::{
 use stores::config::Script;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, instrument};
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 use url::Url;
 use v8::{CreateParams, HeapStatistics, IsolateHandle};
 use vmthread::{CreateVmSuccess, ShutdownReason, VmInterface};
@@ -51,7 +51,7 @@ pub enum VmRole {
     Pack(u64),
 }
 
-pub type GuildVmEvent = (GuildId, VmRole, VmEvent);
+pub type GuildVmEvent = (Id<GuildMarker>, VmRole, VmEvent);
 
 #[derive(Serialize)]
 struct ScriptDispatchData {
@@ -81,7 +81,7 @@ pub struct Vm {
 
 #[derive(Debug, Clone)]
 pub struct VmContext {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub role: VmRole,
 }
 
@@ -817,7 +817,7 @@ type ExtensionFactory = Box<dyn Fn() -> Vec<Extension> + Send>;
 
 #[derive(Clone)]
 pub struct RtId {
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     role: VmRole,
 }
 

@@ -1,11 +1,11 @@
 use anyhow::anyhow;
-use deno_core::OpState;
-use deno_core::{op_async, op_sync, Extension};
+use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
 use runtime_models::ops::member::UpdateGuildMemberFields;
 use std::{cell::RefCell, rc::Rc};
-use twilight_model::id::UserId;
-use twilight_model::id::{MessageId, RoleId};
+use twilight_model::id::marker::RoleMarker;
+use twilight_model::id::marker::UserMarker;
+use twilight_model::id::Id;
 use vm::{AnyError, JsValue};
 
 use super::{get_guild_channel, parse_str_snowflake_id};
@@ -103,7 +103,7 @@ pub async fn op_get_message(
     };
 
     let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
-    let message_id = if let Some(id) = MessageId::new_checked(args.message_id.parse()?) {
+    let message_id = if let Some(id) = Id::new_checked(args.message_id.parse()?) {
         id
     } else {
         return Err(anyhow::anyhow!("invalid message id"));
@@ -153,7 +153,7 @@ pub async fn op_get_messages(
         .unwrap();
 
     let res = if let Some(before) = args.before {
-        let message_id = if let Some(id) = MessageId::new_checked(before.parse()?) {
+        let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
             id
         } else {
             return Err(anyhow::anyhow!("invalid message id"));
@@ -161,7 +161,7 @@ pub async fn op_get_messages(
 
         req.before(message_id).exec().await
     } else if let Some(after) = args.after {
-        let message_id = if let Some(id) = MessageId::new_checked(after.parse()?) {
+        let message_id = if let Some(id) = Id::new_checked(after.parse()?) {
             id
         } else {
             return Err(anyhow::anyhow!("invalid message id"));
@@ -332,7 +332,7 @@ pub async fn op_delete_messages_bulk(
 
 pub async fn op_get_role(
     state: Rc<RefCell<OpState>>,
-    role_id: RoleId,
+    role_id: Id<RoleMarker>,
     _: (),
 ) -> Result<runtime_models::discord::role::Role, AnyError> {
     let rt_ctx = {
@@ -408,7 +408,7 @@ pub async fn op_get_members(
 
     let ids = user_ids
         .into_iter()
-        .map(|v| v.parse().map(UserId::new_checked).ok().flatten())
+        .map(|v| v.parse().map(Id::new_checked).ok().flatten())
         .collect::<Vec<_>>();
 
     let mut res = Vec::new();
@@ -435,8 +435,8 @@ pub async fn op_get_members(
 
 pub async fn discord_add_member_role(
     state: Rc<RefCell<OpState>>,
-    user_id: UserId,
-    role_id: RoleId,
+    user_id: Id<UserMarker>,
+    role_id: Id<RoleMarker>,
 ) -> Result<(), AnyError> {
     let rt_ctx = {
         let state = state.borrow();
@@ -455,8 +455,8 @@ pub async fn discord_add_member_role(
 
 pub async fn discord_remove_member_role(
     state: Rc<RefCell<OpState>>,
-    user_id: UserId,
-    role_id: RoleId,
+    user_id: Id<UserMarker>,
+    role_id: Id<RoleMarker>,
 ) -> Result<(), AnyError> {
     let rt_ctx = {
         let state = state.borrow();
@@ -475,7 +475,7 @@ pub async fn discord_remove_member_role(
 
 pub async fn discord_update_member(
     state: Rc<RefCell<OpState>>,
-    user_id: UserId,
+    user_id: Id<UserMarker>,
     fields: UpdateGuildMemberFields,
 ) -> Result<runtime_models::discord::member::Member, AnyError> {
     let rt_ctx = {

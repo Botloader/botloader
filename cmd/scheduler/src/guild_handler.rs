@@ -23,18 +23,18 @@ use tracing::{error, info, instrument};
 use twilight_model::{
     application::callback::{CallbackData, InteractionResponse},
     gateway::event::DispatchEvent,
-    id::GuildId,
+    id::{marker::GuildMarker, Id},
 };
 
 pub enum GuildCommand {
     BrokerEvent(GuildEvent),
-    Dispatch(oneshot::Sender<()>, String, serde_json::Value),
+    // Dispatch(oneshot::Sender<()>, String, serde_json::Value),
     ReloadScripts,
     Shutdown,
 }
 
 pub struct GuildHandler {
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
 
     discord_config: Arc<DiscordConfig>,
     stores: Arc<dyn Store>,
@@ -56,7 +56,7 @@ pub struct GuildHandler {
 impl GuildHandler {
     pub fn new_run(
         stores: Arc<dyn Store>,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         logger: GuildLogger,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
         cmd_manager_handle: crate::command_manager::Handle,
@@ -327,10 +327,10 @@ impl GuildHandler {
             GuildCommand::BrokerEvent(evt) => {
                 self.handle_broker_event(evt).await;
             }
-            GuildCommand::Dispatch(resp, t, v) => {
-                self.dispatch_worker_evt(t, v, PendingAck::Dispatch(Some(resp)))
-                    .await;
-            }
+            // GuildCommand::Dispatch(resp, t, v) => {
+            //     self.dispatch_worker_evt(t, v, PendingAck::Dispatch(Some(resp)))
+            //         .await;
+            // }
             GuildCommand::ReloadScripts => {
                 self.try_retry_load_scripts().await;
                 self.load_contribs().await;
@@ -626,7 +626,7 @@ pub enum GuildHandlerEvent {
 }
 
 pub struct GuildHandle {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub rx: mpsc::UnboundedReceiver<GuildHandlerEvent>,
     pub tx: Option<mpsc::UnboundedSender<GuildCommand>>,
 }

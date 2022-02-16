@@ -1,4 +1,7 @@
-use twilight_model::{gateway::event::DispatchEvent, id::GuildId};
+use twilight_model::{
+    gateway::event::DispatchEvent,
+    id::{marker::GuildMarker, Id},
+};
 
 pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEvent> {
     match evt {
@@ -66,7 +69,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
 }
 
 pub struct DiscordDispatchEvent {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub name: &'static str,
     pub data: serde_json::Value,
 }

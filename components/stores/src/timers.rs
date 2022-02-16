@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Debug, Error)]
 pub enum TimerStoreError {
@@ -15,24 +15,24 @@ pub type TimerStoreResult<T> = Result<T, TimerStoreError>;
 pub trait TimerStore: Send + Sync {
     async fn get_all_interval_timers(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
     ) -> TimerStoreResult<Vec<IntervalTimer>>;
     async fn update_interval_timer(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         timer: IntervalTimer,
     ) -> TimerStoreResult<IntervalTimer>;
-    // async fn update_interval_timers(&self, guild_id: GuildId);
+    // async fn update_interval_timers(&self, guild_id: Id<GuildMarker>);
     async fn del_interval_timer(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_id: u64,
         timer_name: String,
     ) -> TimerStoreResult<bool>;
 
     async fn create_task(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: String,
         unique_key: Option<String>,
         data: serde_json::Value,
@@ -41,67 +41,70 @@ pub trait TimerStore: Send + Sync {
 
     async fn get_task_by_id(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         id: u64,
     ) -> TimerStoreResult<Option<ScheduledTask>>;
     async fn get_task_by_key(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: String,
         key: String,
     ) -> TimerStoreResult<Option<ScheduledTask>>;
     async fn get_tasks(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: Option<String>,
         id_after: u64,
         limit: usize,
     ) -> TimerStoreResult<Vec<ScheduledTask>>;
 
     /// Delete a task by the global unique ID
-    async fn del_task_by_id(&self, guild_id: GuildId, id: u64) -> TimerStoreResult<u64>;
+    async fn del_task_by_id(&self, guild_id: Id<GuildMarker>, id: u64) -> TimerStoreResult<u64>;
 
     /// Delete one or more tasks by their (guild_id, name) unique key
     /// (does nothing to key = null tasks)
     async fn del_task_by_key(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         name: String,
         key: String,
     ) -> TimerStoreResult<u64>;
 
     /// Delete all tasks on a guild, optionally filtered by name
-    async fn del_all_tasks(&self, guild_id: GuildId, name: Option<String>)
-        -> TimerStoreResult<u64>;
+    async fn del_all_tasks(
+        &self,
+        guild_id: Id<GuildMarker>,
+        name: Option<String>,
+    ) -> TimerStoreResult<u64>;
 
     // async fn get_next_task_time(
     //     &self,
-    //     guild_id: GuildId,
+    //     guild_id: Id<GuildMarker>,
     // ) -> TimerStoreResult<Option<DateTime<Utc>>>;
     // async fn get_triggered_tasks(
     //     &self,
-    //     guild_id: GuildId,
+    //     guild_id: Id<GuildMarker>,
     //     t: DateTime<Utc>,
     // ) -> TimerStoreResult<Vec<ScheduledTask>>;
 
-    async fn get_task_count(&self, guild_id: GuildId) -> TimerStoreResult<u64>;
+    async fn get_task_count(&self, guild_id: Id<GuildMarker>) -> TimerStoreResult<u64>;
 
     async fn get_next_task_time(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         ignore_ids: &[u64],
         names: &[String],
     ) -> TimerStoreResult<Option<DateTime<Utc>>>;
 
     async fn get_triggered_tasks(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         t: DateTime<Utc>,
         ignore_ids: &[u64],
         names: &[String],
     ) -> TimerStoreResult<Vec<ScheduledTask>>;
 
-    async fn delete_guild_timer_data(&self, id: GuildId) -> TimerStoreResult<()>;
+    async fn delete_guild_timer_data(&self, guild_id: Id<GuildMarker>) -> TimerStoreResult<()>;
 }
 
 #[derive(Clone)]

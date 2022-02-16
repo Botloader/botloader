@@ -10,9 +10,10 @@ use twilight_model::application::command::{
     Command as TwilightCommand, CommandOption as TwilightCommandOption,
     CommandType as TwilightCommandType, OptionsCommandOptionData,
 };
-use twilight_model::id::GuildId;
 
 use runtime_models::ops::script::{Command, CommandGroup, ScriptMeta};
+use twilight_model::id::marker::GuildMarker;
+use twilight_model::id::Id;
 
 use crate::scheduler;
 
@@ -127,7 +128,7 @@ impl Manager {
         Ok(())
     }
 
-    async fn update_guild_commands(&mut self, guild_id: GuildId) -> Result<(), ()> {
+    async fn update_guild_commands(&mut self, guild_id: Id<GuildMarker>) -> Result<(), ()> {
         let all_guild_scripts = self
             .config_store
             .list_scripts(guild_id)
@@ -171,13 +172,13 @@ impl Manager {
 static GROUP_DESC_PLACEHOLDER: &str = "no description";
 
 struct PendingCheckGroup {
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     started: Instant,
     items: Vec<LoadedScript>,
 }
 
 pub fn to_twilight_commands(
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     commands: &[Command],
     groups: &[CommandGroup],
 ) -> Vec<TwilightCommand> {
@@ -194,7 +195,7 @@ pub fn to_twilight_commands(
             default_permission: None,
             id: None,
             kind: TwilightCommandType::ChatInput,
-            version: twilight_model::id::CommandVersionId::new(1),
+            version: Id::new(1),
         })
         .collect::<Vec<_>>();
 
@@ -256,7 +257,7 @@ pub fn to_twilight_commands(
     result
 }
 
-fn make_unknown_group(guild_id: GuildId, name: String) -> TwilightCommand {
+fn make_unknown_group(guild_id: Id<GuildMarker>, name: String) -> TwilightCommand {
     TwilightCommand {
         application_id: None,
         default_permission: None,
@@ -266,11 +267,14 @@ fn make_unknown_group(guild_id: GuildId, name: String) -> TwilightCommand {
         kind: TwilightCommandType::ChatInput,
         options: Vec::new(),
         name,
-        version: twilight_model::id::CommandVersionId::new(1),
+        version: Id::new(1),
     }
 }
 
-pub fn group_to_twilight_command(guild_id: GuildId, group: &CommandGroup) -> TwilightCommand {
+pub fn group_to_twilight_command(
+    guild_id: Id<GuildMarker>,
+    group: &CommandGroup,
+) -> TwilightCommand {
     // handle sub groups
     let opts = group
         .sub_groups
@@ -293,7 +297,7 @@ pub fn group_to_twilight_command(guild_id: GuildId, group: &CommandGroup) -> Twi
         kind: TwilightCommandType::ChatInput,
         name: group.name.clone(),
         options: opts,
-        version: twilight_model::id::CommandVersionId::new(1),
+        version: Id::new(1),
     }
 }
 
@@ -401,6 +405,6 @@ fn command_option_name(opt: &TwilightCommandOption) -> String {
 }
 
 pub struct LoadedScript {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub meta: ScriptMeta,
 }

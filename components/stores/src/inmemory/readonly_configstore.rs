@@ -3,11 +3,11 @@ use crate::config::{
     Script, ScriptContributes, UpdateScript,
 };
 use async_trait::async_trait;
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Debug, Clone)]
 pub struct ReadOnlyConfigStore {
-    guild_id: GuildId,
+    guild_id: Id<GuildMarker>,
     scripts: Vec<Script>,
 }
 
@@ -15,7 +15,7 @@ pub struct ReadOnlyConfigStore {
 impl ConfigStore for ReadOnlyConfigStore {
     async fn get_script(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_name: String,
     ) -> ConfigStoreResult<Script> {
         if guild_id != self.guild_id {
@@ -31,7 +31,7 @@ impl ConfigStore for ReadOnlyConfigStore {
 
     async fn get_script_by_id(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_id: u64,
     ) -> ConfigStoreResult<Script> {
         if guild_id != self.guild_id {
@@ -47,7 +47,7 @@ impl ConfigStore for ReadOnlyConfigStore {
 
     async fn create_script(
         &self,
-        _guild_id: GuildId,
+        _guild_id: Id<GuildMarker>,
         _script: CreateScript,
     ) -> ConfigStoreResult<Script> {
         todo!();
@@ -55,7 +55,7 @@ impl ConfigStore for ReadOnlyConfigStore {
 
     async fn update_script(
         &self,
-        _guild_id: GuildId,
+        _guild_id: Id<GuildMarker>,
         _script: UpdateScript,
     ) -> ConfigStoreResult<Script> {
         todo!();
@@ -63,7 +63,7 @@ impl ConfigStore for ReadOnlyConfigStore {
 
     async fn update_script_contributes(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         script_id: u64,
         contribs: ScriptContributes,
     ) -> ConfigStoreResult<Script> {
@@ -73,11 +73,15 @@ impl ConfigStore for ReadOnlyConfigStore {
         Ok(script)
     }
 
-    async fn del_script(&self, _guild_id: GuildId, _script_name: String) -> ConfigStoreResult<()> {
+    async fn del_script(
+        &self,
+        _guild_id: Id<GuildMarker>,
+        _script_name: String,
+    ) -> ConfigStoreResult<()> {
         todo!();
     }
 
-    async fn list_scripts(&self, guild_id: GuildId) -> ConfigStoreResult<Vec<Script>> {
+    async fn list_scripts(&self, guild_id: Id<GuildMarker>) -> ConfigStoreResult<Vec<Script>> {
         if guild_id != self.guild_id {
             return Ok(Vec::new());
         }
@@ -87,7 +91,7 @@ impl ConfigStore for ReadOnlyConfigStore {
 
     async fn get_guild_meta_config(
         &self,
-        _guild_id: GuildId,
+        _guild_id: Id<GuildMarker>,
     ) -> ConfigStoreResult<Option<GuildMetaConfig>> {
         Ok(None)
     }
@@ -103,34 +107,37 @@ impl ConfigStore for ReadOnlyConfigStore {
         Ok(guild)
     }
 
-    async fn get_joined_guilds(&self, _ids: &[GuildId]) -> ConfigStoreResult<Vec<JoinedGuild>> {
+    async fn get_joined_guilds(
+        &self,
+        _ids: &[Id<GuildMarker>],
+    ) -> ConfigStoreResult<Vec<JoinedGuild>> {
         todo!();
     }
 
     async fn get_joined_guilds_not_in(
         &self,
-        ids: &[GuildId],
+        _ids: &[Id<GuildMarker>],
     ) -> ConfigStoreResult<Vec<JoinedGuild>> {
         todo!();
     }
 
     async fn set_guild_left_status(
         &self,
-        guild_id: GuildId,
-        left: bool,
+        _guild_id: Id<GuildMarker>,
+        _left: bool,
     ) -> ConfigStoreResult<JoinedGuild> {
         todo!();
     }
 
-    async fn is_guild_whitelisted(&self, _id: GuildId) -> ConfigStoreResult<bool> {
+    async fn is_guild_whitelisted(&self, _id: Id<GuildMarker>) -> ConfigStoreResult<bool> {
         Ok(true)
     }
 
-    async fn delete_guild_config_data(&self, id: GuildId) -> ConfigStoreResult<()> {
+    async fn delete_guild_config_data(&self, _id: Id<GuildMarker>) -> ConfigStoreResult<()> {
         Ok(())
     }
 
-    async fn get_left_guilds(&self, threshold_hours: u64) -> ConfigStoreResult<Vec<JoinedGuild>> {
+    async fn get_left_guilds(&self, _threshold_hours: u64) -> ConfigStoreResult<Vec<JoinedGuild>> {
         todo!();
     }
 }

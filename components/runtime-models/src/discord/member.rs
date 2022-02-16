@@ -1,7 +1,7 @@
 use crate::{discord::user::User, util::NotBigU64};
 use serde::Serialize;
 use ts_rs::TS;
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
@@ -38,7 +38,7 @@ impl From<twilight_model::guild::Member> for Member {
 
 impl Member {
     pub fn from_cache(
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         user: User,
         member: twilight_cache_inmemory::model::CachedMember,
     ) -> Self {
@@ -57,7 +57,10 @@ impl Member {
         }
     }
 
-    pub fn from_partial(guild_id: GuildId, partial: twilight_model::guild::PartialMember) -> Self {
+    pub fn from_partial(
+        guild_id: Id<GuildMarker>,
+        partial: twilight_model::guild::PartialMember,
+    ) -> Self {
         Self {
             joined_at: NotBigU64(partial.joined_at.as_micros() as u64 / 1000),
             nick: partial.nick,

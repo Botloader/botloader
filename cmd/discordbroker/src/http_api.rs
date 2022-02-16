@@ -12,11 +12,7 @@ use axum::{
 use dbrokerapi::state_client::ConnectedGuildsResponse;
 use tracing::info;
 use twilight_cache_inmemory::{model::CachedGuild, InMemoryCache};
-use twilight_model::{
-    channel::GuildChannel,
-    guild::Role,
-    id::{ChannelId, GuildId, RoleId},
-};
+use twilight_model::{channel::GuildChannel, guild::Role, id::Id};
 
 #[derive(Clone)]
 struct ReadyTracker {
@@ -61,7 +57,7 @@ async fn handle_get_guild(
     Path(guild_id_u): Path<u64>,
     Extension(discord_state): Extension<Arc<InMemoryCache>>,
 ) -> Result<(StatusCode, Json<Option<CachedGuild>>), String> {
-    let guild_id = GuildId::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
+    let guild_id = Id::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
 
     if let Some(g) = discord_state.guild(guild_id) {
         return Ok((StatusCode::OK, Json(Some(g.value().clone()))));
@@ -74,9 +70,8 @@ async fn handle_get_channel(
     Path((guild_id_u, channel_id_u)): Path<(u64, u64)>,
     Extension(discord_state): Extension<Arc<InMemoryCache>>,
 ) -> Result<(StatusCode, Json<Option<GuildChannel>>), String> {
-    let guild_id = GuildId::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
-    let channel_id =
-        ChannelId::new_checked(channel_id_u).ok_or_else(|| String::from("bad channel_id"))?;
+    let guild_id = Id::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
+    let channel_id = Id::new_checked(channel_id_u).ok_or_else(|| String::from("bad channel_id"))?;
 
     if let Some(c) = discord_state.guild_channel(channel_id) {
         if c.guild_id() == guild_id {
@@ -91,7 +86,7 @@ async fn handle_get_channels(
     Path(guild_id_u): Path<u64>,
     Extension(discord_state): Extension<Arc<InMemoryCache>>,
 ) -> Result<(StatusCode, Json<Option<Vec<GuildChannel>>>), String> {
-    let guild_id = GuildId::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
+    let guild_id = Id::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
 
     if let Some(c) = discord_state.guild_channels(guild_id) {
         let conv = c.value().iter().filter_map(|v| {
@@ -110,8 +105,8 @@ async fn handle_get_role(
     Path((guild_id_u, role_id_u)): Path<(u64, u64)>,
     Extension(discord_state): Extension<Arc<InMemoryCache>>,
 ) -> Result<(StatusCode, Json<Option<Role>>), String> {
-    let guild_id = GuildId::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
-    let role_id = RoleId::new_checked(role_id_u).ok_or_else(|| String::from("bad role_id"))?;
+    let guild_id = Id::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
+    let role_id = Id::new_checked(role_id_u).ok_or_else(|| String::from("bad role_id"))?;
 
     if let Some(c) = discord_state.role(role_id) {
         if c.guild_id() == guild_id {
@@ -126,7 +121,7 @@ async fn handle_get_roles(
     Path(guild_id_u): Path<u64>,
     Extension(discord_state): Extension<Arc<InMemoryCache>>,
 ) -> Result<(StatusCode, Json<Option<Vec<Role>>>), String> {
-    let guild_id = GuildId::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
+    let guild_id = Id::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
 
     if let Some(c) = discord_state.guild_roles(guild_id) {
         let conv = c

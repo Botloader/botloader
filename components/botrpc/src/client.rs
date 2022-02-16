@@ -1,6 +1,6 @@
 use futures::{Stream, StreamExt};
 use guild_logger::LogEntry;
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 use crate::proto;
 
@@ -22,7 +22,7 @@ impl Client {
         self.inner.clone()
     }
 
-    pub async fn restart_guild_vm(&self, guild_id: GuildId) -> Result<(), tonic::Status> {
+    pub async fn restart_guild_vm(&self, guild_id: Id<GuildMarker>) -> Result<(), tonic::Status> {
         let mut conn = self.get_conn();
 
         conn.reload_vm(proto::GuildScriptSpecifier {
@@ -36,7 +36,7 @@ impl Client {
 
     pub async fn guild_log_stream(
         &self,
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
     ) -> Result<impl Stream<Item = Result<LogEntry, tonic::Status>>, tonic::Status> {
         let mut conn = self.get_conn();
 

@@ -11,11 +11,7 @@ use swc_ecmascript::{
     ast::EsVersion,
     codegen::{text_writer::JsWriter, Emitter as CodeEmitter},
     parser::TsConfig,
-    transforms::{
-        compat::{self, es2020::export_namespace_from},
-        fixer, helpers, hygiene, resolver_with_mark,
-        typescript::strip,
-    },
+    transforms::{fixer, helpers, hygiene, resolver_with_mark, typescript::strip},
 };
 use swc_ecmascript::{
     codegen::Config as CodeGenConfig,

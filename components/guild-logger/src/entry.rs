@@ -1,18 +1,18 @@
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
-use twilight_model::id::GuildId;
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct LogEntry {
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
     pub message: String,
     pub script_context: Option<ScriptContext>,
     pub level: LogLevel,
 }
 
 impl LogEntry {
-    pub fn critical(guild_id: GuildId, msg: String) -> Self {
+    pub fn critical(guild_id: Id<GuildMarker>, msg: String) -> Self {
         Self {
             guild_id,
             message: msg,
@@ -21,7 +21,7 @@ impl LogEntry {
         }
     }
 
-    pub fn error(guild_id: GuildId, msg: String) -> Self {
+    pub fn error(guild_id: Id<GuildMarker>, msg: String) -> Self {
         Self {
             guild_id,
             message: msg,
@@ -30,7 +30,7 @@ impl LogEntry {
         }
     }
 
-    pub fn info(guild_id: GuildId, msg: String) -> Self {
+    pub fn info(guild_id: Id<GuildMarker>, msg: String) -> Self {
         Self {
             guild_id,
             message: msg,
@@ -40,7 +40,7 @@ impl LogEntry {
     }
 
     pub fn script_error(
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         msg: String,
         filename: String,
         line_col: Option<LineCol>,
@@ -53,7 +53,7 @@ impl LogEntry {
         }
     }
     pub fn script_warning(
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         msg: String,
         filename: String,
         line_col: Option<LineCol>,
@@ -66,7 +66,7 @@ impl LogEntry {
         }
     }
     pub fn script_console(
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         msg: String,
         filename: String,
         line_col: Option<LineCol>,
@@ -79,7 +79,7 @@ impl LogEntry {
         }
     }
     pub fn script_info(
-        guild_id: GuildId,
+        guild_id: Id<GuildMarker>,
         msg: String,
         filename: String,
         line_col: Option<LineCol>,
