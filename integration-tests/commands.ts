@@ -4,6 +4,7 @@ import { runOnce, sendScriptCompletion } from 'lib';
 script.addCommand(
     Commands.slashCommand("gaming", "this is a gaming command")
         .addOptionNumber("amount", "amount of gaming")
+        .addOptionString("what", "what to game", { autocomplete: gamingAutocomplete })
         .build((ctx, args) => {
             // stuff here
             let a = args.amount;
@@ -11,6 +12,16 @@ script.addCommand(
         })
 );
 
+
+function gamingAutocomplete(data: {}) {
+    return [{
+        name: "lol",
+        value: "lol",
+    }, {
+        name: "lost ark",
+        value: "loast_ark",
+    }]
+}
 
 script.addCommand(
     Commands.userCommand("throw", "throw this user up in the air")

@@ -3,11 +3,10 @@ import { EventMuxer } from "./events";
 import { OpWrappers } from "./op_wrappers";
 import { CommandInteractionOptionValue } from "./models/events/CommandInteractionOptionValue";
 import { User } from "./models/discord/User";
-import { PartialMember } from "./models/discord/PartialMember";
 import { InteractionPartialMember } from "./models/events/InteractionPartialMember";
 import { Role } from "./models/discord/Role";
 import { InteractionPartialChannel } from "./models/events/InteractionChannel";
-import { Member, Message } from "./discord";
+import { ChannelType, Member, Message } from "./discord";
 
 export namespace Commands {
     export class System {
@@ -218,6 +217,8 @@ export namespace Commands {
     export type OptionType = BaseOption["kind"];
     export type Option = BaseOption & (StringOption | NumberOption);
 
+    export type AutocompleteProvider<T> = (data: {}) => Promise<OptionChoice<T>[]> | OptionChoice<T>[];
+
     export type OptionMap = {
         [key: string]: Option,
     }
@@ -229,31 +230,47 @@ export namespace Commands {
     }
 
     export interface StringOption {
-        max_len?: number,
+        choices?: OptionChoice<string>[],
+        autocomplete?: AutocompleteProvider<string>,
     }
 
     export interface NumberOption {
-        min?: number,
-        max?: number,
+        choices?: OptionChoice<number>[],
+        min_value?: number,
+        max_value?: number,
+        autocomplete?: AutocompleteProvider<number>,
     }
 
     export interface IntegerOption {
-
+        choices?: OptionChoice<number>[],
+        min_value?: number,
+        max_value?: number,
+        autocomplete?: AutocompleteProvider<number>,
     }
+
     export interface BooleanOption {
 
     }
+
     export interface UserOption {
 
     }
-    export interface ChannelOption {
 
+    export interface ChannelOption {
+        channel_types?: ChannelType[],
     }
+
     export interface RoleOption {
 
     }
+
     export interface MentionableOption {
 
+    }
+
+    export interface OptionChoice<T> {
+        name: string,
+        value: T,
     }
 
     export class Group {
@@ -305,6 +322,36 @@ export namespace Commands {
         addOptionString<TKey extends string, TRequired extends boolean | undefined>
             (key: TKey, description: string, opts?: StringOption & BaseOptionSettings<TRequired>) {
             return this.addOption(key, "String", description, opts)
+        }
+
+        addOptionInteger<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: IntegerOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "Integer", description, opts)
+        }
+
+        addOptionBoolean<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: BooleanOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "Boolean", description, opts)
+        }
+
+        addOptionUser<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: UserOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "User", description, opts)
+        }
+
+        addOptionChannel<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: ChannelOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "Channel", description, opts)
+        }
+
+        addOptionRole<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: RoleOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "Role", description, opts)
+        }
+
+        addOptionMentionable<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: MentionableOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "Mentionable", description, opts)
         }
 
         addOption<TKey extends string, TKind extends OptionType, TRequired extends boolean | undefined>
