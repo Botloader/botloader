@@ -3,12 +3,11 @@ import "./core_util";
 
 
 import { Commands } from "./commands";
-import { Ops, Events, Discord } from "./models";
+import { Ops, Events } from "./models";
 import { InternalEventSystem, EventMuxer, EventTypes } from "./events";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
 import { HttpClient } from "./httpclient";
-import { UpdateGuildMemberFields } from "./models/ops/UpdateGuildMemberFields";
 import { Tasks } from "./scheduled_tasks";
 
 /**
@@ -69,9 +68,16 @@ export class Script {
      * });
      * ```
      */
-    registerCommand<T extends Commands.OptionsMap>(cmd: Commands.CommandDef<T>) {
-        this.commandSystem.commands.push(cmd as Commands.CommandDef<Commands.OptionsMap>);
+    // registerCommand<T extends Commands.OptionsMap>(cmd: Commands.CommandDef<T>) {
+    //     this.commandSystem.commands.push(cmd as Commands.CommandDef<Commands.OptionsMap>);
+    // }
+
+    addCommand(command: Commands.Command) {
+        this.commandSystem.commands.push(command);
     }
+    // addSlashCommand() { },
+    // addUserCommand() { },
+    // addMessageCommand() { },
 
     /**
      * 
@@ -178,122 +184,6 @@ export class Script {
         if (timer) {
             await timer.callback();
         }
-    }
-
-    // Guild functions
-    getGuild(): Promise<Discord.Guild> {
-        return OpWrappers.getGuild()
-    }
-    // editGuild() { }
-
-    // Message functions
-    getMessage(channelId: string, messageId: string): Promise<Discord.Message> {
-        return OpWrappers.getMessage({
-            channelId,
-            messageId,
-        })
-    }
-
-    getMessages(channelId: string, options?: GetMessagesOptions): Promise<Discord.Message[]> {
-        return OpWrappers.getMessages({
-            channelId,
-            after: options?.after,
-            before: options?.before,
-            limit: options?.limit,
-        })
-    }
-
-    createMessage(channelId: string, fields: Ops.OpCreateMessageFields): Promise<Discord.Message> {
-        return OpWrappers.createChannelMessage({
-            channelId,
-            fields,
-        });
-    }
-    editMessage(channelId: string, messageId: string, fields: Ops.OpEditMessageFields): Promise<Discord.Message> {
-        return OpWrappers.editChannelMessage({
-            channelId,
-            messageId,
-            fields,
-        });
-    }
-
-    deleteMessage(channelId: string, messageId: string) {
-        return OpWrappers.deleteChannelMessage({
-            channelId,
-            messageId,
-        })
-    }
-
-    bulkDeleteMessages(channelId: string, ...messageIds: string[]) {
-        return OpWrappers.deleteChannelMessagesBulk({
-            channelId,
-            messageIds,
-        })
-    }
-
-    // Role functions
-    getRole(roleId: string): Promise<Discord.Role> {
-        return OpWrappers.getRole(roleId);
-    }
-    getRoles(): Promise<Discord.Role[]> {
-        return OpWrappers.getRoles();
-    }
-
-    // createRole() { }
-    // editRole() { }
-    // deleteRole() { }
-
-    // Channel functions
-    getChannel(channelId: string): Promise<Discord.GuildChannel> {
-        return OpWrappers.getChannel(channelId);
-    }
-    getChannels(): Promise<Discord.GuildChannel[]> {
-        return OpWrappers.getChannels();
-    }
-
-    // createChannel() { }
-    // editChannel() { }
-    // deleteChannel() { }
-
-    // Invite functions
-    // getInvite() { }
-    // getInvites() { }
-    // createInvite() { }
-    // deleteInvite() { }
-
-    // // Emoji functions
-    // getEmoji() { }
-    // getEmojis() { }
-    // createEmoji() { }
-    // editEmoji() { }
-    // deleteEmoji() { }
-
-
-    // // Sticker functions
-    // getSticker() { }
-    // getStickers() { }
-    // createSticker() { }
-    // editSticker() { }
-    // deleteSticker() { }
-
-    async getMember(id: string): Promise<Discord.Member | undefined> {
-        return (await OpWrappers.getMembers([id]))[0] || undefined;
-    }
-
-    async getMembers(ids: string[]): Promise<(Discord.Member | null)[]> {
-        return await OpWrappers.getMembers(ids);
-    }
-
-    async updateMember(userId: string, fields: UpdateGuildMemberFields): Promise<Discord.Member> {
-        return await OpWrappers.updateMember(userId, fields);
-    }
-
-    async addMemberRole(userId: string, roleId: string): Promise<void> {
-        return await OpWrappers.addMemberRole(userId, roleId);
-    }
-
-    async removeMemberRole(userId: string, roleId: string): Promise<void> {
-        return await OpWrappers.removeMemberRole(userId, roleId);
     }
 }
 

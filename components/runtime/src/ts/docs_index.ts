@@ -10,3 +10,5 @@ export * from './models';
 export * from './httpclient';
 export * from './streams';
 export * from './scheduled_tasks';
+export * as Discord from './discord';
+

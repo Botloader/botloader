@@ -15,8 +15,3 @@ export * as Ops from './models/ops/index';
  * Types related to events
  */
 export * as Events from './models/events/index';
-
-/**
- * Types related to discord
- */
-export * as Discord from './models/discord/index';

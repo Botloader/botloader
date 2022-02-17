@@ -1,4 +1,4 @@
-import { Discord, Events, Ops } from "./models";
+import { Events, Ops } from "./models";
 import { EventMuxer } from "./events";
 import { OpWrappers } from "./op_wrappers";
 import { CommandInteractionOptionValue } from "./models/events/CommandInteractionOptionValue";
@@ -7,98 +7,11 @@ import { PartialMember } from "./models/discord/PartialMember";
 import { InteractionPartialMember } from "./models/events/InteractionPartialMember";
 import { Role } from "./models/discord/Role";
 import { InteractionPartialChannel } from "./models/events/InteractionChannel";
+import { Member, Message } from "./discord";
 
 export namespace Commands {
-
-    export interface CommandDef<T extends OptionsMap> {
-        name: string;
-        description: string;
-        options: T;
-        kind?: "chat" | "user" | "message";
-        group?: Group,
-        callback: (ctx: ExecutedCommandContext, args: ParsedOptionsMap<T>) => void | Promise<any>,
-    }
-
-    export type OptionsMap = {
-        [key: string]: BaseOption<boolean>;
-    }
-
-    type ParsedOptionsMap<T extends OptionsMap> = {
-        [Property in keyof T]:
-        T[Property] extends BaseOption<false> ? OptionTypeToParsedType<T[Property]> | undefined : OptionTypeToParsedType<T[Property]>;
-    }
-
-    interface BaseOption<TRequired extends boolean | undefined> {
-        description: string;
-        kind: OptionType;
-        required?: TRequired;
-    }
-
-    export interface StringOption<T extends boolean> extends BaseOption<T> {
-        kind: "String";
-    };
-    export interface NumberOption<T extends boolean> extends BaseOption<T> {
-        kind: "Number";
-    };
-    export interface IntOption<T extends boolean> extends BaseOption<T> {
-        kind: "Integer";
-    };
-    export interface BoolOption<T extends boolean> extends BaseOption<T> {
-        kind: "Boolean";
-    };
-    export interface UserOption<T extends boolean> extends BaseOption<T> {
-        kind: "User";
-    };
-    export interface ChannelOption<T extends boolean> extends BaseOption<T> {
-        kind: "Channel";
-    };
-    export interface RoleOption<T extends boolean> extends BaseOption<T> {
-        kind: "Role";
-    };
-    export interface MentionableOption<T extends boolean> extends BaseOption<T> {
-        kind: "Mentionable";
-    };
-
-    export type OptionType = Ops.CommandOptionType;
-
-    type OptionTypeToParsedType<T extends BaseOption<boolean>> =
-        T extends StringOption<boolean> ? string :
-        T extends NumberOption<boolean> ? number :
-        T extends IntOption<boolean> ? number :
-        T extends BoolOption<boolean> ? boolean :
-        T extends UserOption<boolean> ? InteractionUser :
-        T extends ChannelOption<boolean> ? InteractionPartialChannel :
-        T extends RoleOption<boolean> ? Role :
-        T extends MentionableOption<boolean> ? InteractionMentionable :
-        unknown;
-
-    export class Group {
-        name: string;
-        description: string;
-        parent?: Group;
-        protected isSubGroup: boolean = false;
-
-        subGroups: Group[] = [];
-
-        constructor(name: string, description: string) {
-            this.name = name;
-            this.description = description;
-        }
-
-        subGroup(name: string, description: string) {
-            if (this.isSubGroup) {
-                throw "cant make sub groups of sub groups";
-            }
-
-            let group = new Group(name, description);
-            group.isSubGroup = true;
-            this.subGroups.push(group);
-            return group;
-        }
-    }
-
     export class System {
-        commands: CommandDef<OptionsMap>[] = [];
+        commands: Command[] = [];
 
         addEventListeners(muxer: EventMuxer) {
             muxer.on("BOTLOADER_COMMAND_INTERACTION_CREATE", this.handleInteractionCreate.bind(this));
@@ -114,7 +27,7 @@ export namespace Commands {
             for (let opt of interaction.options) {
                 optionsMap[opt.name] = this.resolveOption(interaction.dataMap, opt.value);
             }
-            await command.callback(new ExecutedCommandContext(interaction), optionsMap)
+            await command.cb(new ExecutedCommandContext(interaction), optionsMap)
         }
 
         private resolveOption(map: Events.CommandInteractionDataMap, opt: CommandInteractionOptionValue): unknown {
@@ -241,7 +154,7 @@ export namespace Commands {
         }
     }
 
-    function matchesCommand(cmd: CommandDef<any>, interaction: Events.CommandInteraction) {
+    function matchesCommand(cmd: Command, interaction: Events.CommandInteraction) {
         if (interaction.parentParentName) {
             if (cmd.group && cmd.group.parent) {
                 return cmd.name === interaction.name && cmd.group.name === interaction.parentName && cmd.group.parent.name === interaction.parentParentName;
@@ -278,17 +191,236 @@ export namespace Commands {
             }
         }
     }
-}
 
-export interface InteractionUser {
-    user: User,
-    member?: InteractionPartialMember,
-}
 
-export type InteractionMentionable = {
-    kind: "Role",
-    value: Role
-} | {
-    kind: "User",
-    value: InteractionUser
+    export interface InteractionUser {
+        user: User,
+        member?: InteractionPartialMember,
+    }
+
+    export type InteractionMentionable = {
+        kind: "Role",
+        value: Role
+    } | {
+        kind: "User",
+        value: InteractionUser
+    }
+
+    export interface Command {
+        name: string;
+        description: string;
+        kind: "Chat" | "User" | "Message",
+        group?: Group,
+        options?: OptionMap;
+        cb: (ctx: {}, args: {}) => any,
+    }
+
+    export type OptionType = BaseOption["kind"];
+    export type Option = BaseOption & (StringOption | NumberOption);
+
+    export type OptionMap = {
+        [key: string]: Option,
+    }
+
+    export interface BaseOption {
+        kind: "String" | "Number" | "Integer" | "Boolean" | "User" | "Channel" | "Role" | "Mentionable",
+        description: string,
+        required: boolean,
+    }
+
+    export interface StringOption {
+        max_len?: number,
+    }
+
+    export interface NumberOption {
+        min?: number,
+        max?: number,
+    }
+
+    export interface IntegerOption {
+
+    }
+    export interface BooleanOption {
+
+    }
+    export interface UserOption {
+
+    }
+    export interface ChannelOption {
+
+    }
+    export interface RoleOption {
+
+    }
+    export interface MentionableOption {
+
+    }
+
+    export class Group {
+        name: string;
+        description: string;
+        parent?: Group;
+        protected isSubGroup: boolean = false;
+
+        subGroups: Group[] = [];
+
+        constructor(name: string, description: string) {
+            this.name = name;
+            this.description = description;
+        }
+
+        subGroup(name: string, description: string) {
+            if (this.isSubGroup) {
+                throw "cant make sub groups of sub groups";
+            }
+
+            let group = new Group(name, description);
+            group.isSubGroup = true;
+            this.subGroups.push(group);
+            return group;
+        }
+    }
+
+    export function slashCommand(name: string, description: string) {
+        return new SlashCommandBuilder<{}>(name, description, {});
+    }
+
+    class SlashCommandBuilder<TOpts> {
+        private name: string;
+        private description: string;
+        private options: OptionMap;
+        private group?: Group;
+
+        constructor(name: string, description: string, options: OptionMap, group?: Group) {
+            this.name = name;
+            this.description = description;
+            this.options = options;
+        }
+
+        addOptionNumber<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: NumberOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "Number", description, opts)
+        }
+
+        addOptionString<TKey extends string, TRequired extends boolean | undefined>
+            (key: TKey, description: string, opts?: StringOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(key, "String", description, opts)
+        }
+
+        addOption<TKey extends string, TKind extends OptionType, TRequired extends boolean | undefined>
+            (key: TKey, kind: TKind, description: string, opts?: OptionsKindTable[TKind] & BaseOptionSettings<TRequired>) {
+
+            let required = false;
+            if (opts && opts.required !== undefined) {
+                required = true;
+            }
+
+            let fullOpts = {
+                [key]: {
+                    kind: kind,
+                    required: required,
+                    description: description,
+                    ...opts
+                },
+                ...this.options,
+            }
+
+            // Return a new builder with new typings
+            // The new opts type is "layered" on top of the old one, making us able to use
+            // the generic typings of all the options in the callback
+            return new SlashCommandBuilder<LayerOption<TOpts, TKey, { kind: TKind, required: TRequired }>>
+                (this.name, this.description, fullOpts as OptionMap);
+        }
+
+        build(callback: (ctx: ExecutedCommandContext, args: ParsedOptionsMap<TOpts>) => void | Promise<any>): Command {
+            return {
+                name: this.name,
+                description: this.description,
+                kind: "Chat",
+                options: this.options,
+                group: this.group,
+                cb: callback as any,
+            };
+        }
+    }
+
+    type LayerOption<TInner, TKey extends string, TVal> =
+        { [Prop in keyof TInner]: TInner[Prop] } & { [Prop in TKey]: TVal };
+
+
+    interface BaseOptionSettings<TRequired extends boolean | undefined = undefined> {
+        required?: TRequired
+    }
+
+    interface OptionsKindTable {
+        Number: NumberOption,
+        String: StringOption,
+        Integer: IntegerOption,
+        Boolean: BooleanOption,
+        User: UserOption,
+        Channel: ChannelOption,
+        Role: RoleOption,
+        Mentionable: MentionableOption,
+    }
+
+    type ParsedOptionsMap<T> = {
+        [Prop in keyof T]: T[Prop] extends { required: false } ? (OptionParsedType<T[Prop]> | undefined) : OptionParsedType<T[Prop]>
+    }
+
+    type OptionParsedType<T> =
+        T extends { kind: "String" } ? string :
+        T extends { kind: "Number" } ? number :
+        T extends { kind: "Integer" } ? number :
+        T extends { kind: "Boolean" } ? boolean :
+        T extends { kind: "User" } ? InteractionUser :
+        T extends { kind: "Channel" } ? InteractionPartialChannel :
+        T extends { kind: "Role" } ? Role :
+        T extends { kind: "Mentionable" } ? InteractionMentionable :
+        unknown;
+
+    export function userCommand(name: string, description: string) {
+        return new UserCommandBuilder(name, description);
+    }
+
+    class UserCommandBuilder {
+        name: string;
+        description: string;
+
+        constructor(name: string, description: string) {
+            this.name = name;
+            this.description = description;
+        }
+
+        build(cb: (ctx: ExecutedCommandContext, target: InteractionUser) => any): Command {
+            return {
+                name: this.name,
+                kind: "User",
+                description: this.description,
+                cb: cb as any,
+            }
+        }
+    }
+
+    export function messageCommand(name: string, description: string) {
+        return new MessageCommandBuilder(name, description);
+    }
+
+    class MessageCommandBuilder {
+        name: string;
+        description: string;
+
+        constructor(name: string, description: string) {
+            this.name = name;
+            this.description = description;
+        }
+
+        build(cb: (ctx: ExecutedCommandContext, target: Message) => any): Command {
+            return {
+                name: this.name,
+                kind: "Message",
+                description: this.description,
+                cb: cb as any,
+            }
+        }
+    }
 }
