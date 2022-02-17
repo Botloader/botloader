@@ -7,16 +7,12 @@ import { Ops, Events } from "./models";
 import { InternalEventSystem, EventMuxer, EventTypes } from "./events";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
-import { HttpClient } from "./httpclient";
 import { Tasks } from "./scheduled_tasks";
 
 /**
  * The script class is the main way you interact with botloader and discord.
  */
 export class Script {
-
-    readonly httpClient: HttpClient.Client;
-
     readonly scriptId: number;
     readonly description: string;
 
@@ -34,7 +30,6 @@ export class Script {
     constructor(id: number) {
         this.description = `script id ${id}`;
         this.scriptId = id;
-        this.httpClient = new HttpClient.Client(id);
     }
 
     on(eventType: "MESSAGE_DELETE", cb: (evt: EventTypes["MESSAGE_DELETE"]) => void): void;
