@@ -94,7 +94,7 @@ export class Script {
      * });
      * ```
      */
-    registerIntervalTimer(name: string, interval: string | number, callback: () => any) {
+    addIntervalTimer(name: string, interval: string | number, callback: () => any) {
         let timerType;
         if (typeof interval === "number") {
             timerType = { minutes: interval };
@@ -126,8 +126,22 @@ export class Script {
      * script.registerStorageBucket(new Storage.JsonBucket<Data>("fun-data"));
      * ```
      */
-    registerStorageBucket<T extends Storage.Bucket<U>, U>(bucket: T): T {
+    // addStorageBucket<T extends Storage.Bucket<U>, U>(bucket: T): T {
+    //     this.storageBuckets.push(bucket);
+    //     return bucket;
+    // }
+
+    addStorageBucketJson<T>(namespace: string) {
+        let bucket = new Storage.JsonBucket<T>(namespace);
         this.storageBuckets.push(bucket);
+
+        return bucket;
+    }
+
+    addStorageBucketNumber(namespace: string) {
+        let bucket = new Storage.NumberBucket(namespace);
+        this.storageBuckets.push(bucket);
+
         return bucket;
     }
 
@@ -139,7 +153,7 @@ export class Script {
      * @param namespace The task namespace to handle tasks from
      * @param cb The callback function to run
      */
-    async registerTaskHandler<T>(namespace: string, cb: (task: Tasks.Task<T>) => any) {
+    async addTaskHandler<T>(namespace: string, cb: (task: Tasks.Task<T>) => any) {
         this.taskHandlerNames.push(namespace);
 
         this.events.on("BOTLOADER_SCHEDULED_TASK_FIRED", async (evt) => {
@@ -191,20 +205,3 @@ interface IntervalTimerListener {
     timer: Ops.IntervalTimer,
     callback: () => any,
 }
-
-export interface GetMessagesOptions {
-    /**
-     * Limit max results, max 100, default 50
-     */
-    limit?: number,
-
-    /**
-     * Return messages made after this message id
-     */
-    after?: string,
-    /**
-     * Return messages made before this message id
-     */
-    before?: string,
-}
-
