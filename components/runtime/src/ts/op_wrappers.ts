@@ -1,7 +1,5 @@
-import {
-    Ops,
-    Discord,
-} from "./models";
+import { Ops } from "./models";
+import * as Discord from './models/discord/index';
 import { ScheduledTask } from "./models/events/ScheduledTask";
 import { CreateScheduledTask } from "./models/ops/CreateScheduledTask";
 import { UpdateGuildMemberFields } from "./models/ops/UpdateGuildMemberFields";

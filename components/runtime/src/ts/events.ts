@@ -1,4 +1,5 @@
-import { Events, Discord } from './models';
+import { Events } from './models';
+import * as Discord from './models/discord/index';
 
 export interface EventTypes {
     /**
