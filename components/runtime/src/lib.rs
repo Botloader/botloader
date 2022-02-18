@@ -17,7 +17,6 @@ use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 use vm::{vm::VmRole, AnyError, JsValue};
 
-pub mod dispatchevents;
 pub mod extensions;
 pub mod jsmodules;
 
