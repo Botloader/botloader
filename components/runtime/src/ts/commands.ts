@@ -1,12 +1,13 @@
-import { Events, Ops } from "./models";
+import { Events } from "./models";
+import * as Ops from "./generated/ops/index"
 import { EventMuxer } from "./events";
 import { OpWrappers } from "./op_wrappers";
-import { CommandInteractionOptionValue } from "./models/events/CommandInteractionOptionValue";
-import { User } from "./models/discord/User";
-import { InteractionPartialMember } from "./models/events/InteractionPartialMember";
-import { Role } from "./models/discord/Role";
-import { InteractionPartialChannel } from "./models/events/InteractionChannel";
-import { ChannelType, Member, Message } from "./discord";
+import { CommandInteractionOptionValue } from "./generated/events/CommandInteractionOptionValue";
+import { User } from "./generated/discord/User";
+import { InteractionPartialMember } from "./generated/events/InteractionPartialMember";
+import { Role } from "./generated/discord/Role";
+import { InteractionPartialChannel } from "./generated/events/InteractionChannel";
+import { ChannelType, Message } from "./discord";
 
 export namespace Commands {
     export class System {

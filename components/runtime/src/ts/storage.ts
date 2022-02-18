@@ -1,4 +1,4 @@
-import { Ops } from "./models";
+import * as Ops from "./generated/ops/index";
 import { OpWrappers } from "./op_wrappers";
 
 /**

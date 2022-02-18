@@ -14,4 +14,4 @@ cargo t
 if [ -d "../runtime/src/ts/models" ]; then 
     rm -r ../runtime/src/ts/models
 fi
-mv bindings/ ../runtime/src/ts/models   
+mv bindings/ ../runtime/src/ts/generated   

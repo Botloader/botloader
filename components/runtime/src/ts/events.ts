@@ -1,5 +1,5 @@
 import { Events } from './models';
-import * as Discord from './models/discord/index';
+import * as Discord from './generated/discord/index';
 
 export interface EventTypes {
     /**

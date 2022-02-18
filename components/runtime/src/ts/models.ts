@@ -9,9 +9,9 @@
  * 
  * I may remove them from the docs at some point.
  */
-export * as Ops from './models/ops/index';
+// export * as Ops from './generated/ops/index';
 
 /**
  * Types related to events
  */
-export * as Events from './models/events/index';
+export * as Events from './generated/events/index';

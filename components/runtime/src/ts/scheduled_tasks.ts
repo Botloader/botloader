@@ -1,6 +1,5 @@
-import { ScheduledTask } from "./models/events/ScheduledTask";
+import { ScheduledTask } from "./generated/events/ScheduledTask";
 import { OpWrappers } from "./op_wrappers";
-
 
 /**
  * Tasks or "Scheduled" Tasks are tasks that will execute at some point in the future

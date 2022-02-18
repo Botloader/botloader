@@ -1,7 +1,6 @@
-export * from './models/discord/index';
-import { Ops } from './models';
-import { Guild, GuildChannel, Member, Message, Role } from './models/discord/index';
-import { UpdateGuildMemberFields } from './models/ops/index';
+export * from './generated/discord/index';
+import { Guild, GuildChannel, Member, Message, Role } from './generated/discord/index';
+import * as Ops from './generated/ops/index';
 import { OpWrappers } from './op_wrappers';
 
 let a: GuildChannel | null = null;
@@ -127,7 +126,8 @@ export async function getMembers(ids: string[]): Promise<(Member | null)[]> {
     return await OpWrappers.getMembers(ids);
 }
 
-export async function editMember(userId: string, fields: UpdateGuildMemberFields): Promise<Member> {
+// TODO: remove exposed op models
+export async function editMember(userId: string, fields: Ops.UpdateGuildMemberFields): Promise<Member> {
     return await OpWrappers.updateMember(userId, fields);
 }
 

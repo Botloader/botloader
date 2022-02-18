@@ -1,8 +1,8 @@
-import { Ops } from "./models";
-import * as Discord from './models/discord/index';
-import { ScheduledTask } from "./models/events/ScheduledTask";
-import { CreateScheduledTask } from "./models/ops/CreateScheduledTask";
-import { UpdateGuildMemberFields } from "./models/ops/UpdateGuildMemberFields";
+import * as Ops from "./generated/ops/index";
+import * as Discord from './generated/discord/index';
+import { ScheduledTask } from "./generated/events/ScheduledTask";
+import { CreateScheduledTask } from "./generated/ops/CreateScheduledTask";
+import { UpdateGuildMemberFields } from "./generated/ops/UpdateGuildMemberFields";
 
 // This file contains op wrappers
 // They are used internally and you should generally not need to use them in your own scripts.
