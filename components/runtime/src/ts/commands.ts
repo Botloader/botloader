@@ -83,6 +83,9 @@ export namespace Commands {
             }
         }
 
+        /**
+         * @internal
+         */
         genOpBinding(): [Ops.Command[], Ops.CommandGroup[]] {
 
             const commands: Ops.Command[] = this.commands.map(cmd => {
