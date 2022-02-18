@@ -9,13 +9,13 @@ use twilight_model::application::interaction::{
 
 use crate::discord::{member::Member, message::Message, role::Role, user::User};
 
-use super::interactions::{InteractionPartialChannel, InteractionPartialMember};
+use crate::events::interactions::{InteractionPartialChannel, InteractionPartialMember};
 
 // we perform some normalization to make things simpler on the script side
 // and also simpler overall
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/events/CommandInteraction.ts")]
+#[ts(export_to = "bindings/internal/CommandInteraction.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct CommandInteraction {
     pub channel_id: String,
@@ -87,7 +87,7 @@ impl From<ApplicationCommand> for CommandInteraction {
 
 #[derive(Clone, Debug, Serialize, TS, Default)]
 #[ts(export)]
-#[ts(export_to = "bindings/events/CommandInteractionDataMaps.ts")]
+#[ts(export_to = "bindings/internal/CommandInteractionDataMaps.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct CommandInteractionDataMap {
     pub channels: HashMap<String, InteractionPartialChannel>,
@@ -131,7 +131,7 @@ impl From<CommandInteractionDataResolved> for CommandInteractionDataMap {
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/events/CommandInteractionOption.ts")]
+#[ts(export_to = "bindings/internal/CommandInteractionOption.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct CommandInteractionOption {
     pub name: String,
@@ -149,7 +149,7 @@ impl From<CommandDataOption> for CommandInteractionOption {
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/events/CommandInteractionOptionValue.ts")]
+#[ts(export_to = "bindings/internal/CommandInteractionOptionValue.ts")]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "kind")]
 pub enum CommandInteractionOptionValue {

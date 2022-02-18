@@ -1,4 +1,3 @@
-pub mod command_interaction;
 pub mod interactions;
 pub mod member_remove;
 pub mod message_delete;

@@ -2,6 +2,7 @@ use serde::{Deserialize, Deserializer};
 
 pub mod discord;
 pub mod events;
+pub mod internal;
 pub mod ops;
 pub mod util;
 

@@ -1,4 +1,4 @@
-import { Events, Ops, DiscordModels } from "./generated";
+import { Events, Ops, DiscordModels, Internal } from "./generated";
 import { EventMuxer } from "./events";
 import { OpWrappers } from "./op_wrappers";
 
@@ -10,7 +10,7 @@ export namespace Commands {
             muxer.on("BOTLOADER_COMMAND_INTERACTION_CREATE", this.handleInteractionCreate.bind(this));
         }
 
-        async handleInteractionCreate(interaction: Events.CommandInteraction) {
+        async handleInteractionCreate(interaction: Internal.CommandInteraction) {
             let command = this.commands.find(cmd => matchesCommand(cmd, interaction));
             if (!command) {
                 return;
@@ -23,7 +23,7 @@ export namespace Commands {
             await command.cb(new ExecutedCommandContext(interaction), optionsMap)
         }
 
-        private resolveOption(map: Events.CommandInteractionDataMap, opt: Events.CommandInteractionOptionValue): unknown {
+        private resolveOption(map: Internal.CommandInteractionDataMap, opt: Internal.CommandInteractionOptionValue): unknown {
             switch (opt.kind) {
                 case "user":
                     const user = map.users[opt.value];
@@ -150,7 +150,7 @@ export namespace Commands {
         }
     }
 
-    function matchesCommand(cmd: Command, interaction: Events.CommandInteraction) {
+    function matchesCommand(cmd: Command, interaction: Internal.CommandInteraction) {
         if (interaction.parentParentName) {
             if (cmd.group && cmd.group.parent) {
                 return cmd.name === interaction.name && cmd.group.name === interaction.parentName && cmd.group.parent.name === interaction.parentParentName;
@@ -167,9 +167,9 @@ export namespace Commands {
     }
 
     export class ExecutedCommandContext {
-        interaction: Events.CommandInteraction;
+        interaction: Internal.CommandInteraction;
 
-        constructor(interaction: Events.CommandInteraction) {
+        constructor(interaction: Internal.CommandInteraction) {
             this.interaction = interaction;
         }
 

@@ -1,11 +1,11 @@
-import { Events } from './generated';
+import { Events, Internal } from './generated';
 import * as Discord from './generated/discord/index';
 
 export interface EventTypes {
     /**
      * @internal
      */
-    BOTLOADER_COMMAND_INTERACTION_CREATE: Events.CommandInteraction,
+    BOTLOADER_COMMAND_INTERACTION_CREATE: Internal.CommandInteraction,
     /**
      * @internal
      */

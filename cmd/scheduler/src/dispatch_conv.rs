@@ -55,7 +55,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
                     name: "BOTLOADER_COMMAND_INTERACTION_CREATE",
                     guild_id: guild_id.unwrap(),
                     data: serde_json::to_value(
-                        &runtime_models::events::command_interaction::CommandInteraction::from(
+                        &runtime_models::internal::command_interaction::CommandInteraction::from(
                             *cmd,
                         ),
                     )
