@@ -1,5 +1,5 @@
-import type { OpStorageBucketValue } from "./StorageBucketValue";
 import type { OpStorageBucketSetCondition } from "./StorageBucketSetCondition";
+import type { OpStorageBucketValue } from "./StorageBucketValue";
 
 export interface OpStorageBucketSetIf {
   bucketName: string;

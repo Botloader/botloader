@@ -1,6 +1,6 @@
 import type { CommandInteractionDataMap } from "./CommandInteractionDataMaps";
-import type { Member } from "../discord/Member";
 import type { CommandInteractionOption } from "./CommandInteractionOption";
+import type { Member } from "../discord/Member";
 
 export interface CommandInteraction {
   channelId: string;

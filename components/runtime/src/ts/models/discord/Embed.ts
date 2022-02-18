@@ -1,10 +1,10 @@
-import type { EmbedProvider } from "./EmbedProvider";
-import type { EmbedVideo } from "./EmbedVideo";
-import type { EmbedFooter } from "./EmbedFooter";
-import type { EmbedThumbnail } from "./EmbedThumbnail";
-import type { EmbedField } from "./EmbedField";
 import type { EmbedAuthor } from "./EmbedAuthor";
+import type { EmbedField } from "./EmbedField";
+import type { EmbedFooter } from "./EmbedFooter";
 import type { EmbedImage } from "./EmbedImage";
+import type { EmbedProvider } from "./EmbedProvider";
+import type { EmbedThumbnail } from "./EmbedThumbnail";
+import type { EmbedVideo } from "./EmbedVideo";
 
 export interface Embed {
   author?: EmbedAuthor;

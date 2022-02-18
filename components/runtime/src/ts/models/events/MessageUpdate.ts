@@ -1,7 +1,7 @@
-import type { Embed } from "../discord/Embed";
-import type { MessageType } from "../discord/MessageType";
-import type { Mention } from "../discord/Mention";
 import type { Attachment } from "../discord/Attachment";
+import type { Embed } from "../discord/Embed";
+import type { Mention } from "../discord/Mention";
+import type { MessageType } from "../discord/MessageType";
 import type { User } from "../discord/User";
 
 export interface MessageUpdate {

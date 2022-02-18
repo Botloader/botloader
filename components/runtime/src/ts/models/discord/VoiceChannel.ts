@@ -1,5 +1,5 @@
-import type { VideoQualityMode } from "./VideoQualityMode";
 import type { PermissionOverwrite } from "./PermissionOverwrite";
+import type { VideoQualityMode } from "./VideoQualityMode";
 
 export interface VoiceChannel {
   bitrate: number;

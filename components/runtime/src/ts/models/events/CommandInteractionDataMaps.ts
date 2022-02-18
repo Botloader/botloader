@@ -1,8 +1,8 @@
 import type { InteractionPartialChannel } from "./InteractionChannel";
-import type { Role } from "../discord/Role";
-import type { User } from "../discord/User";
 import type { InteractionPartialMember } from "./InteractionPartialMember";
 import type { Message } from "../discord/Message";
+import type { Role } from "../discord/Role";
+import type { User } from "../discord/User";
 
 export interface CommandInteractionDataMap {
   channels: Record<string, InteractionPartialChannel>;
