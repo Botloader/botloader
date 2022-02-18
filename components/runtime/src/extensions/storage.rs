@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use anyhow::anyhow;
 use deno_core::{op_async, Extension, OpState};
-use runtime_models::ops::storage::{
+use runtime_models::internal::storage::{
     OpStorageBucketEntry, OpStorageBucketEntryId, OpStorageBucketIncr, OpStorageBucketList,
     OpStorageBucketSetIf, OpStorageBucketSetValue, OpStorageBucketSortedList, OpStorageBucketValue,
 };

@@ -1,6 +1,6 @@
 use deno_core::{op_sync, Extension, OpState};
 use guild_logger::LogEntry;
-use runtime_models::ops::console::LogMessage;
+use runtime_models::internal::console::ConsoleLogMessage;
 use vm::{AnyError, ScriptsStateStoreHandle};
 
 use crate::RuntimeContext;
@@ -10,7 +10,7 @@ pub fn extension() -> Extension {
         .build()
 }
 
-pub fn console_log(state: &mut OpState, args: LogMessage, _: ()) -> Result<(), AnyError> {
+pub fn console_log(state: &mut OpState, args: ConsoleLogMessage, _: ()) -> Result<(), AnyError> {
     let script_store = state.borrow::<ScriptsStateStoreHandle>();
 
     let (name, line_col) = if let (Some(orig_name), Some(line)) = (args.file_name, args.line_number)

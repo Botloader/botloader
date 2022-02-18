@@ -1,4 +1,4 @@
-import { Internal, Events } from "./generated";
+import { Internal } from "./generated";
 import * as Discord from './generated/discord/index';
 
 // This file contains op wrappers
@@ -35,7 +35,7 @@ export namespace OpWrappers {
     }
 
     export namespace tasks {
-        export function scheduleTask(data: Internal.CreateScheduledTask): Promise<Events.ScheduledTask> {
+        export function scheduleTask(data: Internal.CreateScheduledTask): Promise<Internal.ScheduledTask> {
             return Deno.core.opAsync("op_bl_schedule_task", data)
         }
 
@@ -51,15 +51,15 @@ export namespace OpWrappers {
             return Deno.core.opAsync("op_bl_del_all_tasks", name)
         }
 
-        export function getTask(taskId: number): Promise<Events.ScheduledTask | null> {
+        export function getTask(taskId: number): Promise<Internal.ScheduledTask | null> {
             return Deno.core.opAsync("op_bl_get_task", taskId)
         }
 
-        export function getTaskByKey(name: string, key: string): Promise<Events.ScheduledTask | null> {
+        export function getTaskByKey(name: string, key: string): Promise<Internal.ScheduledTask | null> {
             return Deno.core.opAsync("op_bl_get_task_by_key", name, key)
         }
 
-        export function getAllTasks(name: string | undefined, after_id: number): Promise<Events.ScheduledTask[]> {
+        export function getAllTasks(name: string | undefined, after_id: number): Promise<Internal.ScheduledTask[]> {
             return Deno.core.opAsync("op_bl_get_all_tasks", name, after_id)
         }
     }

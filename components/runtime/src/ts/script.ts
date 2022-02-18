@@ -3,7 +3,7 @@ import "./core_util";
 
 
 import { Commands } from "./commands";
-import { Events, Internal } from "./generated";
+import { Internal } from "./generated";
 import { InternalEventSystem, EventMuxer, EventTypes } from "./events";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
@@ -188,7 +188,7 @@ export class Script {
         this.events.on("BOTLOADER_INTERVAL_TIMER_FIRED", this.onInterval.bind(this));
     }
 
-    private async onInterval(evt: Events.IntervalTimerEvent) {
+    private async onInterval(evt: Internal.IntervalTimerEvent) {
         const timer = this.intervalTimers.find(timer => timer.timer.name === evt.name);
         if (timer) {
             await timer.callback();

@@ -9,7 +9,7 @@ use twilight_model::application::interaction::application_command;
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/events/InteractionChannel.ts")]
+#[ts(export_to = "bindings/internal/InteractionChannel.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct InteractionPartialChannel {
     pub id: String,
@@ -37,7 +37,7 @@ impl From<application_command::InteractionChannel> for InteractionPartialChannel
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/events/InteractionPartialMember.ts")]
+#[ts(export_to = "bindings/internal/InteractionPartialMember.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct InteractionPartialMember {
     pub joined_at: NotBigU64,

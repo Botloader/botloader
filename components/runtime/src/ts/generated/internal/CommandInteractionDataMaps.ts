@@ -1,5 +1,5 @@
-import type { InteractionPartialChannel } from "../events/InteractionChannel";
-import type { InteractionPartialMember } from "../events/InteractionPartialMember";
+import type { InteractionPartialChannel } from "./InteractionChannel";
+import type { InteractionPartialMember } from "./InteractionPartialMember";
 import type { Message } from "../discord/Message";
 import type { Role } from "../discord/Role";
 import type { User } from "../discord/User";

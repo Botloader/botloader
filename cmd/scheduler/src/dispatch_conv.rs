@@ -14,17 +14,17 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         DispatchEvent::MessageUpdate(m) if m.guild_id.is_some() => Some(DiscordDispatchEvent {
             name: "MESSAGE_UPDATE",
             guild_id: m.guild_id.unwrap(),
-            data: serde_json::to_value(
-                &runtime_models::events::message_update::MessageUpdate::from(*m),
-            )
+            data: serde_json::to_value(&runtime_models::discord::events::EventMessageUpdate::from(
+                *m,
+            ))
             .unwrap(),
         }),
         DispatchEvent::MessageDelete(m) if m.guild_id.is_some() => Some(DiscordDispatchEvent {
             name: "MESSAGE_DELETE",
             guild_id: m.guild_id.unwrap(),
-            data: serde_json::to_value(
-                &runtime_models::events::message_delete::MessageDelete::from(m),
-            )
+            data: serde_json::to_value(&runtime_models::discord::events::EventMessageDelete::from(
+                m,
+            ))
             .unwrap(),
         }),
         DispatchEvent::MemberAdd(m) => Some(DiscordDispatchEvent {
@@ -41,7 +41,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         DispatchEvent::MemberRemove(m) => Some(DiscordDispatchEvent {
             name: "MEMBER_REMOVE",
             guild_id: m.guild_id,
-            data: serde_json::to_value(&runtime_models::events::member_remove::MemberRemove::from(
+            data: serde_json::to_value(&runtime_models::discord::events::EventMemberRemove::from(
                 m,
             ))
             .unwrap(),

@@ -1,4 +1,4 @@
-import { Events, Internal } from './generated';
+import { Internal } from './generated';
 import * as Discord from './generated/discord/index';
 
 export interface EventTypes {
@@ -9,19 +9,19 @@ export interface EventTypes {
     /**
      * @internal
      */
-    BOTLOADER_INTERVAL_TIMER_FIRED: Events.IntervalTimerEvent,
+    BOTLOADER_INTERVAL_TIMER_FIRED: Internal.IntervalTimerEvent,
     /**
      * @internal
      */
-    BOTLOADER_SCHEDULED_TASK_FIRED: Events.ScheduledTask,
+    BOTLOADER_SCHEDULED_TASK_FIRED: Internal.ScheduledTask,
 
     MESSAGE_CREATE: Discord.Message,
-    MESSAGE_UPDATE: Events.MessageUpdate,
-    MESSAGE_DELETE: Events.MessageDelete,
+    MESSAGE_UPDATE: Discord.EventMessageUpdate,
+    MESSAGE_DELETE: Discord.EventMessageDelete,
 
     MEMBER_ADD: Discord.Member,
     MEMBER_UPDATE: Discord.Member,
-    MEMBER_REMOVE: Events.MemberRemove,
+    MEMBER_REMOVE: Discord.EventMemberRemove,
 }
 
 /**

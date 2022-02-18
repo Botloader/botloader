@@ -9,7 +9,7 @@ use twilight_model::application::interaction::{
 
 use crate::discord::{member::Member, message::Message, role::Role, user::User};
 
-use crate::events::interactions::{InteractionPartialChannel, InteractionPartialMember};
+use crate::internal::interactions::{InteractionPartialChannel, InteractionPartialMember};
 
 // we perform some normalization to make things simpler on the script side
 // and also simpler overall

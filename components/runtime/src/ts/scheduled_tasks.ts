@@ -1,4 +1,4 @@
-import { ScheduledTask } from "./generated/events/ScheduledTask";
+import { ScheduledTask } from "./generated/internal/ScheduledTask";
 import { OpWrappers } from "./op_wrappers";
 
 /**

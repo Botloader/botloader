@@ -1,10 +1,10 @@
-import type { Attachment } from "../discord/Attachment";
-import type { Embed } from "../discord/Embed";
-import type { Mention } from "../discord/Mention";
-import type { MessageType } from "../discord/MessageType";
-import type { User } from "../discord/User";
+import type { Attachment } from "./Attachment";
+import type { Embed } from "./Embed";
+import type { Mention } from "./Mention";
+import type { MessageType } from "./MessageType";
+import type { User } from "./User";
 
-export interface MessageUpdate {
+export interface EventMessageUpdate {
   attachments: Array<Attachment> | null;
   author: User | null;
   channelId: string;

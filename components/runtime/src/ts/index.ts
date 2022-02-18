@@ -10,4 +10,3 @@ export * from './httpclient';
 export * from './scheduled_tasks';
 export * as Discord from './discord';
 export * as Unstable from './unstable/index';
-export * as Events from './generated/events/index';

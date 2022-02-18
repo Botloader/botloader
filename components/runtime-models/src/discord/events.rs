@@ -12,9 +12,47 @@ use crate::{
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/events/MessageUpdate.ts")]
+#[ts(export_to = "bindings/discord/EventMemberRemove.ts")]
 #[serde(rename_all = "camelCase")]
-pub struct MessageUpdate {
+pub struct EventMemberRemove {
+    pub guild_id: String,
+    pub user: User,
+}
+
+impl From<twilight_model::gateway::payload::incoming::MemberRemove> for EventMemberRemove {
+    fn from(v: twilight_model::gateway::payload::incoming::MemberRemove) -> Self {
+        Self {
+            guild_id: v.guild_id.to_string(),
+            user: v.user.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/EventMessageDelete.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventMessageDelete {
+    pub channel_id: String,
+    pub guild_id: Option<String>,
+    pub id: String,
+}
+
+impl From<twilight_model::gateway::payload::incoming::MessageDelete> for EventMessageDelete {
+    fn from(v: twilight_model::gateway::payload::incoming::MessageDelete) -> Self {
+        Self {
+            channel_id: v.channel_id.to_string(),
+            guild_id: v.guild_id.as_ref().map(ToString::to_string),
+            id: v.id.to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/EventMessageUpdate.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventMessageUpdate {
     pub attachments: Option<Vec<Attachment>>,
     pub author: Option<User>,
     pub channel_id: String,
@@ -32,7 +70,7 @@ pub struct MessageUpdate {
     pub tts: Option<bool>,
 }
 
-impl From<twilight_model::gateway::payload::incoming::MessageUpdate> for MessageUpdate {
+impl From<twilight_model::gateway::payload::incoming::MessageUpdate> for EventMessageUpdate {
     fn from(v: twilight_model::gateway::payload::incoming::MessageUpdate) -> Self {
         Self {
             attachments: v

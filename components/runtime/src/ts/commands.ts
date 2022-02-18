@@ -1,4 +1,4 @@
-import { Events, DiscordModels, Internal } from "./generated";
+import { DiscordModels, Internal } from "./generated";
 import { EventMuxer } from "./events";
 import { OpWrappers } from "./op_wrappers";
 
@@ -72,7 +72,7 @@ export namespace Commands {
                     return metionableRet;
 
                 case "channel":
-                    const channel: Events.InteractionPartialChannel = map.channels[opt.value];
+                    const channel: Internal.InteractionPartialChannel = map.channels[opt.value];
                     if (channel === undefined) {
                         throw new Error("interaction channel not found in data map");
                     }
@@ -191,7 +191,7 @@ export namespace Commands {
 
     export interface InteractionUser {
         user: DiscordModels.User,
-        member?: Events.InteractionPartialMember,
+        member?: Internal.InteractionPartialMember,
     }
 
     export type InteractionMentionable = {
@@ -417,7 +417,7 @@ export namespace Commands {
         T extends { kind: "Integer" } ? number :
         T extends { kind: "Boolean" } ? boolean :
         T extends { kind: "User" } ? InteractionUser :
-        T extends { kind: "Channel" } ? Events.InteractionPartialChannel :
+        T extends { kind: "Channel" } ? Internal.InteractionPartialChannel :
         T extends { kind: "Role" } ? DiscordModels.Role :
         T extends { kind: "Mentionable" } ? InteractionMentionable :
         unknown;

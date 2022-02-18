@@ -9,7 +9,7 @@ use deno_core::{
 };
 use futures::Stream;
 use reqwest::Body;
-use runtime_models::ops::httpclient::{ClientHttpRequest, ClientHttpResponse};
+use runtime_models::internal::httpclient::{ClientHttpRequest, ClientHttpResponse};
 use tokio::{io::AsyncReadExt, sync::mpsc};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 use tokio_util::io::StreamReader;
