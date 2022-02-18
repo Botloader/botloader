@@ -1,4 +1,4 @@
-import { Ops, Events } from "./generated";
+import { Internal, Events } from "./generated";
 import * as Discord from './generated/discord/index';
 
 // This file contains op wrappers
@@ -29,13 +29,13 @@ export namespace OpWrappers {
             return Deno.core.opSync("op_bl_http_client_stream")
         }
 
-        export function requestSend(args: Ops.ClientHttpRequest): Promise<Ops.ClientHttpResponse> {
+        export function requestSend(args: Internal.ClientHttpRequest): Promise<Internal.ClientHttpResponse> {
             return Deno.core.opAsync("op_bl_http_request_send", args)
         }
     }
 
     export namespace tasks {
-        export function scheduleTask(data: Ops.CreateScheduledTask): Promise<Events.ScheduledTask> {
+        export function scheduleTask(data: Internal.CreateScheduledTask): Promise<Events.ScheduledTask> {
             return Deno.core.opAsync("op_bl_schedule_task", data)
         }
 
@@ -64,14 +64,14 @@ export namespace OpWrappers {
         }
     }
 
-    export function scriptStarted(meta: Ops.ScriptMeta) {
+    export function scriptStarted(meta: Internal.ScriptMeta) {
         Deno.core.opSync(
             "op_botloader_script_start",
             meta
         );
     }
 
-    export function consoleLog(args: Ops.LogMessage) {
+    export function consoleLog(args: Internal.ConsoleLogMessage) {
         Deno.core.opSync(
             "op_botloader_log",
             args
@@ -82,48 +82,48 @@ export namespace OpWrappers {
         return Deno.core.opAsync("discord_get_guild");
     }
 
-    export async function getMessage(args: Ops.OpGetMessage): Promise<Discord.Message> {
+    export async function getMessage(args: Internal.OpGetMessage): Promise<Discord.Message> {
         return await Deno.core.opAsync(
             "discord_get_message",
             args
         );
     }
 
-    export async function getMessages(args: Ops.OpGetMessages): Promise<Discord.Message[]> {
+    export async function getMessages(args: Internal.OpGetMessages): Promise<Discord.Message[]> {
         return await Deno.core.opAsync(
             "discord_get_messages",
             args
         );
     }
 
-    export async function createChannelMessage(args: Ops.OpCreateChannelMessage): Promise<Discord.Message> {
+    export async function createChannelMessage(args: Internal.OpCreateChannelMessage): Promise<Discord.Message> {
         return await Deno.core.opAsync(
             "discord_create_message",
             args
         );
     }
 
-    export async function editChannelMessage(args: Ops.OpEditChannelMessage): Promise<Discord.Message> {
+    export async function editChannelMessage(args: Internal.OpEditChannelMessage): Promise<Discord.Message> {
         return await Deno.core.opAsync(
             "discord_edit_message",
             args
         );
     }
 
-    export async function deleteChannelMessage(args: Ops.OpDeleteMessage): Promise<void> {
+    export async function deleteChannelMessage(args: Internal.OpDeleteMessage): Promise<void> {
         await Deno.core.opAsync(
             "discord_delete_message",
             args
         );
     }
-    export async function deleteChannelMessagesBulk(args: Ops.OpDeleteMessagesBulk): Promise<void> {
+    export async function deleteChannelMessagesBulk(args: Internal.OpDeleteMessagesBulk): Promise<void> {
         await Deno.core.opAsync(
             "discord_bulk_delete_messages",
             args
         );
     }
 
-    export async function createInteractionFollowup(args: Ops.OpCreateFollowUpMessage): Promise<Discord.Message> {
+    export async function createInteractionFollowup(args: Internal.OpCreateFollowUpMessage): Promise<Discord.Message> {
         return await Deno.core.opAsync(
             "discord_create_followup_message",
             args
@@ -163,7 +163,7 @@ export namespace OpWrappers {
         );
     }
 
-    export async function updateMember(userId: string, fields: Ops.UpdateGuildMemberFields): Promise<Discord.Member> {
+    export async function updateMember(userId: string, fields: Internal.UpdateGuildMemberFields): Promise<Discord.Member> {
         return await Deno.core.opAsync(
             "discord_update_member",
             userId,
@@ -188,31 +188,31 @@ export namespace OpWrappers {
     }
 
     // Storage
-    export async function bucketStorageSet(opts: Ops.OpStorageBucketSetValue): Promise<Ops.OpStorageBucketEntry> {
+    export async function bucketStorageSet(opts: Internal.OpStorageBucketSetValue): Promise<Internal.OpStorageBucketEntry> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_set", opts);
     }
 
-    export async function bucketStorageSetIf(opts: Ops.OpStorageBucketSetIf): Promise<Ops.OpStorageBucketEntry | null> {
+    export async function bucketStorageSetIf(opts: Internal.OpStorageBucketSetIf): Promise<Internal.OpStorageBucketEntry | null> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_set_if", opts);
     }
 
-    export async function bucketStorageGet(opts: Ops.OpStorageBucketEntryId): Promise<Ops.OpStorageBucketEntry | null> {
+    export async function bucketStorageGet(opts: Internal.OpStorageBucketEntryId): Promise<Internal.OpStorageBucketEntry | null> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_get", opts);
     }
 
-    export async function bucketStorageDel(opts: Ops.OpStorageBucketEntryId): Promise<Ops.OpStorageBucketEntry | null> {
+    export async function bucketStorageDel(opts: Internal.OpStorageBucketEntryId): Promise<Internal.OpStorageBucketEntry | null> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_del", opts);
     }
 
-    export async function bucketStorageList(opts: Ops.OpStorageBucketList): Promise<Ops.OpStorageBucketEntry[]> {
+    export async function bucketStorageList(opts: Internal.OpStorageBucketList): Promise<Internal.OpStorageBucketEntry[]> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_list", opts);
     }
 
-    export async function bucketStorageIncr(opts: Ops.OpStorageBucketIncr): Promise<Ops.OpStorageBucketEntry> {
+    export async function bucketStorageIncr(opts: Internal.OpStorageBucketIncr): Promise<Internal.OpStorageBucketEntry> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_incr", opts);
     }
 
-    export async function bucketStorageSortedList(opts: Ops.OpStorageBucketSortedList): Promise<Ops.OpStorageBucketEntry[]> {
+    export async function bucketStorageSortedList(opts: Internal.OpStorageBucketSortedList): Promise<Internal.OpStorageBucketEntry[]> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_sorted_list", opts);
     }
 

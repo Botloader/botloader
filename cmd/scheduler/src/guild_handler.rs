@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::{GuildLogger, LogEntry};
-use runtime_models::ops::script::ScriptMeta;
+use runtime_models::internal::script::ScriptMeta;
 use scheduler_worker_rpc::{
     MetricEvent, RunStateChangeReq, SchedulerMessage, UpdateRunStateRequest, VmDispatchEvent,
     WorkerMessage,
@@ -532,10 +532,10 @@ impl GuildHandler {
             .map(|v| stores::config::IntervalTimerContrib {
                 name: v.name.clone(),
                 interval: match &v.interval {
-                    runtime_models::ops::script::IntervalType::Cron(c) => {
+                    runtime_models::internal::script::IntervalType::Cron(c) => {
                         stores::timers::IntervalType::Cron(c.clone())
                     }
-                    runtime_models::ops::script::IntervalType::Minutes(m) => {
+                    runtime_models::internal::script::IntervalType::Minutes(m) => {
                         stores::timers::IntervalType::Minutes(m.0)
                     }
                 },

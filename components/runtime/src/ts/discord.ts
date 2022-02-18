@@ -1,6 +1,6 @@
 export * from './generated/discord/index';
 import { Guild, GuildChannel, Member, Message, Role } from './generated/discord/index';
-import * as Ops from './generated/ops/index';
+import * as Internal from './generated/internal/index';
 import { OpWrappers } from './op_wrappers';
 
 let a: GuildChannel | null = null;
@@ -45,13 +45,13 @@ export interface GetMessagesOptions {
     before?: string,
 }
 
-export function createMessage(channelId: string, fields: Ops.OpCreateMessageFields): Promise<Message> {
+export function createMessage(channelId: string, fields: Internal.OpCreateMessageFields): Promise<Message> {
     return OpWrappers.createChannelMessage({
         channelId,
         fields,
     });
 }
-export function editMessage(channelId: string, messageId: string, fields: Ops.OpEditMessageFields): Promise<Message> {
+export function editMessage(channelId: string, messageId: string, fields: Internal.OpEditMessageFields): Promise<Message> {
     return OpWrappers.editChannelMessage({
         channelId,
         messageId,
@@ -127,7 +127,7 @@ export async function getMembers(ids: string[]): Promise<(Member | null)[]> {
 }
 
 // TODO: remove exposed op models
-export async function editMember(userId: string, fields: Ops.UpdateGuildMemberFields): Promise<Member> {
+export async function editMember(userId: string, fields: Internal.UpdateGuildMemberFields): Promise<Member> {
     return await OpWrappers.updateMember(userId, fields);
 }
 

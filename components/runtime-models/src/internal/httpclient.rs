@@ -7,7 +7,7 @@ use crate::util::NotBigU64;
 
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/ClientHttpRequest.ts")]
+#[ts(export_to = "bindings/internal/ClientHttpRequest.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct ClientHttpRequest {
     pub path: String,
@@ -23,7 +23,7 @@ pub struct ClientHttpRequest {
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/ClientHttpResponse.ts")]
+#[ts(export_to = "bindings/internal/ClientHttpResponse.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct ClientHttpResponse {
     pub headers: HashMap<String, String>,

@@ -3,8 +3,7 @@ import "./core_util";
 
 
 import { Commands } from "./commands";
-import { Events } from "./generated";
-import * as Ops from "./generated/ops/index";
+import { Events, Internal } from "./generated";
 import { InternalEventSystem, EventMuxer, EventTypes } from "./events";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
@@ -198,6 +197,6 @@ export class Script {
 }
 
 interface IntervalTimerListener {
-    timer: Ops.IntervalTimer,
+    timer: Internal.IntervalTimer,
     callback: () => any,
 }

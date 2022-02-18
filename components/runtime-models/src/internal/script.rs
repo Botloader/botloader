@@ -7,7 +7,7 @@ use crate::util::NotBigU64;
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/ops/ScriptMeta.ts")]
+#[ts(export_to = "bindings/internal/ScriptMeta.ts")]
 pub struct ScriptMeta {
     pub description: String,
     #[ts(type = "number")]
@@ -21,7 +21,7 @@ pub struct ScriptMeta {
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/ops/IntervalTimer.ts")]
+#[ts(export_to = "bindings/internal/IntervalTimer.ts")]
 pub struct IntervalTimer {
     pub name: String,
     pub interval: IntervalType,
@@ -30,7 +30,7 @@ pub struct IntervalTimer {
 #[derive(Clone, Serialize, Deserialize, Debug, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/ops/IntervalType.ts")]
+#[ts(export_to = "bindings/internal/IntervalType.ts")]
 pub enum IntervalType {
     Minutes(NotBigU64),
     Cron(String),
@@ -39,7 +39,7 @@ pub enum IntervalType {
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/ops/CommandGroup.ts")]
+#[ts(export_to = "bindings/internal/CommandGroup.ts")]
 pub struct CommandGroup {
     pub name: String,
     pub description: String,
@@ -49,7 +49,7 @@ pub struct CommandGroup {
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/ops/CommandSubGroup.ts")]
+#[ts(export_to = "bindings/internal/CommandSubGroup.ts")]
 pub struct CommandSubGroup {
     pub name: String,
     pub description: String,
@@ -58,7 +58,7 @@ pub struct CommandSubGroup {
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/ops/Command.ts")]
+#[ts(export_to = "bindings/internal/Command.ts")]
 pub struct Command {
     pub name: String,
     pub description: String,
@@ -85,7 +85,7 @@ impl From<Command> for twilight_model::application::command::CommandOption {
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/CommandOptionType.ts")]
+#[ts(export_to = "bindings/internal/CommandOptionType.ts")]
 pub enum CommandOptionType {
     // SubCommand,
     // SubCommandGroup,
@@ -117,7 +117,7 @@ impl From<CommandOptionType> for twilight_model::application::command::CommandOp
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/ops/CommandOption.ts")]
+#[ts(export_to = "bindings/internal/CommandOption.ts")]
 pub struct CommandOption {
     pub name: String,
     pub description: String,

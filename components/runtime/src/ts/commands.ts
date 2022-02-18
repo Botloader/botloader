@@ -1,4 +1,4 @@
-import { Events, Ops, DiscordModels, Internal } from "./generated";
+import { Events, DiscordModels, Internal } from "./generated";
 import { EventMuxer } from "./events";
 import { OpWrappers } from "./op_wrappers";
 
@@ -86,10 +86,10 @@ export namespace Commands {
         /**
          * @internal
          */
-        genOpBinding(): [Ops.Command[], Ops.CommandGroup[]] {
+        genOpBinding(): [Internal.Command[], Internal.CommandGroup[]] {
 
-            const commands: Ops.Command[] = this.commands.map(cmd => {
-                const options: Ops.CommandOption[] = [];
+            const commands: Internal.Command[] = this.commands.map(cmd => {
+                const options: Internal.CommandOption[] = [];
                 for (let prop in cmd.options) {
                     if (Object.prototype.hasOwnProperty.call(cmd.options, prop)) {
                         let entry = cmd.options[prop];
@@ -122,7 +122,7 @@ export namespace Commands {
                 }
             });
 
-            const groups: Ops.CommandGroup[] = [];
+            const groups: Internal.CommandGroup[] = [];
 
             OUTER:
             for (let cmd of this.commands) {
@@ -173,7 +173,7 @@ export namespace Commands {
             this.interaction = interaction;
         }
 
-        async sendResponse(resp: string | Ops.OpCreateMessageFields) {
+        async sendResponse(resp: string | Internal.OpCreateMessageFields) {
             if (typeof resp === "string") {
                 await OpWrappers.createInteractionFollowup({
                     interactionToken: this.interaction.token,

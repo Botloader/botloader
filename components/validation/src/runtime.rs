@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use runtime_models::ops::script::{Command, CommandGroup, CommandOption, CommandSubGroup};
+use runtime_models::internal::script::{Command, CommandGroup, CommandOption, CommandSubGroup};
 
 use crate::{ValidationContext, Validator};
 

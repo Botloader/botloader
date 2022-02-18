@@ -2,9 +2,9 @@ use serde::Deserialize;
 use ts_rs::TS;
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/ConsoleLogMessage.ts")]
+#[ts(export_to = "bindings/internal/ConsoleLogMessage.ts")]
 #[serde(rename_all = "camelCase")]
-pub struct LogMessage {
+pub struct ConsoleLogMessage {
     #[serde(default)]
     #[ts(optional)]
     pub file_name: Option<String>,

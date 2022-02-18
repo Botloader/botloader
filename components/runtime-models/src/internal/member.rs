@@ -7,7 +7,7 @@ use twilight_model::id::{
 
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/UpdateGuildMemberFields.ts")]
+#[ts(export_to = "bindings/internal/UpdateGuildMemberFields.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGuildMemberFields {
     #[ts(optional)]

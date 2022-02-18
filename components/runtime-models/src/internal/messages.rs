@@ -11,7 +11,7 @@ use twilight_model::{
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/DeleteMessage.ts")]
+#[ts(export_to = "bindings/internal/DeleteMessage.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpDeleteMessage {
     pub channel_id: String,
@@ -20,7 +20,7 @@ pub struct OpDeleteMessage {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/DeleteMessagesBulk.ts")]
+#[ts(export_to = "bindings/internal/DeleteMessagesBulk.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpDeleteMessagesBulk {
     pub channel_id: String,
@@ -29,7 +29,7 @@ pub struct OpDeleteMessagesBulk {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/CreateChannelMessage.ts")]
+#[ts(export_to = "bindings/internal/CreateChannelMessage.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpCreateChannelMessage {
     pub channel_id: String,
@@ -38,7 +38,7 @@ pub struct OpCreateChannelMessage {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/EditChannelMessage.ts")]
+#[ts(export_to = "bindings/internal/EditChannelMessage.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpEditChannelMessage {
     pub channel_id: String,
@@ -48,7 +48,7 @@ pub struct OpEditChannelMessage {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/CreateFollowUpMessage.ts")]
+#[ts(export_to = "bindings/internal/CreateFollowUpMessage.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpCreateFollowUpMessage {
     pub interaction_token: String,
@@ -57,7 +57,7 @@ pub struct OpCreateFollowUpMessage {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/CreateMessageFields.ts")]
+#[ts(export_to = "bindings/internal/CreateMessageFields.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpCreateMessageFields {
     #[serde(default)]
@@ -73,7 +73,7 @@ pub struct OpCreateMessageFields {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/EditMessageFields.ts")]
+#[ts(export_to = "bindings/internal/EditMessageFields.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpEditMessageFields {
     #[serde(default)]
@@ -89,7 +89,7 @@ pub struct OpEditMessageFields {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/AllowedMentions.ts")]
+#[ts(export_to = "bindings/internal/AllowedMentions.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct AllowedMentions {
     parse: Vec<MentionParseTypes>,
@@ -119,7 +119,7 @@ impl From<AllowedMentions> for TwilightAllowedMentions {
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/MentionParseTypes.ts")]
+#[ts(export_to = "bindings/internal/MentionParseTypes.ts")]
 pub enum MentionParseTypes {
     Everyone,
     Roles,
@@ -138,7 +138,7 @@ impl From<MentionParseTypes> for TwilightParseTypes {
 
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/GetMessage.ts")]
+#[ts(export_to = "bindings/internal/GetMessage.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpGetMessage {
     pub channel_id: String,
@@ -147,7 +147,7 @@ pub struct OpGetMessage {
 
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/GetMessages.ts")]
+#[ts(export_to = "bindings/internal/GetMessages.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpGetMessages {
     pub channel_id: String,

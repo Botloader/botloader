@@ -1,4 +1,4 @@
-import * as Ops from "./generated/ops/index";
+import * as Internal from "./generated/internal/index";
 import { OpWrappers } from "./op_wrappers";
 
 /**
@@ -103,10 +103,10 @@ export namespace Storage {
         }
 
 
-        protected abstract intoInternalValue(v: T): Ops.OpStorageBucketValue;
-        protected abstract fromInternalValue(v: Ops.OpStorageBucketValue): T | undefined;
+        protected abstract intoInternalValue(v: T): Internal.OpStorageBucketValue;
+        protected abstract fromInternalValue(v: Internal.OpStorageBucketValue): T | undefined;
 
-        protected entryFromInternal(entry: Ops.OpStorageBucketEntry): Entry<T> {
+        protected entryFromInternal(entry: Internal.OpStorageBucketEntry): Entry<T> {
             let val = this.fromInternalValue(entry.value);
             if (val == undefined) {
                 throw new Error("failed converting from internal value, incorrect type. This can happen if you changed the bucket type from say number to json, don't do that.");
@@ -120,7 +120,7 @@ export namespace Storage {
             }
         }
 
-        protected entryFromInternalOptional(entry?: Ops.OpStorageBucketEntry | null): Entry<T> | undefined {
+        protected entryFromInternalOptional(entry?: Internal.OpStorageBucketEntry | null): Entry<T> | undefined {
             if (entry) {
                 return this.entryFromInternal(entry)
             } else {
@@ -218,13 +218,13 @@ export namespace Storage {
      * {@see} {@link Bucket} for more info on buckets.
      */
     export class NumberBucket extends Bucket<number>{
-        protected intoInternalValue(v: number): Ops.OpStorageBucketValue {
+        protected intoInternalValue(v: number): Internal.OpStorageBucketValue {
             return {
                 double: v,
             }
         }
 
-        protected fromInternalValue(v: Ops.OpStorageBucketValue): number | undefined {
+        protected fromInternalValue(v: Internal.OpStorageBucketValue): number | undefined {
             if ('double' in v) {
                 return v.double;
             }
@@ -271,14 +271,14 @@ export namespace Storage {
      * {@see} {@link Bucket} for more info on buckets.
      */
     export class JsonBucket<T> extends Bucket<T>{
-        protected intoInternalValue(v: T): Ops.OpStorageBucketValue {
+        protected intoInternalValue(v: T): Internal.OpStorageBucketValue {
             return {
                 // json is handled on the rust side and opcall side
                 json: v,
             }
         }
 
-        protected fromInternalValue(v: Ops.OpStorageBucketValue): T | undefined {
+        protected fromInternalValue(v: Internal.OpStorageBucketValue): T | undefined {
             if ('json' in v) {
                 // json is handled on the rust side and opcall side
                 return v.json;

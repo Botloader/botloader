@@ -6,7 +6,7 @@ use crate::util::NotBigU64;
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucket.ts")]
+#[ts(export_to = "bindings/internal/StorageBucket.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucket {
     pub name: String,
@@ -14,7 +14,7 @@ pub struct OpStorageBucket {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketValue.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketValue.ts")]
 #[serde(rename_all = "camelCase")]
 pub enum OpStorageBucketValue {
     Json(#[ts(type = "any")] serde_json::Value),
@@ -41,7 +41,7 @@ impl From<OpStorageBucketValue> for bucketstore::StoreValue {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketSetValue.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketSetValue.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketSetValue {
     pub bucket_name: String,
@@ -54,7 +54,7 @@ pub struct OpStorageBucketSetValue {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketSetIf.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketSetIf.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketSetIf {
     pub bucket_name: String,
@@ -68,7 +68,7 @@ pub struct OpStorageBucketSetIf {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketEntryId.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketEntryId.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketEntryId {
     pub bucket_name: String,
@@ -77,7 +77,7 @@ pub struct OpStorageBucketEntryId {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketList.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketList.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketList {
     pub bucket_name: String,
@@ -94,7 +94,7 @@ pub struct OpStorageBucketList {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketListOrder.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketListOrder.ts")]
 pub enum OpStorageBucketListOrder {
     Ascending,
     Descending,
@@ -111,7 +111,7 @@ impl From<OpStorageBucketListOrder> for bucketstore::SortedOrder {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketSortedList.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketSortedList.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketSortedList {
     pub bucket_name: String,
@@ -129,7 +129,7 @@ pub struct OpStorageBucketSortedList {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketIncr.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketIncr.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketIncr {
     pub bucket_name: String,
@@ -139,7 +139,7 @@ pub struct OpStorageBucketIncr {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketEntry.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketEntry.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketEntry {
     bucket_name: String,
@@ -161,7 +161,7 @@ impl From<bucketstore::Entry> for OpStorageBucketEntry {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/StorageBucketSetCondition.ts")]
+#[ts(export_to = "bindings/internal/StorageBucketSetCondition.ts")]
 pub enum OpStorageBucketSetCondition {
     IfExists,
     IfNotExists,

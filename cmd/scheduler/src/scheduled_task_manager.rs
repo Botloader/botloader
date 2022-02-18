@@ -1,7 +1,7 @@
 use std::{ops::Add, sync::Arc};
 
 use chrono::{DateTime, Utc};
-use runtime_models::ops::script::ScriptMeta;
+use runtime_models::internal::script::ScriptMeta;
 use stores::timers::ScheduledTask;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};

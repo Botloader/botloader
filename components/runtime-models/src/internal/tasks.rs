@@ -4,7 +4,7 @@ use ts_rs::TS;
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/ops/CreateScheduledTask.ts")]
+#[ts(export_to = "bindings/internal/CreateScheduledTask.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct CreateScheduledTask {
     pub namespace: String,

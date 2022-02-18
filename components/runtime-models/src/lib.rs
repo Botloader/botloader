@@ -3,7 +3,6 @@ use serde::{Deserialize, Deserializer};
 pub mod discord;
 pub mod events;
 pub mod internal;
-pub mod ops;
 pub mod util;
 
 pub(crate) fn deserialize_optional_field<'de, T, D>(

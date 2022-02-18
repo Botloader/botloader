@@ -1,4 +1,4 @@
-export interface LogMessage {
+export interface ConsoleLogMessage {
   fileName?: string;
   lineNumber?: number;
   colNumber?: number;
