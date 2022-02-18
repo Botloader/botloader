@@ -8,6 +8,6 @@ export * from './script';
 export * from './storage';
 export * from './models';
 export * from './httpclient';
-export * from './streams';
-export * as Discord from './discord';
 export * from './scheduled_tasks';
+export * as Discord from './discord';
+export * as Unstable from './unstable/index';

@@ -1,5 +1,5 @@
 import { OpWrappers } from "./op_wrappers";
-import { AsyncReadCloser, AsyncReader, AsyncWriter, NativeReader } from "./streams";
+import { AsyncReadCloser, AsyncReader, NativeReader } from "./unstable/streams";
 import { decodeText, encodeText } from "./core_util";
 
 export namespace HttpClient {
