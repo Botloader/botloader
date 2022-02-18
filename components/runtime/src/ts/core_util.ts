@@ -59,11 +59,16 @@ function getCaller(skip: number): [string | undefined, number | undefined, numbe
     log: console.log,
 };
 
-
+/**
+ * Encode a string to its Uint8Array representation.
+ */
 export function encodeText(s: string): Uint8Array {
     return Deno.core.encode(s);
 }
 
+/**
+ * Decode a string from its Uint8Array representation.
+ */
 export function decodeText(buf: Uint8Array): string {
     return Deno.core.decode(buf);
 }
