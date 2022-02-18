@@ -1,12 +1,10 @@
-import * as Ops from "./generated/ops/index";
+import { Ops, Events } from "./generated";
 import * as Discord from './generated/discord/index';
-import { ScheduledTask } from "./generated/events/ScheduledTask";
-import { CreateScheduledTask } from "./generated/ops/CreateScheduledTask";
-import { UpdateGuildMemberFields } from "./generated/ops/UpdateGuildMemberFields";
 
 // This file contains op wrappers
-// They are used internally and you should generally not need to use them in your own scripts.
-// May be removed from the publid API at some point.
+// They are used internally and you shoudl NEVER use them in your own scripts
+// if you do so your script WILL break at some point in the future when this gets changed
+// (and this changes a lot)
 
 export namespace OpWrappers {
 
@@ -37,7 +35,7 @@ export namespace OpWrappers {
     }
 
     export namespace tasks {
-        export function scheduleTask(data: CreateScheduledTask): Promise<ScheduledTask> {
+        export function scheduleTask(data: Ops.CreateScheduledTask): Promise<Events.ScheduledTask> {
             return Deno.core.opAsync("op_bl_schedule_task", data)
         }
 
@@ -53,15 +51,15 @@ export namespace OpWrappers {
             return Deno.core.opAsync("op_bl_del_all_tasks", name)
         }
 
-        export function getTask(taskId: number): Promise<ScheduledTask | null> {
+        export function getTask(taskId: number): Promise<Events.ScheduledTask | null> {
             return Deno.core.opAsync("op_bl_get_task", taskId)
         }
 
-        export function getTaskByKey(name: string, key: string): Promise<ScheduledTask | null> {
+        export function getTaskByKey(name: string, key: string): Promise<Events.ScheduledTask | null> {
             return Deno.core.opAsync("op_bl_get_task_by_key", name, key)
         }
 
-        export function getAllTasks(name: string | undefined, after_id: number): Promise<ScheduledTask[]> {
+        export function getAllTasks(name: string | undefined, after_id: number): Promise<Events.ScheduledTask[]> {
             return Deno.core.opAsync("op_bl_get_all_tasks", name, after_id)
         }
     }
@@ -165,7 +163,7 @@ export namespace OpWrappers {
         );
     }
 
-    export async function updateMember(userId: string, fields: UpdateGuildMemberFields): Promise<Discord.Member> {
+    export async function updateMember(userId: string, fields: Ops.UpdateGuildMemberFields): Promise<Discord.Member> {
         return await Deno.core.opAsync(
             "discord_update_member",
             userId,

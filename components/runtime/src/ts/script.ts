@@ -3,7 +3,7 @@ import "./core_util";
 
 
 import { Commands } from "./commands";
-import { Events } from "./models";
+import { Events } from "./generated";
 import * as Ops from "./generated/ops/index";
 import { InternalEventSystem, EventMuxer, EventTypes } from "./events";
 import { OpWrappers } from "./op_wrappers";

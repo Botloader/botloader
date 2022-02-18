@@ -1,13 +1,6 @@
-import { Events } from "./models";
-import * as Ops from "./generated/ops/index"
+import { Events, Ops, DiscordModels } from "./generated";
 import { EventMuxer } from "./events";
 import { OpWrappers } from "./op_wrappers";
-import { CommandInteractionOptionValue } from "./generated/events/CommandInteractionOptionValue";
-import { User } from "./generated/discord/User";
-import { InteractionPartialMember } from "./generated/events/InteractionPartialMember";
-import { Role } from "./generated/discord/Role";
-import { InteractionPartialChannel } from "./generated/events/InteractionChannel";
-import { ChannelType, Message } from "./discord";
 
 export namespace Commands {
     export class System {
@@ -30,7 +23,7 @@ export namespace Commands {
             await command.cb(new ExecutedCommandContext(interaction), optionsMap)
         }
 
-        private resolveOption(map: Events.CommandInteractionDataMap, opt: CommandInteractionOptionValue): unknown {
+        private resolveOption(map: Events.CommandInteractionDataMap, opt: Events.CommandInteractionOptionValue): unknown {
             switch (opt.kind) {
                 case "user":
                     const user = map.users[opt.value];
@@ -45,7 +38,7 @@ export namespace Commands {
                     return ret
 
                 case "role":
-                    const role: Role = map.roles[opt.value];
+                    const role: DiscordModels.Role = map.roles[opt.value];
                     if (role === undefined) {
                         throw new Error("interaction role not found in data map");
                     }
@@ -79,7 +72,7 @@ export namespace Commands {
                     return metionableRet;
 
                 case "channel":
-                    const channel: InteractionPartialChannel = map.channels[opt.value];
+                    const channel: Events.InteractionPartialChannel = map.channels[opt.value];
                     if (channel === undefined) {
                         throw new Error("interaction channel not found in data map");
                     }
@@ -194,13 +187,13 @@ export namespace Commands {
 
 
     export interface InteractionUser {
-        user: User,
-        member?: InteractionPartialMember,
+        user: DiscordModels.User,
+        member?: Events.InteractionPartialMember,
     }
 
     export type InteractionMentionable = {
         kind: "Role",
-        value: Role
+        value: DiscordModels.Role
     } | {
         kind: "User",
         value: InteractionUser
@@ -258,7 +251,7 @@ export namespace Commands {
     }
 
     export interface ChannelOption {
-        channel_types?: ChannelType[],
+        channel_types?: DiscordModels.ChannelType[],
     }
 
     export interface RoleOption {
@@ -421,8 +414,8 @@ export namespace Commands {
         T extends { kind: "Integer" } ? number :
         T extends { kind: "Boolean" } ? boolean :
         T extends { kind: "User" } ? InteractionUser :
-        T extends { kind: "Channel" } ? InteractionPartialChannel :
-        T extends { kind: "Role" } ? Role :
+        T extends { kind: "Channel" } ? Events.InteractionPartialChannel :
+        T extends { kind: "Role" } ? DiscordModels.Role :
         T extends { kind: "Mentionable" } ? InteractionMentionable :
         unknown;
 
@@ -462,7 +455,7 @@ export namespace Commands {
             this.description = description;
         }
 
-        build(cb: (ctx: ExecutedCommandContext, target: Message) => any): Command {
+        build(cb: (ctx: ExecutedCommandContext, target: DiscordModels.Message) => any): Command {
             return {
                 name: this.name,
                 kind: "Message",
