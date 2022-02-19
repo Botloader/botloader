@@ -133,8 +133,13 @@ impl Manager {
 
     pub fn script_started(&mut self, meta: &ScriptMeta) {
         for name in &meta.task_names {
+            if self.task_names.contains(name) {
+                continue;
+            }
             self.task_names.push(name.clone());
         }
+
+        self.clear_next();
     }
 }
 
