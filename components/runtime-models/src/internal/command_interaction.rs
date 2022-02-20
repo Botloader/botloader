@@ -78,7 +78,7 @@ impl From<ApplicationCommand> for CommandInteraction {
             options: opts,
             channel_id: cmd.channel_id.to_string(),
             id: cmd.id.to_string(),
-            member: Member::from_partial(cmd.guild_id.unwrap(), cmd.member.unwrap()),
+            member: Member::from_partial(cmd.member.unwrap()),
             token: cmd.token,
             data_map: cmd.data.resolved.map(Into::into).unwrap_or_default(),
         }
