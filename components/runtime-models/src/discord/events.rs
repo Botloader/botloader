@@ -34,7 +34,6 @@ impl From<twilight_model::gateway::payload::incoming::MemberRemove> for EventMem
 #[serde(rename_all = "camelCase")]
 pub struct EventMessageDelete {
     pub channel_id: String,
-    pub guild_id: Option<String>,
     pub id: String,
 }
 
@@ -42,7 +41,6 @@ impl From<twilight_model::gateway::payload::incoming::MessageDelete> for EventMe
     fn from(v: twilight_model::gateway::payload::incoming::MessageDelete) -> Self {
         Self {
             channel_id: v.channel_id.to_string(),
-            guild_id: v.guild_id.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
         }
     }
@@ -53,20 +51,32 @@ impl From<twilight_model::gateway::payload::incoming::MessageDelete> for EventMe
 #[ts(export_to = "bindings/discord/EventMessageUpdate.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct EventMessageUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub attachments: Option<Vec<Attachment>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<User>,
     pub channel_id: String,
     pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub edited_timestamp: Option<NotBigU64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub embeds: Option<Vec<Embed>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub guild_id: Option<String>,
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<MessageType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mention_everyone: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mention_roles: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mentions: Option<Vec<Mention>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub pinned: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<NotBigU64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tts: Option<bool>,
 }
 

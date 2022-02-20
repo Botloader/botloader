@@ -5,19 +5,19 @@ import type { MessageType } from "./MessageType";
 import type { User } from "./User";
 
 export interface EventMessageUpdate {
-  attachments: Array<Attachment> | null;
-  author: User | null;
+  attachments?: Array<Attachment>;
+  author?: User;
   channelId: string;
   content: string | null;
-  editedTimestamp: number | null;
-  embeds: Array<Embed> | null;
-  guildId: string | null;
+  editedTimestamp?: number;
+  embeds?: Array<Embed>;
+  guildId?: string;
   id: string;
-  kind: MessageType | null;
-  mentionEveryone: boolean | null;
-  mentionRoles: Array<string> | null;
-  mentions: Array<Mention> | null;
-  pinned: boolean | null;
-  timestamp: number | null;
-  tts: boolean | null;
+  kind?: MessageType;
+  mentionEveryone?: boolean;
+  mentionRoles?: Array<string>;
+  mentions?: Array<Mention>;
+  pinned?: boolean;
+  timestamp?: number;
+  tts?: boolean;
 }
