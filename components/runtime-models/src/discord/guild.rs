@@ -11,11 +11,15 @@ use twilight_model::guild::{
 
 use crate::util::NotBigU64;
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/Guild.ts")]
 pub struct Guild {
+    pub(crate) id: String,
+    pub(crate) name: String,
+    pub(crate) icon: Option<String>,
+
     pub(crate) afk_channel_id: Option<String>,
     pub(crate) afk_timeout: NotBigU64,
     pub(crate) application_id: Option<String>,
@@ -25,30 +29,24 @@ pub struct Guild {
     pub(crate) discovery_splash: Option<String>,
     pub(crate) explicit_content_filter: ExplicitContentFilter,
     pub(crate) features: Vec<String>,
-    pub(crate) icon: Option<String>,
-    pub(crate) id: String,
-    pub(crate) joined_at: Option<NotBigU64>,
-    pub(crate) large: bool,
+    pub(crate) joined_at: NotBigU64,
     pub(crate) max_members: Option<NotBigU64>,
     pub(crate) max_presences: Option<NotBigU64>,
-    pub(crate) member_count: Option<NotBigU64>,
+    pub(crate) member_count: NotBigU64,
     pub(crate) mfa_level: MfaLevel,
-    pub(crate) name: String,
     pub(crate) nsfw_level: NsfwLevel,
     pub(crate) owner_id: String,
     pub(crate) preferred_locale: String,
-    pub(crate) premium_subscription_count: Option<NotBigU64>,
+    pub(crate) premium_subscription_count: NotBigU64,
     pub(crate) premium_tier: PremiumTier,
     pub(crate) rules_channel_id: Option<String>,
     pub(crate) splash: Option<String>,
     pub(crate) system_channel_id: Option<String>,
-    pub(crate) unavailable: bool,
+    pub(crate) system_channel_flags: SystemChannelFlags,
     pub(crate) vanity_url_code: Option<String>,
     pub(crate) verification_level: VerificationLevel,
     pub(crate) widget_channel_id: Option<String>,
     pub(crate) widget_enabled: Option<bool>,
-    // TODO: how should we represent this? bitflags or something more user accessible?
-    // pub(crate) system_channel_flags: SystemChannelFlags,
 }
 
 impl From<&CachedGuild> for Guild {
@@ -67,26 +65,29 @@ impl From<&CachedGuild> for Guild {
             id: v.id().to_string(),
             joined_at: v
                 .joined_at()
-                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
-            large: v.large(),
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000))
+                .unwrap_or_default(),
             max_members: v.max_members().map(NotBigU64),
             max_presences: v.max_presences().map(NotBigU64),
-            member_count: v.member_count().map(NotBigU64),
+            member_count: v.member_count().map(NotBigU64).unwrap_or_default(),
             mfa_level: v.mfa_level().into(),
             name: v.name().to_string(),
             nsfw_level: v.nsfw_level().into(),
             owner_id: v.owner_id().to_string(),
             preferred_locale: v.preferred_locale().to_string(),
-            premium_subscription_count: v.premium_subscription_count().map(NotBigU64),
+            premium_subscription_count: v
+                .premium_subscription_count()
+                .map(NotBigU64)
+                .unwrap_or_default(),
             premium_tier: v.premium_tier().into(),
             rules_channel_id: v.rules_channel_id().as_ref().map(ToString::to_string),
             splash: v.splash().map(ToString::to_string),
             system_channel_id: v.system_channel_id().as_ref().map(ToString::to_string),
-            unavailable: v.unavailable(),
             vanity_url_code: v.vanity_url_code().map(ToString::to_string),
             verification_level: v.verification_level().into(),
             widget_channel_id: v.widget_channel_id().as_ref().map(ToString::to_string),
             widget_enabled: v.widget_enabled(),
+            system_channel_flags: v.system_channel_flags().into(),
         }
     }
 }
@@ -107,26 +108,29 @@ impl From<BrokerGuild> for Guild {
             id: v.id.to_string(),
             joined_at: v
                 .joined_at
-                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
-            large: v.large,
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000))
+                .unwrap_or_default(),
             max_members: v.max_members.map(NotBigU64),
             max_presences: v.max_presences.map(NotBigU64),
-            member_count: v.member_count.map(NotBigU64),
+            member_count: v.member_count.map(NotBigU64).unwrap_or_default(),
             mfa_level: v.mfa_level.into(),
             name: v.name.to_string(),
             nsfw_level: v.nsfw_level.into(),
             owner_id: v.owner_id.to_string(),
             preferred_locale: v.preferred_locale.to_string(),
-            premium_subscription_count: v.premium_subscription_count.map(NotBigU64),
+            premium_subscription_count: v
+                .premium_subscription_count
+                .map(NotBigU64)
+                .unwrap_or_default(),
             premium_tier: v.premium_tier.into(),
             rules_channel_id: v.rules_channel_id.as_ref().map(ToString::to_string),
             splash: v.splash,
             system_channel_id: v.system_channel_id.as_ref().map(ToString::to_string),
-            unavailable: v.unavailable,
             vanity_url_code: v.vanity_url_code,
             verification_level: v.verification_level.into(),
             widget_channel_id: v.widget_channel_id.as_ref().map(ToString::to_string),
             widget_enabled: v.widget_enabled,
+            system_channel_flags: v.system_channel_flags.into(),
         }
     }
 }
@@ -245,6 +249,35 @@ impl From<TwilightVerificationLevel> for VerificationLevel {
             TwilightVerificationLevel::Medium => Self::Medium,
             TwilightVerificationLevel::High => Self::High,
             TwilightVerificationLevel::VeryHigh => Self::VeryHigh,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/SystemChannelFlags.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct SystemChannelFlags {
+    pub(crate) suppress_join_notifications: bool, // 1 << 0 Suppress member join notifications
+    pub(crate) suppress_premium_subscriptions: bool, // 1 << 1	Suppress server boost notifications
+    pub(crate) suppress_guild_reminder_notifications: bool, // 1 << 2	Suppress server setup tips
+    pub(crate) suppress_join_notification_replies: bool, // 1 << 3	Hide member join sticker reply buttons
+}
+
+impl From<twilight_model::guild::SystemChannelFlags> for SystemChannelFlags {
+    fn from(v: twilight_model::guild::SystemChannelFlags) -> Self {
+        Self {
+            suppress_guild_reminder_notifications: v.contains(
+                twilight_model::guild::SystemChannelFlags::SUPPRESS_GUILD_REMINDER_NOTIFICATIONS,
+            ),
+            suppress_join_notification_replies: v.contains(
+                twilight_model::guild::SystemChannelFlags::SUPPRESS_JOIN_NOTIFICATION_REPLIES,
+            ),
+            suppress_join_notifications: v
+                .contains(twilight_model::guild::SystemChannelFlags::SUPPRESS_JOIN_NOTIFICATIONS),
+            suppress_premium_subscriptions: v.contains(
+                twilight_model::guild::SystemChannelFlags::SUPPRESS_PREMIUM_SUBSCRIPTIONS,
+            ),
         }
     }
 }
