@@ -17,7 +17,7 @@ export namespace Tasks {
      * @param opts Additional optional options, see {@link CreateOptions} for more info.
      * @returns The scheduled task
      */
-    export async function scheduleTask(namespace: string, execute_at: Date, opts?: CreateOptions): Promise<ScheduledTask> {
+    export async function schedule(namespace: string, execute_at: Date, opts?: CreateOptions): Promise<ScheduledTask> {
         return OpWrappers.tasks.scheduleTask({
             namespace: namespace,
             executeAt: execute_at.getTime(),
