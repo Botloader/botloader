@@ -134,7 +134,6 @@ fn export_bindings_guildchannel() {
 #[ts(export_to = "bindings/discord/VoiceChannel.ts")]
 pub struct VoiceChannel {
     pub bitrate: NotBigU64,
-    pub guild_id: String,
     pub id: String,
     #[ts(type = "'Voice'|'StageVoice'")]
     pub kind: ChannelType,
@@ -151,11 +150,6 @@ impl From<twilight_model::channel::VoiceChannel> for VoiceChannel {
     fn from(v: twilight_model::channel::VoiceChannel) -> Self {
         Self {
             bitrate: NotBigU64(v.bitrate),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
             name: v.name,
@@ -194,7 +188,6 @@ impl From<twilight_model::channel::VideoQualityMode> for VideoQualityMode {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/TextChannel.ts")]
 pub struct TextChannel {
-    pub guild_id: String,
     pub id: String,
     #[ts(type = "'Text'|'News'|'Store'")]
     pub kind: ChannelType,
@@ -212,11 +205,6 @@ pub struct TextChannel {
 impl From<twilight_model::channel::TextChannel> for TextChannel {
     fn from(v: twilight_model::channel::TextChannel) -> Self {
         Self {
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
             last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
@@ -243,7 +231,6 @@ impl From<twilight_model::channel::TextChannel> for TextChannel {
 #[ts(export_to = "bindings/discord/PublicThread.ts")]
 pub struct PublicThread {
     pub default_auto_archive_duration: Option<AutoArchiveDuration>,
-    pub guild_id: String,
     pub id: String,
     #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
@@ -262,11 +249,6 @@ impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
     fn from(v: twilight_model::channel::thread::PublicThread) -> Self {
         Self {
             default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
             last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
@@ -287,7 +269,6 @@ impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
 #[ts(export_to = "bindings/discord/PrivateThread.ts")]
 pub struct PrivateThread {
     pub default_auto_archive_duration: Option<AutoArchiveDuration>,
-    pub guild_id: String,
     pub id: String,
     pub invitable: Option<bool>,
     #[ts(type = "'PrivateThread'")]
@@ -308,11 +289,6 @@ impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
     fn from(v: twilight_model::channel::thread::PrivateThread) -> Self {
         Self {
             default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
             last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
@@ -339,7 +315,6 @@ impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
 #[ts(export_to = "bindings/discord/NewsThread.ts")]
 pub struct NewsThread {
     pub default_auto_archive_duration: Option<AutoArchiveDuration>,
-    pub guild_id: String,
     pub id: String,
     #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
@@ -358,11 +333,6 @@ impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
     fn from(v: twilight_model::channel::thread::NewsThread) -> Self {
         Self {
             default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
             last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
@@ -454,7 +424,6 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/CategoryChannel.ts")]
 pub struct CategoryChannel {
-    pub guild_id: String,
     pub id: String,
     #[ts(type = "'Category'")]
     pub kind: ChannelType,
@@ -467,11 +436,6 @@ impl From<twilight_model::channel::CategoryChannel> for CategoryChannel {
     fn from(v: twilight_model::channel::CategoryChannel) -> Self {
         Self {
             kind: v.kind.into(),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             name: v.name,
             position: v.position,

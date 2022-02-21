@@ -1,7 +1,6 @@
 import type { PermissionOverwrite } from "./PermissionOverwrite";
 
 export interface TextChannel {
-  guild_id: string;
   id: string;
   kind: "Text" | "News" | "Store";
   last_message_id: string | null;

@@ -4,7 +4,6 @@ import type { ThreadMetadata } from "./ThreadMetadata";
 
 export interface PublicThread {
   default_auto_archive_duration: AutoArchiveDuration | null;
-  guild_id: string;
   id: string;
   kind: "PublicThread";
   last_message_id: string | null;

@@ -3,7 +3,6 @@ import type { VideoQualityMode } from "./VideoQualityMode";
 
 export interface VoiceChannel {
   bitrate: number;
-  guild_id: string;
   id: string;
   kind: "Voice" | "StageVoice";
   name: string;
