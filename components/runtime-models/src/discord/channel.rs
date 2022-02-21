@@ -99,7 +99,6 @@ pub struct TextChannel {
     pub id: String,
     #[ts(type = "'Text'|'News'|'Store'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub last_pin_timestamp: Option<NotBigU64>,
     pub name: String,
     pub nsfw: bool,
@@ -115,7 +114,6 @@ impl From<twilight_model::channel::TextChannel> for TextChannel {
         Self {
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             last_pin_timestamp: v
                 .last_pin_timestamp
                 .map(|e| NotBigU64(e.as_micros() as u64 / 1000)),
@@ -142,7 +140,6 @@ pub struct PublicThread {
     pub id: String,
     #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
@@ -159,7 +156,6 @@ impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
             default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             member: v.member.map(Into::into),
             member_count: v.member_count,
             message_count: v.message_count,
@@ -181,7 +177,6 @@ pub struct PrivateThread {
     pub invitable: Option<bool>,
     #[ts(type = "'PrivateThread'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
@@ -199,7 +194,6 @@ impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
             default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             member: v.member.map(Into::into),
             member_count: v.member_count,
             message_count: v.message_count,
@@ -226,7 +220,6 @@ pub struct NewsThread {
     pub id: String,
     #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
@@ -243,7 +236,6 @@ impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
             default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             member: v.member.map(Into::into),
             member_count: v.member_count,
             message_count: v.message_count,

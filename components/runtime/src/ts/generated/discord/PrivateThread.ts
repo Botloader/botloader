@@ -8,7 +8,6 @@ export interface PrivateThread {
   id: string;
   invitable: boolean | null;
   kind: "PrivateThread";
-  last_message_id: string | null;
   member: ThreadMember | null;
   member_count: number;
   message_count: number;

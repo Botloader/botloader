@@ -3,7 +3,6 @@ import type { PermissionOverwrite } from "./PermissionOverwrite";
 export interface TextChannel {
   id: string;
   kind: "Text" | "News" | "Store";
-  last_message_id: string | null;
   last_pin_timestamp: number | null;
   name: string;
   nsfw: boolean;
