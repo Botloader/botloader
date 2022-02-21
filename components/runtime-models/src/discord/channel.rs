@@ -372,8 +372,8 @@ impl From<twilight_model::channel::ChannelType> for ChannelType {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PermissionOverwrite.ts")]
 pub struct PermissionOverwrite {
-    pub allow: String,
-    pub deny: String,
+    pub allow_raw: String,
+    pub deny_raw: String,
     pub kind: PermissionOverwriteType,
     pub id: String,
 }
@@ -391,8 +391,8 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwrite>
                     id,
                 ) => id.to_string(),
             },
-            allow: v.allow.bits().to_string(),
-            deny: v.deny.bits().to_string(),
+            allow_raw: v.allow.bits().to_string(),
+            deny_raw: v.deny.bits().to_string(),
             kind: v.kind.into(),
         }
     }

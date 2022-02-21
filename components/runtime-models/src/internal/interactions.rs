@@ -17,7 +17,7 @@ pub struct InteractionPartialChannel {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<String>,
-    pub permissions: String,
+    pub permissions_raw: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thread_metadata: Option<ThreadMetadata>,
 }
@@ -29,7 +29,7 @@ impl From<application_command::InteractionChannel> for InteractionPartialChannel
             kind: v.kind.into(),
             name: v.name,
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
-            permissions: v.permissions.bits().to_string(),
+            permissions_raw: v.permissions.bits().to_string(),
             thread_metadata: v.thread_metadata.map(Into::into),
         }
     }

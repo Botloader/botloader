@@ -8,7 +8,7 @@ export interface Role {
   managed: boolean;
   mentionable: boolean;
   name: string;
-  permissions: string;
+  permissionsRaw: string;
   position: bigint;
   tags: RoleTags | null;
   unicodeEmoji: string | null;

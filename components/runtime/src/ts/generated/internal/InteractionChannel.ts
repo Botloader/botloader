@@ -6,6 +6,6 @@ export interface InteractionPartialChannel {
   kind: ChannelType;
   name: string;
   parentId?: string;
-  permissions: string;
+  permissionsRaw: string;
   threadMetadata?: ThreadMetadata;
 }
