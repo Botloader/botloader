@@ -3,8 +3,10 @@ use ts_rs::TS;
 
 use crate::{discord::member::Member, util::NotBigU64};
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[serde(untagged)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/GuildChannel.ts")]
 pub enum GuildChannel {
     Category(CategoryChannel),
     NewsThread(Box<NewsThread>),
@@ -33,100 +35,6 @@ impl From<twilight_model::channel::GuildChannel> for GuildChannel {
             twilight_model::channel::GuildChannel::Stage(c) => Self::Stage(c.into()),
         }
     }
-}
-
-// manually implemented for now cause of a bug in the lib
-impl ts_rs::TS for GuildChannel {
-    const EXPORT_TO: Option<&'static str> = Some("bindings/discord/GuildChannel.ts");
-    fn decl() -> String {
-        format!("type {}{} = {};", "GuildChannel", "", Self::inline())
-    }
-    fn name() -> String {
-        "GuildChannel".to_owned()
-    }
-    fn inline() -> String {
-        vec![
-            <CategoryChannel as ts_rs::TS>::name(),
-            <Box<NewsThread> as ts_rs::TS>::name_with_type_args(vec![
-                <NewsThread as ts_rs::TS>::name(),
-            ]),
-            <Box<PrivateThread> as ts_rs::TS>::name_with_type_args(vec![
-                <PrivateThread as ts_rs::TS>::name(),
-            ]),
-            <Box<PublicThread> as ts_rs::TS>::name_with_type_args(vec![
-                <PublicThread as ts_rs::TS>::name(),
-            ]),
-            <TextChannel as ts_rs::TS>::name(),
-            <VoiceChannel as ts_rs::TS>::name(),
-            <VoiceChannel as ts_rs::TS>::name(),
-        ]
-        .join(" | ")
-    }
-
-    fn dependencies() -> Vec<ts_rs::Dependency> {
-        {
-            let mut dependencies = vec![];
-            if <CategoryChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <CategoryChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<CategoryChannel>() {
-                dependencies.push(dep);
-            }
-            if <Box<NewsThread> as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <Box<NewsThread> as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<Box<NewsThread>>() {
-                dependencies.push(dep);
-            }
-            if <NewsThread as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <NewsThread as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<NewsThread>() {
-                dependencies.push(dep);
-            }
-            if <Box<PrivateThread> as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <Box<PrivateThread> as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<Box<PrivateThread>>() {
-                dependencies.push(dep);
-            }
-            if <PrivateThread as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <PrivateThread as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<PrivateThread>() {
-                dependencies.push(dep);
-            }
-            if <Box<PublicThread> as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <Box<PublicThread> as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<Box<PublicThread>>() {
-                dependencies.push(dep);
-            }
-            if <PublicThread as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <PublicThread as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<PublicThread>() {
-                dependencies.push(dep);
-            }
-            if <TextChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <TextChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<TextChannel>() {
-                dependencies.push(dep);
-            }
-            if <VoiceChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <VoiceChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<VoiceChannel>() {
-                dependencies.push(dep);
-            }
-            if <VoiceChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <VoiceChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<VoiceChannel>() {
-                dependencies.push(dep);
-            }
-            dependencies
-        }
-    }
-    fn transparent() -> bool {
-        false
-    }
-}
-#[cfg(test)]
-#[test]
-fn export_bindings_guildchannel() {
-    <GuildChannel as ts_rs::TS>::export().expect("could not export type");
 }
 
 #[derive(Clone, Debug, Serialize, TS)]
