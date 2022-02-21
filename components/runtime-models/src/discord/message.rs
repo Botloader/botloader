@@ -330,7 +330,7 @@ pub enum ReactionType {
         name: Option<String>,
     },
     Unicode {
-        name: String,
+        value: String,
     },
 }
 
@@ -342,7 +342,9 @@ impl From<twilight_model::channel::ReactionType> for ReactionType {
                 name,
                 id: id.to_string(),
             },
-            twilight_model::channel::ReactionType::Unicode { name } => Self::Unicode { name },
+            twilight_model::channel::ReactionType::Unicode { name } => {
+                Self::Unicode { value: name }
+            }
         }
     }
 }

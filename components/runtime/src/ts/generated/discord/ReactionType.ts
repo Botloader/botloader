@@ -3,4 +3,4 @@ export type ReactionType = {
   animated: boolean;
   id: string;
   name: string | null;
-} | { kind: "unicode"; name: string };
+} | { kind: "unicode"; value: string };
