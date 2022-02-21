@@ -1,9 +1,8 @@
-import type { AutoArchiveDuration } from "./AutoArchiveDuration";
 import type { ThreadMember } from "./ThreadMember";
 import type { ThreadMetadata } from "./ThreadMetadata";
 
 export interface NewsThread {
-  default_auto_archive_duration: AutoArchiveDuration | null;
+  default_auto_archive_duration_minutes: number | null;
   id: string;
   kind: "NewsThread";
   member: ThreadMember | null;

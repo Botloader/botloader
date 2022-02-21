@@ -1,6 +1,5 @@
 // generated index file using gen-index.bash
 export * from './Attachment'
-export * from './AutoArchiveDuration'
 export * from './CategoryChannel'
 export * from './ChannelMention'
 export * from './ChannelType'

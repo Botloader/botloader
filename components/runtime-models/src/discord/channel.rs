@@ -136,7 +136,7 @@ impl From<twilight_model::channel::TextChannel> for TextChannel {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PublicThread.ts")]
 pub struct PublicThread {
-    pub default_auto_archive_duration: Option<AutoArchiveDuration>,
+    pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
     #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
@@ -153,7 +153,9 @@ pub struct PublicThread {
 impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
     fn from(v: twilight_model::channel::thread::PublicThread) -> Self {
         Self {
-            default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
+            default_auto_archive_duration_minutes: v
+                .default_auto_archive_duration
+                .map(|v| v.number() as u32),
             id: v.id.to_string(),
             kind: v.kind.into(),
             member: v.member.map(Into::into),
@@ -172,7 +174,7 @@ impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PrivateThread.ts")]
 pub struct PrivateThread {
-    pub default_auto_archive_duration: Option<AutoArchiveDuration>,
+    pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
     pub invitable: Option<bool>,
     #[ts(type = "'PrivateThread'")]
@@ -191,7 +193,9 @@ pub struct PrivateThread {
 impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
     fn from(v: twilight_model::channel::thread::PrivateThread) -> Self {
         Self {
-            default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
+            default_auto_archive_duration_minutes: v
+                .default_auto_archive_duration
+                .map(|v| v.number() as u32),
             id: v.id.to_string(),
             kind: v.kind.into(),
             member: v.member.map(Into::into),
@@ -216,7 +220,7 @@ impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/NewsThread.ts")]
 pub struct NewsThread {
-    pub default_auto_archive_duration: Option<AutoArchiveDuration>,
+    pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
     #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
@@ -233,7 +237,9 @@ pub struct NewsThread {
 impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
     fn from(v: twilight_model::channel::thread::NewsThread) -> Self {
         Self {
-            default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
+            default_auto_archive_duration_minutes: v
+                .default_auto_archive_duration
+                .map(|v| v.number() as u32),
             id: v.id.to_string(),
             kind: v.kind.into(),
             member: v.member.map(Into::into),
@@ -244,31 +250,6 @@ impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
             thread_metadata: v.thread_metadata.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-#[ts(export_to = "bindings/discord/AutoArchiveDuration.ts")]
-pub enum AutoArchiveDuration {
-    Hour,
-    Day,
-    ThreeDays,
-    Week,
-    Unknown { value: u16 },
-}
-
-impl From<twilight_model::channel::thread::AutoArchiveDuration> for AutoArchiveDuration {
-    fn from(v: twilight_model::channel::thread::AutoArchiveDuration) -> Self {
-        match v {
-            twilight_model::channel::thread::AutoArchiveDuration::Hour => Self::Hour,
-            twilight_model::channel::thread::AutoArchiveDuration::Day => Self::Day,
-            twilight_model::channel::thread::AutoArchiveDuration::ThreeDays => Self::ThreeDays,
-            twilight_model::channel::thread::AutoArchiveDuration::Week => Self::Week,
-            twilight_model::channel::thread::AutoArchiveDuration::Unknown { value } => {
-                Self::Unknown { value }
-            }
         }
     }
 }
@@ -302,7 +283,7 @@ impl From<twilight_model::channel::thread::ThreadMember> for ThreadMember {
 #[ts(export_to = "bindings/discord/ThreadMetadata.ts")]
 pub struct ThreadMetadata {
     pub archived: bool,
-    pub auto_archive_duration: AutoArchiveDuration,
+    pub auto_archive_duration_minutes: u32,
     pub archive_timestamp: NotBigU64,
     pub invitable: Option<bool>,
     pub locked: bool,
@@ -312,7 +293,7 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
     fn from(v: twilight_model::channel::thread::ThreadMetadata) -> Self {
         Self {
             archived: v.archived,
-            auto_archive_duration: v.auto_archive_duration.into(),
+            auto_archive_duration_minutes: v.auto_archive_duration.number() as u32,
             archive_timestamp: NotBigU64(v.archive_timestamp.as_micros() as u64 / 1000),
             invitable: v.invitable,
             locked: v.locked,
