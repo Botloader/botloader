@@ -9,15 +9,12 @@ pub struct User {
     pub avatar: Option<String>,
     pub bot: bool,
     pub discriminator: u16,
-    pub email: Option<String>,
     pub id: String,
     pub locale: Option<String>,
-    pub mfa_enabled: Option<bool>,
     pub username: String,
     pub premium_type: Option<PremiumType>,
     pub public_flags: Option<UserFlags>,
     pub system: Option<bool>,
-    pub verified: Option<bool>,
 }
 
 impl From<twilight_model::user::User> for User {
@@ -26,15 +23,12 @@ impl From<twilight_model::user::User> for User {
             avatar: v.avatar.as_ref().map(ToString::to_string),
             bot: v.bot,
             discriminator: v.discriminator,
-            email: v.email,
             id: v.id.to_string(),
             locale: v.locale,
-            mfa_enabled: v.mfa_enabled,
             username: v.name,
             premium_type: v.premium_type.map(From::from),
             public_flags: v.public_flags.map(From::from),
             system: v.system,
-            verified: v.verified,
         }
     }
 }
