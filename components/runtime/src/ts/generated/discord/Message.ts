@@ -3,6 +3,7 @@ import type { ChannelMention } from "./ChannelMention";
 import type { Embed } from "./Embed";
 import type { MessageActivity } from "./MessageActivity";
 import type { MessageApplication } from "./MessageApplication";
+import type { MessageFlags } from "./MessageFlags";
 import type { MessageReaction } from "./MessageReaction";
 import type { MessageReference } from "./MessageReference";
 import type { MessageType } from "./MessageType";
@@ -19,7 +20,7 @@ export interface Message {
   content: string;
   editedTimestamp: number | null;
   embeds: Array<Embed>;
-  flags: number | null;
+  flags: MessageFlags | null;
   guildId: string | null;
   id: string;
   kind: MessageType;
