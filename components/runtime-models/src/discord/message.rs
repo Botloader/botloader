@@ -1,4 +1,7 @@
-use super::{member::PartialMember, user::User};
+use super::{
+    member::PartialMember,
+    user::{User, UserFlags},
+};
 use crate::{
     discord::{channel::ChannelType, embed::Embed},
     util::NotBigU64,
@@ -27,7 +30,7 @@ pub struct Message {
     pub mention_channels: Vec<ChannelMention>,
     pub mention_everyone: bool,
     pub mention_roles: Vec<String>,
-    pub mentions: Vec<Mention>,
+    pub mentions: Vec<UserMention>,
     pub pinned: bool,
     pub reactions: Vec<MessageReaction>,
     pub reference: Option<MessageReference>,
@@ -253,8 +256,8 @@ impl From<twilight_model::channel::ChannelMention> for ChannelMention {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/Mention.ts")]
-pub struct Mention {
+#[ts(export_to = "bindings/discord/UserMention.ts")]
+pub struct UserMention {
     /// Hash of the user's avatar, if any.
     pub avatar: Option<String>,
     /// Whether the user is a bot.
@@ -274,10 +277,10 @@ pub struct Mention {
     /// Username of the user.
     pub username: String,
     /// Public flags on the user's account.
-    pub public_flags: NotBigU64,
+    pub public_flags: UserFlags,
 }
 
-impl From<twilight_model::channel::message::Mention> for Mention {
+impl From<twilight_model::channel::message::Mention> for UserMention {
     fn from(v: twilight_model::channel::message::Mention) -> Self {
         Self {
             avatar: v.avatar.as_ref().map(ToString::to_string),
@@ -286,7 +289,7 @@ impl From<twilight_model::channel::message::Mention> for Mention {
             id: v.id.to_string(),
             member: v.member.map(From::from),
             username: v.name,
-            public_flags: NotBigU64(v.public_flags.bits()),
+            public_flags: v.public_flags.into(),
         }
     }
 }
@@ -358,7 +361,7 @@ impl From<twilight_model::channel::ReactionType> for ReactionType {
 //     }
 // }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/MessageReference.ts")]

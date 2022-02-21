@@ -4,7 +4,7 @@ use ts_rs::TS;
 use crate::{
     discord::{
         embed::Embed,
-        message::{Attachment, Mention, MessageType},
+        message::{Attachment, MessageType, UserMention},
         user::User,
     },
     util::NotBigU64,
@@ -71,7 +71,7 @@ pub struct EventMessageUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mention_roles: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub mentions: Option<Vec<Mention>>,
+    pub mentions: Option<Vec<UserMention>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pinned: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -1,4 +1,5 @@
 import type { PremiumType } from "./PremiumType";
+import type { UserFlags } from "./UserFlags";
 
 export interface User {
   avatar: string | null;
@@ -10,7 +11,7 @@ export interface User {
   mfaEnabled: boolean | null;
   username: string;
   premiumType: PremiumType | null;
-  publicFlags: number | null;
+  publicFlags: UserFlags | null;
   system: boolean | null;
   verified: boolean | null;
 }

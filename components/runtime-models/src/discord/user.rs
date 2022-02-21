@@ -1,8 +1,6 @@
 use serde::Serialize;
 use ts_rs::TS;
 
-use crate::util::NotBigU64;
-
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
@@ -17,7 +15,7 @@ pub struct User {
     pub mfa_enabled: Option<bool>,
     pub username: String,
     pub premium_type: Option<PremiumType>,
-    pub public_flags: Option<NotBigU64>,
+    pub public_flags: Option<UserFlags>,
     pub system: Option<bool>,
     pub verified: Option<bool>,
 }
@@ -34,7 +32,7 @@ impl From<twilight_model::user::User> for User {
             mfa_enabled: v.mfa_enabled,
             username: v.name,
             premium_type: v.premium_type.map(From::from),
-            public_flags: v.public_flags.map(|e| NotBigU64(e.bits())),
+            public_flags: v.public_flags.map(From::from),
             system: v.system,
             verified: v.verified,
         }
@@ -57,6 +55,53 @@ impl From<twilight_model::user::PremiumType> for PremiumType {
             twilight_model::user::PremiumType::Nitro => Self::Nitro,
             twilight_model::user::PremiumType::NitroClassic => Self::NitroClassic,
             twilight_model::user::PremiumType::None => Self::None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/discord/UserFlags.ts")]
+pub struct UserFlags {
+    pub(crate) staff: bool,                    // Discord Employee
+    pub(crate) partner: bool,                  // Partnered Server Owner
+    pub(crate) hypesquad: bool,                // HypeSquad Events Coordinator
+    pub(crate) bug_hunter_level_1: bool,       // Bug Hunter Level 1
+    pub(crate) hypesquad_online_house_1: bool, // House Bravery Member
+    pub(crate) hypesquad_online_house_2: bool, // House Brilliance Member
+    pub(crate) hypesquad_online_house_3: bool, // House Balance Member
+    pub(crate) premium_early_supporter: bool,  // Early Nitro Supporter
+    pub(crate) team_pseudo_user: bool,         // User is a team
+    pub(crate) bug_hunter_level_2: bool,       // Bug Hunter Level 2
+    pub(crate) verified_bot: bool,             // Verified Bot
+    pub(crate) verified_developer: bool,       // Early Verified Bot Developer
+    pub(crate) certified_moderator: bool,      // Discord Certified Moderator
+    pub(crate) bot_http_interactions: bool, // Bot uses only HTTP interactions and is shown in the online member list
+}
+
+impl From<twilight_model::user::UserFlags> for UserFlags {
+    fn from(uf: twilight_model::user::UserFlags) -> Self {
+        Self {
+            staff: uf.contains(twilight_model::user::UserFlags::STAFF),
+            partner: uf.contains(twilight_model::user::UserFlags::PARTNER),
+            hypesquad: uf.contains(twilight_model::user::UserFlags::HYPESQUAD),
+            bug_hunter_level_1: uf.contains(twilight_model::user::UserFlags::BUG_HUNTER_LEVEL_1),
+            hypesquad_online_house_1: uf
+                .contains(twilight_model::user::UserFlags::HYPESQUAD_ONLINE_HOUSE_1),
+            hypesquad_online_house_2: uf
+                .contains(twilight_model::user::UserFlags::HYPESQUAD_ONLINE_HOUSE_2),
+            hypesquad_online_house_3: uf
+                .contains(twilight_model::user::UserFlags::HYPESQUAD_ONLINE_HOUSE_3),
+            premium_early_supporter: uf
+                .contains(twilight_model::user::UserFlags::PREMIUM_EARLY_SUPPORTER),
+            team_pseudo_user: uf.contains(twilight_model::user::UserFlags::TEAM_PSEUDO_USER),
+            bug_hunter_level_2: uf.contains(twilight_model::user::UserFlags::BUG_HUNTER_LEVEL_2),
+            verified_bot: uf.contains(twilight_model::user::UserFlags::VERIFIED_BOT),
+            verified_developer: uf.contains(twilight_model::user::UserFlags::VERIFIED_DEVELOPER),
+            certified_moderator: uf.contains(twilight_model::user::UserFlags::CERTIFIED_MODERATOR),
+            bot_http_interactions: uf
+                .contains(twilight_model::user::UserFlags::BOT_HTTP_INTERACTIONS),
         }
     }
 }

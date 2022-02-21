@@ -1,7 +1,6 @@
 import type { Attachment } from "./Attachment";
 import type { ChannelMention } from "./ChannelMention";
 import type { Embed } from "./Embed";
-import type { Mention } from "./Mention";
 import type { MessageActivity } from "./MessageActivity";
 import type { MessageApplication } from "./MessageApplication";
 import type { MessageReaction } from "./MessageReaction";
@@ -9,6 +8,7 @@ import type { MessageReference } from "./MessageReference";
 import type { MessageType } from "./MessageType";
 import type { PartialMember } from "./PartialMember";
 import type { User } from "./User";
+import type { UserMention } from "./UserMention";
 
 export interface Message {
   activity: MessageActivity | null;
@@ -27,7 +27,7 @@ export interface Message {
   mentionChannels: Array<ChannelMention>;
   mentionEveryone: boolean;
   mentionRoles: Array<string>;
-  mentions: Array<Mention>;
+  mentions: Array<UserMention>;
   pinned: boolean;
   reactions: Array<MessageReaction>;
   reference: MessageReference | null;
