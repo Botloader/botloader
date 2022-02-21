@@ -8,7 +8,7 @@ use ts_rs::TS;
 pub struct User {
     pub avatar: Option<String>,
     pub bot: bool,
-    pub discriminator: u16,
+    pub discriminator: String,
     pub id: String,
     pub locale: Option<String>,
     pub username: String,
@@ -22,7 +22,7 @@ impl From<twilight_model::user::User> for User {
         Self {
             avatar: v.avatar.as_ref().map(ToString::to_string),
             bot: v.bot,
-            discriminator: v.discriminator,
+            discriminator: v.discriminator().to_string(),
             id: v.id.to_string(),
             locale: v.locale,
             username: v.name,

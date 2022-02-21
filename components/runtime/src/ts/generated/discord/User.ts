@@ -4,7 +4,7 @@ import type { UserFlags } from "./UserFlags";
 export interface User {
   avatar: string | null;
   bot: boolean;
-  discriminator: number;
+  discriminator: string;
   id: string;
   locale: string | null;
   username: string;
