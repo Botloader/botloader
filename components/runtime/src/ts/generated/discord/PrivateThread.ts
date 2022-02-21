@@ -8,7 +8,7 @@ export interface PrivateThread {
   guild_id: string;
   id: string;
   invitable: boolean | null;
-  kind: "GuildPrivateThread";
+  kind: "PrivateThread";
   last_message_id: string | null;
   member: ThreadMember | null;
   member_count: number;

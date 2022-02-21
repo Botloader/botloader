@@ -6,7 +6,7 @@ export interface PublicThread {
   default_auto_archive_duration: AutoArchiveDuration | null;
   guild_id: string;
   id: string;
-  kind: "GuildPublicThread";
+  kind: "PublicThread";
   last_message_id: string | null;
   member: ThreadMember | null;
   member_count: number;

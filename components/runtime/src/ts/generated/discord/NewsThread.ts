@@ -6,7 +6,7 @@ export interface NewsThread {
   default_auto_archive_duration: AutoArchiveDuration | null;
   guild_id: string;
   id: string;
-  kind: "GuildNewsThread";
+  kind: "NewsThread";
   last_message_id: string | null;
   member: ThreadMember | null;
   member_count: number;

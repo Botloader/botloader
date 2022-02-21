@@ -1,12 +1,10 @@
 export type ChannelType =
-  | "GuildText"
-  | "Private"
-  | "GuildVoice"
-  | "Group"
-  | "GuildCategory"
-  | "GuildNews"
-  | "GuildStore"
-  | "GuildStageVoice"
-  | "GuildNewsThread"
-  | "GuildPublicThread"
-  | "GuildPrivateThread";
+  | "Text"
+  | "Voice"
+  | "Category"
+  | "News"
+  | "Store"
+  | "StageVoice"
+  | "NewsThread"
+  | "PublicThread"
+  | "PrivateThread";

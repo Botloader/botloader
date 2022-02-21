@@ -5,7 +5,7 @@ export interface VoiceChannel {
   bitrate: number;
   guild_id: string;
   id: string;
-  kind: "GuildVoice" | "GuildStageVoice";
+  kind: "Voice" | "StageVoice";
   name: string;
   parent_id: string | null;
   permission_overwrites: Array<PermissionOverwrite>;

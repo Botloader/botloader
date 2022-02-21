@@ -136,7 +136,7 @@ pub struct VoiceChannel {
     pub bitrate: NotBigU64,
     pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildVoice'|'GuildStageVoice'")]
+    #[ts(type = "'Voice'|'StageVoice'")]
     pub kind: ChannelType,
     pub name: String,
     pub parent_id: Option<String>,
@@ -196,7 +196,7 @@ impl From<twilight_model::channel::VideoQualityMode> for VideoQualityMode {
 pub struct TextChannel {
     pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildText'|'GuildNews'|'GuildStore'")]
+    #[ts(type = "'Text'|'News'|'Store'")]
     pub kind: ChannelType,
     pub last_message_id: Option<String>,
     pub last_pin_timestamp: Option<NotBigU64>,
@@ -245,7 +245,7 @@ pub struct PublicThread {
     pub default_auto_archive_duration: Option<AutoArchiveDuration>,
     pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildPublicThread'")]
+    #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
     pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
@@ -290,7 +290,7 @@ pub struct PrivateThread {
     pub guild_id: String,
     pub id: String,
     pub invitable: Option<bool>,
-    #[ts(type = "'GuildPrivateThread'")]
+    #[ts(type = "'PrivateThread'")]
     pub kind: ChannelType,
     pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
@@ -341,7 +341,7 @@ pub struct NewsThread {
     pub default_auto_archive_duration: Option<AutoArchiveDuration>,
     pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildNewsThread'")]
+    #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
     pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
@@ -456,7 +456,7 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
 pub struct CategoryChannel {
     pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildCategory'")]
+    #[ts(type = "'Category'")]
     pub kind: ChannelType,
     pub name: String,
     pub permission_overwrites: Vec<PermissionOverwrite>,
@@ -488,33 +488,33 @@ impl From<twilight_model::channel::CategoryChannel> for CategoryChannel {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ChannelType.ts")]
 pub enum ChannelType {
-    GuildText,
-    Private,
-    GuildVoice,
-    Group,
-    GuildCategory,
-    GuildNews,
-    GuildStore,
-    GuildStageVoice,
-    GuildNewsThread,
-    GuildPublicThread,
-    GuildPrivateThread,
+    Text,
+    Voice,
+    Category,
+    News,
+    Store,
+    StageVoice,
+    NewsThread,
+    PublicThread,
+    PrivateThread,
 }
 
 impl From<twilight_model::channel::ChannelType> for ChannelType {
     fn from(v: twilight_model::channel::ChannelType) -> Self {
         match v {
-            twilight_model::channel::ChannelType::GuildText => Self::GuildText,
-            twilight_model::channel::ChannelType::Private => Self::Private,
-            twilight_model::channel::ChannelType::GuildVoice => Self::GuildVoice,
-            twilight_model::channel::ChannelType::Group => Self::Group,
-            twilight_model::channel::ChannelType::GuildCategory => Self::GuildCategory,
-            twilight_model::channel::ChannelType::GuildNews => Self::GuildNews,
-            twilight_model::channel::ChannelType::GuildStore => Self::GuildStore,
-            twilight_model::channel::ChannelType::GuildStageVoice => Self::GuildStageVoice,
-            twilight_model::channel::ChannelType::GuildNewsThread => Self::GuildNewsThread,
-            twilight_model::channel::ChannelType::GuildPublicThread => Self::GuildPublicThread,
-            twilight_model::channel::ChannelType::GuildPrivateThread => Self::GuildPrivateThread,
+            twilight_model::channel::ChannelType::GuildText => Self::Text,
+            twilight_model::channel::ChannelType::GuildVoice => Self::Voice,
+            twilight_model::channel::ChannelType::GuildCategory => Self::Category,
+            twilight_model::channel::ChannelType::GuildNews => Self::News,
+            twilight_model::channel::ChannelType::GuildStore => Self::Store,
+            twilight_model::channel::ChannelType::GuildStageVoice => Self::StageVoice,
+            twilight_model::channel::ChannelType::GuildNewsThread => Self::NewsThread,
+            twilight_model::channel::ChannelType::GuildPublicThread => Self::PublicThread,
+            twilight_model::channel::ChannelType::GuildPrivateThread => Self::PrivateThread,
+            twilight_model::channel::ChannelType::Group => panic!("unspported channel type: group"),
+            twilight_model::channel::ChannelType::Private => {
+                panic!("unspported channel type: private")
+            }
         }
     }
 }
