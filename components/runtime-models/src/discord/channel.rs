@@ -258,10 +258,14 @@ impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ThreadMember.ts")]
 pub struct ThreadMember {
-    pub flags: NotBigU64,
+    // Removed as the values aren't documented anywhere and i want to make a proper
+    // abstraction for this similar to UserFlags and the like.
+    // pub flags: NotBigU64,
     pub id: Option<String>,
     pub join_timestamp: NotBigU64,
     pub member: Option<Member>,
+
+    // Unsure if presence is provided without presence intent
     // pub presence: Option<Presence>,
     pub user_id: Option<String>,
 }
@@ -269,7 +273,7 @@ pub struct ThreadMember {
 impl From<twilight_model::channel::thread::ThreadMember> for ThreadMember {
     fn from(v: twilight_model::channel::thread::ThreadMember) -> Self {
         Self {
-            flags: NotBigU64(v.flags),
+            // flags: NotBigU64(v.flags),
             id: v.id.as_ref().map(ToString::to_string),
             join_timestamp: NotBigU64(v.join_timestamp.as_micros() as u64 / 1000),
             member: v.member.map(Into::into),
