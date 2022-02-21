@@ -1,8 +1,8 @@
 import type { PermissionOverwriteType } from "./PermissionOverwriteType";
 
 export interface PermissionOverwrite {
-  allow_raw: string;
-  deny_raw: string;
+  allowRaw: string;
+  denyRaw: string;
   kind: PermissionOverwriteType;
   id: string;
 }

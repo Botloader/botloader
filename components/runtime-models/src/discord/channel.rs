@@ -40,6 +40,7 @@ impl From<twilight_model::channel::GuildChannel> for GuildChannel {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/VoiceChannel.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct VoiceChannel {
     pub bitrate: NotBigU64,
     pub id: String,
@@ -95,6 +96,7 @@ impl From<twilight_model::channel::VideoQualityMode> for VideoQualityMode {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/TextChannel.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct TextChannel {
     pub id: String,
     #[ts(type = "'Text'|'News'|'Store'")]
@@ -135,6 +137,7 @@ impl From<twilight_model::channel::TextChannel> for TextChannel {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PublicThread.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct PublicThread {
     pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
@@ -173,6 +176,7 @@ impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PrivateThread.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct PrivateThread {
     pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
@@ -219,6 +223,7 @@ impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/NewsThread.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct NewsThread {
     pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
@@ -257,6 +262,7 @@ impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ThreadMember.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadMember {
     // Removed as the values aren't documented anywhere and i want to make a proper
     // abstraction for this similar to UserFlags and the like.
@@ -285,6 +291,7 @@ impl From<twilight_model::channel::thread::ThreadMember> for ThreadMember {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ThreadMetadata.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadMetadata {
     pub archived: bool,
     pub auto_archive_duration_minutes: u32,
@@ -308,6 +315,7 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/CategoryChannel.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct CategoryChannel {
     pub id: String,
     #[ts(type = "'Category'")]
@@ -371,6 +379,7 @@ impl From<twilight_model::channel::ChannelType> for ChannelType {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PermissionOverwrite.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct PermissionOverwrite {
     pub allow_raw: String,
     pub deny_raw: String,

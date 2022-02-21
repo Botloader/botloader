@@ -4,6 +4,6 @@ export interface CategoryChannel {
   id: string;
   kind: "Category";
   name: string;
-  permission_overwrites: Array<PermissionOverwrite>;
+  permissionOverwrites: Array<PermissionOverwrite>;
   position: bigint;
 }

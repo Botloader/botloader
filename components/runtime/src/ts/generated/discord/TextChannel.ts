@@ -3,12 +3,12 @@ import type { PermissionOverwrite } from "./PermissionOverwrite";
 export interface TextChannel {
   id: string;
   kind: "Text" | "News" | "Store";
-  last_pin_timestamp: number | null;
+  lastPinTimestamp: number | null;
   name: string;
   nsfw: boolean;
-  parent_id: string | null;
-  permission_overwrites: Array<PermissionOverwrite>;
+  parentId: string | null;
+  permissionOverwrites: Array<PermissionOverwrite>;
   position: bigint;
-  rate_limit_per_user: number | null;
+  rateLimitPerUser: number | null;
   topic: string | null;
 }

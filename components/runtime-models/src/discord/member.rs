@@ -5,6 +5,7 @@ use ts_rs::TS;
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/Member.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct Member {
     pub deaf: bool,
     pub joined_at: NotBigU64,

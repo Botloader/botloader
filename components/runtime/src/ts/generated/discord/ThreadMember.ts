@@ -2,7 +2,7 @@ import type { Member } from "./Member";
 
 export interface ThreadMember {
   id: string | null;
-  join_timestamp: number;
+  joinTimestamp: number;
   member: Member | null;
-  user_id: string | null;
+  userId: string | null;
 }
