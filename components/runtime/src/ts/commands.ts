@@ -1,6 +1,7 @@
 import { DiscordModels, Internal } from "./generated";
 import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
+import { Member } from "./discord";
 
 export namespace Commands {
     export class System {
@@ -165,23 +166,60 @@ export namespace Commands {
             }
         }
     }
-
     export class ExecutedCommandContext {
-        interaction: Internal.CommandInteraction;
+        channelId: string;
+        interactionId: string;
+        token: string;
+
+        /**
+         * The user that executed the command
+         */
+        member: Member;
+
+        /**
+         * Name of the command triggered
+         * 
+         * Thie field is UNSTABLE and might change later
+         * 
+         * @internal
+         */
+        commandName: string;
+        /**
+         * Parent group of the command that triggered
+         * 
+         * Thie field is UNSTABLE and might change later
+         * 
+         * @internal
+         */
+        parentName?: string;
+        /**
+         * Parent group of the parent group of the command that triggered 
+         * 
+         * Thie field is UNSTABLE and might change later
+         * 
+         * @internal
+         */
+        parentParentName?: string;
 
         constructor(interaction: Internal.CommandInteraction) {
-            this.interaction = interaction;
+            this.channelId = interaction.channelId;
+            this.interactionId = interaction.id;
+            this.member = interaction.member;
+            this.token = interaction.token;
+            this.commandName = interaction.name;
+            this.parentName = interaction.parentName ?? undefined;
+            this.parentParentName = interaction.parentParentName ?? undefined;
         }
 
         async sendResponse(resp: string | Internal.OpCreateMessageFields) {
             if (typeof resp === "string") {
                 await OpWrappers.createInteractionFollowup({
-                    interactionToken: this.interaction.token,
+                    interactionToken: this.token,
                     fields: { content: resp }
                 })
             } else {
                 await OpWrappers.createInteractionFollowup({
-                    interactionToken: this.interaction.token,
+                    interactionToken: this.token,
                     fields: resp
                 })
             }
