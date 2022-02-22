@@ -191,8 +191,28 @@ export async function getMembers(ids: string[]): Promise<(Member | null)[]> {
     return await OpWrappers.getMembers(ids);
 }
 
-// TODO: remove exposed op models
-export async function editMember(userId: string, fields: Internal.UpdateGuildMemberFields): Promise<Member> {
+/**
+ * Fields that are not provided will be left unchanged.
+ */
+export interface UpdateGuildMemberFields {
+    /**
+     * Update the members voice channel, or set to null to kick them from their current vocie channel.
+     */
+    channelId?: string | null;
+
+
+    deaf?: boolean;
+    mute?: boolean;
+
+    /**
+     * Update the members nickname, or set to null to reset it
+     */
+    nick?: string | null;
+
+    roles?: string[];
+}
+
+export async function editMember(userId: string, fields: UpdateGuildMemberFields): Promise<Member> {
     return await OpWrappers.updateMember(userId, fields);
 }
 
