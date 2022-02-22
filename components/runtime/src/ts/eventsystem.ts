@@ -55,6 +55,9 @@ export namespace EventSystem {
         [Property in keyof EventTypes]+?: ((evt: EventTypes[Property]) => void)[];
     }
 
+    /**
+     * @internal
+     */
     export class Muxer {
 
         listeners: ListenerMap = {};
