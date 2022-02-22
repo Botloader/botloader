@@ -185,7 +185,7 @@ export namespace Storage {
          * @param key The key to delete
          * @returns The deleted entry, or undefined if none
          */
-        async del(key: string) {
+        async delete(key: string) {
             return this.entryFromInternalOptional(await OpWrappers.bucketStorageDel({
                 bucketName: this.name,
                 key: key,
