@@ -32,51 +32,88 @@ export class Script {
         this.scriptId = id;
     }
 
-    on(eventType: "MESSAGE_DELETE", cb: (evt: EventSystem.EventTypes["MESSAGE_DELETE"]) => void): void;
-    on(eventType: "MESSAGE_UPDATE", cb: (evt: EventSystem.EventTypes["MESSAGE_UPDATE"]) => void): void;
-    on(eventType: "MESSAGE_CREATE", cb: (evt: EventSystem.EventTypes["MESSAGE_CREATE"]) => void): void;
-    on(eventType: "MEMBER_ADD", cb: (evt: EventSystem.EventTypes["MEMBER_ADD"]) => void): void;
-    on(eventType: "MEMBER_UPDATE", cb: (evt: EventSystem.EventTypes["MEMBER_UPDATE"]) => void): void;
-    on(eventType: "MEMBER_REMOVE", cb: (evt: EventSystem.EventTypes["MEMBER_REMOVE"]) => void): void;
-    on<T extends keyof EventSystem.EventTypes>(eventType: T, cb: (evt: EventSystem.EventTypes[T]) => void): void {
-        this.events.on(eventType, cb);
+    /**
+     * Creates or updates a command 
+     * 
+     * See {@link Commands.slashCommand}, {@link Commands.messageCommand} and {@link Commands.userCommand}
+     * for more info on defining the commands themselves
+     */
+    createCommand(command: Commands.Command) {
+        this.commandSystem.commands.push(command);
     }
 
     /**
-     * Register a command to this guild.
+     * Create new json storage buckets for persistent storage
      * 
-     * @param cmd The command to register
+     * @param namespace a "name" or "id" for the bucket. 
+     * This is not script scoped and the same storage bucket can be registered in multiple scripts to have access to the same data, this is perfectly safe.
      * 
      * @example ```ts
-     * * script.registerCommand({
-     *     name: "sub",
-     *     description: "subtracts 2 numbers",
-     *     group: mathGroup,
-     *     options: {
-     *         "a": { description: "a", kind: "Integer", required: true },
-     *         "b": { description: "b", kind: "Integer", required: true },
-     *     },
-     *     callback: async (ctx, args) => {
-     *         const result = args.a - args.b;
-     *         await ctx.sendResponse(`Result: ${result}`)
-     *     }
+     * interface Data{
+     *     key: string,
+     * }
+     * let funStorage = script.createStorageBucketJson(new Storage.JsonBucket<Data>("fun-data"));
+     * ```
+     *
+     */
+    createStorageBucketJson<T>(namespace: string) {
+        let bucket = new Storage.JsonBucket<T>(namespace);
+        this.storageBuckets.push(bucket);
+
+        return bucket;
+    }
+
+    /**
+     * Creates a new number storage bucket for persistent storage.
+     * 
+     * This is the same as {@link createStorageBucketJson} except that this bucket can only store number values, the upside of this is that it can be sorted.
+     * 
+     * An example use case could be storing the scores of users in a leveling system with the key being their user ID and the value being their score
+     * this way you can use {@link Storage.NumberBucket.sortedList} to get a sorted list of entries.
+     * 
+     * See {@link createStorageBucketJson} for more general info on storage buckets
+     */
+    createStorageBucketNumber(namespace: string) {
+        let bucket = new Storage.NumberBucket(namespace);
+        this.storageBuckets.push(bucket);
+
+        return bucket;
+    }
+
+    /**
+     * Register a scheduled task handler for the provided namespace.
+     * 
+     * See {@link Tasks} for more info about scheduled tasks and how to schedule a new one.
+     * 
+     * @param namespace The task namespace to handle tasks from
+     * @param cb The callback function to run, with the type of the data passed to the task when scheduled
+     * 
+     * @example ```ts
+     * interface Data{
+     *     key: string,
+     * }
+     * script.onTask<Data>("fun-tasks", (task) => {
+     *      console.log("hello world");
      * });
      * ```
      */
-    // registerCommand<T extends Commands.OptionsMap>(cmd: Commands.CommandDef<T>) {
-    //     this.commandSystem.commands.push(cmd as Commands.CommandDef<Commands.OptionsMap>);
-    // }
+    async onTask<T>(namespace: string, cb: (task: Tasks.Task<T>) => any) {
+        this.taskHandlerNames.push(namespace);
 
-    addCommand(command: Commands.Command) {
-        this.commandSystem.commands.push(command);
+        this.events.on("BOTLOADER_SCHEDULED_TASK_FIRED", async (evt) => {
+            if (evt.namespace === namespace) {
+                await cb({
+                    ...evt,
+                    data: evt.data as T,
+                });
+            }
+        })
     }
-    // addSlashCommand() { },
-    // addUserCommand() { },
-    // addMessageCommand() { },
 
     /**
+     * Creates or resumes a interval timer.
      * 
-     * @param name The name of the timer
+     * @param name The name of the timer, this is not namespaced to the current script. You could overwrite a timer from another script with the same name.
      * @param interval The interval, either in minutes for running the callback at every x minutes, or a cron style timer. 
      * 
      * https://crontab.guru/ is a neat helper for making cron intervals 
@@ -84,12 +121,12 @@ export class Script {
      * @param callback Callback to run at every interval
      * 
      * @example ```ts
-     *  script.registerIntervalTimer("gaming", "*\/5 * * * *", () => {
+     *  script.onInterval("gaming", "*\/5 * * * *", () => {
      *     // do stuff here
      * });
      * ```
      */
-    addIntervalTimer(name: string, interval: string | number, callback: () => any) {
+    onInterval(name: string, interval: string | number, callback: () => any) {
         let timerType;
         if (typeof interval === "number") {
             timerType = { minutes: interval };
@@ -106,60 +143,20 @@ export class Script {
         });
     }
 
-    /**
-     * Register a storage bucket to the script
-     * 
-     * Note that the same storage bucket can be registered in multiple scripts, and you can use this to share data betweem scripts.
-     *
-     * @param bucket The bucket itself
-     * @returns The registered bucket
-     * 
-     * @example ```ts
-     * interface Data{
-     *     key: string,
-     * }
-     * script.registerStorageBucket(new Storage.JsonBucket<Data>("fun-data"));
-     * ```
-     */
-    // addStorageBucket<T extends Storage.Bucket<U>, U>(bucket: T): T {
-    //     this.storageBuckets.push(bucket);
-    //     return bucket;
-    // }
-
-    addStorageBucketJson<T>(namespace: string) {
-        let bucket = new Storage.JsonBucket<T>(namespace);
-        this.storageBuckets.push(bucket);
-
-        return bucket;
-    }
-
-    addStorageBucketNumber(namespace: string) {
-        let bucket = new Storage.NumberBucket(namespace);
-        this.storageBuckets.push(bucket);
-
-        return bucket;
-    }
+    on(eventType: "MESSAGE_DELETE", cb: (evt: EventSystem.EventTypes["MESSAGE_DELETE"]) => void): void;
+    on(eventType: "MESSAGE_UPDATE", cb: (evt: EventSystem.EventTypes["MESSAGE_UPDATE"]) => void): void;
+    on(eventType: "MESSAGE_CREATE", cb: (evt: EventSystem.EventTypes["MESSAGE_CREATE"]) => void): void;
+    on(eventType: "MEMBER_ADD", cb: (evt: EventSystem.EventTypes["MEMBER_ADD"]) => void): void;
+    on(eventType: "MEMBER_UPDATE", cb: (evt: EventSystem.EventTypes["MEMBER_UPDATE"]) => void): void;
+    on(eventType: "MEMBER_REMOVE", cb: (evt: EventSystem.EventTypes["MEMBER_REMOVE"]) => void): void;
 
     /**
-     * Register a scheduled task handler for the provided namespace
-     * 
-     * See {@link Tasks} for more info about scheduled tasks
-     * 
-     * @param namespace The task namespace to handle tasks from
-     * @param cb The callback function to run
+     * Register a general event handler such as for arbitrary discord events like when a new message is sent in the server (MESSAGE_CREATE)
      */
-    async addTaskHandler<T>(namespace: string, cb: (task: Tasks.Task<T>) => any) {
-        this.taskHandlerNames.push(namespace);
-
-        this.events.on("BOTLOADER_SCHEDULED_TASK_FIRED", async (evt) => {
-            if (evt.namespace === namespace) {
-                await cb({
-                    ...evt,
-                    data: evt.data as T,
-                });
-            }
-        })
+    on<T extends keyof EventSystem.EventTypes>(eventType: T, cb: (evt: EventSystem.EventTypes[T]) => void): void {
+        this.events.on(eventType, cb);
     }
+
 
     /**
      * @internal
@@ -185,10 +182,10 @@ export class Script {
         this.commandSystem.addEventListeners(this.events);
         EventSystem.registerEventMuxer(this.events);
 
-        this.events.on("BOTLOADER_INTERVAL_TIMER_FIRED", this.onInterval.bind(this));
+        this.events.on("BOTLOADER_INTERVAL_TIMER_FIRED", this.handleIntervalEvent.bind(this));
     }
 
-    private async onInterval(evt: Internal.IntervalTimerEvent) {
+    private async handleIntervalEvent(evt: Internal.IntervalTimerEvent) {
         const timer = this.intervalTimers.find(timer => timer.timer.name === evt.name);
         if (timer) {
             await timer.callback();

@@ -1,7 +1,7 @@
 import { Commands } from 'botloader';
 import { runOnce, sendScriptCompletion } from 'lib';
 
-script.addCommand(
+script.createCommand(
     Commands.slashCommand("gaming", "this is a gaming command")
         .addOptionNumber("amount", "amount of gaming")
         .addOptionString("what", "what to game", { autocomplete: gamingAutocomplete })
@@ -23,7 +23,7 @@ function gamingAutocomplete(data: {}) {
     }]
 }
 
-script.addCommand(
+script.createCommand(
     Commands.userCommand("throw", "throw this user up in the air")
         .build((ctx, target) => {
             // stuff here
@@ -32,7 +32,7 @@ script.addCommand(
 );
 
 
-script.addCommand(
+script.createCommand(
     Commands.messageCommand("report", "report this message")
         .build((ctx, target) => {
             // stuff here
