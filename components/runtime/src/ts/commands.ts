@@ -212,7 +212,7 @@ export namespace Commands {
     }
 
     export type OptionType = BaseOption["kind"];
-    export type Option = BaseOption & (StringOption | NumberOption);
+    export type Option = BaseOption & (StringOption | NumberOption | BooleanOption | ChannelOption | RoleOption | MentionableOption);
 
     export type AutocompleteProvider<T> = (data: {}) => Promise<OptionChoice<T>[]> | OptionChoice<T>[];
 
@@ -360,20 +360,20 @@ export namespace Commands {
             }
 
             let fullOpts = {
+                ...this.options,
                 [key]: {
+                    ...opts,
                     kind: kind,
                     required: required,
                     description: description,
-                    ...opts
                 },
-                ...this.options,
             }
 
             // Return a new builder with new typings
             // The new opts type is "layered" on top of the old one, making us able to use
             // the generic typings of all the options in the callback
             return new SlashCommandBuilder<LayerOption<TOpts, TKey, { kind: TKind, required: TRequired }>>
-                (this.name, this.description, fullOpts as OptionMap);
+                (this.name, this.description, fullOpts);
         }
 
         build(callback: (ctx: ExecutedCommandContext, args: ParsedOptionsMap<TOpts>) => void | Promise<any>): Command {
