@@ -337,7 +337,7 @@ export namespace Commands {
         return new SlashCommandBuilder<{}>(name, description, {});
     }
 
-    class SlashCommandBuilder<TOpts> {
+    export class SlashCommandBuilder<TOpts> {
         private name: string;
         private description: string;
         private options: OptionMap;
@@ -430,7 +430,7 @@ export namespace Commands {
         { [Prop in keyof TInner]: TInner[Prop] } & { [Prop in TKey]: TVal };
 
 
-    interface BaseOptionSettings<TRequired extends boolean | undefined = undefined> {
+    export interface BaseOptionSettings<TRequired extends boolean | undefined = undefined> {
         required?: TRequired
     }
 
@@ -464,7 +464,7 @@ export namespace Commands {
         return new UserCommandBuilder(name, description);
     }
 
-    class UserCommandBuilder {
+    export class UserCommandBuilder {
         name: string;
         description: string;
 
@@ -487,7 +487,7 @@ export namespace Commands {
         return new MessageCommandBuilder(name, description);
     }
 
-    class MessageCommandBuilder {
+    export class MessageCommandBuilder {
         name: string;
         description: string;
 
