@@ -2,7 +2,8 @@ import { OpWrappers } from "./op_wrappers";
 
 const non_json = ["boolean", "number", "string"];
 
-/** * @deprecated console is now a global, please remove the import
+/** 
+ * @deprecated console is now a global, please remove the import
  */
 export namespace console {
     export function log(...args: any[]) {
