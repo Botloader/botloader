@@ -52,11 +52,11 @@ export class Script {
      * interface Data{
      *     key: string,
      * }
-     * let funStorage = script.createStorageBucketJson(new Storage.JsonBucket<Data>("fun-data"));
+     * let funStorage = script.createGuildStorageJson(new Storage.JsonBucket<Data>("fun-data"));
      * ```
      *
      */
-    createStorageBucketJson<T>(namespace: string) {
+    createGuildStorageJson<T>(namespace: string) {
         let bucket = new Storage.JsonBucket<T>(namespace);
         this.storageBuckets.push(bucket);
 
@@ -66,14 +66,14 @@ export class Script {
     /**
      * Creates a new number storage bucket for persistent storage.
      * 
-     * This is the same as {@link createStorageBucketJson} except that this bucket can only store number values, the upside of this is that it can be sorted.
+     * This is the same as {@link createGuildStorageJson} except that this bucket can only store number values, the upside of this is that it can be sorted.
      * 
      * An example use case could be storing the scores of users in a leveling system with the key being their user ID and the value being their score
      * this way you can use {@link Storage.NumberBucket.sortedList} to get a sorted list of entries.
      * 
-     * See {@link createStorageBucketJson} for more general info on storage buckets
+     * See {@link createGuildStorageJson} for more general info on storage buckets
      */
-    createStorageBucketNumber(namespace: string) {
+    createGuildStorageNumber(namespace: string) {
         let bucket = new Storage.NumberBucket(namespace);
         this.storageBuckets.push(bucket);
 
