@@ -1,7 +1,7 @@
 import { DiscordModels, Internal } from "./generated";
 import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
-import { Member } from "./discord";
+import { CreateMessageFields, Member, toOpMessageFields } from "./discord";
 
 export namespace Commands {
     export class System {
@@ -211,7 +211,7 @@ export namespace Commands {
             this.parentParentName = interaction.parentParentName ?? undefined;
         }
 
-        async sendResponse(resp: string | Internal.OpCreateMessageFields) {
+        async sendResponse(resp: string | CreateMessageFields) {
             if (typeof resp === "string") {
                 await OpWrappers.createInteractionFollowup({
                     interactionToken: this.token,
@@ -220,7 +220,7 @@ export namespace Commands {
             } else {
                 await OpWrappers.createInteractionFollowup({
                     interactionToken: this.token,
-                    fields: resp
+                    fields: toOpMessageFields(resp),
                 })
             }
         }

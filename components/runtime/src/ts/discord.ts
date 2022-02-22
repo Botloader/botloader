@@ -1,5 +1,5 @@
 export * from './generated/discord/index';
-import { Guild, GuildChannel, Member, Message, Role } from './generated/discord/index';
+import { Guild, GuildChannel, Member, Message, Role, Embed } from './generated/discord/index';
 import * as Internal from './generated/internal/index';
 import { OpWrappers } from './op_wrappers';
 
@@ -20,15 +20,6 @@ export function getMessage(channelId: string, messageId: string): Promise<Messag
     })
 }
 
-export function getMessages(channelId: string, options?: GetMessagesOptions): Promise<Message[]> {
-    return OpWrappers.getMessages({
-        channelId,
-        after: options?.after,
-        before: options?.before,
-        limit: options?.limit,
-    })
-}
-
 export interface GetMessagesOptions {
     /**
      * Limit max results, max 100, default 50
@@ -45,17 +36,89 @@ export interface GetMessagesOptions {
     before?: string,
 }
 
-export function createMessage(channelId: string, fields: Internal.OpCreateMessageFields): Promise<Message> {
+export function getMessages(channelId: string, options?: GetMessagesOptions): Promise<Message[]> {
+    return OpWrappers.getMessages({
+        channelId,
+        after: options?.after,
+        before: options?.before,
+        limit: options?.limit,
+    })
+}
+
+export interface CreateMessageFields {
+    content?: string;
+    embeds?: Embed[];
+
+    /**
+     * Control the mentions in the message.
+     * 
+     * The default for this if not provided is: {parse: ["users"]}
+     * this means that discord will search the message for user mentions only and 'everyone', 'here' and other mentions
+     * will be ignored.
+     */
+    allowedMentions?: AllowedMentions;
+}
+
+export interface AllowedMentions {
+    /**
+     * Types of mentions to parse from the message
+     */
+    parse: MentionParseTypes[];
+    /**
+     * Array of role_ids to mention (Max size of 100)
+     */
+    users?: string[];
+    /**
+     * Array of user_ids to mention (Max size of 100)
+     */
+    roles?: string[];
+
+    /**
+     * For replies, whether to mention the author of the message being replied to (default false)
+     */
+    repliedUser?: boolean;
+}
+
+/**
+ * @internal
+ */
+export function toOpMessageFields(fields: CreateMessageFields): Internal.OpCreateMessageFields {
+    let allowedMentions: Internal.AllowedMentions;
+    if (fields.allowedMentions) {
+        allowedMentions = {
+            parse: fields.allowedMentions.parse,
+            users: fields.allowedMentions.users ?? [],
+            roles: fields.allowedMentions.roles ?? [],
+            repliedUser: fields.allowedMentions.repliedUser ?? false,
+        }
+    } else {
+        allowedMentions = {
+            parse: ["Users"],
+            users: [],
+            roles: [],
+            repliedUser: false,
+        }
+    }
+
+    return {
+        ...fields,
+        allowedMentions: allowedMentions!,
+    }
+}
+
+export type MentionParseTypes = "Everyone" | "Roles" | "Users";
+
+export function createMessage(channelId: string, fields: CreateMessageFields): Promise<Message> {
     return OpWrappers.createChannelMessage({
         channelId,
-        fields,
+        fields: toOpMessageFields(fields),
     });
 }
-export function editMessage(channelId: string, messageId: string, fields: Internal.OpEditMessageFields): Promise<Message> {
+export function editMessage(channelId: string, messageId: string, fields: CreateMessageFields): Promise<Message> {
     return OpWrappers.editChannelMessage({
         channelId,
         messageId,
-        fields,
+        fields: toOpMessageFields(fields),
     });
 }
 
@@ -72,6 +135,8 @@ export function bulkDeleteMessages(channelId: string, ...messageIds: string[]): 
         messageIds,
     })
 }
+
+
 
 // Role functions
 export function getRole(roleId: string): Promise<Role> {
