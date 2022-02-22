@@ -3,7 +3,7 @@ export * from './core_util';
 
 // export * from './timers';
 export * from './commands';
-export * from './events';
+export * from './eventsystem';
 export * from './script';
 export * from './storage';
 export * from './httpclient';

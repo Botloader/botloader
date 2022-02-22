@@ -4,7 +4,7 @@ import "./core_util";
 
 import { Commands } from "./commands";
 import { Internal } from "./generated";
-import { InternalEventSystem, EventMuxer, EventTypes } from "./events";
+import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
 import { Tasks } from "./scheduled_tasks";
@@ -16,7 +16,7 @@ export class Script {
     readonly scriptId: number;
     readonly description: string;
 
-    private events = new EventMuxer();
+    private events = new EventSystem.Muxer();
     private commandSystem = new Commands.System();
     private intervalTimers: IntervalTimerListener[] = [];
     private storageBuckets: Storage.Bucket<unknown>[] = [];
@@ -32,13 +32,13 @@ export class Script {
         this.scriptId = id;
     }
 
-    on(eventType: "MESSAGE_DELETE", cb: (evt: EventTypes["MESSAGE_DELETE"]) => void): void;
-    on(eventType: "MESSAGE_UPDATE", cb: (evt: EventTypes["MESSAGE_UPDATE"]) => void): void;
-    on(eventType: "MESSAGE_CREATE", cb: (evt: EventTypes["MESSAGE_CREATE"]) => void): void;
-    on(eventType: "MEMBER_ADD", cb: (evt: EventTypes["MEMBER_ADD"]) => void): void;
-    on(eventType: "MEMBER_UPDATE", cb: (evt: EventTypes["MEMBER_UPDATE"]) => void): void;
-    on(eventType: "MEMBER_REMOVE", cb: (evt: EventTypes["MEMBER_REMOVE"]) => void): void;
-    on<T extends keyof EventTypes>(eventType: T, cb: (evt: EventTypes[T]) => void): void {
+    on(eventType: "MESSAGE_DELETE", cb: (evt: EventSystem.EventTypes["MESSAGE_DELETE"]) => void): void;
+    on(eventType: "MESSAGE_UPDATE", cb: (evt: EventSystem.EventTypes["MESSAGE_UPDATE"]) => void): void;
+    on(eventType: "MESSAGE_CREATE", cb: (evt: EventSystem.EventTypes["MESSAGE_CREATE"]) => void): void;
+    on(eventType: "MEMBER_ADD", cb: (evt: EventSystem.EventTypes["MEMBER_ADD"]) => void): void;
+    on(eventType: "MEMBER_UPDATE", cb: (evt: EventSystem.EventTypes["MEMBER_UPDATE"]) => void): void;
+    on(eventType: "MEMBER_REMOVE", cb: (evt: EventSystem.EventTypes["MEMBER_REMOVE"]) => void): void;
+    on<T extends keyof EventSystem.EventTypes>(eventType: T, cb: (evt: EventSystem.EventTypes[T]) => void): void {
         this.events.on(eventType, cb);
     }
 
@@ -183,7 +183,7 @@ export class Script {
         });
 
         this.commandSystem.addEventListeners(this.events);
-        InternalEventSystem.registerEventMuxer(this.events);
+        EventSystem.registerEventMuxer(this.events);
 
         this.events.on("BOTLOADER_INTERVAL_TIMER_FIRED", this.onInterval.bind(this));
     }

@@ -1,12 +1,12 @@
 import { DiscordModels, Internal } from "./generated";
-import { EventMuxer } from "./events";
+import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 
 export namespace Commands {
     export class System {
         commands: Command[] = [];
 
-        addEventListeners(muxer: EventMuxer) {
+        addEventListeners(muxer: EventSystem.Muxer) {
             muxer.on("BOTLOADER_COMMAND_INTERACTION_CREATE", this.handleInteractionCreate.bind(this));
         }
 
