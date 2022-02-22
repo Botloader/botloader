@@ -1,4 +1,4 @@
-import { } from 'botloader';
+import { Discord } from 'botloader';
 import { runOnce, sendScriptCompletion } from 'lib';
 
 const testMessageContent = "test message integration test"
@@ -9,5 +9,5 @@ script.on("MESSAGE_CREATE", (msg) => {
 })
 
 runOnce("messagecreate.ts", async () => {
-    script.createMessage("531120790318350338", { content: testMessageContent })
+    Discord.createMessage("531120790318350338", { content: testMessageContent })
 })

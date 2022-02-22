@@ -2,9 +2,9 @@ import { Tasks } from "botloader";
 import { assetJsonEquals, runOnce, sendScriptCompletion } from "lib";
 
 async function testGetKey() {
-    let task1 = await Tasks.scheduleTask("get_key", new Date(Date.now() + 1000000), { key: "1" });
-    let task2 = await Tasks.scheduleTask("get_key", new Date(Date.now() + 1000000), { key: "2" });
-    let taskOtherNs = await Tasks.scheduleTask("get_key2", new Date(Date.now() + 1000000), { key: "1" });
+    let task1 = await Tasks.schedule("get_key", new Date(Date.now() + 1000000), { key: "1" });
+    let task2 = await Tasks.schedule("get_key", new Date(Date.now() + 1000000), { key: "2" });
+    let taskOtherNs = await Tasks.schedule("get_key2", new Date(Date.now() + 1000000), { key: "1" });
 
     assetJsonEquals(await Tasks.getById(task1.id), task1);
     assetJsonEquals(await Tasks.getById(task2.id), task2);
@@ -17,8 +17,8 @@ async function testGetKey() {
 
 async function testGetAll() {
     for (let i = 0; i < 55; i++) {
-        await Tasks.scheduleTask("get_many", new Date(Date.now() + 1000000), { key: "" + i });
-        await Tasks.scheduleTask("get_many2", new Date(Date.now() + 1000000), { key: "" + i });
+        await Tasks.schedule("get_many", new Date(Date.now() + 1000000), { key: "" + i });
+        await Tasks.schedule("get_many2", new Date(Date.now() + 1000000), { key: "" + i });
     }
 
     const inNamespace = await countAll("get_many");

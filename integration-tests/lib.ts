@@ -31,7 +31,7 @@ export function assetJsonEquals(a: any, b: any) {
     }
 }
 
-let run_tracker = script.registerStorageBucket(new Storage.JsonBucket<boolean>("lib_run_tests"));
+let run_tracker = script.createGuildStorageJson("lib_run_tests");
 
 export async function runOnce(name: string, cb: () => any) {
     if (await run_tracker.setIf("run_" + name, true, "IfNotExists")) {
