@@ -13,8 +13,13 @@ impl Validator for CreateScript {
 
 impl Validator for UpdateScript {
     fn validate(&self, ctx: &mut ValidationContext) {
-        check_script_name(ctx, &self.name);
-        check_script_source(ctx, &self.original_source);
+        if let Some(name) = &self.name {
+            check_script_name(ctx, name);
+        }
+
+        if let Some(source) = &self.original_source {
+            check_script_source(ctx, source);
+        }
     }
 }
 

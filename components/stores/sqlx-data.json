@@ -547,66 +547,6 @@
       ]
     }
   },
-  "38359a76a63449a55fe42e384b2673674ed29b1ec872c8a6ca8bcfbadbc59d80": {
-    "query": "\n                    UPDATE guild_scripts SET\n                    original_source = $3,\n                    enabled = $4,\n                    contributes_commands = $5\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers;\n                ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "original_source",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "guild_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 4,
-          "name": "enabled",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 5,
-          "name": "contributes_commands",
-          "type_info": "Jsonb"
-        },
-        {
-          "ordinal": 6,
-          "name": "contributes_interval_timers",
-          "type_info": "Jsonb"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "Text",
-          "Bool",
-          "Jsonb"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "390e176645318b2481f472ae3b7858151a2aa0db03af2bb644620846fac1992c": {
     "query": "INSERT INTO scheduled_tasks (guild_id, name, unique_key, value, exec_at) VALUES($1, $2, $3, $4, $5)\n            ON CONFLICT (guild_id, name, unique_key) WHERE unique_key IS NOT NULL DO UPDATE SET\n            value = excluded.value,\n            exec_at = excluded.exec_at\n            RETURNING id, guild_id, name, unique_key, value, exec_at",
     "describe": {
@@ -726,65 +666,6 @@
       ]
     }
   },
-  "41cf099280181e46b089606bc2daa0952407ed5b3db18e745ba24350290037a6": {
-    "query": "\n                    UPDATE guild_scripts SET\n                    original_source = $3,\n                    enabled = $4\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers;\n                ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "original_source",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "guild_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 4,
-          "name": "enabled",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 5,
-          "name": "contributes_commands",
-          "type_info": "Jsonb"
-        },
-        {
-          "ordinal": 6,
-          "name": "contributes_interval_timers",
-          "type_info": "Jsonb"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "Text",
-          "Bool"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "49a6466f558a6f6fd9c3c5fd330502113fabbf0276a0470b6c04ae0fffd551de": {
     "query": "SELECT COUNT(*) FROM scheduled_tasks WHERE guild_id = $1;",
     "describe": {
@@ -849,6 +730,66 @@
         "Left": [
           "Int8",
           "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "4b2dcf64481afaee690d624a2c565c450d3ae37a86d66aba106bb4046bcabd18": {
+    "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands)\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers;\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "original_source",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "enabled",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 5,
+          "name": "contributes_commands",
+          "type_info": "Jsonb"
+        },
+        {
+          "ordinal": 6,
+          "name": "contributes_interval_timers",
+          "type_info": "Jsonb"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Text",
+          "Bool",
+          "Jsonb"
         ]
       },
       "nullable": [

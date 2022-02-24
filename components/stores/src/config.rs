@@ -116,9 +116,9 @@ pub struct Script {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateScript {
     pub id: u64,
-    pub name: String,
-    pub original_source: String,
-    pub enabled: bool,
+    pub name: Option<String>,
+    pub original_source: Option<String>,
+    pub enabled: Option<bool>,
     pub contributes: Option<ScriptContributes>,
 }
 

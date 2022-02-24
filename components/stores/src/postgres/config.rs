@@ -122,47 +122,27 @@ impl crate::config::ConfigStore for Postgres {
         guild_id: Id<GuildMarker>,
         script: UpdateScript,
     ) -> ConfigStoreResult<Script> {
-        let res = if let Some(contribs) = script.contributes {
-            let commands_enc = serde_json::to_value(contribs).unwrap();
+        let commands_enc = script.contributes.map(|v| serde_json::to_value(v).unwrap());
 
-            sqlx::query_as!(
-                DbScript,
-                "
+        let res = sqlx::query_as!(
+            DbScript,
+            "
                     UPDATE guild_scripts SET
-                    original_source = $3,
-                    enabled = $4,
-                    contributes_commands = $5
+                    original_source = COALESCE($3, guild_scripts.original_source),
+                    enabled = COALESCE($4, guild_scripts.enabled),
+                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands)
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-                 contributes_interval_timers;
+             contributes_interval_timers;
                 ",
-                guild_id.get() as i64,
-                script.id as i64,
-                script.original_source,
-                script.enabled,
-                commands_enc,
-            )
-            .fetch_one(&self.pool)
-            .await?
-        } else {
-            sqlx::query_as!(
-                DbScript,
-                "
-                    UPDATE guild_scripts SET
-                    original_source = $3,
-                    enabled = $4
-                    WHERE guild_id = $1 AND id=$2
-                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-                 contributes_interval_timers;
-                ",
-                guild_id.get() as i64,
-                script.id as i64,
-                script.original_source,
-                script.enabled,
-            )
-            .fetch_one(&self.pool)
-            .await?
-        };
+            guild_id.get() as i64,
+            script.id as i64,
+            script.original_source,
+            script.enabled,
+            commands_enc,
+        )
+        .fetch_one(&self.pool)
+        .await?;
 
         Ok(res.into())
     }

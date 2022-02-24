@@ -60,9 +60,9 @@ export interface CreateScript {
 }
 
 export interface UpdateScript {
-    name: string,
-    original_source: string,
-    enabled: boolean,
+    name?: string,
+    original_source?: string,
+    enabled?: boolean,
 }
 
 export interface EmptyResponse { }

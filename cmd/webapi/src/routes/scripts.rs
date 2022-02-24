@@ -66,9 +66,12 @@ pub async fn create_guild_script(
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct UpdateRequestData {
-    pub name: String,
-    pub original_source: String,
-    pub enabled: bool,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub original_source: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
 }
 
 pub async fn update_guild_script(
