@@ -186,7 +186,7 @@ impl GuildHandler {
         loop {
             match self.stores.list_scripts(self.guild_id).await {
                 Ok(scripts) => {
-                    self.scripts = scripts;
+                    self.scripts = scripts.into_iter().filter(|v| v.enabled).collect();
                     return;
                 }
                 Err(err) => {
