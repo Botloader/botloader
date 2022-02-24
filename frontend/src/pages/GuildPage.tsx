@@ -54,6 +54,20 @@ function GuildControlPage(props: { guild: BotGuild }) {
         }
     }
 
+    async function toggleScript(scriptId: number, enabled: boolean) {
+        let resp = await session.apiClient.updateScript(props.guild.guild.id, scriptId, {
+            enabled,
+        });
+        if (!isErrorResponse(resp)) {
+            let newScripts = [...scripts ?? []];
+            let script = newScripts.find(v => v.id === scriptId);
+            if (script) {
+                script.enabled = resp.enabled;
+            }
+            setScripts(newScripts);
+        }
+    }
+
     return <>
         <h2>Guild scripts</h2>
         {scripts ?
@@ -61,8 +75,13 @@ function GuildControlPage(props: { guild: BotGuild }) {
                 {scripts.map(script => <div key={script.id} className="script-item">
                     <p>#{script.id}</p>
                     <p><code>{script.name}.ts</code></p>
-                    <p>{script.enabled ? "Enabled" : "Disabled"}</p>
+                    <p>{script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</p>
                     <AsyncOpButton className="danger" label="delete" onClick={() => delScript(script.id)}></AsyncOpButton>
+                    {script.enabled ?
+                        <AsyncOpButton className="primary" label="disable" onClick={() => toggleScript(script.id, false)}></AsyncOpButton>
+                        :
+                        <AsyncOpButton className="primary" label="enable" onClick={() => toggleScript(script.id, true)}></AsyncOpButton>
+                    }
                 </div>)}
             </div> :
             <p>Loading...</p>

@@ -11,3 +11,11 @@
     font-size: 2em;
     color: rgb(247, 0, 255);
 }
+
+.status-good {
+    color: green;
+}
+
+.status-bad {
+    color: red;
+}
