@@ -349,6 +349,10 @@ export namespace Commands {
             this.options = options;
         }
 
+        setGroup(group: Group) {
+            this.group = group;
+        }
+
         addOptionNumber<TKey extends string, TRequired extends boolean | undefined>
             (key: TKey, description: string, opts?: NumberOption & BaseOptionSettings<TRequired>) {
             return this.addOption(key, "Number", description, opts)
