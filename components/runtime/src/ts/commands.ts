@@ -240,6 +240,11 @@ export namespace Commands {
         value: InteractionUser
     }
 
+    /**
+     * Raw form of a command handled by botloader
+     * 
+     * You shouldn't use this directly and instead use one of the builders
+     */
     export interface Command {
         name: string;
         description: string;
@@ -333,6 +338,21 @@ export namespace Commands {
         }
     }
 
+    /**
+     * Create a new slash command builder
+     * @param name name of the command, 1-32 normal characters, no symbols or spaces
+     * @param description 1-100 character description
+     * @returns a builder
+     * 
+     * 
+     * @example ```ts
+     * script.createCommand(Commands.slashCommand("echo", "echo's your input")
+     * .addOptionString("what", "what to echo")
+     * .build(async (ctx, args) => {
+     *      await ctx.sendResponse(args.what);
+     * }))
+     * ```
+     */
     export function slashCommand(name: string, description: string) {
         return new SlashCommandBuilder<{}>(name, description, {});
     }
