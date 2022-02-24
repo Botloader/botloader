@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BotGuild, isErrorResponse, Script } from "botloader-common";
+import { ApiClient, BotGuild, isErrorResponse, Script } from "botloader-common";
 import { useCurrentGuild } from "../components/GuildsProvider";
 import { useSession } from "../components/Session";
 import './GuildPage.css'
@@ -52,6 +52,8 @@ function GuildControlPage(props: { guild: BotGuild }) {
         if (!isErrorResponse(resp)) {
             await loadScripts();
         }
+
+        await session.apiClient.reloadGuildVm(props.guild.guild.id);
     }
 
     async function toggleScript(scriptId: number, enabled: boolean) {
@@ -66,6 +68,8 @@ function GuildControlPage(props: { guild: BotGuild }) {
             }
             setScripts(newScripts);
         }
+
+        await session.apiClient.reloadGuildVm(props.guild.guild.id);
     }
 
     return <>
