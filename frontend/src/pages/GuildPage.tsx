@@ -47,8 +47,8 @@ function GuildControlPage(props: { guild: BotGuild }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props, session])
 
-    async function delScript(script_id: number) {
-        let resp = await session.apiClient.delScript(props.guild.guild.id, script_id);
+    async function delScript(scriptId: number) {
+        let resp = await session.apiClient.delScript(props.guild.guild.id, scriptId);
         if (!isErrorResponse(resp)) {
             await loadScripts();
         }
