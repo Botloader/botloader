@@ -416,6 +416,7 @@ export namespace Commands {
          */
         setGroup(group: Group) {
             this.group = group;
+            return this;
         }
 
         /**
