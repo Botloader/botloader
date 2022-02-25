@@ -15,7 +15,7 @@ let data: Data = {
 
 }
 
-script.registerTaskHandler<Data>("simple", (t) => {
+script.onTask<Data>("simple", (t) => {
     console.log("got task!", t.id);
 
     assertElapsed(t.data.scheduledAt, 10000);
@@ -27,7 +27,7 @@ script.registerTaskHandler<Data>("simple", (t) => {
 })
 
 runOnce("tasks_simple.ts", async () => {
-    await Tasks.scheduleTask("simple", new Date(data.scheduledAt + 10000), {
+    await Tasks.schedule("simple", new Date(data.scheduledAt + 10000), {
         data: data
     });
 })

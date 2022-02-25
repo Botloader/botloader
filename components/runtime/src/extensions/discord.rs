@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
-use runtime_models::ops::member::UpdateGuildMemberFields;
+use runtime_models::internal::member::UpdateGuildMemberFields;
 use std::{cell::RefCell, rc::Rc};
 use twilight_model::id::marker::RoleMarker;
 use twilight_model::id::marker::UserMarker;
@@ -13,7 +13,7 @@ use crate::dummy_op;
 use crate::RuntimeContext;
 use runtime_models::{
     discord::{guild::Guild, message::Message},
-    ops::messages::{
+    internal::messages::{
         OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage, OpDeleteMessagesBulk,
         OpEditChannelMessage, OpGetMessage, OpGetMessages,
     },

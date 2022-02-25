@@ -13,7 +13,7 @@ let data: Data = {
     scheduledAt: Date.now(),
 }
 
-script.registerTaskHandler<Data>("simple_1m", (t) => {
+script.onTask<Data>("simple_1m", (t) => {
     assertElapsed(t.data.scheduledAt, 60000);
 
     data.scheduledAt = t.data.scheduledAt
@@ -23,7 +23,7 @@ script.registerTaskHandler<Data>("simple_1m", (t) => {
 })
 
 runOnce("tasks_simple_1m.ts", async () => {
-    await Tasks.scheduleTask("simple_1m", new Date(data.scheduledAt + 60000), {
+    await Tasks.schedule("simple_1m", new Date(data.scheduledAt + 60000), {
         data: data
     });
 }) 

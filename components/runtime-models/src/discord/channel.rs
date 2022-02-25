@@ -3,8 +3,10 @@ use ts_rs::TS;
 
 use crate::{discord::member::Member, util::NotBigU64};
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[serde(untagged)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/GuildChannel.ts")]
 pub enum GuildChannel {
     Category(CategoryChannel),
     NewsThread(Box<NewsThread>),
@@ -35,108 +37,14 @@ impl From<twilight_model::channel::GuildChannel> for GuildChannel {
     }
 }
 
-// manually implemented for now cause of a bug in the lib
-impl ts_rs::TS for GuildChannel {
-    const EXPORT_TO: Option<&'static str> = Some("bindings/discord/GuildChannel.ts");
-    fn decl() -> String {
-        format!("type {}{} = {};", "GuildChannel", "", Self::inline())
-    }
-    fn name() -> String {
-        "GuildChannel".to_owned()
-    }
-    fn inline() -> String {
-        vec![
-            <CategoryChannel as ts_rs::TS>::name(),
-            <Box<NewsThread> as ts_rs::TS>::name_with_type_args(vec![
-                <NewsThread as ts_rs::TS>::name(),
-            ]),
-            <Box<PrivateThread> as ts_rs::TS>::name_with_type_args(vec![
-                <PrivateThread as ts_rs::TS>::name(),
-            ]),
-            <Box<PublicThread> as ts_rs::TS>::name_with_type_args(vec![
-                <PublicThread as ts_rs::TS>::name(),
-            ]),
-            <TextChannel as ts_rs::TS>::name(),
-            <VoiceChannel as ts_rs::TS>::name(),
-            <VoiceChannel as ts_rs::TS>::name(),
-        ]
-        .join(" | ")
-    }
-
-    fn dependencies() -> Vec<ts_rs::Dependency> {
-        {
-            let mut dependencies = vec![];
-            if <CategoryChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <CategoryChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<CategoryChannel>() {
-                dependencies.push(dep);
-            }
-            if <Box<NewsThread> as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <Box<NewsThread> as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<Box<NewsThread>>() {
-                dependencies.push(dep);
-            }
-            if <NewsThread as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <NewsThread as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<NewsThread>() {
-                dependencies.push(dep);
-            }
-            if <Box<PrivateThread> as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <Box<PrivateThread> as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<Box<PrivateThread>>() {
-                dependencies.push(dep);
-            }
-            if <PrivateThread as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <PrivateThread as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<PrivateThread>() {
-                dependencies.push(dep);
-            }
-            if <Box<PublicThread> as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <Box<PublicThread> as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<Box<PublicThread>>() {
-                dependencies.push(dep);
-            }
-            if <PublicThread as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <PublicThread as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<PublicThread>() {
-                dependencies.push(dep);
-            }
-            if <TextChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <TextChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<TextChannel>() {
-                dependencies.push(dep);
-            }
-            if <VoiceChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <VoiceChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<VoiceChannel>() {
-                dependencies.push(dep);
-            }
-            if <VoiceChannel as ts_rs::TS>::transparent() {
-                dependencies.append(&mut <VoiceChannel as ts_rs::TS>::dependencies());
-            } else if let Some(dep) = ts_rs::Dependency::from_ty::<VoiceChannel>() {
-                dependencies.push(dep);
-            }
-            dependencies
-        }
-    }
-    fn transparent() -> bool {
-        false
-    }
-}
-#[cfg(test)]
-#[test]
-fn export_bindings_guildchannel() {
-    <GuildChannel as ts_rs::TS>::export().expect("could not export type");
-}
-
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/VoiceChannel.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct VoiceChannel {
     pub bitrate: NotBigU64,
-    pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildVoice'|'GuildStageVoice'")]
+    #[ts(type = "'Voice'|'StageVoice'")]
     pub kind: ChannelType,
     pub name: String,
     pub parent_id: Option<String>,
@@ -151,11 +59,6 @@ impl From<twilight_model::channel::VoiceChannel> for VoiceChannel {
     fn from(v: twilight_model::channel::VoiceChannel) -> Self {
         Self {
             bitrate: NotBigU64(v.bitrate),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
             name: v.name,
@@ -193,12 +96,11 @@ impl From<twilight_model::channel::VideoQualityMode> for VideoQualityMode {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/TextChannel.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct TextChannel {
-    pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildText'|'GuildNews'|'GuildStore'")]
+    #[ts(type = "'Text'|'News'|'Store'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub last_pin_timestamp: Option<NotBigU64>,
     pub name: String,
     pub nsfw: bool,
@@ -212,14 +114,8 @@ pub struct TextChannel {
 impl From<twilight_model::channel::TextChannel> for TextChannel {
     fn from(v: twilight_model::channel::TextChannel) -> Self {
         Self {
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             last_pin_timestamp: v
                 .last_pin_timestamp
                 .map(|e| NotBigU64(e.as_micros() as u64 / 1000)),
@@ -241,13 +137,12 @@ impl From<twilight_model::channel::TextChannel> for TextChannel {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PublicThread.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct PublicThread {
-    pub default_auto_archive_duration: Option<AutoArchiveDuration>,
-    pub guild_id: String,
+    pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
-    #[ts(type = "'GuildPublicThread'")]
+    #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
@@ -261,15 +156,11 @@ pub struct PublicThread {
 impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
     fn from(v: twilight_model::channel::thread::PublicThread) -> Self {
         Self {
-            default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
+            default_auto_archive_duration_minutes: v
+                .default_auto_archive_duration
+                .map(|v| v.number() as u32),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             member: v.member.map(Into::into),
             member_count: v.member_count,
             message_count: v.message_count,
@@ -285,14 +176,13 @@ impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PrivateThread.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct PrivateThread {
-    pub default_auto_archive_duration: Option<AutoArchiveDuration>,
-    pub guild_id: String,
+    pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
     pub invitable: Option<bool>,
-    #[ts(type = "'GuildPrivateThread'")]
+    #[ts(type = "'PrivateThread'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
@@ -307,15 +197,11 @@ pub struct PrivateThread {
 impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
     fn from(v: twilight_model::channel::thread::PrivateThread) -> Self {
         Self {
-            default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
+            default_auto_archive_duration_minutes: v
+                .default_auto_archive_duration
+                .map(|v| v.number() as u32),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             member: v.member.map(Into::into),
             member_count: v.member_count,
             message_count: v.message_count,
@@ -337,13 +223,12 @@ impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/NewsThread.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct NewsThread {
-    pub default_auto_archive_duration: Option<AutoArchiveDuration>,
-    pub guild_id: String,
+    pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
-    #[ts(type = "'GuildNewsThread'")]
+    #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
-    pub last_message_id: Option<String>,
     pub member: Option<ThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
@@ -357,15 +242,11 @@ pub struct NewsThread {
 impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
     fn from(v: twilight_model::channel::thread::NewsThread) -> Self {
         Self {
-            default_auto_archive_duration: v.default_auto_archive_duration.map(Into::into),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
+            default_auto_archive_duration_minutes: v
+                .default_auto_archive_duration
+                .map(|v| v.number() as u32),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            last_message_id: v.last_message_id.as_ref().map(ToString::to_string),
             member: v.member.map(Into::into),
             member_count: v.member_count,
             message_count: v.message_count,
@@ -380,37 +261,17 @@ impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/discord/AutoArchiveDuration.ts")]
-pub enum AutoArchiveDuration {
-    Hour,
-    Day,
-    ThreeDays,
-    Week,
-    Unknown { value: u16 },
-}
-
-impl From<twilight_model::channel::thread::AutoArchiveDuration> for AutoArchiveDuration {
-    fn from(v: twilight_model::channel::thread::AutoArchiveDuration) -> Self {
-        match v {
-            twilight_model::channel::thread::AutoArchiveDuration::Hour => Self::Hour,
-            twilight_model::channel::thread::AutoArchiveDuration::Day => Self::Day,
-            twilight_model::channel::thread::AutoArchiveDuration::ThreeDays => Self::ThreeDays,
-            twilight_model::channel::thread::AutoArchiveDuration::Week => Self::Week,
-            twilight_model::channel::thread::AutoArchiveDuration::Unknown { value } => {
-                Self::Unknown { value }
-            }
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
 #[ts(export_to = "bindings/discord/ThreadMember.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadMember {
-    pub flags: NotBigU64,
+    // Removed as the values aren't documented anywhere and i want to make a proper
+    // abstraction for this similar to UserFlags and the like.
+    // pub flags: NotBigU64,
     pub id: Option<String>,
     pub join_timestamp: NotBigU64,
     pub member: Option<Member>,
+
+    // Unsure if presence is provided without presence intent
     // pub presence: Option<Presence>,
     pub user_id: Option<String>,
 }
@@ -418,7 +279,7 @@ pub struct ThreadMember {
 impl From<twilight_model::channel::thread::ThreadMember> for ThreadMember {
     fn from(v: twilight_model::channel::thread::ThreadMember) -> Self {
         Self {
-            flags: NotBigU64(v.flags),
+            // flags: NotBigU64(v.flags),
             id: v.id.as_ref().map(ToString::to_string),
             join_timestamp: NotBigU64(v.join_timestamp.as_micros() as u64 / 1000),
             member: v.member.map(Into::into),
@@ -430,9 +291,10 @@ impl From<twilight_model::channel::thread::ThreadMember> for ThreadMember {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ThreadMetadata.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadMetadata {
     pub archived: bool,
-    pub auto_archive_duration: AutoArchiveDuration,
+    pub auto_archive_duration_minutes: u32,
     pub archive_timestamp: NotBigU64,
     pub invitable: Option<bool>,
     pub locked: bool,
@@ -442,7 +304,7 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
     fn from(v: twilight_model::channel::thread::ThreadMetadata) -> Self {
         Self {
             archived: v.archived,
-            auto_archive_duration: v.auto_archive_duration.into(),
+            auto_archive_duration_minutes: v.auto_archive_duration.number() as u32,
             archive_timestamp: NotBigU64(v.archive_timestamp.as_micros() as u64 / 1000),
             invitable: v.invitable,
             locked: v.locked,
@@ -453,10 +315,10 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/CategoryChannel.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct CategoryChannel {
-    pub guild_id: String,
     pub id: String,
-    #[ts(type = "'GuildCategory'")]
+    #[ts(type = "'Category'")]
     pub kind: ChannelType,
     pub name: String,
     pub permission_overwrites: Vec<PermissionOverwrite>,
@@ -467,11 +329,6 @@ impl From<twilight_model::channel::CategoryChannel> for CategoryChannel {
     fn from(v: twilight_model::channel::CategoryChannel) -> Self {
         Self {
             kind: v.kind.into(),
-            guild_id: v
-                .guild_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
             id: v.id.to_string(),
             name: v.name,
             position: v.position,
@@ -488,33 +345,33 @@ impl From<twilight_model::channel::CategoryChannel> for CategoryChannel {
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ChannelType.ts")]
 pub enum ChannelType {
-    GuildText,
-    Private,
-    GuildVoice,
-    Group,
-    GuildCategory,
-    GuildNews,
-    GuildStore,
-    GuildStageVoice,
-    GuildNewsThread,
-    GuildPublicThread,
-    GuildPrivateThread,
+    Text,
+    Voice,
+    Category,
+    News,
+    Store,
+    StageVoice,
+    NewsThread,
+    PublicThread,
+    PrivateThread,
 }
 
 impl From<twilight_model::channel::ChannelType> for ChannelType {
     fn from(v: twilight_model::channel::ChannelType) -> Self {
         match v {
-            twilight_model::channel::ChannelType::GuildText => Self::GuildText,
-            twilight_model::channel::ChannelType::Private => Self::Private,
-            twilight_model::channel::ChannelType::GuildVoice => Self::GuildVoice,
-            twilight_model::channel::ChannelType::Group => Self::Group,
-            twilight_model::channel::ChannelType::GuildCategory => Self::GuildCategory,
-            twilight_model::channel::ChannelType::GuildNews => Self::GuildNews,
-            twilight_model::channel::ChannelType::GuildStore => Self::GuildStore,
-            twilight_model::channel::ChannelType::GuildStageVoice => Self::GuildStageVoice,
-            twilight_model::channel::ChannelType::GuildNewsThread => Self::GuildNewsThread,
-            twilight_model::channel::ChannelType::GuildPublicThread => Self::GuildPublicThread,
-            twilight_model::channel::ChannelType::GuildPrivateThread => Self::GuildPrivateThread,
+            twilight_model::channel::ChannelType::GuildText => Self::Text,
+            twilight_model::channel::ChannelType::GuildVoice => Self::Voice,
+            twilight_model::channel::ChannelType::GuildCategory => Self::Category,
+            twilight_model::channel::ChannelType::GuildNews => Self::News,
+            twilight_model::channel::ChannelType::GuildStore => Self::Store,
+            twilight_model::channel::ChannelType::GuildStageVoice => Self::StageVoice,
+            twilight_model::channel::ChannelType::GuildNewsThread => Self::NewsThread,
+            twilight_model::channel::ChannelType::GuildPublicThread => Self::PublicThread,
+            twilight_model::channel::ChannelType::GuildPrivateThread => Self::PrivateThread,
+            twilight_model::channel::ChannelType::Group => panic!("unspported channel type: group"),
+            twilight_model::channel::ChannelType::Private => {
+                panic!("unspported channel type: private")
+            }
         }
     }
 }
@@ -522,9 +379,10 @@ impl From<twilight_model::channel::ChannelType> for ChannelType {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PermissionOverwrite.ts")]
+#[serde(rename_all = "camelCase")]
 pub struct PermissionOverwrite {
-    pub allow: String,
-    pub deny: String,
+    pub allow_raw: String,
+    pub deny_raw: String,
     pub kind: PermissionOverwriteType,
     pub id: String,
 }
@@ -542,8 +400,8 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwrite>
                     id,
                 ) => id.to_string(),
             },
-            allow: v.allow.bits().to_string(),
-            deny: v.deny.bits().to_string(),
+            allow_raw: v.allow.bits().to_string(),
+            deny_raw: v.deny.bits().to_string(),
             kind: v.kind.into(),
         }
     }

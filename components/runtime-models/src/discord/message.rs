@@ -1,4 +1,7 @@
-use super::{member::PartialMember, user::User};
+use super::{
+    member::PartialMember,
+    user::{User, UserFlags},
+};
 use crate::{
     discord::{channel::ChannelType, embed::Embed},
     util::NotBigU64,
@@ -19,7 +22,7 @@ pub struct Message {
     pub content: String,
     pub edited_timestamp: Option<NotBigU64>,
     pub embeds: Vec<Embed>,
-    pub flags: Option<NotBigU64>,
+    pub flags: Option<MessageFlags>,
     pub guild_id: Option<String>,
     pub id: String,
     pub kind: MessageType,
@@ -27,7 +30,7 @@ pub struct Message {
     pub mention_channels: Vec<ChannelMention>,
     pub mention_everyone: bool,
     pub mention_roles: Vec<String>,
-    pub mentions: Vec<Mention>,
+    pub mentions: Vec<UserMention>,
     pub pinned: bool,
     pub reactions: Vec<MessageReaction>,
     pub reference: Option<MessageReference>,
@@ -50,7 +53,7 @@ impl From<twilight_model::channel::Message> for Message {
                 .edited_timestamp
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             embeds: v.embeds.into_iter().map(From::from).collect(),
-            flags: v.flags.map(|f| NotBigU64(f.bits())),
+            flags: v.flags.map(From::from),
             guild_id: v.guild_id.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
             kind: v.kind.into(),
@@ -253,8 +256,8 @@ impl From<twilight_model::channel::ChannelMention> for ChannelMention {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/Mention.ts")]
-pub struct Mention {
+#[ts(export_to = "bindings/discord/UserMention.ts")]
+pub struct UserMention {
     /// Hash of the user's avatar, if any.
     pub avatar: Option<String>,
     /// Whether the user is a bot.
@@ -274,10 +277,10 @@ pub struct Mention {
     /// Username of the user.
     pub username: String,
     /// Public flags on the user's account.
-    pub public_flags: NotBigU64,
+    pub public_flags: UserFlags,
 }
 
-impl From<twilight_model::channel::message::Mention> for Mention {
+impl From<twilight_model::channel::message::Mention> for UserMention {
     fn from(v: twilight_model::channel::message::Mention) -> Self {
         Self {
             avatar: v.avatar.as_ref().map(ToString::to_string),
@@ -286,7 +289,7 @@ impl From<twilight_model::channel::message::Mention> for Mention {
             id: v.id.to_string(),
             member: v.member.map(From::from),
             username: v.name,
-            public_flags: NotBigU64(v.public_flags.bits()),
+            public_flags: v.public_flags.into(),
         }
     }
 }
@@ -330,7 +333,7 @@ pub enum ReactionType {
         name: Option<String>,
     },
     Unicode {
-        name: String,
+        value: String,
     },
 }
 
@@ -342,7 +345,9 @@ impl From<twilight_model::channel::ReactionType> for ReactionType {
                 name,
                 id: id.to_string(),
             },
-            twilight_model::channel::ReactionType::Unicode { name } => Self::Unicode { name },
+            twilight_model::channel::ReactionType::Unicode { name } => {
+                Self::Unicode { value: name }
+            }
         }
     }
 }
@@ -356,7 +361,7 @@ impl From<twilight_model::channel::ReactionType> for ReactionType {
 //     }
 // }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/MessageReference.ts")]
@@ -482,6 +487,41 @@ impl From<StickerFormatType> for twilight_model::channel::message::sticker::Stic
             StickerFormatType::Apng => Self::Apng,
             StickerFormatType::Png => Self::Png,
             StickerFormatType::Lottie => Self::Lottie,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/discord/MessageFlags.ts")]
+pub struct MessageFlags {
+    crossposted: bool, //  1 << 0	this message has been published to subscribed channels (via Channel Following)
+    is_crosspost: bool, //  1 << 1	this message originated from a message in another channel (via Channel Following)
+    suppress_embeds: bool, //  1 << 2	do not include any embeds when serializing this message
+    source_message_deleted: bool, //  1 << 3	the source message for this crosspost has been deleted (via Channel Following)
+    urgent: bool,                 //  1 << 4	this message came from the urgent message system
+    has_thread: bool, //  1 << 5	this message has an associated thread, with the same id as the message
+    ephemeral: bool,  //  1 << 6	this message is only visible to the user who invoked the Interaction
+    loading: bool,    //  1 << 7	this message is an Interaction Response and the bot is "thinking"
+    failed_to_mention_some_roles_in_thread: bool, //  1 << 8	this message failed to mention some roles and add their members to the thread
+}
+
+impl From<twilight_model::channel::message::MessageFlags> for MessageFlags {
+    fn from(v: twilight_model::channel::message::MessageFlags) -> Self {
+        use twilight_model::channel::message::MessageFlags as TwilightMessageFlags;
+
+        Self {
+            crossposted: v.contains(TwilightMessageFlags::CROSSPOSTED),
+            is_crosspost: v.contains(TwilightMessageFlags::IS_CROSSPOST),
+            suppress_embeds: v.contains(TwilightMessageFlags::SUPPRESS_EMBEDS),
+            source_message_deleted: v.contains(TwilightMessageFlags::SOURCE_MESSAGE_DELETED),
+            urgent: v.contains(TwilightMessageFlags::URGENT),
+            has_thread: v.contains(TwilightMessageFlags::HAS_THREAD),
+            ephemeral: v.contains(TwilightMessageFlags::EPHEMERAL),
+            loading: v.contains(TwilightMessageFlags::LOADING),
+            failed_to_mention_some_roles_in_thread: v
+                .contains(TwilightMessageFlags::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD),
         }
     }
 }

@@ -1,113 +1,104 @@
 import { OpWrappers } from "./op_wrappers";
-import { AsyncReadCloser, AsyncReader, AsyncWriter, NativeReader } from "./streams";
+import { AsyncReadCloser, AsyncReader, NativeReader } from "./unstable/streams";
 import { decodeText, encodeText } from "./core_util";
 
 export namespace HttpClient {
-    export class Client {
-        scriptId: number;
 
-        constructor(scriptId: number) {
-            this.scriptId = scriptId;
+    /**
+     * Construct a new request
+     * 
+     * @param method Request method
+     * @param path Request path
+     * @param init Additional options
+     * @returns A constructed request, this still needs to be sent with a optional body
+     */
+    export function request(method: string, path: string, init?: RequestInit) {
+        let opts = {
+            ...(init ?? {})
         }
 
-        /**
-         * Construct a new request
-         * 
-         * @param method Request method
-         * @param path Request path
-         * @param init Additional options
-         * @returns A constructed request, this still needs to be sent with a optional body
-         */
-        request(method: string, path: string, init?: RequestInit) {
-            let opts = {
-                scriptId: this.scriptId,
-                ...(init ?? {})
-            }
+        return new Request(method, path, opts);
+    }
 
-            return new Request(method, path, opts);
-        }
+    /**
+     * Construct a new GET request
+     * 
+     * @category Helpers
+     */
+    export function get(path: string, init?: RequestInit) {
+        return request("GET", path, init);
+    }
 
-        /**
-         * Construct a new GET request
-         * 
-         * @category Helpers
-         */
-        get(path: string, init?: RequestInit) {
-            return this.request("GET", path, init);
-        }
+    /**
+     * Construct a new POST request
+     * 
+     * @category Helpers
+     */
+    export function post(path: string, init?: RequestInit) {
+        return request("POST", path, init);
+    }
 
-        /**
-         * Construct a new POST request
-         * 
-         * @category Helpers
-         */
-        post(path: string, init?: RequestInit) {
-            return this.request("POST", path, init);
-        }
+    /**
+     * Construct a new HEAD request
+     * 
+     * @category Helpers
+     */
+    export function head(path: string, init?: RequestInit) {
+        return request("HEAD", path, init);
+    }
 
-        /**
-         * Construct a new HEAD request
-         * 
-         * @category Helpers
-         */
-        head(path: string, init?: RequestInit) {
-            return this.request("HEAD", path, init);
-        }
+    /**
+     * Construct a new PATCH request
+     * 
+     * @category Helpers
+     */
+    export function patch(path: string, init?: RequestInit) {
+        return request("PATCH", path, init);
+    }
 
-        /**
-         * Construct a new PATCH request
-         * 
-         * @category Helpers
-         */
-        patch(path: string, init?: RequestInit) {
-            return this.request("PATCH", path, init);
-        }
+    /**
+     * Construct a new PUT request
+     * 
+     * @category Helpers
+     */
+    export function put(path: string, init?: RequestInit) {
+        return request("PUT", path, init);
+    }
 
-        /**
-         * Construct a new PUT request
-         * 
-         * @category Helpers
-         */
-        put(path: string, init?: RequestInit) {
-            return this.request("PUT", path, init);
-        }
+    /**
+     * Construct a new DELETE request
+     * 
+     * @category Helpers
+     */
+    export function del(path: string, init?: RequestInit) {
+        return request("DELETE", path, init);
+    }
 
-        /**
-         * Construct a new DELETE request
-         * 
-         * @category Helpers
-         */
-        delete(path: string, init?: RequestInit) {
-            return this.request("DELETE", path, init);
-        }
+    /**
+     * Construct a new OPTIONS request
+     * 
+     * @category Helpers
+     */
+    export function options(path: string, init?: RequestInit) {
+        return request("OPTIONS", path, init);
+    }
 
-        /**
-         * Construct a new OPTIONS request
-         * 
-         * @category Helpers
-         */
-        options(path: string, init?: RequestInit) {
-            return this.request("OPTIONS", path, init);
-        }
+    /**
+     * Construct a new TRACE request
+     * 
+     * @category Helpers
+     */
+    export function trace(path: string, init?: RequestInit) {
+        return request("TRACE", path, init);
+    }
 
-        /**
-         * Construct a new TRACE request
-         * 
-         * @category Helpers
-         */
-        trace(path: string, init?: RequestInit) {
-            return this.request("TRACE", path, init);
-        }
-
-        /**
-         * Construct a new CONNECT request
-         * 
-         * @category Helpers
-         */
-        connect(path: string, init?: RequestInit) {
-            return this.request("CONNECT", path, init);
-        }
-
+    /**
+     * Construct a new CONNECT request
+     * 
+     * @category Helpers
+     */
+    export function connect(path: string, init?: RequestInit) {
+        return request("CONNECT", path, init);
     }
 
     export interface RequestInit {
@@ -188,6 +179,10 @@ export namespace HttpClient {
             let respBody = new NativeReader(resp.bodyResourceId);
 
             return new Response(resp.statusCode, resp.headers, respBody);
+        }
+
+        then(cb: (val: Response) => any) {
+            return this.send().then(cb);
         }
 
         private async writeBody(body: RequestBody, rid: number) {

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use chrono::TimeZone;
 use deno_core::{op_async, Extension, OpState};
-use runtime_models::{events::task::ScheduledTask, ops::tasks::CreateScheduledTask};
+use runtime_models::internal::tasks::{CreateScheduledTask, ScheduledTask};
 use vm::AnyError;
 
 use crate::{wrap_bl_op_async, RuntimeContext, RuntimeEvent};

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use runtime_models::ops::script::ScriptMeta;
+use runtime_models::internal::script::ScriptMeta;
 use serde::{Deserialize, Serialize};
 use stores::config::Script;
 use twilight_model::id::{marker::GuildMarker, Id};

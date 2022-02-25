@@ -2,7 +2,8 @@ import { OpWrappers } from "./op_wrappers";
 
 const non_json = ["boolean", "number", "string"];
 
-/** * @deprecated console is now a global, please remove the import
+/** 
+ * @deprecated console is now a global, please remove the import
  */
 export namespace console {
     export function log(...args: any[]) {
@@ -59,11 +60,16 @@ function getCaller(skip: number): [string | undefined, number | undefined, numbe
     log: console.log,
 };
 
-
+/**
+ * Encode a string to its Uint8Array representation.
+ */
 export function encodeText(s: string): Uint8Array {
     return Deno.core.encode(s);
 }
 
+/**
+ * Decode a string from its Uint8Array representation.
+ */
 export function decodeText(buf: Uint8Array): string {
     return Deno.core.decode(buf);
 }

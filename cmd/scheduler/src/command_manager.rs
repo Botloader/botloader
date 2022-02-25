@@ -11,7 +11,7 @@ use twilight_model::application::command::{
     CommandType as TwilightCommandType, OptionsCommandOptionData,
 };
 
-use runtime_models::ops::script::{Command, CommandGroup, ScriptMeta};
+use runtime_models::internal::script::{Command, CommandGroup, ScriptMeta};
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 

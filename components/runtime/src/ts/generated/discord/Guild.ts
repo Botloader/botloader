@@ -1,0 +1,40 @@
+import type { DefaultMessageNotificationLevel } from "./DefaultMessageNotificationLevel";
+import type { ExplicitContentFilter } from "./ExplicitContentFilter";
+import type { MfaLevel } from "./MfaLevel";
+import type { NsfwLevel } from "./NsfwLevel";
+import type { PremiumTier } from "./PremiumTier";
+import type { SystemChannelFlags } from "./SystemChannelFlags";
+import type { VerificationLevel } from "./VerificationLevel";
+
+export interface Guild {
+  id: string;
+  name: string;
+  icon: string | null;
+  afkChannelId: string | null;
+  afkTimeout: number;
+  applicationId: string | null;
+  banner: string | null;
+  defaultMessageNotifications: DefaultMessageNotificationLevel;
+  description: string | null;
+  discoverySplash: string | null;
+  explicitContentFilter: ExplicitContentFilter;
+  features: Array<string>;
+  joinedAt: number;
+  maxMembers: number | null;
+  maxPresences: number | null;
+  memberCount: number;
+  mfaLevel: MfaLevel;
+  nsfwLevel: NsfwLevel;
+  ownerId: string;
+  preferredLocale: string;
+  premiumSubscriptionCount: number;
+  premiumTier: PremiumTier;
+  rulesChannelId: string | null;
+  splash: string | null;
+  systemChannelId: string | null;
+  systemChannelFlags: SystemChannelFlags;
+  vanityUrlCode: string | null;
+  verificationLevel: VerificationLevel;
+  widgetChannelId: string | null;
+  widgetEnabled: boolean | null;
+}

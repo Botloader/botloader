@@ -9,56 +9,43 @@ use crate::util::NotBigU64;
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/Embed.ts")]
 pub struct Embed {
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<EmbedAuthor>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<u32>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<EmbedField>>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub footer: Option<EmbedFooter>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<EmbedImage>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub provider: Option<EmbedProvider>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail: Option<EmbedThumbnail>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<NotBigU64>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub video: Option<EmbedVideo>,
 }
 impl From<Embed> for twilight_model::channel::embed::Embed {
@@ -126,16 +113,14 @@ impl From<twilight_model::channel::embed::Embed> for Embed {
 pub struct EmbedAuthor {
     pub name: String,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub icon_url: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proxy_icon_url: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
 }
+
 impl From<EmbedAuthor> for twilight_model::channel::embed::EmbedAuthor {
     fn from(v: EmbedAuthor) -> Self {
         Self {
@@ -163,8 +148,7 @@ impl From<twilight_model::channel::embed::EmbedAuthor> for EmbedAuthor {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/EmbedField.ts")]
 pub struct EmbedField {
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub inline: Option<bool>,
     pub name: String,
     pub value: String,
@@ -196,11 +180,9 @@ impl From<twilight_model::channel::embed::EmbedField> for EmbedField {
 pub struct EmbedFooter {
     pub text: String,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub icon_url: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proxy_icon_url: Option<String>,
 }
 
@@ -231,16 +213,14 @@ impl From<twilight_model::channel::embed::EmbedFooter> for EmbedFooter {
 pub struct EmbedImage {
     pub url: String,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub height: Option<i32>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proxy_url: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<i32>,
 }
+
 impl From<EmbedImage> for twilight_model::channel::embed::EmbedImage {
     fn from(v: EmbedImage) -> Self {
         Self {
@@ -268,11 +248,9 @@ impl From<twilight_model::channel::embed::EmbedImage> for EmbedImage {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/EmbedProvider.ts")]
 pub struct EmbedProvider {
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
 }
 
@@ -301,14 +279,11 @@ impl From<twilight_model::channel::embed::EmbedProvider> for EmbedProvider {
 pub struct EmbedThumbnail {
     pub url: String,
 
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub height: Option<i32>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proxy_url: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<i32>,
 }
 
@@ -338,17 +313,13 @@ impl From<twilight_model::channel::embed::EmbedThumbnail> for EmbedThumbnail {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/EmbedVideo.ts")]
 pub struct EmbedVideo {
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub height: Option<i32>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proxy_url: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<i32>,
 }
 

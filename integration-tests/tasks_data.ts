@@ -10,7 +10,7 @@ runOnce("tasks_data.ts", async () => {
     }
 
     try {
-        await Tasks.scheduleTask("data", new Date(Date.now() + 10000), {
+        await Tasks.schedule("data", new Date(Date.now() + 10000), {
             data: data
         });
     } catch (e) {

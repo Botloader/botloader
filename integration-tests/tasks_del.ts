@@ -2,7 +2,7 @@ import { Tasks } from "botloader";
 import { assetJsonEquals, runOnce, sendScriptCompletion } from "lib";
 
 async function testDelId() {
-    let task = await Tasks.scheduleTask("del_id", new Date(Date.now() + 1000000));
+    let task = await Tasks.schedule("del_id", new Date(Date.now() + 1000000));
     assetJsonEquals(await Tasks.getById(task.id), task);
 
     if (!await Tasks.deleteById(task.id)) {
@@ -16,9 +16,9 @@ async function testDelId() {
 
 
 async function testDelKey() {
-    let task1 = await Tasks.scheduleTask("del_key", new Date(Date.now() + 1000000), { key: "1" });
-    let task2 = await Tasks.scheduleTask("del_key", new Date(Date.now() + 1000000), { key: "2" });
-    let taskOtherNs = await Tasks.scheduleTask("del_key2", new Date(Date.now() + 1000000), { key: "1" });
+    let task1 = await Tasks.schedule("del_key", new Date(Date.now() + 1000000), { key: "1" });
+    let task2 = await Tasks.schedule("del_key", new Date(Date.now() + 1000000), { key: "2" });
+    let taskOtherNs = await Tasks.schedule("del_key2", new Date(Date.now() + 1000000), { key: "1" });
 
     assetJsonEquals(await Tasks.getById(task1.id), task1);
     assetJsonEquals(await Tasks.getById(task2.id), task2);
@@ -33,9 +33,9 @@ async function testDelKey() {
 }
 
 async function testDelNamespace() {
-    let task1 = await Tasks.scheduleTask("del_ns", new Date(Date.now() + 1000000), { key: "1" });
-    let task2 = await Tasks.scheduleTask("del_ns", new Date(Date.now() + 1000000), { key: "2" });
-    let taskOtherNs = await Tasks.scheduleTask("del_ns2", new Date(Date.now() + 1000000), { key: "1" });
+    let task1 = await Tasks.schedule("del_ns", new Date(Date.now() + 1000000), { key: "1" });
+    let task2 = await Tasks.schedule("del_ns", new Date(Date.now() + 1000000), { key: "2" });
+    let taskOtherNs = await Tasks.schedule("del_ns2", new Date(Date.now() + 1000000), { key: "1" });
 
     assetJsonEquals(await Tasks.getById(task1.id), task1);
     assetJsonEquals(await Tasks.getById(task2.id), task2);

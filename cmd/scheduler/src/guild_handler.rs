@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::{GuildLogger, LogEntry};
-use runtime_models::ops::script::ScriptMeta;
+use runtime_models::internal::script::ScriptMeta;
 use scheduler_worker_rpc::{
     MetricEvent, RunStateChangeReq, SchedulerMessage, UpdateRunStateRequest, VmDispatchEvent,
     WorkerMessage,
@@ -344,7 +344,7 @@ impl GuildHandler {
     async fn dispatch_scheduled_task(&mut self, task: ScheduledTask) {
         info!("dispatching scheduled task");
         let task_id = task.id;
-        let evt = runtime_models::events::task::ScheduledTask::from(task);
+        let evt = runtime_models::internal::tasks::ScheduledTask::from(task);
         let serialized = serde_json::to_value(&evt).unwrap();
         self.dispatch_worker_evt(
             "BOTLOADER_SCHEDULED_TASK_FIRED".to_string(),
@@ -356,7 +356,7 @@ impl GuildHandler {
 
     async fn dispatch_interval_timer(&mut self, timer: IntervalTimer) {
         info!("dispatching interval timer");
-        let evt = runtime_models::events::timers::IntervalTimerEvent {
+        let evt = runtime_models::internal::timers::IntervalTimerEvent {
             name: timer.name.clone(),
         };
 
@@ -532,10 +532,10 @@ impl GuildHandler {
             .map(|v| stores::config::IntervalTimerContrib {
                 name: v.name.clone(),
                 interval: match &v.interval {
-                    runtime_models::ops::script::IntervalType::Cron(c) => {
+                    runtime_models::internal::script::IntervalType::Cron(c) => {
                         stores::timers::IntervalType::Cron(c.clone())
                     }
-                    runtime_models::ops::script::IntervalType::Minutes(m) => {
+                    runtime_models::internal::script::IntervalType::Minutes(m) => {
                         stores::timers::IntervalType::Minutes(m.0)
                     }
                 },

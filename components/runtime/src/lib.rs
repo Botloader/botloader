@@ -9,7 +9,7 @@ use governor::{
     Quota,
 };
 use guild_logger::{GuildLogger, LogEntry};
-use runtime_models::ops::script::ScriptMeta;
+use runtime_models::internal::script::ScriptMeta;
 use stores::{bucketstore::BucketStore, config::ConfigStore, timers::TimerStore};
 use tokio::sync::mpsc;
 use tracing::{info, instrument};
@@ -17,7 +17,6 @@ use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 use vm::{vm::VmRole, AnyError, JsValue};
 
-pub mod dispatchevents;
 pub mod extensions;
 pub mod jsmodules;
 
