@@ -3,14 +3,26 @@ import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { CreateMessageFields, Member, toOpMessageFields } from "./discord";
 
+/**
+ * The commands namespace provides a command system that works with discord slash commands, as well as 
+ * message and user commands (context menu commands).
+ * 
+ * See the 3 builders: {@link Commands.slashCommand}, {@link Commands.userCommand} and {@link Commands.messageCommand}.
+ */
 export namespace Commands {
     export class System {
         commands: Command[] = [];
 
+        /**
+         * @internal
+         */
         addEventListeners(muxer: EventSystem.Muxer) {
             muxer.on("BOTLOADER_COMMAND_INTERACTION_CREATE", this.handleInteractionCreate.bind(this));
         }
 
+        /**
+         * @internal
+         */
         async handleInteractionCreate(interaction: Internal.CommandInteraction) {
             let command = this.commands.find(cmd => matchesCommand(cmd, interaction));
             if (!command) {
@@ -166,6 +178,10 @@ export namespace Commands {
             }
         }
     }
+
+    /**
+     * Context information about a command being run
+     */
     export class ExecutedCommandContext {
         channelId: string;
         interactionId: string;
@@ -244,6 +260,8 @@ export namespace Commands {
      * Raw form of a command handled by botloader
      * 
      * You shouldn't use this directly and instead use one of the builders
+     * 
+     * This should be considered UNSTABLE and might change in the future
      */
     export interface Command {
         name: string;
@@ -278,6 +296,7 @@ export namespace Commands {
         choices?: OptionChoice<number>[],
         min_value?: number,
         max_value?: number,
+
         autocomplete?: AutocompleteProvider<number>,
     }
 
@@ -285,6 +304,7 @@ export namespace Commands {
         choices?: OptionChoice<number>[],
         min_value?: number,
         max_value?: number,
+
         autocomplete?: AutocompleteProvider<number>,
     }
 
@@ -313,6 +333,11 @@ export namespace Commands {
         value: T,
     }
 
+    /**
+     * A Command group, can only be used with slash commands currently
+     * 
+     * Groups can have subgroups, but not anything deeper than those 2 levels. This is because of discord restrictions.
+     */
     export class Group {
         name: string;
         description: string;
@@ -321,11 +346,23 @@ export namespace Commands {
 
         subGroups: Group[] = [];
 
+        /**
+         * @param name name of the group as it shows in discord, 1-32 characters (no symbols except - and _)
+         * @param description description of the group, 1-100 characters
+         */
         constructor(name: string, description: string) {
             this.name = name;
             this.description = description;
         }
 
+        /**
+         * Create a subgroup from this group.
+         * 
+         * Note: subgroups cannot be made from other subgroups.
+         * @param name name of the subgroup, 1-32 characters
+         * @param description description of the subgroup, 1-100 characters
+         * @returns 
+         */
         subGroup(name: string, description: string) {
             if (this.isSubGroup) {
                 throw "cant make sub groups of sub groups";
@@ -340,7 +377,7 @@ export namespace Commands {
 
     /**
      * Create a new slash command builder
-     * @param name name of the command, 1-32 normal characters, no symbols or spaces
+     * @param name name of the command, 1-32 characters, (no symbols except - and _)
      * @param description 1-100 character description
      * @returns a builder
      * 
@@ -369,52 +406,95 @@ export namespace Commands {
             this.options = options;
         }
 
+        /**
+         * Assigns a group to this command
+         * 
+         * @example ```ts
+         * const group = new Commands.Group("some-group", "some description")
+         * script.addCommand(Commands.slashCommand("some-cmd", "some description").setGroup(grou).build(...))
+         * ```
+         */
         setGroup(group: Group) {
             this.group = group;
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionNumber<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: NumberOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "Number", description, opts)
+            (name: TKey, description: string, opts?: NumberOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "Number", description, opts)
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionString<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: StringOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "String", description, opts)
+            (name: TKey, description: string, opts?: StringOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "String", description, opts)
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionInteger<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: IntegerOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "Integer", description, opts)
+            (name: TKey, description: string, opts?: IntegerOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "Integer", description, opts)
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionBoolean<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: BooleanOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "Boolean", description, opts)
+            (name: TKey, description: string, opts?: BooleanOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "Boolean", description, opts)
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionUser<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: UserOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "User", description, opts)
+            (name: TKey, description: string, opts?: UserOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "User", description, opts)
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionChannel<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: ChannelOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "Channel", description, opts)
+            (name: TKey, description: string, opts?: ChannelOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "Channel", description, opts)
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionRole<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: RoleOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "Role", description, opts)
+            (name: TKey, description: string, opts?: RoleOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "Role", description, opts)
         }
 
+        /**
+         * See {@link addOption}
+         */
         addOptionMentionable<TKey extends string, TRequired extends boolean | undefined>
-            (key: TKey, description: string, opts?: MentionableOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(key, "Mentionable", description, opts)
+            (name: TKey, description: string, opts?: MentionableOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "Mentionable", description, opts)
         }
 
+        /**
+         * Adds a option/argument to this command.
+         * 
+         * Each type of option has different settings you can adjust, but all of them have a "required" field that defaults
+         * to true, you can set it to false for optional options.
+         * 
+         * @param name Name of the option, 1-32 characters (no symbols except - and _)
+         * @param kind What type of option this is
+         * @param description Description of the option, 1-100 characters long
+         * @param opts Additional options, depends on what "kind" you pass but all options has a "required" field that defaults to true
+         */
         addOption<TKey extends string, TKind extends OptionType, TRequired extends boolean | undefined>
-            (key: TKey, kind: TKind, description: string, opts?: OptionsKindTable[TKind] & BaseOptionSettings<TRequired>) {
+            (name: TKey, kind: TKind, description: string, opts?: OptionsKindTable[TKind] & BaseOptionSettings<TRequired>) {
 
             let required = false;
             if (opts && opts.required !== undefined) {
@@ -423,7 +503,7 @@ export namespace Commands {
 
             let fullOpts = {
                 ...this.options,
-                [key]: {
+                [name]: {
                     ...opts,
                     kind: kind,
                     required: required,
@@ -438,6 +518,10 @@ export namespace Commands {
                 (this.name, this.description, fullOpts);
         }
 
+        /**
+         * Build the command, providing a callback that runs when the command gets executed
+         * @returns The built command, pass it to @{link Script.createCommand} to actually create it on discord 
+         */
         build(callback: (ctx: ExecutedCommandContext, args: ParsedOptionsMap<TOpts>) => void | Promise<any>): Command {
             return {
                 name: this.name,
@@ -484,6 +568,13 @@ export namespace Commands {
         T extends { kind: "Mentionable" } ? InteractionMentionable :
         unknown;
 
+    /**
+     * Creates a new user command builder. User commands show up in the context menu
+     * when right-clicking a user
+     * 
+     * @param name 1-32 characters (no symbols except - and _)
+     * @param description 1-100 characters
+     */
     export function userCommand(name: string, description: string) {
         return new UserCommandBuilder(name, description);
     }
@@ -507,6 +598,13 @@ export namespace Commands {
         }
     }
 
+    /**
+     * Creates a new message command builder. Message commands show up in the context menu
+     * when right-clicking a message
+     * 
+     * @param name 1-32 characters (no symbols except - and _)
+     * @param description 1-100 characters
+     */
     export function messageCommand(name: string, description: string) {
         return new MessageCommandBuilder(name, description);
     }
