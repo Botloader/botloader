@@ -497,9 +497,9 @@ export namespace Commands {
         addOption<TKey extends string, TKind extends OptionType, TRequired extends boolean | undefined>
             (name: TKey, kind: TKind, description: string, opts?: OptionsKindTable[TKind] & BaseOptionSettings<TRequired>) {
 
-            let required = false;
+            let required = true;
             if (opts && opts.required !== undefined) {
-                required = true;
+                required = opts.required;
             }
 
             let fullOpts = {
