@@ -404,6 +404,7 @@ export namespace Commands {
             this.name = name;
             this.description = description;
             this.options = options;
+            this.group = group;
         }
 
         /**
@@ -516,7 +517,7 @@ export namespace Commands {
             // The new opts type is "layered" on top of the old one, making us able to use
             // the generic typings of all the options in the callback
             return new SlashCommandBuilder<LayerOption<TOpts, TKey, { kind: TKind, required: TRequired }>>
-                (this.name, this.description, fullOpts);
+                (this.name, this.description, fullOpts, this.group);
         }
 
         /**
