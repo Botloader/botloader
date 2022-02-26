@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::application::command::NumberCommandOptionData;
 
-use crate::util::NotBigU64;
+use crate::{discord::channel::ChannelType, util::NotBigU64};
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
@@ -123,13 +123,57 @@ pub struct CommandOption {
     pub description: String,
     pub kind: CommandOptionType,
     pub required: bool,
+    pub extra_options: ExtraCommandOptions,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/ExtraCommandOptions.ts")]
+pub struct ExtraCommandOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub min_value: Option<f64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub max_value: Option<f64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub channel_types: Option<Vec<ChannelType>>,
+    // #[serde(default)]
+    // pub choices: Vec<OptionChoice>,
+}
+
+// #[derive(Clone, Debug, Deserialize, Serialize, TS)]
+// #[ts(export)]
+// #[serde(rename_all = "camelCase")]
+// #[ts(export_to = "bindings/internal/CommandOptionChoice.ts")]
+// pub struct OptionChoice {
+//     name: String,
+//     value: String,
+// }
+
+// pub enum ChoiceValue{
+//     String()
+// }
+
+// impl From<OptionChoice> for twilight_model::application::command::CommandOptionChoice {
+//     fn from(v: OptionChoice) -> Self {
+//         Self {
+
+//         }
+//     }
+// }
 
 impl From<CommandOption> for twilight_model::application::command::CommandOption {
     fn from(v: CommandOption) -> Self {
         use twilight_model::application::command::BaseCommandOptionData;
         use twilight_model::application::command::ChannelCommandOptionData;
         use twilight_model::application::command::ChoiceCommandOptionData;
+        use twilight_model::application::command::CommandOptionValue;
+        use twilight_model::application::command::Number;
 
         match v.kind {
             CommandOptionType::String => Self::String(ChoiceCommandOptionData {
@@ -142,6 +186,14 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 name: v.name,
                 description: v.description,
                 required: v.required,
+                min_value: v
+                    .extra_options
+                    .min_value
+                    .map(|v| CommandOptionValue::Integer(v as i64)),
+                max_value: v
+                    .extra_options
+                    .max_value
+                    .map(|v| CommandOptionValue::Integer(v as i64)),
                 ..Default::default()
             }),
             CommandOptionType::Boolean => Self::Boolean(BaseCommandOptionData {
@@ -158,7 +210,13 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 name: v.name,
                 description: v.description,
                 required: v.required,
-                ..Default::default()
+                channel_types: v
+                    .extra_options
+                    .channel_types
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
             }),
             CommandOptionType::Role => Self::Role(BaseCommandOptionData {
                 name: v.name,
@@ -174,6 +232,14 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 name: v.name,
                 description: v.description,
                 required: v.required,
+                min_value: v
+                    .extra_options
+                    .min_value
+                    .map(|v| CommandOptionValue::Number(Number(v))),
+                max_value: v
+                    .extra_options
+                    .max_value
+                    .map(|v| CommandOptionValue::Number(Number(v))),
                 ..Default::default()
             }),
         }

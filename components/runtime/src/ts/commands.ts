@@ -111,6 +111,7 @@ export namespace Commands {
                             description: entry.description,
                             kind: entry.kind,
                             required: entry.required || false,
+                            extraOptions: entry.extraOptions,
                         })
                     }
                 }
@@ -157,7 +158,6 @@ export namespace Commands {
                     })
                 }
             }
-
 
             return [commands, groups];
         }
@@ -272,8 +272,7 @@ export namespace Commands {
         cb: (ctx: {}, args: {}) => any,
     }
 
-    export type OptionType = BaseOption["kind"];
-    export type Option = BaseOption & (StringOption | NumberOption | BooleanOption | ChannelOption | RoleOption | MentionableOption);
+    export type OptionType = Option["kind"];
 
     export type AutocompleteProvider<T> = (data: {}) => Promise<OptionChoice<T>[]> | OptionChoice<T>[];
 
@@ -281,31 +280,32 @@ export namespace Commands {
         [key: string]: Option,
     }
 
-    export interface BaseOption {
+    export interface Option {
         kind: "String" | "Number" | "Integer" | "Boolean" | "User" | "Channel" | "Role" | "Mentionable",
         description: string,
         required: boolean,
+        extraOptions: StringOption | NumberOption | BooleanOption | ChannelOption | RoleOption | MentionableOption,
     }
 
     export interface StringOption {
-        choices?: OptionChoice<string>[],
-        autocomplete?: AutocompleteProvider<string>,
+        // choices?: OptionChoice<string>[],
+        // autocomplete?: AutocompleteProvider<string>,
     }
 
     export interface NumberOption {
-        choices?: OptionChoice<number>[],
-        min_value?: number,
-        max_value?: number,
+        // choices?: OptionChoice<number>[],
+        minValue?: number,
+        maxValue?: number,
 
-        autocomplete?: AutocompleteProvider<number>,
+        // // autocomplete?: AutocompleteProvider<number>,
     }
 
     export interface IntegerOption {
-        choices?: OptionChoice<number>[],
-        min_value?: number,
-        max_value?: number,
+        // choices?: OptionChoice<number>[],
+        minValue?: number,
+        maxValue?: number,
 
-        autocomplete?: AutocompleteProvider<number>,
+        // // autocomplete?: AutocompleteProvider<number>,
     }
 
     export interface BooleanOption {
@@ -317,7 +317,7 @@ export namespace Commands {
     }
 
     export interface ChannelOption {
-        channel_types?: DiscordModels.ChannelType[],
+        channelTypes?: DiscordModels.ChannelType[],
     }
 
     export interface RoleOption {
@@ -506,10 +506,12 @@ export namespace Commands {
             let fullOpts = {
                 ...this.options,
                 [name]: {
-                    ...opts,
                     kind: kind,
                     required: required,
                     description: description,
+                    extraOptions: {
+                        ...opts,
+                    }
                 },
             }
 

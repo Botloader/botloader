@@ -376,6 +376,22 @@ impl From<twilight_model::channel::ChannelType> for ChannelType {
     }
 }
 
+impl From<ChannelType> for twilight_model::channel::ChannelType {
+    fn from(v: ChannelType) -> Self {
+        match v {
+            ChannelType::Text => twilight_model::channel::ChannelType::GuildText,
+            ChannelType::Voice => twilight_model::channel::ChannelType::GuildVoice,
+            ChannelType::Category => twilight_model::channel::ChannelType::GuildCategory,
+            ChannelType::News => twilight_model::channel::ChannelType::GuildNews,
+            ChannelType::Store => twilight_model::channel::ChannelType::GuildStore,
+            ChannelType::StageVoice => twilight_model::channel::ChannelType::GuildStageVoice,
+            ChannelType::NewsThread => twilight_model::channel::ChannelType::GuildNewsThread,
+            ChannelType::PublicThread => twilight_model::channel::ChannelType::GuildPublicThread,
+            ChannelType::PrivateThread => twilight_model::channel::ChannelType::GuildPrivateThread,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PermissionOverwrite.ts")]
