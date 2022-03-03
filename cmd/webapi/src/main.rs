@@ -86,6 +86,10 @@ async fn main() {
             post(routes::vm::reload_guild_vm::<CurrentSessionStore>),
         )
         .route(
+            "/settings",
+            post(routes::vm::reload_guild_vm::<CurrentSessionStore>),
+        )
+        .route(
             "/scripts",
             get(routes::scripts::get_all_guild_scripts).put(routes::scripts::create_guild_script),
         )

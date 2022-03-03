@@ -1,3 +1,4 @@
+import { GuildMetaConfig } from ".";
 import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Script, SessionMeta, UpdateScript, User } from "./api_models";
 
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -128,6 +129,10 @@ export class ApiClient {
 
     async reloadGuildVm(guildId: string): Promise<ApiResult<EmptyResponse>> {
         return await this.post(`/api/guilds/${guildId}/reload_vm`);
+    }
+
+    async getGuildMetaConfig(guildId: string): Promise<ApiResult<GuildMetaConfig>> {
+        return await this.post(`/api/guilds/${guildId}/settings`);
     }
 }
 

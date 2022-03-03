@@ -54,3 +54,18 @@ pub async fn list_user_guilds_route<ST: SessionStore + 'static, CT: ConfigStore 
 
     Ok(Json(GuildList { guilds: result }))
 }
+
+pub async fn get_guild_settings<CT: ConfigStore + 'static>(
+    Extension(config_store): Extension<CT>,
+    Extension(current_guild): Extension<CurrentUserGuild>,
+) -> ApiResult<impl IntoResponse> {
+    let settings = config_store
+        .get_guild_meta_config_or_default(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed fetching guild config");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(Json(settings))
+}

@@ -66,3 +66,9 @@ export interface UpdateScript {
 }
 
 export interface EmptyResponse { }
+
+
+export interface GuildMetaConfig {
+    guild_id: string,
+    error_channel_id: string | null,
+}
