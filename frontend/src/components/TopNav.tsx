@@ -11,7 +11,7 @@ export function TopNav() {
     let currentGuild = useCurrentGuild();
 
     return <div className="top-nav">
-        <p className="brand">BotLoader</p>
+        <p className="brand"><Link to="/servers">Botloader <small>alpha</small></Link></p>
         <div className="top-nav-right">
             <div className="current-server">
                 {currentGuild && session.user ? <CurrentGuild guild={currentGuild} /> : session.user ? <NoCurrentGuild /> : null}
@@ -37,7 +37,7 @@ function UserNotLoggedIn() {
 
 function CurrentGuild(props: { guild: BotGuild }) {
     return <>
-        <img src={guildIconUrl(props.guild.guild, 32)} alt="guild icon" className="avatar" />
+        {props.guild.guild.icon ? <img src={guildIconUrl(props.guild.guild, 32)} alt="guild icon" className="avatar" /> : null}
         <p>{props.guild.guild.name}</p>
     </>
 }

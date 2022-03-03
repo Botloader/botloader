@@ -80,24 +80,26 @@ button,
   text-decoration: none;
   background: none;
   color: white;
-  border: 2px solid black;
+  /* border: 2px solid black; */
+  border: none;
   padding: 1px 10px;
   font-size: 1em;
-  color: #00e1ff;
   border-radius: 4px;
+  background-color: var(--primary-color);
+  cursor: pointer;
 }
 
 button.danger,
 .button.danger {
-  color: rgb(255, 70, 70);
+  background-color: var(--danger-color);
 }
 
-button:hover,
+/* button:hover,
 .button:hover {
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: color-mix()
 }
 
 button:active,
 .button:active {
   background-color: rgba(0, 0, 0, 0.5);
-}
+} */

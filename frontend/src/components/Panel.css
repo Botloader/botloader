@@ -2,4 +2,11 @@
     background-color: rgba(0, 0, 0, 0.2);
     padding: 10px;
     border-radius: 5px;
+    margin: 5px;
+}
+
+.panel h1,
+.panel h2,
+.panel h3 {
+    border-bottom: 2px solid var(--main-bg-color);
 }

@@ -71,9 +71,7 @@ function OuterGuildPage() {
 
   return <CurrentGuildProvider guildId={guildId}>
     <TopNav />
-    <div className="page-wrapper">
-      <GuildPage />
-    </div>
+    <GuildPage />
   </CurrentGuildProvider>
 }
 

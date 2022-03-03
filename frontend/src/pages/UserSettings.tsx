@@ -53,7 +53,9 @@ export function UserSettingsPage() {
 
         <Panel title="Active sessions">
             <p>Manage your active sessions</p>
-            {allSessions?.map((elem) => <SessionItem key={elem.token} item={elem} />)}
+            <div className="user-active-sessions">
+                {allSessions?.map((elem) => <SessionItem key={elem.token} item={elem} />)}
+            </div>
             <br />
             <AsyncOpButton label="Clear all sessions (including logging you out from this one)" onClick={() => clearAllSessions()} className="danger"></AsyncOpButton>
         </Panel>
@@ -61,10 +63,10 @@ export function UserSettingsPage() {
 }
 
 function SessionItem(props: { item: SessionMeta }) {
-    return <div className="user-session-item">
+    return <>
         <div className="session-kind">{props.item.kind}</div>
         <div className="session-created_at"><DisplayDateTime dt={props.item.created_at} /></div>
-    </div>
+    </>
 }
 
 type CreateApiTokenProps = {
@@ -117,14 +119,4 @@ function CreateApiKeyComponent(props: CreateApiTokenProps) {
 
         {status.error ? <p> Error: <code>{status.error}</code></p> : null}
     </>
-}
-
-function KeySpoiler(props: { content: string }) {
-    const [show, setShow] = useState<boolean>(false);
-
-    if (show) {
-        return <code>{props.content}</code>
-    } else {
-        return <button onClick={() => setShow(true)}>Show key. DO NOT SHOW OR SEND THIS TO OTHER PEOPLE.</button>
-    }
 }

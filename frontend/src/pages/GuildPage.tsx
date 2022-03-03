@@ -1,41 +1,101 @@
 import { useEffect, useState } from "react";
-import { ApiClient, BotGuild, isErrorResponse, Script } from "botloader-common";
+import { BotGuild, GuildMetaConfig, isErrorResponse, Script } from "botloader-common";
 import { useCurrentGuild } from "../components/GuildsProvider";
 import { useSession } from "../components/Session";
 import './GuildPage.css'
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { BuildConfig } from "../BuildConfig";
+import { GuildSideNav } from "../components/GuildSideNav";
+import { Route, Switch } from "react-router-dom";
+import { Panel } from "../components/Panel";
 
 export function GuildPage() {
     let guild = useCurrentGuild();
     if (guild) {
         if (guild.connected) {
-            return <GuildControlPage guild={guild} />
+            return <div className="guild-page">
+                <GuildSideNav guild={guild}></GuildSideNav>
+                <div className="guild-wrapper page-wrapper">
+                    <Switch>
+                        <Route path={`/servers/${guild.guild.id}/`} exact>
+                            <GuildHome guild={guild} />
+                        </Route>
+                        <Route path={`/servers/${guild.guild.id}/scripts`}>
+                            <GuildScripts guild={guild} />
+                        </Route>
+                        <Route path={`/servers/${guild.guild.id}/settings`}>
+                            <GuildSettings guild={guild} />
+                        </Route>
+                    </Switch>
+                </div></div>
         } else {
-            return <InviteGuildPage guild={guild} />
+            return <div className="page-wrapper">
+                <InviteGuildPage guild={guild} />
+            </div>
         }
     } else {
-        return <NoGuildPage />
+        return <div className="page-wrapper">
+            <NoGuildPage />
+        </div>
     }
 }
 
 function InviteGuildPage(props: { guild: BotGuild }) {
-    return <a href={`https://discord.com/api/oauth2/authorize?client_id=${BuildConfig.botloaderClientId}&permissions=532844244928&scope=bot%20applications.commands&guild_id=${props.guild.guild.id}`} className="add-to-server">Click here to add to server!</a>;
+    return <a href={`https://discord.com/api/oauth2/authorize?client_id=${BuildConfig.botloaderClientId}&permissions=532844244928&scope=bot%20applications.commands&guild_id=${props.guild.guild.id}`} className="add-to-server" target="_blank" rel="noreferrer">Click here to add to server!</a>;
 }
 
 function NoGuildPage() {
     return <p>That's and unknown guild m8</p>
 }
 
-function GuildControlPage(props: { guild: BotGuild }) {
-    const [scripts, setScripts] = useState<Script[] | undefined>(undefined);
+function GuildHome(props: { guild: BotGuild }) {
+    return <Panel>
+        <p>Eventually we will display a bunch of usefull stuff here</p>
+        <p>This is a reminder that this service is currently in a ALPHA state and everything you're seeing is in a unfinished state.</p>
+    </Panel>
+}
+
+function GuildSettings(props: { guild: BotGuild }) {
+    const [config, setConfig] = useState<GuildMetaConfig | undefined | null>(undefined);
+    const session = useSession();
+
+    useEffect(() => {
+        loadConfig();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props, session])
+
+    async function loadConfig() {
+        let conf = await session.apiClient.getGuildMetaConfig(props.guild.guild.id);
+        if (isErrorResponse(conf)) {
+            setConfig(null);
+        } else {
+            setConfig(conf);
+        }
+    }
+
+    if (config === undefined) {
+        return <p>Loading settings...</p>
+    } else if (config === null) {
+        return <p>Failed loading settings.</p>
+    } else {
+        return <InnerGuildSettings guild={props.guild} settings={config}></InnerGuildSettings>
+    }
+}
+
+function InnerGuildSettings(props: { guild: BotGuild, settings: GuildMetaConfig }) {
+    return <Panel>
+        <p>Error channel: <code>{props.settings.error_channel_id || "not set"}</code></p>
+    </Panel>
+}
+
+function GuildScripts(props: { guild: BotGuild }) {
+    const [scripts, setScripts] = useState<Script[] | undefined | null>(undefined);
     const session = useSession();
 
     async function loadScripts() {
         let resp = await session.apiClient.getAllScripts(props.guild.guild.id);
         if (isErrorResponse(resp)) {
-            // TODO
-            setScripts(undefined);
+            setScripts(null);
         } else {
             setScripts(resp);
         }
@@ -72,7 +132,7 @@ function GuildControlPage(props: { guild: BotGuild }) {
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
     }
 
-    return <>
+    return <Panel>
         <h2>Guild scripts</h2>
         {scripts ?
             <div className="scripts">
@@ -87,8 +147,8 @@ function GuildControlPage(props: { guild: BotGuild }) {
                         <AsyncOpButton className="primary" label="enable" onClick={() => toggleScript(script.id, true)}></AsyncOpButton>
                     }
                 </div>)}
-            </div> :
-            <p>Loading...</p>
+            </div> : scripts === null ? <p>Failed loading scripts</p>
+                : <p>Loading...</p>
         }
-    </>
+    </Panel>
 }

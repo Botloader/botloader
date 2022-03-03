@@ -4,6 +4,7 @@ import { BotGuild, UserGuild } from "botloader-common";
 import { useGuilds } from "../components/GuildsProvider"
 import { guildIconUrl } from "../components/Util";
 import "./SelectServer.css"
+import { Panel } from "../components/Panel";
 
 export function SelectServerPage() {
 
@@ -27,15 +28,24 @@ export function SelectServerPage() {
     }
 
     return <div className="guild-select-page">
-        <h3>Botloader is currently in a early private alpha stage, only a few number of people have access. this text will get updated when more info is available</h3>
-        <h2>Joined servers</h2>
-        <div className="guild-select-list">
-            {joinedHasAdmin.map(g => <GuildListItem guild={g} key={g.guild.id} />)}
-        </div >
-        <h2>Add to new servers</h2>
-        <div className="guild-select-list">
-            {notJoinedHasAdmin.map(g => <GuildListItem guild={g} key={g.guild.id} />)}
-        </div >
+        <Panel>
+            <h2>Alpha version</h2>
+            <p>Botloader is currently in a alpha state, everything you're seeing is work in progress and will likely change a lot</p>
+            <p><a href="/docs" className="button">Scripting API Documentation</a></p>
+        </Panel>
+        <Panel>
+            <h2>Joined servers</h2>
+            <div className="guild-select-list">
+                {joinedHasAdmin.map(g => <GuildListItem guild={g} key={g.guild.id} />)}
+            </div >
+        </Panel>
+
+        <Panel>
+            <h2>Add to new servers</h2>
+            <div className="guild-select-list">
+                {notJoinedHasAdmin.map(g => <GuildListItem guild={g} key={g.guild.id} />)}
+            </div >
+        </Panel>
     </div>
 }
 
@@ -72,6 +82,6 @@ function hasAdmin(g: UserGuild): boolean {
 }
 
 function shorten(name: string): string {
-	const maxLength = 35
-	return name.length > maxLength ? name.slice(0, 34) + '...' : name
+    const maxLength = 35
+    return name.length > maxLength ? name.slice(0, 34) + '...' : name
 }

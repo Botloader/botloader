@@ -1,0 +1,35 @@
+.guild-nav {
+    background-color: var(--nav-bg-color);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 0;
+    top: 55px;
+    width: 150px;
+}
+
+.guild-nav ul {
+    display: flex;
+    flex-direction: column;
+    /* text-decoration: none; */
+    list-style-type: none;
+
+    padding: 0;
+
+    align-items: stretch;
+}
+
+.guild-nav ul li {
+    /* padding: 10px; */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.guild-nav ul a {
+    padding: 10px;
+}
+
+.guild-nav ul a.active {
+    background: rgba(0, 0, 0, 0.5);
+}
