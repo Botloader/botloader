@@ -33,9 +33,9 @@ function App() {
         </Route>
         <Route path="/">
           <SessionProvider>
+            <TopNav />
             <Switch>
               <Route path="/settings">
-                <TopNav />
                 <RequireLoggedInSession>
                   <div className="page-wrapper"><UserSettingsPage /></div>
                 </RequireLoggedInSession>
@@ -49,7 +49,6 @@ function App() {
                       </RequireLoggedInSession>
                     </Route>
                     <Route path="/servers">
-                      <TopNav />
                       <div className="page-wrapper"><SelectServerPage /></div>
                     </Route>
                   </Switch>
@@ -83,7 +82,11 @@ function LandingPage() {
     <header className="App-header">
       <p>Botloader coming soon™</p>
       <img src="/logo192.png" alt="zzz" className="avatar"></img>
-      <div className='frontpage-links'><Link to="/servers" className='button' >Control panel</Link><a className='button' href="https://discord.gg/HJM3MqVBfw">Discord server</a></div>
+      <div className='frontpage-links'>
+        <Link to="/servers" className='button' >Control panel</Link>
+        <a className='button' href="https://discord.gg/HJM3MqVBfw">Discord server</a>
+        <a className='button' href="/docs">Documentation</a>
+      </div>
     </header>
     <div className='frontpage-intro-container'>
       <div className='frontpage-intro'>
