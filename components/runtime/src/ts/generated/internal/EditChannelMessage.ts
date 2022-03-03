@@ -1,7 +1,7 @@
-import type { OpEditMessageFields } from "./EditMessageFields";
+import type { OpCreateMessageFields } from "./CreateMessageFields";
 
 export interface OpEditChannelMessage {
   channelId: string;
   messageId: string;
-  fields: OpEditMessageFields;
+  fields: OpCreateMessageFields;
 }

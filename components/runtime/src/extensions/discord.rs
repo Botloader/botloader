@@ -196,11 +196,25 @@ pub async fn op_create_channel_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
+    let mut components = args
+        .fields
+        .components
+        .unwrap_or_default()
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<_>>();
+
+    // apply source tracking prefix (0 for guild scripts)
+    for component in &mut components {
+        apply_component_custom_id_prefix("0", component, 1)?;
+    }
+
     let mut mc = rt_ctx
         .discord_config
         .client
         .create_message(channel.id())
-        .embeds(&maybe_embeds)?;
+        .embeds(&maybe_embeds)?
+        .components(&components)?;
 
     if let Some(content) = &args.fields.content {
         mc = mc.content(content)?
@@ -231,11 +245,24 @@ pub async fn op_edit_channel_message(
         .embeds
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
+    let mut components = args
+        .fields
+        .components
+        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+
+    // apply source tracking prefix (0 for guild scripts)
+    if let Some(components) = &mut components {
+        for component in components {
+            apply_component_custom_id_prefix("0", component, 1)?;
+        }
+    }
+
     let mut mc = rt_ctx
         .discord_config
         .client
         .update_message(channel.id(), message_id.cast())
-        .content(args.fields.content.as_deref())?;
+        .content(args.fields.content.as_deref())?
+        .components(components.as_deref())?;
 
     if let Some(embeds) = &maybe_embeds {
         mc = mc.embeds(embeds)?;
@@ -246,6 +273,36 @@ pub async fn op_edit_channel_message(
     }
 
     Ok(mc.exec().await?.model().await?.into())
+}
+
+fn apply_component_custom_id_prefix(
+    prefix: &str,
+    component: &mut twilight_model::application::component::Component,
+    remaining_recursion: usize,
+) -> Result<(), AnyError> {
+    match component {
+        twilight_model::application::component::Component::ActionRow(row) => {
+            if remaining_recursion >= 1 {
+                for item in &mut row.components {
+                    apply_component_custom_id_prefix(prefix, item, remaining_recursion - 1)?;
+                }
+            } else {
+                return Err(anyhow::anyhow!(
+                    "too many action rows inside other action rows"
+                ));
+            }
+        }
+        twilight_model::application::component::Component::Button(b) => {
+            if let Some(id) = &mut b.custom_id {
+                *id = format!("{}{}", prefix, id)
+            }
+        }
+        twilight_model::application::component::Component::SelectMenu(m) => {
+            m.custom_id = format!("{}{}", prefix, m.custom_id);
+        }
+    }
+
+    Ok(())
 }
 
 pub async fn op_create_followup_message(

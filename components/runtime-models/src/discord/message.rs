@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use super::{
+    component::Component,
     member::PartialMember,
     user::{User, UserFlags},
 };
@@ -8,6 +11,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use twilight_model::id::Id;
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
@@ -20,6 +24,7 @@ pub struct Message {
     pub author: User,
     pub channel_id: String,
     pub content: String,
+    pub components: Vec<Component>,
     pub edited_timestamp: Option<NotBigU64>,
     pub embeds: Vec<Embed>,
     pub flags: Option<MessageFlags>,
@@ -49,6 +54,7 @@ impl From<twilight_model::channel::Message> for Message {
             author: v.author.into(),
             channel_id: v.channel_id.to_string(),
             content: v.content,
+            components: v.components.into_iter().map(Into::into).collect(),
             edited_timestamp: v
                 .edited_timestamp
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
@@ -352,14 +358,23 @@ impl From<twilight_model::channel::ReactionType> for ReactionType {
     }
 }
 
-// impl From<ReactionType> for twilight_model::channel::ReactionType {
-//     fn from(v: ReactionType) -> Self {
-//         match v {
-//             ReactionType::Custom { animated, name, id } => Self::Custom { animated, name, id },
-//             ReactionType::Unicode { name } => Self::Unicode { name },
-//         }
-//     }
-// }
+impl From<ReactionType> for twilight_model::channel::ReactionType {
+    fn from(v: ReactionType) -> Self {
+        match v {
+            ReactionType::Custom { animated, name, id } => Self::Custom {
+                animated,
+                name,
+                // TODO: maybe we change to TryFrom instead?
+                // or just keep it like this and silently fail i guess?
+                //
+                // Realistically this won't really change the behaviour if the user passes in
+                // a invalid custom emoji id
+                id: Id::from_str(&id).unwrap_or_else(|_| Id::new(1)),
+            },
+            ReactionType::Unicode { value } => Self::Unicode { name: value },
+        }
+    }
+}
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]

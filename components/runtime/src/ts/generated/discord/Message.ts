@@ -1,5 +1,6 @@
 import type { Attachment } from "./Attachment";
 import type { ChannelMention } from "./ChannelMention";
+import type { Component } from "./Component";
 import type { Embed } from "./Embed";
 import type { MessageActivity } from "./MessageActivity";
 import type { MessageApplication } from "./MessageApplication";
@@ -18,6 +19,7 @@ export interface Message {
   author: User;
   channelId: string;
   content: string;
+  components: Array<Component>;
   editedTimestamp: number | null;
   embeds: Array<Embed>;
   flags: MessageFlags | null;
