@@ -110,6 +110,10 @@ export class Script {
         })
     }
 
+    onInteractionButton<T>(name: string, cb: (ctx: InteractionContext, data: T) => any) { }
+    onInteractionSelectMenu<T>(name: string, cb: (ctx: InteractionContext, submittedValues: string[], data: T) => any) { }
+    onInteractionModalSubmit<T>(name: string, cb: (ctx: InteractionContext, submittedValues: SubmittedComponentValue[], data: T) => any) { }
+
     /**
      * Creates or resumes a interval timer.
      * 
@@ -196,4 +200,20 @@ export class Script {
 interface IntervalTimerListener {
     timer: Internal.IntervalTimer,
     callback: () => any,
+}
+
+export class InteractionContext { }
+
+export type SubmittedComponentValue = SbumittedComponentValueSelect | SubmittedComponentValueTextInput;
+
+export interface SbumittedComponentValueSelect {
+    id: string,
+    values: string[],
+    kind: "SelectMenu",
+}
+
+export interface SubmittedComponentValueTextInput {
+    id: string,
+    values: string,
+    kind: "TextInput"
 }
