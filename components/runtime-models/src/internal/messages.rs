@@ -1,4 +1,4 @@
-use crate::discord::embed::Embed;
+use crate::discord::{component::Component, embed::Embed};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::{
@@ -43,7 +43,7 @@ pub struct OpCreateChannelMessage {
 pub struct OpEditChannelMessage {
     pub channel_id: String,
     pub message_id: String,
-    pub fields: OpEditMessageFields,
+    pub fields: OpCreateMessageFields,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -69,22 +69,9 @@ pub struct OpCreateMessageFields {
     #[serde(default)]
     #[ts(optional)]
     pub allowed_mentions: Option<AllowedMentions>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[ts(export)]
-#[ts(export_to = "bindings/internal/EditMessageFields.ts")]
-#[serde(rename_all = "camelCase")]
-pub struct OpEditMessageFields {
     #[serde(default)]
     #[ts(optional)]
-    pub content: Option<String>,
-    #[serde(default)]
-    #[ts(optional)]
-    pub embeds: Option<Vec<Embed>>,
-    #[serde(default)]
-    #[ts(optional)]
-    pub allowed_mentions: Option<AllowedMentions>,
+    pub components: Option<Vec<Component>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]

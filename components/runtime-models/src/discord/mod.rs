@@ -1,4 +1,5 @@
 pub mod channel;
+pub mod component;
 pub mod embed;
 pub mod events;
 pub mod guild;
