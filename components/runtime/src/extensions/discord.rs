@@ -206,7 +206,7 @@ pub async fn op_create_channel_message(
 
     // apply source tracking prefix (0 for guild scripts)
     for component in &mut components {
-        apply_component_custom_id_prefix("0", component, 1)?;
+        apply_component_custom_id_prefix("0:", component, 1)?;
     }
 
     let mut mc = rt_ctx
@@ -253,7 +253,7 @@ pub async fn op_edit_channel_message(
     // apply source tracking prefix (0 for guild scripts)
     if let Some(components) = &mut components {
         for component in components {
-            apply_component_custom_id_prefix("0", component, 1)?;
+            apply_component_custom_id_prefix("0:", component, 1)?;
         }
     }
 
