@@ -85,7 +85,7 @@ function LandingPage() {
       <div className='frontpage-links'>
         <Link to="/servers" className='button' >Control panel</Link>
         <a className='button' href="https://discord.gg/HJM3MqVBfw">Discord server</a>
-        <a className='button' href="/docs">Documentation</a>
+        <a className='button' href="/docs/">Documentation</a>
       </div>
     </header>
     <div className='frontpage-intro-container'>
