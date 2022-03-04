@@ -69,7 +69,6 @@ function OuterGuildPage() {
   let { guildId }: { guildId: string } = useParams();
 
   return <CurrentGuildProvider guildId={guildId}>
-    <TopNav />
     <GuildPage />
   </CurrentGuildProvider>
 }
