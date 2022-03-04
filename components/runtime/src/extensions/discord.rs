@@ -1,10 +1,12 @@
 use anyhow::anyhow;
 use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
+use runtime_models::internal::interactions::InteractionCallback;
 use runtime_models::internal::member::UpdateGuildMemberFields;
+use std::str::FromStr;
 use std::{cell::RefCell, rc::Rc};
-use twilight_model::id::marker::RoleMarker;
 use twilight_model::id::marker::UserMarker;
+use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
 use vm::{AnyError, JsValue};
 
@@ -66,6 +68,19 @@ pub fn extension() -> Extension {
             (
                 "discord_remove_member_role",
                 op_async(discord_remove_member_role),
+            ),
+            // interactions
+            (
+                "discord_interaction_callback",
+                op_async(op_interaction_callback),
+            ),
+            (
+                "discord_interaction_delete_original",
+                op_async(op_interaction_delete_original),
+            ),
+            (
+                "discord_interaction_delete_followup",
+                op_async(op_interaction_delete_followup),
             ),
         ])
         .build()
@@ -196,18 +211,13 @@ pub async fn op_create_channel_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
-    let mut components = args
+    let components = args
         .fields
         .components
         .unwrap_or_default()
         .into_iter()
         .map(Into::into)
         .collect::<Vec<_>>();
-
-    // apply source tracking prefix (0 for guild scripts)
-    for component in &mut components {
-        apply_component_custom_id_prefix("0:", component, 1)?;
-    }
 
     let mut mc = rt_ctx
         .discord_config
@@ -245,17 +255,10 @@ pub async fn op_edit_channel_message(
         .embeds
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-    let mut components = args
+    let components = args
         .fields
         .components
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
-
-    // apply source tracking prefix (0 for guild scripts)
-    if let Some(components) = &mut components {
-        for component in components {
-            apply_component_custom_id_prefix("0:", component, 1)?;
-        }
-    }
 
     let mut mc = rt_ctx
         .discord_config
@@ -273,36 +276,6 @@ pub async fn op_edit_channel_message(
     }
 
     Ok(mc.exec().await?.model().await?.into())
-}
-
-fn apply_component_custom_id_prefix(
-    prefix: &str,
-    component: &mut twilight_model::application::component::Component,
-    remaining_recursion: usize,
-) -> Result<(), AnyError> {
-    match component {
-        twilight_model::application::component::Component::ActionRow(row) => {
-            if remaining_recursion >= 1 {
-                for item in &mut row.components {
-                    apply_component_custom_id_prefix(prefix, item, remaining_recursion - 1)?;
-                }
-            } else {
-                return Err(anyhow::anyhow!(
-                    "too many action rows inside other action rows"
-                ));
-            }
-        }
-        twilight_model::application::component::Component::Button(b) => {
-            if let Some(id) = &mut b.custom_id {
-                *id = format!("{}{}", prefix, id)
-            }
-        }
-        twilight_model::application::component::Component::SelectMenu(m) => {
-            m.custom_id = format!("{}{}", prefix, m.custom_id);
-        }
-    }
-
-    Ok(())
 }
 
 pub async fn op_create_followup_message(
@@ -323,17 +296,80 @@ pub async fn op_create_followup_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
+    let components = args
+        .fields
+        .components
+        .unwrap_or_default()
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<_>>();
+
+    dbg!(&components);
+
     let interaction_client = rt_ctx.discord_config.interaction_client();
 
     let mut mc = interaction_client
         .create_followup_message(&args.interaction_token)
-        .embeds(&maybe_embeds)?;
+        .embeds(&maybe_embeds)?
+        .components(&components)?;
 
     if let Some(content) = &args.fields.content {
         mc = mc.content(content)?
     }
 
     Ok(mc.exec().await?.model().await?.into())
+}
+
+pub async fn op_interaction_callback(
+    state: Rc<RefCell<OpState>>,
+    args: InteractionCallback,
+    _: (),
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let client = rt_ctx.discord_config.interaction_client();
+    client
+        .interaction_callback(
+            Id::from_str(&args.interaction_id)?,
+            &args.ineraction_token,
+            &args.data.into(),
+        )
+        .exec()
+        .await?;
+    Ok(())
+}
+
+pub async fn op_interaction_delete_original(
+    state: Rc<RefCell<OpState>>,
+    token: String,
+    _: (),
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let client = rt_ctx.discord_config.interaction_client();
+    client.delete_interaction_original(&token).exec().await?;
+    Ok(())
+}
+
+pub async fn op_interaction_delete_followup(
+    state: Rc<RefCell<OpState>>,
+    token: String,
+    id: Id<MessageMarker>,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let client = rt_ctx.discord_config.interaction_client();
+    client.delete_followup_message(&token, id).exec().await?;
+    Ok(())
 }
 
 pub async fn op_delete_message(

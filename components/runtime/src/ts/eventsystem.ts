@@ -27,6 +27,14 @@ export namespace EventSystem {
          * @internal
          */
         BOTLOADER_COMMAND_INTERACTION_CREATE: Internal.CommandInteraction,
+
+
+        /**
+        * @internal
+        */
+        BOTLOADER_COMPONENT_INTERACTION_CREATE: Internal.MessageComponentInteraction,
+
+
         /**
          * @internal
          */

@@ -5,12 +5,21 @@ use super::message::ReactionType;
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export, export_to = "bindings/discord/ComponentType.ts")]
-#[serde(rename_all = "camelCase")]
-#[serde(tag = "kind")]
 pub enum ComponentType {
     ActionRow,
     Button,
     SelectMenu,
+}
+
+use twilight_model::application::component::ComponentType as TwilightComponentType;
+impl From<TwilightComponentType> for ComponentType {
+    fn from(v: TwilightComponentType) -> Self {
+        match v {
+            TwilightComponentType::ActionRow => Self::ActionRow,
+            TwilightComponentType::Button => Self::Button,
+            TwilightComponentType::SelectMenu => Self::SelectMenu,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]

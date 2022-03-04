@@ -2,6 +2,7 @@ import { DiscordModels, Internal } from "./generated";
 import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { CreateMessageFields, Member, toOpMessageFields } from "./discord";
+import { Interaction } from "./interaction";
 
 /**
  * The commands namespace provides a command system that works with discord slash commands, as well as 
@@ -182,15 +183,8 @@ export namespace Commands {
     /**
      * Context information about a command being run
      */
-    export class ExecutedCommandContext {
+    export class ExecutedCommandContext extends Interaction {
         channelId: string;
-        interactionId: string;
-        token: string;
-
-        /**
-         * The user that executed the command
-         */
-        member: Member;
 
         /**
          * Name of the command triggered
@@ -218,27 +212,13 @@ export namespace Commands {
         parentParentName?: string;
 
         constructor(interaction: Internal.CommandInteraction) {
+            super(interaction.id, interaction.token, interaction.member);
+            this._hasSentCallback = true;
+
             this.channelId = interaction.channelId;
-            this.interactionId = interaction.id;
-            this.member = interaction.member;
-            this.token = interaction.token;
             this.commandName = interaction.name;
             this.parentName = interaction.parentName ?? undefined;
             this.parentParentName = interaction.parentParentName ?? undefined;
-        }
-
-        async sendResponse(resp: string | CreateMessageFields) {
-            if (typeof resp === "string") {
-                await OpWrappers.createInteractionFollowup({
-                    interactionToken: this.token,
-                    fields: { content: resp }
-                })
-            } else {
-                await OpWrappers.createInteractionFollowup({
-                    interactionToken: this.token,
-                    fields: toOpMessageFields(resp),
-                })
-            }
         }
     }
 

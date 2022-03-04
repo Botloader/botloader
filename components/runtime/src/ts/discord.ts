@@ -1,5 +1,5 @@
 export * from './generated/discord/index';
-import { Guild, GuildChannel, Member, Message, Role, Embed } from './generated/discord/index';
+import { Guild, GuildChannel, Member, Message, Role, Embed, Component } from './generated/discord/index';
 import * as Internal from './generated/internal/index';
 import { OpWrappers } from './op_wrappers';
 
@@ -57,6 +57,8 @@ export interface CreateMessageFields {
      * will be ignored.
      */
     allowedMentions?: AllowedMentions;
+
+    components?: Component[],
 }
 
 export interface AllowedMentions {

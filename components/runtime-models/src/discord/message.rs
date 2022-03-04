@@ -506,20 +506,39 @@ impl From<StickerFormatType> for twilight_model::channel::message::sticker::Stic
     }
 }
 
-#[derive(Clone, Debug, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/MessageFlags.ts")]
 pub struct MessageFlags {
-    crossposted: bool, //  1 << 0	this message has been published to subscribed channels (via Channel Following)
-    is_crosspost: bool, //  1 << 1	this message originated from a message in another channel (via Channel Following)
-    suppress_embeds: bool, //  1 << 2	do not include any embeds when serializing this message
-    source_message_deleted: bool, //  1 << 3	the source message for this crosspost has been deleted (via Channel Following)
-    urgent: bool,                 //  1 << 4	this message came from the urgent message system
-    has_thread: bool, //  1 << 5	this message has an associated thread, with the same id as the message
-    ephemeral: bool,  //  1 << 6	this message is only visible to the user who invoked the Interaction
-    loading: bool,    //  1 << 7	this message is an Interaction Response and the bot is "thinking"
-    failed_to_mention_some_roles_in_thread: bool, //  1 << 8	this message failed to mention some roles and add their members to the thread
+    // #[ts(optional)]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crossposted: Option<bool>, //  1 << 0	this message has been published to subscribed channels (via Channel Following)
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_crosspost: Option<bool>, //  1 << 1	this message originated from a message in another channel (via Channel Following)
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    suppress_embeds: Option<bool>, //  1 << 2	do not include any embeds when serializing this message
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source_message_deleted: Option<bool>, //  1 << 3	the source message for this crosspost has been deleted (via Channel Following)
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    urgent: Option<bool>, //  1 << 4	this message came from the urgent message system
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    has_thread: Option<bool>, //  1 << 5	this message has an associated thread, with the same id as the message
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ephemeral: Option<bool>, //  1 << 6	this message is only visible to the user who invoked the Interaction
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    loading: Option<bool>, //  1 << 7	this message is an Interaction Response and the bot is "thinking"
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    failed_to_mention_some_roles_in_thread: Option<bool>, //  1 << 8	this message failed to mention some roles and add their members to the thread
 }
 
 impl From<twilight_model::channel::message::MessageFlags> for MessageFlags {
@@ -527,16 +546,52 @@ impl From<twilight_model::channel::message::MessageFlags> for MessageFlags {
         use twilight_model::channel::message::MessageFlags as TwilightMessageFlags;
 
         Self {
-            crossposted: v.contains(TwilightMessageFlags::CROSSPOSTED),
-            is_crosspost: v.contains(TwilightMessageFlags::IS_CROSSPOST),
-            suppress_embeds: v.contains(TwilightMessageFlags::SUPPRESS_EMBEDS),
-            source_message_deleted: v.contains(TwilightMessageFlags::SOURCE_MESSAGE_DELETED),
-            urgent: v.contains(TwilightMessageFlags::URGENT),
-            has_thread: v.contains(TwilightMessageFlags::HAS_THREAD),
-            ephemeral: v.contains(TwilightMessageFlags::EPHEMERAL),
-            loading: v.contains(TwilightMessageFlags::LOADING),
-            failed_to_mention_some_roles_in_thread: v
-                .contains(TwilightMessageFlags::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD),
+            crossposted: Some(v.contains(TwilightMessageFlags::CROSSPOSTED)),
+            is_crosspost: Some(v.contains(TwilightMessageFlags::IS_CROSSPOST)),
+            suppress_embeds: Some(v.contains(TwilightMessageFlags::SUPPRESS_EMBEDS)),
+            source_message_deleted: Some(v.contains(TwilightMessageFlags::SOURCE_MESSAGE_DELETED)),
+            urgent: Some(v.contains(TwilightMessageFlags::URGENT)),
+            has_thread: Some(v.contains(TwilightMessageFlags::HAS_THREAD)),
+            ephemeral: Some(v.contains(TwilightMessageFlags::EPHEMERAL)),
+            loading: Some(v.contains(TwilightMessageFlags::LOADING)),
+            failed_to_mention_some_roles_in_thread: Some(
+                v.contains(TwilightMessageFlags::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD),
+            ),
         }
+    }
+}
+
+impl From<MessageFlags> for twilight_model::channel::message::MessageFlags {
+    fn from(v: MessageFlags) -> Self {
+        let mut out = Self::empty();
+        if matches!(v.crossposted, Some(true)) {
+            out &= Self::CROSSPOSTED;
+        }
+        if matches!(v.is_crosspost, Some(true)) {
+            out &= Self::IS_CROSSPOST;
+        }
+        if matches!(v.suppress_embeds, Some(true)) {
+            out &= Self::SUPPRESS_EMBEDS;
+        }
+        if matches!(v.source_message_deleted, Some(true)) {
+            out &= Self::SOURCE_MESSAGE_DELETED;
+        }
+        if matches!(v.urgent, Some(true)) {
+            out &= Self::URGENT;
+        }
+        if matches!(v.has_thread, Some(true)) {
+            out &= Self::HAS_THREAD;
+        }
+        if matches!(v.ephemeral, Some(true)) {
+            out &= Self::EPHEMERAL;
+        }
+        if matches!(v.loading, Some(true)) {
+            out &= Self::LOADING;
+        }
+        if matches!(v.failed_to_mention_some_roles_in_thread, Some(true)) {
+            out &= Self::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD;
+        }
+
+        out
     }
 }

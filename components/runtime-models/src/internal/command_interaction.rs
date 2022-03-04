@@ -187,6 +187,9 @@ impl From<CommandOptionValue> for CommandInteractionOptionValue {
             // aaa i should change it yeah.... later
             CommandOptionValue::SubCommand(_) => unreachable!(),
             CommandOptionValue::SubCommandGroup(_) => unreachable!(),
+            CommandOptionValue::Attachment(_) => Self::String {
+                value: "TODO".to_string(),
+            },
         }
     }
 }

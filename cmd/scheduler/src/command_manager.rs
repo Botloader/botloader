@@ -401,6 +401,7 @@ fn command_option_name(opt: &TwilightCommandOption) -> String {
         TwilightCommandOption::Role(v) => v.name.clone(),
         TwilightCommandOption::Mentionable(v) => v.name.clone(),
         TwilightCommandOption::Number(v) => v.name.clone(),
+        TwilightCommandOption::Attachment(v) => v.name.clone(),
     }
 }
 

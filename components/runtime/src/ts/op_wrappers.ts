@@ -130,6 +130,28 @@ export namespace OpWrappers {
         );
     }
 
+    export async function interactionCallback(args: Internal.InteractionCallback): Promise<void> {
+        return await Deno.core.opAsync(
+            "discord_interaction_callback",
+            args
+        );
+    }
+
+    export async function deleteInteractionFollowup(token: string, messageId: string): Promise<void> {
+        return await Deno.core.opAsync(
+            "discord_interaction_delete_followup",
+            token,
+            messageId,
+        );
+    }
+
+    export async function deleteInteractionOriginal(token: string): Promise<void> {
+        return await Deno.core.opAsync(
+            "discord_interaction_delete_original",
+            token,
+        );
+    }
+
     export async function getRole(roleId: string): Promise<Discord.Role> {
         return await Deno.core.opAsync(
             "discord_get_role",
