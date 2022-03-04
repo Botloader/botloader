@@ -48,7 +48,19 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         }),
         DispatchEvent::InteractionCreate(interaction) => match interaction.0 {
             twilight_model::application::interaction::Interaction::Ping(_) => None,
-            twilight_model::application::interaction::Interaction::MessageComponent(_) => None,
+            twilight_model::application::interaction::Interaction::MessageComponent(comp) => {
+                let guild_id = comp.guild_id;
+                Some(DiscordDispatchEvent {
+                    name: "BOTLOADER_COMPONENT_INTERACTION_CREATE",
+                    guild_id: guild_id.unwrap(),
+                    data: serde_json::to_value(
+                        &runtime_models::internal::component_interaction::MessageComponentInteraction::from(
+                            *comp,
+                        ),
+                    )
+                    .unwrap(),
+                })
+            }
             twilight_model::application::interaction::Interaction::ApplicationCommand(cmd) => {
                 let guild_id = cmd.guild_id;
                 Some(DiscordDispatchEvent {
