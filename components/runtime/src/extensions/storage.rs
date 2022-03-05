@@ -24,8 +24,16 @@ pub fn extension() -> Extension {
             ("op_botloader_bucket_storage_get", op_async(op_storage_get)),
             ("op_botloader_bucket_storage_del", op_async(op_storage_del)),
             (
+                "op_botloader_bucket_storage_del_many",
+                op_async(op_storage_del_many),
+            ),
+            (
                 "op_botloader_bucket_storage_list",
                 op_async(op_storage_list),
+            ),
+            (
+                "op_botloader_bucket_storage_count",
+                op_async(op_storage_count),
             ),
             (
                 "op_botloader_bucket_storage_incr",
@@ -154,6 +162,32 @@ pub async fn op_storage_del(
     Ok(entry.map(Into::into))
 }
 
+pub async fn op_storage_del_many(
+    state: Rc<RefCell<OpState>>,
+    bucket_name: String,
+    key_pattern: String,
+) -> Result<u64, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let res = rt_ctx
+        .bucket_store
+        .del_many(rt_ctx.guild_id, bucket_name, key_pattern)
+        .await?;
+
+    if res > 0 {
+        let mut state = state.borrow_mut();
+        let storage_ctx = state.borrow_mut::<StorageState>();
+
+        // re-check in case were at the limti
+        storage_ctx.hit_limit = false;
+    }
+
+    Ok(res)
+}
+
 pub async fn op_storage_list(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketList,
@@ -186,6 +220,24 @@ pub async fn op_storage_list(
         .await?;
 
     Ok(entries.into_iter().map(Into::into).collect())
+}
+
+pub async fn op_storage_count(
+    state: Rc<RefCell<OpState>>,
+    bucket_name: String,
+    key_pattern: String,
+) -> Result<u64, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let res = rt_ctx
+        .bucket_store
+        .count(rt_ctx.guild_id, bucket_name, key_pattern)
+        .await?;
+
+    Ok(res)
 }
 
 pub async fn op_storage_incr(

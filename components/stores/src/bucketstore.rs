@@ -50,6 +50,13 @@ pub trait BucketStore: Send + Sync {
         key: String,
     ) -> StoreResult<Option<Entry>>;
 
+    async fn del_many(
+        &self,
+        guild_id: Id<GuildMarker>,
+        bucket: String,
+        key_pattern: String,
+    ) -> StoreResult<u64>;
+
     async fn get_many(
         &self,
         guild_id: Id<GuildMarker>,
@@ -58,6 +65,13 @@ pub trait BucketStore: Send + Sync {
         after: String,
         limit: u32,
     ) -> StoreResult<Vec<Entry>>;
+
+    async fn count(
+        &self,
+        guild_id: Id<GuildMarker>,
+        bucket: String,
+        key_pattern: String,
+    ) -> StoreResult<u64>;
 
     async fn guild_storage_usage_bytes(&self, guild_id: Id<GuildMarker>) -> StoreResult<u64>;
 

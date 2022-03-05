@@ -192,6 +192,24 @@ export namespace Storage {
             }));
         }
 
+
+        /**
+         * Deletes all entries (optionally filtering by pattern) permanently.
+         * 
+         * @param keyPattern Optional key pattern to filter by
+         * 
+         *  - `%`: A percent sign (%) matches any sequence of zero or more characters.
+         *  - `_`: An underscore (_) matches any single character.
+         * 
+         * To match _ and % as literals escape them with backslash (`\_` and `\%`).
+         * 
+         * @returns Number of deleted entries
+         */
+        async deleteAll(keyPattern?: string) {
+            return OpWrappers.bucketStorageDelMany(this.name, keyPattern || "%");
+        }
+
+
         /**
          * Retrieve a list of entries from the database, you can use `after` to paginate through all the items in the bucket.
          * 
@@ -207,6 +225,22 @@ export namespace Storage {
             });
 
             return res.map(v => this.entryFromInternal(v));
+        }
+
+        /**
+         * Counts the number of entries in a bucket (optionally filtering by pattern).
+         * 
+         * @param keyPattern Optional key pattern to filter by
+         * 
+         *  - `%`: A percent sign (%) matches any sequence of zero or more characters.
+         *  - `_`: An underscore (_) matches any single character.
+         * 
+         * To match _ and % as literals escape them with backslash (`\_` and `\%`).
+         * 
+         * @returns Number of entries
+         */
+        async count(keyPattern?: string) {
+            return OpWrappers.bucketStorageCount(this.name, keyPattern || "%");
         }
     }
 

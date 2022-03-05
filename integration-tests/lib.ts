@@ -31,6 +31,12 @@ export function assetJsonEquals(a: any, b: any) {
     }
 }
 
+export function assertExpected<T>(expected: T, actual: T) {
+    if (expected !== actual) {
+        throw new Error(`expected: ${expected}, actual: ${actual}`);
+    }
+}
+
 let run_tracker = script.createGuildStorageJson("lib_run_tests");
 
 export async function runOnce(name: string, cb: () => any) {

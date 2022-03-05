@@ -182,6 +182,25 @@ impl crate::bucketstore::BucketStore for Postgres {
         Ok(res.map(Into::into))
     }
 
+    async fn del_many(
+        &self,
+        guild_id: Id<GuildMarker>,
+        bucket: String,
+        key_pattern: String,
+    ) -> StoreResult<u64> {
+        let res = sqlx::query!(
+            "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND \
+             (expires_at IS NULL OR expires_at > now());",
+            guild_id.get() as i64,
+            bucket,
+            key_pattern,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(res.rows_affected())
+    }
+
     async fn get_many(
         &self,
         guild_id: Id<GuildMarker>,
@@ -206,6 +225,25 @@ impl crate::bucketstore::BucketStore for Postgres {
         .await?;
 
         Ok(res.into_iter().map(Into::into).collect())
+    }
+
+    async fn count(
+        &self,
+        guild_id: Id<GuildMarker>,
+        bucket: String,
+        key_pattern: String,
+    ) -> StoreResult<u64> {
+        let res = sqlx::query!(
+            "SELECT count(*) FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE \
+             $3 AND (expires_at IS NULL OR expires_at > now());",
+            guild_id.get() as i64,
+            bucket,
+            key_pattern,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.count.unwrap_or_default() as u64)
     }
 
     async fn guild_storage_usage_bytes(&self, guild_id: Id<GuildMarker>) -> StoreResult<u64> {

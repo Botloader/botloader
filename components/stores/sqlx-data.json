@@ -66,6 +66,28 @@
       ]
     }
   },
+  "0a60828093ea930e50146b188343c5688499b4bf7470181f2929f73791dc21f4": {
+    "query": "SELECT count(*) FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND (expires_at IS NULL OR expires_at > now());",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "count",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
   "0b53c6ad030a9a0353c25d88165bce7c455f35a5903595111bb425291e73dfef": {
     "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now());",
     "describe": {
@@ -1287,6 +1309,20 @@
         false,
         true
       ]
+    }
+  },
+  "8a1c9aa541e47f656327718210e3e200c21f2852457fc51ff163fb1e99a75863": {
+    "query": "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND (expires_at IS NULL OR expires_at > now());",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": []
     }
   },
   "958fe1fbab976cc0568657a67df83dd587ab8d81553c7d279030d3d8fe002138": {

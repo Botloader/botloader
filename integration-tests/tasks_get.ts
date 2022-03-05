@@ -50,6 +50,7 @@ async function countAll(namespace?: string): Promise<number> {
 
     return n
 }
+
 runOnce("tasks_get.ts", async () => {
     await testGetKey();
     await testGetAll();

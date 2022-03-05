@@ -226,8 +226,16 @@ export namespace OpWrappers {
         return await Deno.core.opAsync("op_botloader_bucket_storage_del", opts);
     }
 
+    export async function bucketStorageDelMany(bucketName: string, keyPattern: string): Promise<number> {
+        return await Deno.core.opAsync("op_botloader_bucket_storage_del_many", bucketName, keyPattern);
+    }
+
     export async function bucketStorageList(opts: Internal.OpStorageBucketList): Promise<Internal.OpStorageBucketEntry[]> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_list", opts);
+    }
+
+    export async function bucketStorageCount(bucketName: string, keyPattern: string): Promise<number> {
+        return await Deno.core.opAsync("op_botloader_bucket_storage_count", bucketName, keyPattern);
     }
 
     export async function bucketStorageIncr(opts: Internal.OpStorageBucketIncr): Promise<Internal.OpStorageBucketEntry> {
