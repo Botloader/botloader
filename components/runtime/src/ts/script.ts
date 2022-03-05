@@ -246,9 +246,21 @@ export class Script {
         try {
             await inner();
         } catch (e) {
-            // handle error e
+            if (!interaction.hasSentCallback) {
+                await interaction.sendCallbackWithMessage({
+                    content: "An error occured handling the interaction: " + e
+                }, { ephemeral: true })
+            } else {
+                await interaction.sendFollowup({ content: "An error occured handling the interaction: " + e }, { ephemeral: true })
+            }
         } finally {
             // send no response message if needed
+            if (!interaction.hasSentCallback) {
+                await interaction.sendCallbackWithMessage({
+                    content: "No response for interaction, this is probably a bug in the script",
+                }, { ephemeral: true })
+
+            }
         }
     }
 }
