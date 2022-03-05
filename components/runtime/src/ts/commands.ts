@@ -1,8 +1,6 @@
 import { DiscordModels, Internal } from "./generated";
 import { EventSystem } from "./eventsystem";
-import { OpWrappers } from "./op_wrappers";
-import { CreateMessageFields, Member, toOpMessageFields } from "./discord";
-import { Interaction } from "./interaction";
+import { Interaction } from "./discord";
 
 /**
  * The commands namespace provides a command system that works with discord slash commands, as well as 
