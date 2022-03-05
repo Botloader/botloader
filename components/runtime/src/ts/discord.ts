@@ -1,5 +1,5 @@
 export * from './generated/discord/index';
-import { Guild, GuildChannel, Member, Message, Role, Embed, Component } from './generated/discord/index';
+import { Guild, GuildChannel, Member, Message, Role, Embed, Component, ComponentType } from './generated/discord/index';
 import * as Internal from './generated/internal/index';
 import { OpWrappers } from './op_wrappers';
 
@@ -226,3 +226,183 @@ export async function removeMemberRole(userId: string, roleId: string): Promise<
     return await OpWrappers.removeMemberRole(userId, roleId);
 }
 
+/**
+ * Base interaction class, this class should be considered UNSTABLE and may change a lot in the future.
+ */
+export class Interaction {
+    interactionId: string;
+    token: string;
+
+    /**
+     * The user that started the interaction
+     */
+    member: Member;
+
+    protected _hasSentCallback = false;
+
+    get hasSentCallback() {
+        return this._hasSentCallback;
+    }
+
+    constructor(id: string, token: string, member: Member) {
+        this.interactionId = id;
+        this.member = member;
+        this.token = token;
+    }
+
+    protected setCallbackSent() {
+        if (this.hasSentCallback) {
+            throw new Error("tried sending a callback when one has already been sent, only one callback per interaction can be sent.")
+        } else {
+            this._hasSentCallback = true;
+        }
+    }
+
+    async sendCallbackWithMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
+        this.setCallbackSent();
+
+        return OpWrappers.interactionCallback({
+            interactionId: this.interactionId,
+            ineractionToken: this.token,
+            data: {
+                kind: "ChannelMessageWithSource",
+                fields: toOpMessageFields(fields),
+                flags: flags || {},
+            }
+        })
+    }
+    async sendCallbackWithDeferredMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
+        this.setCallbackSent();
+
+        return OpWrappers.interactionCallback({
+            interactionId: this.interactionId,
+            ineractionToken: this.token,
+            data: {
+                kind: "DeferredChannelMessageWithSource",
+                fields: toOpMessageFields(fields),
+                flags: flags || {},
+            }
+        })
+    }
+
+    /**
+     * @deprecated use {@link sendFollowup} instead
+     */
+    async sendResponse(resp: string | CreateMessageFields) {
+        return this.sendFollowup(resp);
+    }
+
+    async sendFollowup(resp: string | CreateMessageFields, flags?: InteractionMessageFlags) {
+        if (typeof resp === "string") {
+            await OpWrappers.createInteractionFollowup({
+                interactionToken: this.token,
+                fields: { content: resp },
+                flags: flags || {},
+            })
+        } else {
+            await OpWrappers.createInteractionFollowup({
+                interactionToken: this.token,
+                fields: toOpMessageFields(resp),
+                flags: flags || {},
+            })
+        }
+    }
+
+    async deleteFollowup(id: string) {
+        return OpWrappers.deleteInteractionFollowup(this.token, id);
+    }
+
+    async deleteOriginalResponse() {
+        return OpWrappers.deleteInteractionOriginal(this.token);
+    }
+}
+
+export class ComponentInteraction extends Interaction {
+    customIdRaw: string;
+    componentType: ComponentType;
+    channelId: string;
+
+    constructor(interaction: Internal.MessageComponentInteraction) {
+        super(interaction.id, interaction.token, interaction.member);
+
+        this.componentType = interaction.componentType;
+        this.customIdRaw = interaction.customId;
+        this.channelId = interaction.channelId;
+    }
+
+
+    async sendCallbackUpdateMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
+        this.setCallbackSent();
+
+        return OpWrappers.interactionCallback({
+            interactionId: this.interactionId,
+            ineractionToken: this.token,
+            data: {
+                kind: "UpdateMessage",
+                fields: toOpMessageFields(fields),
+                flags: flags || {},
+            }
+        })
+    }
+
+    async sendCallbackDeferredUpdateMessage() {
+        this.setCallbackSent();
+
+        return OpWrappers.interactionCallback({
+            interactionId: this.interactionId,
+            ineractionToken: this.token,
+            data: {
+                kind: "DeferredUpdateMessage",
+            }
+        })
+    }
+}
+
+export class SelectMenuInteraction extends ComponentInteraction {
+    values: string[];
+
+
+    constructor(interaction: Internal.MessageComponentInteraction) {
+        super(interaction);
+
+        this.values = interaction.values;
+    }
+}
+
+export interface InteractionMessageFlags {
+    /**
+     * Ephemeral messages can only be seen by the author of the interaction
+     */
+    ephemeral?: boolean,
+}
+
+/**
+ * Creates a 'customId' for you to use in message component's 'customId fields
+ * 
+ * This is needed as otherwise the interaction will not be handled by botloader.
+ * 
+ * DO NOT try to emulate this function yourself, we may change to different techniques entirely in the future and if you try to 
+ * emulate this function them by implmenting it yourself you WILL break stuff.
+ * 
+ * Note that name + json(data) has to be less than 80 characters
+ * 
+ * @param name Name of the component, this is used when creating listeners using {@link Script.onInteractionButton} and {@link Script.onInteractionSelectMenu}
+ * @param data Arbitrary data that will be passed to the interaction handlers, can be used to track a small amount of state.
+ * Note that name + json(data) has to be less than 80 characters
+ * @returns The customId for use in the customId field
+ */
+export function encodeInteractionCustomId(name: string, data: any) {
+    let res = name + ":";
+    if (data !== undefined && data !== null) {
+        res += JSON.stringify(data);
+    }
+
+    // The string iterator that is used here iterates over characters,
+    // not mere code units
+    let length = [...res].length;
+    if (res.length >= 80) {
+        throw new Error("name + JSON.stringify(data) exceeds 80 characters")
+    }
+
+    return "0:" + res
+}

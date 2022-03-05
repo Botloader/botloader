@@ -8,7 +8,7 @@ import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
 import { Tasks } from "./scheduled_tasks";
-import { ComponentInteraction, Interaction, SelectMenuInteraction } from "./interaction";
+import { ComponentInteraction, Interaction, SelectMenuInteraction } from "./discord";
 
 /**
  * The script class is the main way you interact with botloader and discord.
@@ -114,10 +114,10 @@ export class Script {
         })
     }
 
-    alphaOnInteractionButton<T>(name: string, cb: (interaction: ComponentInteraction, extraData: T) => any) {
+    onInteractionButton<T>(name: string, cb: (interaction: ComponentInteraction, extraData: T) => any) {
         this.buttonComponentListeners.push({ name: name, cb: cb })
     }
-    alphaOnInteractionSelectMenu<T>(name: string, cb: (interaction: SelectMenuInteraction, extraData: T) => any) {
+    onInteractionSelectMenu<T>(name: string, cb: (interaction: SelectMenuInteraction, extraData: T) => any) {
         this.selectMenuListeners.push({ name: name, cb: cb })
     }
     // onInteractionModalSubmit<T>(name: string, cb: (ctx: InteractionContext, submittedValues: SubmittedComponentValue[], data: T) => any) { }
@@ -256,20 +256,4 @@ export class Script {
 interface IntervalTimerListener {
     timer: Internal.IntervalTimer,
     callback: () => any,
-}
-
-export class InteractionContext { }
-
-export type SubmittedComponentValue = SbumittedComponentValueSelect | SubmittedComponentValueTextInput;
-
-export interface SbumittedComponentValueSelect {
-    id: string,
-    values: string[],
-    kind: "SelectMenu",
-}
-
-export interface SubmittedComponentValueTextInput {
-    id: string,
-    values: string,
-    kind: "TextInput"
-}
+} 
