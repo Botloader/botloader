@@ -65,16 +65,18 @@ export class Interaction {
         return this.sendFollowup(resp);
     }
 
-    async sendFollowup(resp: string | CreateMessageFields) {
+    async sendFollowup(resp: string | CreateMessageFields, flags?: InteractionMessageFlags) {
         if (typeof resp === "string") {
             await OpWrappers.createInteractionFollowup({
                 interactionToken: this.token,
-                fields: { content: resp }
+                fields: { content: resp },
+                flags: flags || {},
             })
         } else {
             await OpWrappers.createInteractionFollowup({
                 interactionToken: this.token,
                 fields: toOpMessageFields(resp),
+                flags: flags || {},
             })
         }
     }

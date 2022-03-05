@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
+use runtime_models::discord::message::MessageFlags;
 use runtime_models::internal::interactions::InteractionCallback;
 use runtime_models::internal::member::UpdateGuildMemberFields;
 use std::str::FromStr;
@@ -312,6 +313,16 @@ pub async fn op_create_followup_message(
         .create_followup_message(&args.interaction_token)
         .embeds(&maybe_embeds)?
         .components(&components)?;
+
+    if matches!(
+        args.flags,
+        Some(MessageFlags {
+            ephemeral: Some(true),
+            ..
+        })
+    ) {
+        mc = mc.ephemeral(true);
+    }
 
     if let Some(content) = &args.fields.content {
         mc = mc.content(content)?
