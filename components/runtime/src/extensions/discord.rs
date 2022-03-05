@@ -305,8 +305,6 @@ pub async fn op_create_followup_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
-    dbg!(&components);
-
     let interaction_client = rt_ctx.discord_config.interaction_client();
 
     let mut mc = interaction_client
