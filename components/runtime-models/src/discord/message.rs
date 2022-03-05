@@ -514,31 +514,31 @@ pub struct MessageFlags {
     // #[ts(optional)]
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    crossposted: Option<bool>, //  1 << 0	this message has been published to subscribed channels (via Channel Following)
+    pub crossposted: Option<bool>, //  1 << 0	this message has been published to subscribed channels (via Channel Following)
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    is_crosspost: Option<bool>, //  1 << 1	this message originated from a message in another channel (via Channel Following)
+    pub is_crosspost: Option<bool>, //  1 << 1	this message originated from a message in another channel (via Channel Following)
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    suppress_embeds: Option<bool>, //  1 << 2	do not include any embeds when serializing this message
+    pub suppress_embeds: Option<bool>, //  1 << 2	do not include any embeds when serializing this message
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    source_message_deleted: Option<bool>, //  1 << 3	the source message for this crosspost has been deleted (via Channel Following)
+    pub source_message_deleted: Option<bool>, //  1 << 3	the source message for this crosspost has been deleted (via Channel Following)
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    urgent: Option<bool>, //  1 << 4	this message came from the urgent message system
+    pub urgent: Option<bool>, //  1 << 4	this message came from the urgent message system
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    has_thread: Option<bool>, //  1 << 5	this message has an associated thread, with the same id as the message
+    pub has_thread: Option<bool>, //  1 << 5	this message has an associated thread, with the same id as the message
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ephemeral: Option<bool>, //  1 << 6	this message is only visible to the user who invoked the Interaction
+    pub ephemeral: Option<bool>, //  1 << 6	this message is only visible to the user who invoked the Interaction
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    loading: Option<bool>, //  1 << 7	this message is an Interaction Response and the bot is "thinking"
+    pub loading: Option<bool>, //  1 << 7	this message is an Interaction Response and the bot is "thinking"
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    failed_to_mention_some_roles_in_thread: Option<bool>, //  1 << 8	this message failed to mention some roles and add their members to the thread
+    pub failed_to_mention_some_roles_in_thread: Option<bool>, //  1 << 8	this message failed to mention some roles and add their members to the thread
 }
 
 impl From<twilight_model::channel::message::MessageFlags> for MessageFlags {

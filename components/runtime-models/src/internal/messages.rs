@@ -1,4 +1,4 @@
-use crate::discord::{component::Component, embed::Embed};
+use crate::discord::{component::Component, embed::Embed, message::MessageFlags};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::{
@@ -53,6 +53,7 @@ pub struct OpEditChannelMessage {
 pub struct OpCreateFollowUpMessage {
     pub interaction_token: String,
     pub fields: OpCreateMessageFields,
+    pub flags: Option<MessageFlags>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
