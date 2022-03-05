@@ -23,9 +23,6 @@ export class Script {
     private storageBuckets: Storage.Bucket<unknown>[] = [];
     private taskHandlerNames: string[] = [];
 
-    private buttonComponentListeners: { name: string, cb: (data: ComponentInteraction, extra: any) => any }[] = [];
-    private selectMenuListeners: { name: string, cb: (data: SelectMenuInteraction, extra: any) => any }[] = [];
-
     private runCalled = false;
 
     /**
@@ -115,10 +112,10 @@ export class Script {
     }
 
     onInteractionButton<T>(name: string, cb: (interaction: ComponentInteraction, extraData: T) => any) {
-        this.buttonComponentListeners.push({ name: name, cb: cb })
+        EventSystem.onInteractionButton(name, cb);
     }
     onInteractionSelectMenu<T>(name: string, cb: (interaction: SelectMenuInteraction, extraData: T) => any) {
-        this.selectMenuListeners.push({ name: name, cb: cb })
+        EventSystem.onInteractionSelectMenu(name, cb);
     }
     // onInteractionModalSubmit<T>(name: string, cb: (ctx: InteractionContext, submittedValues: SubmittedComponentValue[], data: T) => any) { }
 
@@ -195,72 +192,12 @@ export class Script {
         EventSystem.registerEventMuxer(this.events);
 
         this.events.on("BOTLOADER_INTERVAL_TIMER_FIRED", this.handleIntervalEvent.bind(this));
-        this.events.on("BOTLOADER_COMPONENT_INTERACTION_CREATE", this.handleComponentInteraction.bind(this));
     }
 
     private async handleIntervalEvent(evt: Internal.IntervalTimerEvent) {
         const timer = this.intervalTimers.find(timer => timer.timer.name === evt.name);
         if (timer) {
             await timer.callback();
-        }
-    }
-
-    private async handleComponentInteraction(interaction: Internal.MessageComponentInteraction) {
-        if (!interaction.customId.startsWith("0:")) {
-            return;
-        }
-
-        let customId = interaction.customId.slice(2);
-        let nameEnd = customId.indexOf(":");
-        let name = "";
-        let extras: unknown = null;
-
-        if (nameEnd > -1) {
-            name = customId.slice(0, nameEnd)
-            let extrasStr = customId.slice(nameEnd + 1);
-            if (extrasStr) {
-                extras = JSON.parse(extrasStr);
-            }
-        }
-
-        if (interaction.componentType === "Button") {
-            let listener = this.buttonComponentListeners.find((elem) => elem.name === name);
-            if (listener) {
-                let convInteraction = new ComponentInteraction(interaction);
-                this.handleInteractionCallback(convInteraction, async () => {
-                    await listener!.cb(convInteraction, extras);
-                })
-            }
-        } else if (interaction.componentType === "SelectMenu") {
-            let listener = this.selectMenuListeners.find((elem) => elem.name === name);
-            if (listener) {
-                let convInteraction = new SelectMenuInteraction(interaction);
-                this.handleInteractionCallback(convInteraction, async () => {
-                    await listener!.cb(convInteraction, extras);
-                })
-            }
-        }
-    }
-
-    private async handleInteractionCallback(interaction: Interaction, inner: () => any) {
-        try {
-            await inner();
-        } catch (e) {
-            if (!interaction.hasSentCallback) {
-                await interaction.sendCallbackWithMessage({
-                    content: "An error occured handling the interaction: " + e
-                }, { ephemeral: true })
-            } else {
-                await interaction.sendFollowup({ content: "An error occured handling the interaction: " + e }, { ephemeral: true })
-            }
-        } finally {
-            // send no response message if needed
-            if (!interaction.hasSentCallback) {
-                await interaction.sendCallbackWithMessage({
-                    content: "No response for interaction, this is probably a bug in the script",
-                }, { ephemeral: true })
-
-            }
         }
     }
 }
