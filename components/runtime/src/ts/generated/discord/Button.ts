@@ -3,8 +3,8 @@ import type { ReactionType } from "./ReactionType";
 
 export interface Button {
   customId?: string;
-  disabled: boolean;
   style: ButtonStyle;
+  disabled?: boolean;
   url?: string;
   label?: string;
   emoji?: ReactionType;

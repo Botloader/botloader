@@ -81,9 +81,10 @@ impl From<ActionRow> for TwilightActionRow {
 pub struct Button {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_id: Option<String>,
-    pub disabled: bool,
     pub style: ButtonStyle,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -97,7 +98,7 @@ impl From<TwilightButton> for Button {
     fn from(v: TwilightButton) -> Self {
         Self {
             custom_id: v.custom_id,
-            disabled: v.disabled,
+            disabled: Some(v.disabled),
             style: v.style.into(),
             url: v.url,
             label: v.label,
@@ -109,7 +110,7 @@ impl From<Button> for TwilightButton {
     fn from(v: Button) -> Self {
         Self {
             custom_id: v.custom_id,
-            disabled: v.disabled,
+            disabled: v.disabled.unwrap_or_default(),
             style: v.style.into(),
             url: v.url,
             label: v.label,
