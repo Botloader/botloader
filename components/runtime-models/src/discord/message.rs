@@ -565,31 +565,31 @@ impl From<MessageFlags> for twilight_model::channel::message::MessageFlags {
     fn from(v: MessageFlags) -> Self {
         let mut out = Self::empty();
         if matches!(v.crossposted, Some(true)) {
-            out &= Self::CROSSPOSTED;
+            out |= Self::CROSSPOSTED;
         }
         if matches!(v.is_crosspost, Some(true)) {
-            out &= Self::IS_CROSSPOST;
+            out |= Self::IS_CROSSPOST;
         }
         if matches!(v.suppress_embeds, Some(true)) {
-            out &= Self::SUPPRESS_EMBEDS;
+            out |= Self::SUPPRESS_EMBEDS;
         }
         if matches!(v.source_message_deleted, Some(true)) {
-            out &= Self::SOURCE_MESSAGE_DELETED;
+            out |= Self::SOURCE_MESSAGE_DELETED;
         }
         if matches!(v.urgent, Some(true)) {
-            out &= Self::URGENT;
+            out |= Self::URGENT;
         }
         if matches!(v.has_thread, Some(true)) {
-            out &= Self::HAS_THREAD;
+            out |= Self::HAS_THREAD;
         }
         if matches!(v.ephemeral, Some(true)) {
-            out &= Self::EPHEMERAL;
+            out |= Self::EPHEMERAL;
         }
         if matches!(v.loading, Some(true)) {
-            out &= Self::LOADING;
+            out |= Self::LOADING;
         }
         if matches!(v.failed_to_mention_some_roles_in_thread, Some(true)) {
-            out &= Self::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD;
+            out |= Self::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD;
         }
 
         out
