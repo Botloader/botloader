@@ -61,6 +61,10 @@ export interface CreateMessageFields {
     components?: Component[],
 }
 
+export interface InteractionCreateMessageFields extends CreateMessageFields {
+    flags?: InteractionMessageFlags,
+}
+
 export interface AllowedMentions {
     /**
      * Types of mentions to parse from the message
@@ -258,7 +262,30 @@ export class Interaction {
         }
     }
 
+    /**
+     * @deprecated use {@link ackWithMessage} 
+     */
     async sendCallbackWithMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
+        this.ackWithMessage({
+            ...fields,
+            flags: flags,
+        })
+    }
+
+    /**
+     * @deprecated use {@link ackWithDeferredMessage} 
+     */
+    async sendCallbackWithDeferredMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
+        this.ackWithDeferredMessage({
+            ...fields,
+            flags: flags,
+        })
+    }
+
+    /**
+     * Acknowledge this interaction and send a message in response to this interaction
+     */
+    async ackWithMessage(fields: InteractionCreateMessageFields) {
         this.setCallbackSent();
 
         return OpWrappers.interactionCallback({
@@ -267,11 +294,19 @@ export class Interaction {
             data: {
                 kind: "ChannelMessageWithSource",
                 fields: toOpMessageFields(fields),
-                flags: flags || {},
+                flags: fields.flags || {},
             }
         })
     }
-    async sendCallbackWithDeferredMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
+
+    /**
+     * Acknowledge this interaction and display a "thinking" state to the user for you to then send a followUp 
+     * message later.
+     * 
+     * You have to ack interactions within 3 seconds but if you are doing things that can take longer than that you can
+     * use this function first to tell discord that you are processing the interaction then send the message itself later.
+     */
+    async ackWithDeferredMessage(fields?: InteractionCreateMessageFields) {
         this.setCallbackSent();
 
         return OpWrappers.interactionCallback({
@@ -279,8 +314,8 @@ export class Interaction {
             ineractionToken: this.token,
             data: {
                 kind: "DeferredChannelMessageWithSource",
-                fields: toOpMessageFields(fields),
-                flags: flags || {},
+                fields: toOpMessageFields(fields ?? {}),
+                flags: fields?.flags ?? {},
             }
         })
     }
@@ -292,7 +327,19 @@ export class Interaction {
         return this.sendFollowup(resp);
     }
 
-    async sendFollowup(resp: string | CreateMessageFields, flags?: InteractionMessageFlags) {
+    async sendFollowup(resp: string | InteractionCreateMessageFields) {
+        let flags: InteractionMessageFlags = {}
+        if (arguments.length === 2) {
+            // legacy support, remove at some point in the future
+            flags = arguments[1];
+        } else {
+            if (typeof resp === "object") {
+                if (resp.flags) {
+                    flags = resp.flags
+                }
+            }
+        }
+
         if (typeof resp === "string") {
             await OpWrappers.createInteractionFollowup({
                 interactionToken: this.token,
@@ -330,8 +377,29 @@ export class ComponentInteraction extends Interaction {
         this.channelId = interaction.channelId;
     }
 
-
+    /**
+     * @deprecated use {@link ackWithUpdateMessage}
+     */
     async sendCallbackUpdateMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
+        return this.ackWithUpdateMessage({
+            ...fields,
+            flags: flags,
+        })
+    }
+
+    /**
+     * @deprecated use {@link ackWithDeferredUpdateMessage}
+     */
+    async sendCallbackDeferredUpdateMessage() {
+        return this.ackWithDeferredUpdateMessage();
+    }
+
+    /**
+     * Acknowledge this interaction and update the message the component was on
+     * 
+     * Use updateOriginalResponse to update the message
+     */
+    async ackWithUpdateMessage(fields: InteractionCreateMessageFields) {
         this.setCallbackSent();
 
         return OpWrappers.interactionCallback({
@@ -340,12 +408,20 @@ export class ComponentInteraction extends Interaction {
             data: {
                 kind: "UpdateMessage",
                 fields: toOpMessageFields(fields),
-                flags: flags || {},
+                flags: fields.flags || {},
             }
         })
     }
 
-    async sendCallbackDeferredUpdateMessage() {
+    /**
+     * Acknowledge this interaction and update the message the component was on at a later time (within 15 mins).
+     * 
+     * You have to ack interactions within 3 seconds but if you are doing things that can take longer than that you can
+     * use this function first to tell discord that you are processing the interaction then update the message later.
+     * 
+     * Use updateOriginalResponse to update the message
+     */
+    async ackWithDeferredUpdateMessage() {
         this.setCallbackSent();
 
         return OpWrappers.interactionCallback({

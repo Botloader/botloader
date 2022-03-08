@@ -35,7 +35,7 @@ export namespace Commands {
 
             let ctx = new ExecutedCommandContext(interaction);
             if (command.ackMode === "DeferredMessage") {
-                await ctx.sendCallbackWithDeferredMessage({}, {});
+                await ctx.ackWithDeferredMessage();
             }
 
             let optionsMap: Record<string, any> = {};

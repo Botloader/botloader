@@ -172,19 +172,20 @@ export namespace EventSystem {
             await inner();
         } catch (e) {
             if (!interaction.hasSentCallback) {
-                await interaction.sendCallbackWithMessage({
-                    content: "An error occured handling the interaction: " + e
-                }, { ephemeral: true })
+                await interaction.ackWithMessage({
+                    content: "An error occured handling the interaction: " + e,
+                    flags: { ephemeral: true },
+                })
             } else {
-                await interaction.sendFollowup({ content: "An error occured handling the interaction: " + e }, { ephemeral: true })
+                await interaction.sendFollowup({ content: "An error occured handling the interaction: " + e, flags: { ephemeral: true } })
             }
         } finally {
             // send no response message if needed
             if (!interaction.hasSentCallback) {
-                await interaction.sendCallbackWithMessage({
+                await interaction.ackWithMessage({
                     content: "No response for interaction, this is probably a bug in the script",
-                }, { ephemeral: true })
-
+                    flags: { ephemeral: true },
+                })
             }
         }
     }
