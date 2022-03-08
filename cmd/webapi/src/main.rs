@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use axum::{
     error_handling::HandleErrorLayer,
+    extract::Extension,
     response::IntoResponse,
     routing::{delete, get, patch, post},
-    AddExtensionLayer, BoxError, Router,
+    BoxError, Router,
 };
 use clap::Parser;
 use oauth2::basic::BasicClient;
@@ -59,15 +60,15 @@ async fn main() {
 
     let common_middleware_stack = ServiceBuilder::new() // Process at most 100 requests concurrently
         .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
-        .layer(AddExtensionLayer::new(ConfigData {
+        .layer(Extension(ConfigData {
             oauth_client: oatuh_client,
         }))
         .layer(TraceLayer::new_for_http())
-        .layer(AddExtensionLayer::new(bot_rpc_client))
-        .layer(AddExtensionLayer::new(Arc::new(auth_handler)))
-        .layer(AddExtensionLayer::new(config_store))
-        .layer(AddExtensionLayer::new(session_store.clone()))
-        .layer(AddExtensionLayer::new(client_cache))
+        .layer(Extension(bot_rpc_client))
+        .layer(Extension(Arc::new(auth_handler)))
+        .layer(Extension(config_store))
+        .layer(Extension(session_store.clone()))
+        .layer(Extension(client_cache))
         .layer(session_layer)
         .layer(CorsLayer {
             run_config: conf.clone(),

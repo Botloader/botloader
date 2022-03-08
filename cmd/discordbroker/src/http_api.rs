@@ -7,7 +7,7 @@ use axum::{
     extract::{Extension, Path},
     http::StatusCode,
     routing::get,
-    AddExtensionLayer, Json, Router,
+    Json, Router,
 };
 use dbrokerapi::state_client::ConnectedGuildsResponse;
 use tracing::info;
@@ -35,8 +35,8 @@ pub async fn run_http_server(
         )
         .route("/guilds/:guild_id", get(handle_get_guild))
         .route("/connected_guilds", get(handle_get_connected_guilds))
-        .layer(AddExtensionLayer::new(discord_state))
-        .layer(AddExtensionLayer::new(ReadyTracker { ready }))
+        .layer(Extension(discord_state))
+        .layer(Extension(ReadyTracker { ready }))
         .layer(axum_metrics_layer::MetricsLayer {
             name: "bl.broker.http_api_hits_total",
         });

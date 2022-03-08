@@ -21,7 +21,6 @@ use stores::{
 use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument};
 use twilight_model::{
-    application::callback::{CallbackData, InteractionResponse},
     gateway::event::DispatchEvent,
     id::{marker::GuildMarker, Id},
 };
