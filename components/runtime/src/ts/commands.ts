@@ -547,7 +547,7 @@ export namespace Commands {
      * @param name 1-32 characters (no symbols except - and _)
      * @param description 1-100 characters
      */
-    export function userCommand(name: string, description: string) {
+    export function userCommand(name: string) {
         return new UserCommandBuilder(name);
     }
 
