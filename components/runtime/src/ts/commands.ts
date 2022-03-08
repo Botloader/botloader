@@ -33,11 +33,17 @@ export namespace Commands {
                 return;
             }
 
+            let ctx = new ExecutedCommandContext(interaction);
+            if (command.ackMode === "DeferredMessage") {
+                await ctx.sendCallbackWithDeferredMessage({}, {});
+            }
+
             let optionsMap: Record<string, any> = {};
             for (let opt of interaction.options) {
                 optionsMap[opt.name] = this.resolveOption(interaction.dataMap, opt.value);
             }
-            await command.cb(new ExecutedCommandContext(interaction), optionsMap)
+
+            await command.cb(ctx, optionsMap)
         }
 
         private resolveOption(map: Internal.CommandInteractionDataMap, opt: Internal.CommandInteractionOptionValue): unknown {
@@ -152,7 +158,6 @@ export namespace Commands {
 
         constructor(interaction: Internal.CommandInteraction) {
             super(interaction.id, interaction.token, interaction.member);
-            this._hasSentCallback = true;
 
             this.channelId = interaction.channelId;
             this.commandName = interaction.name;
@@ -188,6 +193,7 @@ export namespace Commands {
         kind: "Chat" | "User" | "Message",
         group?: Group,
         options?: OptionMap;
+        ackMode: AckMode,
         cb: (ctx: {}, args: {}) => any,
     }
 
@@ -313,11 +319,14 @@ export namespace Commands {
         return new SlashCommandBuilder<{}>(name, description, {});
     }
 
+    export type AckMode = "DeferredMessage" | "Custom";
+
     export class SlashCommandBuilder<TOpts> {
         private name: string;
         private description: string;
         private options: OptionMap;
         private group?: Group;
+        private ackMode: AckMode = "DeferredMessage";
 
         constructor(name: string, description: string, options: OptionMap, group?: Group) {
             this.name = name;
@@ -336,6 +345,22 @@ export namespace Commands {
          */
         setGroup(group: Group) {
             this.group = group;
+            return this;
+        }
+
+        /**
+         * Set the ack mode of this command
+         * (if you're experienced with the discord api, this is the callback type to the interaction)
+         * 
+         * `DeferredMessage`: It will respond with a public deferred message.
+         * `Custom`: You handle the ack'ing of the interaction yourself, this allows you to
+         * use ephemeral responses and modals.
+         * 
+         * 
+         * Keep in mind when using custom, you have to ack the interaction within 3 seconds otherwise it will fail.
+         */
+        setAckMode(mode: AckMode) {
+            this.ackMode = mode;
             return this;
         }
 
@@ -452,6 +477,7 @@ export namespace Commands {
                 kind: "Chat",
                 options: this.options,
                 group: this.group,
+                ackMode: this.ackMode,
                 cb: callback as any,
             };
         }
@@ -505,10 +531,27 @@ export namespace Commands {
     export class UserCommandBuilder {
         name: string;
         description: string;
+        ackMode: AckMode = "DeferredMessage";
 
         constructor(name: string, description: string) {
             this.name = name;
             this.description = description;
+        }
+
+        /**
+         * Set the ack mode of this command
+         * (if you're experienced with the discord api, this is the callback type to the interaction)
+         * 
+         * `DeferredMessage`: It will respond with a public deferred message.
+         * `Custom`: You handle the ack'ing of the interaction yourself, this allows you to
+         * use ephemeral responses and modals.
+         * 
+         * 
+         * Keep in mind when using custom, you have to ack the interaction within 3 seconds otherwise it will fail.
+         */
+        setAckMode(mode: AckMode) {
+            this.ackMode = mode;
+            return this;
         }
 
         build(cb: (ctx: ExecutedCommandContext, target: InteractionUser) => any): Command {
@@ -516,6 +559,7 @@ export namespace Commands {
                 name: this.name,
                 kind: "User",
                 description: this.description,
+                ackMode: this.ackMode,
                 cb: cb as any,
             }
         }
@@ -535,10 +579,27 @@ export namespace Commands {
     export class MessageCommandBuilder {
         name: string;
         description: string;
+        ackMode: AckMode = "DeferredMessage";
 
         constructor(name: string, description: string) {
             this.name = name;
             this.description = description;
+        }
+
+        /**
+         * Set the ack mode of this command
+         * (if you're experienced with the discord api, this is the callback type to the interaction)
+         * 
+         * `DeferredMessage`: It will respond with a public deferred message.
+         * `Custom`: You handle the ack'ing of the interaction yourself, this allows you to
+         * use ephemeral responses and modals.
+         * 
+         * 
+         * Keep in mind when using custom, you have to ack the interaction within 3 seconds otherwise it will fail.
+         */
+        setAckMode(mode: AckMode) {
+            this.ackMode = mode;
+            return this;
         }
 
         build(cb: (ctx: ExecutedCommandContext, target: DiscordModels.Message) => any): Command {
@@ -546,6 +607,7 @@ export namespace Commands {
                 name: this.name,
                 kind: "Message",
                 description: this.description,
+                ackMode: this.ackMode,
                 cb: cb as any,
             }
         }

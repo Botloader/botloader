@@ -375,35 +375,35 @@ impl GuildHandler {
             DispatchEvent::GuildDelete(_) => {
                 unreachable!("this event should not be forwarded to the guild worker");
             }
-            DispatchEvent::InteractionCreate(interaction) => {
-                // potentially ack the command
-                // TODO: should this perhaps be done on the js side?
-                if let twilight_model::application::interaction::Interaction::ApplicationCommand(
-                    interaction,
-                ) = &interaction.0
-                {
-                    let interaction_client = self.discord_config.interaction_client();
-                    if let Err(err) = interaction_client
-                        .interaction_callback(
-                            interaction.id,
-                            &interaction.token,
-                            &InteractionResponse::DeferredChannelMessageWithSource(CallbackData {
-                                allowed_mentions: None,
-                                components: None,
-                                content: None,
-                                embeds: Default::default(),
-                                flags: None,
-                                tts: None,
-                            }),
-                        )
-                        .exec()
-                        .await
-                    {
-                        error!(%err, "failed sending interaction response");
-                    }
-                }
-                self.send_discord_guild_event(evt).await;
-            }
+            // DispatchEvent::InteractionCreate(interaction) => {
+            //     // potentially ack the command
+            //     // TODO: should this perhaps be done on the js side?
+            //     if let twilight_model::application::interaction::Interaction::ApplicationCommand(
+            //         interaction,
+            //     ) = &interaction.0
+            //     {
+            //         let interaction_client = self.discord_config.interaction_client();
+            //         if let Err(err) = interaction_client
+            //             .interaction_callback(
+            //                 interaction.id,
+            //                 &interaction.token,
+            //                 &InteractionResponse::DeferredChannelMessageWithSource(CallbackData {
+            //                     allowed_mentions: None,
+            //                     components: None,
+            //                     content: None,
+            //                     embeds: Default::default(),
+            //                     flags: None,
+            //                     tts: None,
+            //                 }),
+            //             )
+            //             .exec()
+            //             .await
+            //         {
+            //             error!(%err, "failed sending interaction response");
+            //         }
+            //     }
+            //     self.send_discord_guild_event(evt).await;
+            // }
             _ => {
                 self.send_discord_guild_event(evt).await;
             }
