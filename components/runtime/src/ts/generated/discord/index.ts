@@ -1,6 +1,8 @@
 // generated index file using gen-index.bash
 export * from './ActionRow'
 export * from './Attachment'
+export * from './AuditLogExtras'
+export * from './Ban'
 export * from './ButtonStyle'
 export * from './Button'
 export * from './CategoryChannel'

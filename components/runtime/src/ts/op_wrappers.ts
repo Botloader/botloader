@@ -246,4 +246,19 @@ export namespace OpWrappers {
         return await Deno.core.opAsync("op_botloader_bucket_storage_sorted_list", opts);
     }
 
+    export async function createBan(userId: string, extras: Internal.CreateBanFields): Promise<void> {
+        return await Deno.core.opAsync("discord_create_ban", userId, extras);
+    }
+
+    export async function getBan(userId: string): Promise<Discord.Ban> {
+        return Deno.core.opAsync("discord_get_ban", userId);
+    }
+
+    export async function getBans(): Promise<Discord.Ban[]> {
+        return Deno.core.opAsync("discord_get_bans");
+    }
+
+    export async function removeBan(userId: string, extras: Discord.AuditLogExtras): Promise<void> {
+        return await Deno.core.opAsync("discord_delete_ban", userId, extras);
+    }
 }

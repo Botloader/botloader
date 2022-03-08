@@ -1,5 +1,5 @@
 export * from './generated/discord/index';
-import { Guild, GuildChannel, Member, Message, Role, Embed, Component, ComponentType } from './generated/discord/index';
+import { Guild, GuildChannel, Member, Message, Role, Embed, Component, ComponentType, AuditLogExtras } from './generated/discord/index';
 import * as Internal from './generated/internal/index';
 import { OpWrappers } from './op_wrappers';
 
@@ -228,6 +228,29 @@ export async function addMemberRole(userId: string, roleId: string): Promise<voi
 
 export async function removeMemberRole(userId: string, roleId: string): Promise<void> {
     return await OpWrappers.removeMemberRole(userId, roleId);
+}
+
+
+
+// Guild bans
+export interface CreateBanExtras extends AuditLogExtras {
+    deleteMessageDays: number
+}
+
+export async function createBan(userId: string, extras?: CreateBanExtras): Promise<void> {
+    return OpWrappers.createBan(userId, extras ?? {});
+}
+
+export async function getBan(userID: string) {
+    return OpWrappers.getBan(userID);
+}
+
+export async function getBans() {
+    return OpWrappers.getBans();
+}
+
+export async function deleteBan(userId: string, extras?: AuditLogExtras): Promise<void> {
+    return OpWrappers.removeBan(userId, extras ?? {});
 }
 
 /**

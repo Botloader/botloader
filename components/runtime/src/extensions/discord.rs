@@ -1,11 +1,15 @@
 use anyhow::anyhow;
 use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
+use runtime_models::discord::guild::Ban;
 use runtime_models::discord::message::MessageFlags;
+use runtime_models::discord::util::AuditLogExtras;
 use runtime_models::internal::interactions::InteractionCallback;
 use runtime_models::internal::member::UpdateGuildMemberFields;
+use runtime_models::internal::misc_op::CreateBanFields;
 use std::str::FromStr;
 use std::{cell::RefCell, rc::Rc};
+use twilight_http::request::AuditLogReason;
 use twilight_model::id::marker::UserMarker;
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
@@ -83,6 +87,11 @@ pub fn extension() -> Extension {
                 "discord_interaction_delete_followup",
                 op_async(op_interaction_delete_followup),
             ),
+            // Bans
+            ("discord_create_ban", op_async(op_create_ban)),
+            ("discord_get_ban", op_async(op_get_ban)),
+            ("discord_get_bans", op_async(op_get_bans)),
+            ("discord_delete_ban", op_async(op_remove_ban)),
         ])
         .build()
 }
@@ -611,4 +620,96 @@ pub async fn discord_update_member(
 
     let ret = builder.exec().await?.model().await?;
     Ok(ret.into())
+}
+
+pub async fn op_create_ban(
+    state: Rc<RefCell<OpState>>,
+    user_id: Id<UserMarker>,
+    extras: CreateBanFields,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let mut req = rt_ctx
+        .discord_config
+        .client
+        .create_ban(rt_ctx.guild_id, user_id);
+
+    if let Some(days) = extras.delete_message_days {
+        req = req.delete_message_days(days.into())?;
+    }
+
+    if let Some(reason) = &extras.audit_log_reason {
+        req = req.reason(reason)?;
+    }
+
+    req.exec().await?;
+
+    Ok(())
+}
+
+pub async fn op_get_ban(
+    state: Rc<RefCell<OpState>>,
+    user_id: Id<UserMarker>,
+    _: (),
+) -> Result<Ban, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let result = rt_ctx
+        .discord_config
+        .client
+        .ban(rt_ctx.guild_id, user_id)
+        .exec()
+        .await?
+        .model()
+        .await?;
+
+    Ok(result.into())
+}
+
+pub async fn op_get_bans(state: Rc<RefCell<OpState>>, _: (), _: ()) -> Result<Vec<Ban>, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let result = rt_ctx
+        .discord_config
+        .client
+        .bans(rt_ctx.guild_id)
+        .exec()
+        .await?
+        .model()
+        .await?;
+
+    Ok(result.into_iter().map(Into::into).collect())
+}
+
+pub async fn op_remove_ban(
+    state: Rc<RefCell<OpState>>,
+    user_id: Id<UserMarker>,
+    extras: AuditLogExtras,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let mut req = rt_ctx
+        .discord_config
+        .client
+        .delete_ban(rt_ctx.guild_id, user_id);
+
+    if let Some(reason) = &extras.audit_log_reason {
+        req = req.reason(reason)?;
+    }
+
+    req.exec().await?;
+
+    Ok(())
 }
