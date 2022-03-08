@@ -67,6 +67,7 @@ pub fn extension() -> Extension {
             ("discord_create_invite", op_sync(dummy_op)),
             ("discord_delete_invite", op_sync(dummy_op)),
             // members
+            ("discord_remove_member", op_async(op_remove_member)),
             ("discord_get_members", op_async(op_get_members)),
             ("discord_update_member", op_async(discord_update_member)),
             ("discord_add_member_role", op_async(discord_add_member_role)),
@@ -704,6 +705,30 @@ pub async fn op_remove_ban(
         .discord_config
         .client
         .delete_ban(rt_ctx.guild_id, user_id);
+
+    if let Some(reason) = &extras.audit_log_reason {
+        req = req.reason(reason)?;
+    }
+
+    req.exec().await?;
+
+    Ok(())
+}
+
+pub async fn op_remove_member(
+    state: Rc<RefCell<OpState>>,
+    user_id: Id<UserMarker>,
+    extras: AuditLogExtras,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let mut req = rt_ctx
+        .discord_config
+        .client
+        .remove_guild_member(rt_ctx.guild_id, user_id);
 
     if let Some(reason) = &extras.audit_log_reason {
         req = req.reason(reason)?;

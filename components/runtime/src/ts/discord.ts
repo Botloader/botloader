@@ -230,6 +230,9 @@ export async function removeMemberRole(userId: string, roleId: string): Promise<
     return await OpWrappers.removeMemberRole(userId, roleId);
 }
 
+export async function removeMember(userId: string, extras?: AuditLogExtras) {
+    return OpWrappers.removeMember(userId, extras ?? {});
+}
 
 
 // Guild bans

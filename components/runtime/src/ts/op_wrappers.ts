@@ -178,6 +178,7 @@ export namespace OpWrappers {
         );
     }
 
+    // Members
     export async function getMembers(ids: string[]): Promise<(Discord.Member | null)[]> {
         return await Deno.core.opAsync(
             "discord_get_members",
@@ -207,6 +208,9 @@ export namespace OpWrappers {
             userId,
             roleId,
         );
+    }
+    export async function removeMember(userId: string, extras: Discord.AuditLogExtras) {
+        return await Deno.core.opAsync("discord_remove_member", userId, extras);
     }
 
     // Storage
@@ -246,6 +250,7 @@ export namespace OpWrappers {
         return await Deno.core.opAsync("op_botloader_bucket_storage_sorted_list", opts);
     }
 
+    // Bans
     export async function createBan(userId: string, extras: Internal.CreateBanFields): Promise<void> {
         return await Deno.core.opAsync("discord_create_ban", userId, extras);
     }
