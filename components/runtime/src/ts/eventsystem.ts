@@ -1,11 +1,17 @@
+import { Commands } from './commands';
 import { ComponentInteraction, Interaction, SelectMenuInteraction } from './discord';
 import { Internal } from './generated';
 import * as Discord from './generated/discord/index';
 
 export namespace EventSystem {
 
-    let buttonComponentListeners: { name: string, cb: (data: ComponentInteraction, extra: any) => any }[] = [];
-    let selectMenuListeners: { name: string, cb: (data: SelectMenuInteraction, extra: any) => any }[] = [];
+    const buttonComponentListeners: { name: string, cb: (data: ComponentInteraction, extra: any) => any }[] = [];
+    const selectMenuListeners: { name: string, cb: (data: SelectMenuInteraction, extra: any) => any }[] = [];
+
+    /**
+     * @internal
+     */
+    export const commandSystem = new Commands.System();
 
     const eventMuxers: Muxer[] = [];
 
@@ -22,6 +28,8 @@ export namespace EventSystem {
     export function dispatchEvent(evt: DispatchEvent) {
         if (evt.name === "BOTLOADER_COMPONENT_INTERACTION_CREATE") {
             handleComponentInteraction(evt.data);
+        } else if (evt.name === "BOTLOADER_COMMAND_INTERACTION_CREATE") {
+            commandSystem.handleInteractionCreate(evt.data)
         } else {
             for (let muxer of eventMuxers) {
                 muxer.handleEvent(evt)

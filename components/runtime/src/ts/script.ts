@@ -22,6 +22,7 @@ export class Script {
     private intervalTimers: IntervalTimerListener[] = [];
     private storageBuckets: Storage.Bucket<unknown>[] = [];
     private taskHandlerNames: string[] = [];
+    private commands: Commands.Command[] = [];
 
     private runCalled = false;
 
@@ -40,7 +41,8 @@ export class Script {
      * for more info on defining the commands themselves
      */
     createCommand(command: Commands.Command) {
-        this.commandSystem.commands.push(command);
+        this.commands.push(command);
+        EventSystem.commandSystem.commands.push(command);
     }
 
     /**
@@ -177,7 +179,7 @@ export class Script {
 
         this.runCalled = true;
 
-        const [cmds, groups] = this.commandSystem.genOpBinding();
+        const [cmds, groups] = this.genCommandsBinding();
 
         OpWrappers.scriptStarted({
             description: this.description,
@@ -188,7 +190,6 @@ export class Script {
             taskNames: this.taskHandlerNames,
         });
 
-        this.commandSystem.addEventListeners(this.events);
         EventSystem.registerEventMuxer(this.events);
 
         this.events.on("BOTLOADER_INTERVAL_TIMER_FIRED", this.handleIntervalEvent.bind(this));
@@ -199,6 +200,72 @@ export class Script {
         if (timer) {
             await timer.callback();
         }
+    }
+
+    /**
+     * @internal
+     */
+    genCommandsBinding(): [Internal.Command[], Internal.CommandGroup[]] {
+
+        const commands: Internal.Command[] = this.commands.map(cmd => {
+            const options: Internal.CommandOption[] = [];
+            for (let prop in cmd.options) {
+                if (Object.prototype.hasOwnProperty.call(cmd.options, prop)) {
+                    let entry = cmd.options[prop];
+                    options.push({
+                        name: prop,
+                        description: entry.description,
+                        kind: entry.kind,
+                        required: entry.required || false,
+                        extraOptions: entry.extraOptions,
+                    })
+                }
+            }
+
+            let group = undefined;
+            let subGroup = undefined;
+            if (cmd.group) {
+                if (cmd.group.parent) {
+                    group = cmd.group.parent.name;
+                    subGroup = cmd.group.name;
+                } else {
+                    group = cmd.group.name;
+                }
+            }
+
+            return {
+                name: cmd.name,
+                description: cmd.description,
+                options: options,
+                group,
+                subGroup,
+            }
+        });
+
+        const groups: Internal.CommandGroup[] = [];
+
+        OUTER:
+        for (let cmd of this.commands) {
+            if (cmd.group) {
+                if (groups.some(g => g.name === cmd.group?.name)) {
+                    continue OUTER;
+                }
+
+                // new group
+                groups.push({
+                    name: cmd.group.name,
+                    description: cmd.group.description,
+                    subGroups: cmd.group.subGroups.map(sg => {
+                        return {
+                            name: sg.name,
+                            description: sg.description
+                        }
+                    })
+                })
+            }
+        }
+
+        return [commands, groups];
     }
 }
 

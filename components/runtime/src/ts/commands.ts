@@ -1,5 +1,4 @@
 import { DiscordModels, Internal } from "./generated";
-import { EventSystem } from "./eventsystem";
 import { Interaction } from "./discord";
 
 /**
@@ -11,13 +10,6 @@ import { Interaction } from "./discord";
 export namespace Commands {
     export class System {
         commands: Command[] = [];
-
-        /**
-         * @internal
-         */
-        addEventListeners(muxer: EventSystem.Muxer) {
-            muxer.on("BOTLOADER_COMMAND_INTERACTION_CREATE", this.handleInteractionCreate.bind(this));
-        }
 
         /**
          * @internal
@@ -93,72 +85,6 @@ export namespace Commands {
                 default:
                     return opt.value;
             }
-        }
-
-        /**
-         * @internal
-         */
-        genOpBinding(): [Internal.Command[], Internal.CommandGroup[]] {
-
-            const commands: Internal.Command[] = this.commands.map(cmd => {
-                const options: Internal.CommandOption[] = [];
-                for (let prop in cmd.options) {
-                    if (Object.prototype.hasOwnProperty.call(cmd.options, prop)) {
-                        let entry = cmd.options[prop];
-                        options.push({
-                            name: prop,
-                            description: entry.description,
-                            kind: entry.kind,
-                            required: entry.required || false,
-                            extraOptions: entry.extraOptions,
-                        })
-                    }
-                }
-
-                let group = undefined;
-                let subGroup = undefined;
-                if (cmd.group) {
-                    if (cmd.group.parent) {
-                        group = cmd.group.parent.name;
-                        subGroup = cmd.group.name;
-                    } else {
-                        group = cmd.group.name;
-                    }
-                }
-
-                return {
-                    name: cmd.name,
-                    description: cmd.description,
-                    options: options,
-                    group,
-                    subGroup,
-                }
-            });
-
-            const groups: Internal.CommandGroup[] = [];
-
-            OUTER:
-            for (let cmd of this.commands) {
-                if (cmd.group) {
-                    if (groups.some(g => g.name === cmd.group?.name)) {
-                        continue OUTER;
-                    }
-
-                    // new group
-                    groups.push({
-                        name: cmd.group.name,
-                        description: cmd.group.description,
-                        subGroups: cmd.group.subGroups.map(sg => {
-                            return {
-                                name: sg.name,
-                                description: sg.description
-                            }
-                        })
-                    })
-                }
-            }
-
-            return [commands, groups];
         }
     }
 
