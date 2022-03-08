@@ -42,7 +42,7 @@ export class Script {
      */
     createCommand(command: Commands.Command) {
         this.commands.push(command);
-        EventSystem.commandSystem.commands.push(command);
+        EventSystem.commandSystem.addCommand(command);
     }
 
     /**

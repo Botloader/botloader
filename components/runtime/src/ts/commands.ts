@@ -8,14 +8,27 @@ import { Interaction } from "./discord";
  * See the 3 builders: {@link Commands.slashCommand}, {@link Commands.userCommand} and {@link Commands.messageCommand}.
  */
 export namespace Commands {
+
+    /**
+     * @internal
+     */
     export class System {
+
         commands: Command[] = [];
+
+        addCommand(cmd: Command) {
+            if (this.commands.find(v => matchesCommand(cmd, v.name, v.group?.name, v.group?.parent?.name))) {
+                throw new Error(`Duplicate commands registered! Cmd: ${cmd.name}, parent: ${cmd.group?.name}, parent of parent: ${cmd.group?.parent?.name}`)
+            }
+
+            this.commands.push(cmd);
+        }
 
         /**
          * @internal
          */
         async handleInteractionCreate(interaction: Internal.CommandInteraction) {
-            let command = this.commands.find(cmd => matchesCommand(cmd, interaction));
+            let command = this.commands.find(cmd => matchesCommand(cmd, interaction.name, interaction.parentName, interaction.parentParentName));
             if (!command) {
                 return;
             }
@@ -88,20 +101,22 @@ export namespace Commands {
         }
     }
 
-    function matchesCommand(cmd: Command, interaction: Internal.CommandInteraction) {
-        if (interaction.parentParentName) {
+    function matchesCommand(cmd: Command, name: string, parentName?: string | null, parentParentName?: string | null) {
+        if (parentParentName) {
             if (cmd.group && cmd.group.parent) {
-                return cmd.name === interaction.name && cmd.group.name === interaction.parentName && cmd.group.parent.name === interaction.parentParentName;
+                return cmd.name === name && cmd.group.name === parentName && cmd.group.parent.name === parentParentName;
             }
-        } else if (interaction.parentName) {
+        } else if (parentName) {
             if (cmd.group && !cmd.group.parent) {
-                return cmd.name === interaction.name && cmd.group.name === interaction.parentName;
+                return cmd.name === name && cmd.group.name === parentName;
             }
         } else {
             if (!cmd.group) {
-                return cmd.name === interaction.name;
+                return cmd.name === name;
             }
         }
+
+        return false
     }
 
     /**
