@@ -188,13 +188,20 @@ pub fn to_twilight_commands(
         .filter(|c| c.group.is_none())
         .map(|cmd| TwilightCommand {
             name: cmd.name.clone(),
-            description: cmd.description.clone(),
+            description: if matches!(
+                cmd.kind,
+                runtime_models::internal::command_interaction::CommandType::Chat
+            ) {
+                cmd.description.clone()
+            } else {
+                String::new()
+            },
             application_id: None,
             options: cmd.options.iter().map(|opt| opt.clone().into()).collect(),
-            guild_id: Some(guild_id),
+            guild_id: None,
             default_permission: None,
             id: None,
-            kind: TwilightCommandType::ChatInput,
+            kind: cmd.kind.into(),
             version: Id::new(1),
         })
         .collect::<Vec<_>>();

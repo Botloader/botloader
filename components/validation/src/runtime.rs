@@ -1,13 +1,24 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use runtime_models::internal::script::{Command, CommandGroup, CommandOption, CommandSubGroup};
+use runtime_models::internal::{
+    command_interaction::CommandType,
+    script::{Command, CommandGroup, CommandOption, CommandSubGroup},
+};
 
 use crate::{ValidationContext, Validator};
 
 impl Validator for Command {
     fn validate(&self, ctx: &mut ValidationContext) {
         check_name_field(ctx, "name", &self.name);
-        check_description_field(ctx, "description", &self.description);
+
+        if matches!(self.kind, CommandType::Chat) {
+            check_description_field(ctx, "description", &self.description);
+        } else if !self.description.is_empty() {
+            ctx.push_error(
+                "description",
+                "description has to be empty for user and message commands".to_string(),
+            );
+        }
 
         if let Some(group) = &self.group {
             check_name_field(ctx, "group", group);

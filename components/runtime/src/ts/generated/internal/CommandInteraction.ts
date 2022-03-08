@@ -1,5 +1,6 @@
 import type { CommandInteractionDataMap } from "./CommandInteractionDataMaps";
 import type { CommandInteractionOption } from "./CommandInteractionOption";
+import type { CommandType } from "./CommandType";
 import type { Member } from "../discord/Member";
 
 export interface CommandInteraction {
@@ -12,4 +13,6 @@ export interface CommandInteraction {
   parentParentName: string | null;
   options: Array<CommandInteractionOption>;
   dataMap: CommandInteractionDataMap;
+  kind: CommandType;
+  targetId: string | null;
 }

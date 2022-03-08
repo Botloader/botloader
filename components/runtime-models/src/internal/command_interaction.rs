@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::application::interaction::{
     application_command::{CommandDataOption, CommandInteractionDataResolved, CommandOptionValue},
@@ -30,6 +30,9 @@ pub struct CommandInteraction {
 
     pub options: Vec<CommandInteractionOption>,
     pub data_map: CommandInteractionDataMap,
+
+    pub kind: CommandType,
+    pub target_id: Option<String>,
 }
 
 impl From<ApplicationCommand> for CommandInteraction {
@@ -81,6 +84,9 @@ impl From<ApplicationCommand> for CommandInteraction {
             member: Member::from_partial(cmd.member.unwrap()),
             token: cmd.token,
             data_map: cmd.data.resolved.map(Into::into).unwrap_or_default(),
+
+            kind: cmd.data.kind.into(),
+            target_id: cmd.data.target_id.as_ref().map(ToString::to_string),
         }
     }
 }
@@ -190,6 +196,35 @@ impl From<CommandOptionValue> for CommandInteractionOptionValue {
             CommandOptionValue::Attachment(_) => Self::String {
                 value: "TODO".to_string(),
             },
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/CommandType.ts")]
+pub enum CommandType {
+    Chat,
+    User,
+    Message,
+}
+
+impl From<twilight_model::application::command::CommandType> for CommandType {
+    fn from(v: twilight_model::application::command::CommandType) -> Self {
+        match v {
+            twilight_model::application::command::CommandType::ChatInput => Self::Chat,
+            twilight_model::application::command::CommandType::User => Self::User,
+            twilight_model::application::command::CommandType::Message => Self::Message,
+        }
+    }
+}
+
+impl From<CommandType> for twilight_model::application::command::CommandType {
+    fn from(v: CommandType) -> Self {
+        match v {
+            CommandType::Chat => Self::ChatInput,
+            CommandType::User => Self::User,
+            CommandType::Message => Self::Message,
         }
     }
 }

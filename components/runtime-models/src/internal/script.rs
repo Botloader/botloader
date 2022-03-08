@@ -4,6 +4,8 @@ use twilight_model::application::command::NumberCommandOptionData;
 
 use crate::{discord::channel::ChannelType, util::NotBigU64};
 
+use super::command_interaction::CommandType;
+
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +71,8 @@ pub struct Command {
     #[serde(default)]
     #[ts(optional)]
     pub sub_group: Option<String>,
+
+    pub kind: CommandType,
 }
 
 impl From<Command> for twilight_model::application::command::CommandOption {

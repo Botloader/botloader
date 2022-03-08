@@ -237,6 +237,7 @@ export class Script {
                 name: cmd.name,
                 description: cmd.description,
                 options: options,
+                kind: cmd.kind,
                 group,
                 subGroup,
             }

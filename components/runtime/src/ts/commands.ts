@@ -38,12 +38,35 @@ export namespace Commands {
                 await ctx.ackWithDeferredMessage();
             }
 
-            let optionsMap: Record<string, any> = {};
-            for (let opt of interaction.options) {
-                optionsMap[opt.name] = this.resolveOption(interaction.dataMap, opt.value);
-            }
+            if (interaction.kind === "Chat") {
+                let optionsMap: Record<string, any> = {};
+                for (let opt of interaction.options) {
+                    optionsMap[opt.name] = this.resolveOption(interaction.dataMap, opt.value);
+                }
 
-            await command.cb(ctx, optionsMap)
+                await command.cb(ctx, optionsMap)
+            } else if (interaction.kind === "Message") {
+                if (interaction.targetId) {
+                    let message = interaction.dataMap.messages[interaction.targetId];
+                    await command.cb(ctx, message)
+                } else {
+                    throw new Error("message not found in datamap")
+                }
+            } else if (interaction.kind === "User") {
+                if (interaction.targetId) {
+                    let member = interaction.dataMap.members[interaction.targetId];
+                    let user = interaction.dataMap.users[interaction.targetId]
+                    let args: InteractionUser = {
+                        user,
+                        member,
+                    };
+                    await command.cb(ctx, args)
+                } else {
+                    throw new Error("member not found in datamap")
+                }
+            } else {
+                throw new Error("Unknown command type")
+            }
         }
 
         private resolveOption(map: Internal.CommandInteractionDataMap, opt: Internal.CommandInteractionOptionValue): unknown {
@@ -190,7 +213,7 @@ export namespace Commands {
     export interface Command {
         name: string;
         description: string;
-        kind: "Chat" | "User" | "Message",
+        kind: Internal.CommandType,
         group?: Group,
         options?: OptionMap;
         ackMode: AckMode,
@@ -525,17 +548,15 @@ export namespace Commands {
      * @param description 1-100 characters
      */
     export function userCommand(name: string, description: string) {
-        return new UserCommandBuilder(name, description);
+        return new UserCommandBuilder(name);
     }
 
     export class UserCommandBuilder {
         name: string;
-        description: string;
         ackMode: AckMode = "DeferredMessage";
 
-        constructor(name: string, description: string) {
+        constructor(name: string) {
             this.name = name;
-            this.description = description;
         }
 
         /**
@@ -558,7 +579,7 @@ export namespace Commands {
             return {
                 name: this.name,
                 kind: "User",
-                description: this.description,
+                description: "",
                 ackMode: this.ackMode,
                 cb: cb as any,
             }
@@ -572,18 +593,16 @@ export namespace Commands {
      * @param name 1-32 characters (no symbols except - and _)
      * @param description 1-100 characters
      */
-    export function messageCommand(name: string, description: string) {
-        return new MessageCommandBuilder(name, description);
+    export function messageCommand(name: string) {
+        return new MessageCommandBuilder(name);
     }
 
     export class MessageCommandBuilder {
         name: string;
-        description: string;
         ackMode: AckMode = "DeferredMessage";
 
-        constructor(name: string, description: string) {
+        constructor(name: string) {
             this.name = name;
-            this.description = description;
         }
 
         /**
@@ -606,7 +625,7 @@ export namespace Commands {
             return {
                 name: this.name,
                 kind: "Message",
-                description: this.description,
+                description: "",
                 ackMode: this.ackMode,
                 cb: cb as any,
             }
