@@ -5,29 +5,15 @@ import { useSession } from "../components/Session";
 import './GuildPage.css'
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { BuildConfig } from "../BuildConfig";
-import { GuildSideNav } from "../components/GuildSideNav";
 import { Route, Switch } from "react-router-dom";
 import { Panel } from "../components/Panel";
+import { SideNav, SideNavItemMap } from "../components/SideNav";
 
 export function GuildPage() {
     let guild = useCurrentGuild();
     if (guild) {
         if (guild.connected) {
-            return <div className="guild-page">
-                <GuildSideNav guild={guild}></GuildSideNav>
-                <div className="guild-wrapper page-wrapper">
-                    <Switch>
-                        <Route path={`/servers/${guild.guild.id}/`} exact>
-                            <GuildHome guild={guild} />
-                        </Route>
-                        <Route path={`/servers/${guild.guild.id}/scripts`}>
-                            <GuildScripts guild={guild} />
-                        </Route>
-                        <Route path={`/servers/${guild.guild.id}/settings`}>
-                            <GuildSettings guild={guild} />
-                        </Route>
-                    </Switch>
-                </div></div>
+            return <GuildLoadedPage guild={guild}></GuildLoadedPage>
         } else {
             return <div className="page-wrapper">
                 <InviteGuildPage guild={guild} />
@@ -40,6 +26,7 @@ export function GuildPage() {
     }
 }
 
+
 function InviteGuildPage(props: { guild: BotGuild }) {
     return <a href={`https://discord.com/api/oauth2/authorize?client_id=${BuildConfig.botloaderClientId}&permissions=532844244928&scope=bot%20applications.commands&guild_id=${props.guild.guild.id}`} className="add-to-server" target="_blank" rel="noreferrer">Click here to add to server!</a>;
 }
@@ -47,6 +34,56 @@ function InviteGuildPage(props: { guild: BotGuild }) {
 function NoGuildPage() {
     return <p>That's and unknown guild m8</p>
 }
+
+function GuildLoadedPage(props: { guild: BotGuild }) {
+    const navItems = {
+        "home": {
+            label: "Home",
+            isNavLink: true,
+            exact: true,
+            path: `/servers/${props.guild.guild.id}/`,
+        },
+        "scripts": {
+            label: "Scripts",
+            isNavLink: true,
+            exact: true,
+            path: `/servers/${props.guild.guild.id}/scripts`,
+        },
+        "settings": {
+            label: "Settings",
+            isNavLink: true,
+            exact: true,
+            path: `/servers/${props.guild.guild.id}/settings`,
+        },
+    }
+
+    return <div className="guild-page">
+        <Switch>
+            <Route path={`/servers/${props.guild.guild.id}/`} exact>
+                <SideNav items={navItems} activePage={"home"}></SideNav>
+                {/* <GuildSideNav guild={guild} activePage="home" ></GuildSideNav> */}
+                <div className="guild-wrapper page-wrapper">
+                    <GuildHome guild={props.guild} />
+                </div>
+            </Route>
+            <Route path={`/servers/${props.guild.guild.id}/scripts`}>
+                <SideNav items={navItems} activePage={"scripts"}></SideNav>
+                {/* <GuildSideNav guild={guild} activePage="scripts" ></GuildSideNav> */}
+                <div className="guild-wrapper page-wrapper">
+                    <GuildScripts guild={props.guild} />
+                </div>
+            </Route>
+            <Route path={`/servers/${props.guild.guild.id}/settings`}>
+                <SideNav items={navItems} activePage={"settings"}></SideNav>
+                {/* <GuildSideNav guild={guild} activePage="settings" ></GuildSideNav> */}
+                <div className="guild-wrapper page-wrapper">
+                    <GuildSettings guild={props.guild} />
+                </div>
+            </Route>
+        </Switch>
+    </div>
+}
+
 
 function GuildHome(props: { guild: BotGuild }) {
     return <Panel>

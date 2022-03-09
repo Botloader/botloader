@@ -1,4 +1,4 @@
-.guild-nav {
+.side-nav {
     background-color: var(--nav-bg-color);
     display: flex;
     flex-direction: column;
@@ -8,7 +8,7 @@
     width: 150px;
 }
 
-.guild-nav ul {
+.side-nav ul {
     display: flex;
     flex-direction: column;
     /* text-decoration: none; */
@@ -19,17 +19,17 @@
     align-items: stretch;
 }
 
-.guild-nav ul li {
+.side-nav ul li {
     /* padding: 10px; */
     display: flex;
     flex-direction: column;
     align-items: stretch;
 }
 
-.guild-nav ul a {
+.side-nav ul a {
     padding: 10px;
 }
 
-.guild-nav ul a.active {
+.side-nav ul a.active {
     background: rgba(0, 0, 0, 0.5);
 }
