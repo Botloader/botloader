@@ -89,6 +89,12 @@ a {
   border-radius: 4px;
   background-color: var(--primary-color);
   cursor: pointer;
+  margin: 5px 5px;
+}
+
+.bl-button:disabled {
+  background-color: black;
+  cursor: not-allowed;
 }
 
 .bl-button.danger {

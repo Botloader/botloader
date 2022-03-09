@@ -1,0 +1,46 @@
+.scripting-ide {
+    position: absolute;
+    width: 100%;
+    top: 55px;
+    bottom: 0px;
+
+    display: flex;
+}
+
+.scripting-panel {
+    flex-grow: 1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.scripting-editor {
+    background-color: red;
+    overflow: hidden;
+}
+
+.scripting-console {
+    display: flex;
+    padding: 5px;
+    /* background-color: blue; */
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0.212);
+}
+
+.scripting-actions {
+    margin-left: 10px;
+    margin-right: 10px;
+
+    /* background-color: orange; */
+    border-bottom: 1px solid var(--primary-color);
+}
+
+.actions-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.actions-row p {
+    margin-right: 10px;
+}

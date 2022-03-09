@@ -5,9 +5,10 @@ import { useSession } from "../components/Session";
 import './GuildPage.css'
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { BuildConfig } from "../BuildConfig";
-import { Route, Switch } from "react-router-dom";
+import { Link, Route, Switch, useParams } from "react-router-dom";
 import { Panel } from "../components/Panel";
-import { SideNav, SideNavItemMap } from "../components/SideNav";
+import { SideNav } from "../components/SideNav";
+import { EditScriptPage } from "./EditScript";
 
 export function GuildPage() {
     let guild = useCurrentGuild();
@@ -66,6 +67,10 @@ function GuildLoadedPage(props: { guild: BotGuild }) {
                     <GuildHome guild={props.guild} />
                 </div>
             </Route>
+            <Route path={`/servers/${props.guild.guild.id}/scripts/:scriptId/edit`}>
+                {/* <GuildSideNav guild={guild} activePage="settings" ></GuildSideNav> */}
+                <EditScript guild={props.guild}></EditScript>
+            </Route>
             <Route path={`/servers/${props.guild.guild.id}/scripts`}>
                 <SideNav items={navItems} activePage={"scripts"}></SideNav>
                 {/* <GuildSideNav guild={guild} activePage="scripts" ></GuildSideNav> */}
@@ -82,6 +87,13 @@ function GuildLoadedPage(props: { guild: BotGuild }) {
             </Route>
         </Switch>
     </div>
+}
+
+function EditScript(props: { guild: BotGuild }) {
+    let params: { scriptId: string } = useParams();
+    console.log(params);
+
+    return <EditScriptPage guild={props.guild} scriptId={parseInt(params.scriptId)}></EditScriptPage>
 }
 
 
@@ -183,6 +195,7 @@ function GuildScripts(props: { guild: BotGuild }) {
                         :
                         <AsyncOpButton className="primary" label="enable" onClick={() => toggleScript(script.id, true)}></AsyncOpButton>
                     }
+                    <Link to={`/servers/${props.guild.guild.id}/scripts/${script.id}/edit`} className="bl-button">Edit</Link>
                 </div>)}
             </div> : scripts === null ? <p>Failed loading scripts</p>
                 : <p>Loading...</p>
