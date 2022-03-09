@@ -29,16 +29,16 @@ export function SideNav<T extends SideNavItemMap>(props: { items: T, activePage?
 
     return <nav className="side-nav">
         <ul className="side-nav-main">
-            {keys.map(k => <li><Item item={props.items[k as keyof T]} expanded={props.activePage === k} name={k}></Item></li>)}
+            {keys.map(k => <li key={k}><Item item={props.items[k as keyof T]} expanded={props.activePage === k} itemName={k}></Item></li>)}
         </ul>
     </nav >
 }
 
-function Item(props: { name: string, item: SideNavItem, expanded: boolean }) {
+function Item(props: { itemName: string, item: SideNavItem, expanded: boolean }) {
     let footer = null;
     if (props.expanded && props.item.children) {
         footer = <ul className="side-nav-sub">
-            {props.item.children.map(v => <li><Item item={v} expanded={false} name=""></Item></li>)}
+            {props.item.children.map(v => <li key={v.path}><Item item={v} expanded={false} itemName=""></Item></li>)}
         </ul>;
     }
 
