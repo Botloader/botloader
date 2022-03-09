@@ -75,8 +75,10 @@ a {
   color: white;
 }
 
-button,
-.button {
+.bl-button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   text-decoration: none;
   background: none;
   color: white;
@@ -89,8 +91,7 @@ button,
   cursor: pointer;
 }
 
-button.danger,
-.button.danger {
+.bl-button.danger {
   background-color: var(--danger-color);
 }
 

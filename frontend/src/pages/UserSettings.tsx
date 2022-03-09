@@ -113,7 +113,7 @@ function CreateApiKeyComponent(props: CreateApiTokenProps) {
 
     return <>
         <p>WARNING: This will display the key on screen, anyone with the key can log into your account</p>
-        <button onClick={() => doCreateApiToken()}>Create a new API token</button>
+        <button className="bl-button" onClick={() => doCreateApiToken()}>Create a new API token</button>
         {status.success ?
             <p>Success!: token: <code>{status.success.token}</code></p> : null}
 

@@ -16,5 +16,5 @@ export function AsyncOpButton(props: Props) {
         setStatus(false);
     }
 
-    return <button disabled={status} onClick={() => doOp()} className={props.className}>{props.label}</button>
+    return <button disabled={status} onClick={() => doOp()} className={(props.className ?? "") + " bl-button"}>{props.label}</button>
 }
