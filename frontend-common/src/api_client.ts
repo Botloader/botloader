@@ -132,7 +132,7 @@ export class ApiClient {
     }
 
     async getGuildMetaConfig(guildId: string): Promise<ApiResult<GuildMetaConfig>> {
-        return await this.post(`/api/guilds/${guildId}/settings`);
+        return await this.get(`/api/guilds/${guildId}/settings`);
     }
 }
 
