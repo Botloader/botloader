@@ -6,6 +6,7 @@ import Editor, { useMonaco } from "@monaco-editor/react";
 import untar from "js-untar";
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { GuildMessage, GuildMessages } from "../misc/GuildMessages";
+import { WebsocketSession } from "../misc/WebsocketController";
 
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     const [script, setScript] = useState<Script | undefined | null>(undefined);
@@ -262,6 +263,8 @@ function GuildConsole(props: { guild: BotGuild }) {
     useEffect(() => {
         let messages = GuildMessages.getGuildMessages(props.guild.guild.id);
         setMessages(messages);
+
+        WebsocketSession.subscribeGuild(props.guild.guild.id);
     }, [props.guild.guild.id])
 
     useEffect(() => {

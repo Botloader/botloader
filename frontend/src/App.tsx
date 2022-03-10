@@ -17,6 +17,7 @@ import { GuildPage } from './pages/GuildPage';
 import loaderScreenshot from './img/loaderscreenshot.png';
 import { TosPage } from './pages/TOS';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicy';
+import './misc/WebsocketController';
 
 function App() {
   return (
