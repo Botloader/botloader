@@ -27,6 +27,9 @@
     background-color: rgba(0, 0, 0, 0.212);
     align-items: stretch;
     flex-direction: column;
+
+    max-height: 100%;
+    overflow-y: auto;
 }
 
 .scripting-actions {

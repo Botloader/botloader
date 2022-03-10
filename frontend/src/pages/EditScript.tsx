@@ -259,6 +259,8 @@ interface File {
 function GuildConsole(props: { guild: BotGuild }) {
     const [messages, setMessages] = useState<GuildMessage[]>([])
     const listenerId = useRef<undefined | number>(undefined);
+    const bottom = useRef<HTMLLIElement>(null);
+
 
     useEffect(() => {
         let messages = GuildMessages.getGuildMessages(props.guild.guild.id);
@@ -277,6 +279,12 @@ function GuildConsole(props: { guild: BotGuild }) {
         }
     })
 
+    useEffect(() => {
+        if (bottom.current) {
+            bottom.current.scrollIntoView({ behavior: 'auto' })
+        }
+    })
+
     function onNewMessage(message: GuildMessage) {
         let newMessages = [
             ...messages,
@@ -289,6 +297,7 @@ function GuildConsole(props: { guild: BotGuild }) {
         {messages.map(v =>
             <li key={v.id} className="guild-console-message"><span className="guild-console-message-source">{v.source}:</span>{v.message}</li>
         )}
+        <li ref={bottom}></li>
     </ul>
 
 }
