@@ -10,21 +10,30 @@ import { WebsocketSession } from "../misc/WebsocketController";
 
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     const [script, setScript] = useState<Script | undefined | null>(undefined);
+    const [scripts, setScripts] = useState<Script[] | undefined | null>(undefined);
     const [typings, setTypings] = useState<File[] | undefined | null>(undefined);
     const [hasSetTypings, setHasSetTypings] = useState(false);
     const monaco = useMonaco();
     const session = useSession();
 
-    async function loadScript() {
+    async function load() {
+        await loadScripts()
+        await loadTypings();
+    }
+
+    async function loadScripts() {
         let resp = await session.apiClient.getAllScripts(props.guild.guild.id);
         if (isErrorResponse(resp)) {
             setScript(null);
+            setScripts(null);
         } else {
             let s = resp.find(v => v.id === props.scriptId);
+            setScripts(resp);
             if (s) {
                 setScript(s)
             } else {
                 setScript(null);
+                setScripts(null);
             }
         }
     }
@@ -35,26 +44,31 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     }
 
     useEffect(() => {
-        loadScript();
-        loadTypings();
+        load()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props, session])
-
 
     useEffect(() => {
         if (typings && monaco) {
             monaco.languages.typescript.typescriptDefaults.setExtraLibs(
-                typings.filter(v => v.type === "0")
-                    .map(v => {
-                        console.log(v.name);
-                        return {
-                            content: v.readAsString(),
-                            filePath: "file:///" + v.name,
-                        }
-                    })
+                [
+                    ...typings.filter(v => v.type === "0")
+                        .map(v => {
+                            // console.log(v.name);
+                            return {
+                                content: v.readAsString(),
+                                filePath: "file:///" + v.name,
+                            }
+                        }),
+                    ...(scripts?.filter(v => v.id !== script?.id)
+                        .map(v => {
+                            return {
+                                content: v.original_source,
+                                filePath: "file:///" + v.name + ".ts"
+                            }
+                        }) ?? [])
+                ]
             )
-
-            monaco.languages.typescript.typescriptDefaults.addExtraLib("declare global { export interface Jonas { someString: string } }", "file:///hmmstdbe.d.ts")
 
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
                 // typeRoots: ["typings/"],
@@ -89,16 +103,14 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
             setHasSetTypings(true);
             console.log("set extra libs!");
         }
-        // do conditional chaining
-        // monaco?.languages.typescript.javascriptDefaults.setEagerModelSync(true);
-        // // or make sure that it exists by other ways
-        // if (monaco) {
-        //     console.log("here is the monaco instance:", monaco);
-        // }
+
+        // This is probably fine because of the if statement
+        // also we don't need this to update
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [monaco, typings]);
 
     if (script && typings && hasSetTypings) {
-        return <Loaded guild={props.guild} script={script} files={typings} refreshScripts={loadScript}></Loaded>
+        return <Loaded guild={props.guild} script={script} files={typings} refreshScripts={loadScripts}></Loaded>
     } else {
         return <ul>
             <li>Typings: {typings ? "Loaded" : typings === undefined ? "Loading..." : "Failed loading"}</li>
