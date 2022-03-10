@@ -8,6 +8,16 @@ import { AsyncOpButton } from "../components/AsyncOpButton";
 import { GuildMessage, GuildMessages } from "../misc/GuildMessages";
 import { WebsocketSession } from "../misc/WebsocketController";
 
+const DEFAULT_EMPTY_SCRIPT_CONTENT =
+    `import {} from 'botloader';
+
+// Type in the script content here
+// ctrl-s to save, changes will go live after that
+// Newly created scripts are disabled, you can enable it in the sidebar
+// You can find a lot of script examples in the support server
+// Docs are located at: https://botloader.io/docs/
+`
+
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     const [script, setScript] = useState<Script | undefined | null>(undefined);
     const [scripts, setScripts] = useState<Script[] | undefined | null>(undefined);
@@ -221,7 +231,7 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
             className="scripting-editor"
             theme="vs-dark"
             defaultLanguage="typescript"
-            defaultValue={props.script.original_source}
+            defaultValue={props.script.original_source || DEFAULT_EMPTY_SCRIPT_CONTENT}
             saveViewState={false}
             onChange={onvalueChange}
         // onMount={handleEditorDidMount}
