@@ -28,3 +28,8 @@
 .status-bad {
     color: red;
 }
+
+.create-script {
+    display: flex;
+    align-items: stretch;
+}

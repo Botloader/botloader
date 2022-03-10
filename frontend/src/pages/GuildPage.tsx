@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BotGuild, GuildMetaConfig, isErrorResponse, Script } from "botloader-common";
 import { useCurrentGuild } from "../components/GuildsProvider";
 import { useSession } from "../components/Session";
 import './GuildPage.css'
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { BuildConfig } from "../BuildConfig";
-import { Link, Route, Switch, useParams } from "react-router-dom";
+import { Link, Redirect, Route, Switch, useParams } from "react-router-dom";
 import { Panel } from "../components/Panel";
 import { SideNav } from "../components/SideNav";
 import { EditScriptPage } from "./EditScript";
@@ -140,6 +140,9 @@ function InnerGuildSettings(props: { guild: BotGuild, settings: GuildMetaConfig 
 function GuildScripts(props: { guild: BotGuild }) {
     const [scripts, setScripts] = useState<Script[] | undefined | null>(undefined);
     const session = useSession();
+    const createScriptInput = useRef<HTMLInputElement>(null);
+    const [createError, setCreateError] = useState("");
+    const [scriptCreated, setScriptCreated] = useState<Script | null>(null)
 
     async function loadScripts() {
         let resp = await session.apiClient.getAllScripts(props.guild.guild.id);
@@ -181,24 +184,55 @@ function GuildScripts(props: { guild: BotGuild }) {
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
     }
 
-    return <Panel>
-        <h2>Guild scripts</h2>
-        {scripts ?
-            <div className="scripts">
-                {scripts.map(script => <div key={script.id} className="script-item">
-                    <p>#{script.id}</p>
-                    <p><code>{script.name}.ts</code></p>
-                    <p>{script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</p>
-                    <AsyncOpButton className="danger" label="delete" onClick={() => delScript(script.id)}></AsyncOpButton>
-                    {script.enabled ?
-                        <AsyncOpButton className="primary" label="disable" onClick={() => toggleScript(script.id, false)}></AsyncOpButton>
-                        :
-                        <AsyncOpButton className="primary" label="enable" onClick={() => toggleScript(script.id, true)}></AsyncOpButton>
-                    }
-                    <Link to={`/servers/${props.guild.guild.id}/scripts/${script.id}/edit`} className="bl-button">Edit</Link>
-                </div>)}
-            </div> : scripts === null ? <p>Failed loading scripts</p>
-                : <p>Loading...</p>
+    async function createScript() {
+        setCreateError("");
+
+        let name = createScriptInput.current?.value;
+        if (name && name.length > 0) {
+            console.log("Creating script, value:", createScriptInput.current?.value);
+            let resp = await session.apiClient.createScript(props.guild.guild.id, {
+                enabled: false,
+                name: name,
+                original_source: "",
+            })
+
+            if (isErrorResponse(resp)) {
+                setCreateError(JSON.stringify(resp))
+            } else {
+                setScriptCreated(resp);
+            }
         }
-    </Panel>
+    }
+
+    return <>
+        <Panel>
+            <h2>Create a new script</h2>
+            <div className="create-script">
+                <input type="text" ref={createScriptInput}></input>
+                <AsyncOpButton label="Create" onClick={createScript}></AsyncOpButton>
+            </div>
+            {createError ? <p>Error creating script: <code>{createError}</code></p> : null}
+            {scriptCreated ? <Redirect to={`/servers/${props.guild.guild.id}/scripts/${scriptCreated.id}/edit`}></Redirect> : null}
+        </Panel >
+        <Panel>
+            <h2>Guild scripts</h2>
+            {scripts ?
+                <div className="scripts">
+                    {scripts.map(script => <div key={script.id} className="script-item">
+                        <p>#{script.id}</p>
+                        <p>{script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</p>
+                        <AsyncOpButton className="danger" label="delete" onClick={() => delScript(script.id)}></AsyncOpButton>
+                        {script.enabled ?
+                            <AsyncOpButton label="disable" onClick={() => toggleScript(script.id, false)}></AsyncOpButton>
+                            :
+                            <AsyncOpButton label="enable" onClick={() => toggleScript(script.id, true)}></AsyncOpButton>
+                        }
+                        <Link to={`/servers/${props.guild.guild.id}/scripts/${script.id}/edit`} className="bl-button">Edit</Link>
+                        <p><code>{script.name}.ts</code></p>
+                    </div>)}
+                </div> : scripts === null ? <p>Failed loading scripts</p>
+                    : <p>Loading...</p>
+            }
+        </Panel>
+    </>
 }
