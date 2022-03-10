@@ -47,7 +47,8 @@ export function ConfirmLoginPage() {
         if (status.error) {
             return <p>Failed logging you in: <code>{JSON.stringify(status.error)}</code></p>
         } else {
-            return <Redirect to="/servers"></Redirect>
+            window.location.pathname = "/servers";
+            return <p>Redirecing you...</p>
         }
     }
 }
