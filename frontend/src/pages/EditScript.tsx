@@ -5,6 +5,7 @@ import "./EditScript.css";
 import Editor, { useMonaco } from "@monaco-editor/react";
 import untar from "js-untar";
 import { AsyncOpButton } from "../components/AsyncOpButton";
+import { GuildMessage, GuildMessages } from "../misc/GuildMessages";
 
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     const [script, setScript] = useState<Script | undefined | null>(undefined);
@@ -162,13 +163,28 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
             console.log(isDirty, isSaving);
             return;
         }
+        GuildMessages.pushGuildMessage(props.guild.guild.id, {
+            source: "Client",
+            message: "Saving..."
+        });
 
         console.log("Saving!");
         await session.apiClient.updateScript(props.guild.guild.id, props.script.id, {
             original_source: currentValue.current,
         });
         await props.refreshScripts();
+
+        GuildMessages.pushGuildMessage(props.guild.guild.id, {
+            source: "Client",
+            message: "Successfully saved! Reloading guild vm..."
+        });
+
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
+        GuildMessages.pushGuildMessage(props.guild.guild.id, {
+            source: "Client",
+            message: "Reloaded guild vm, changes are now live!"
+        });
+
         setIsDirty(false);
     }
 
@@ -212,14 +228,13 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
                     }
                 </div>
                 <div className="actions-row">
-                    <p>Save</p>
                     {isDirty ?
                         <AsyncOpButton className="primary" label="Save" onClick={() => save()}></AsyncOpButton>
                         : <p>No changes made</p>}
                 </div>
             </div>
             <div className="scripting-console">
-                <p >Console here</p>
+                <GuildConsole guild={props.guild}></GuildConsole>
             </div>
         </div>
     </div>
@@ -238,4 +253,39 @@ interface File {
 
     readAsString(): string,
     readAsJSON(): unknown,
+}
+
+function GuildConsole(props: { guild: BotGuild }) {
+    const [messages, setMessages] = useState<GuildMessage[]>([])
+    const listenerId = useRef<undefined | number>(undefined);
+
+    useEffect(() => {
+        let messages = GuildMessages.getGuildMessages(props.guild.guild.id);
+        setMessages(messages);
+    }, [props.guild.guild.id])
+
+    useEffect(() => {
+        listenerId.current = GuildMessages.addListener(props.guild.guild.id, onNewMessage);
+
+        return () => {
+            if (listenerId.current) {
+                GuildMessages.removeListener(props.guild.guild.id, listenerId.current);
+            }
+        }
+    })
+
+    function onNewMessage(message: GuildMessage) {
+        let newMessages = [
+            ...messages,
+            message
+        ]
+        setMessages(newMessages);
+    }
+
+    return <ul className="guild-console">
+        {messages.map(v =>
+            <li key={v.id} className="guild-console-message"><span className="guild-console-message-source">{v.source}:</span>{v.message}</li>
+        )}
+    </ul>
+
 }

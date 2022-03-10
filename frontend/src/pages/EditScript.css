@@ -22,10 +22,11 @@
 
 .scripting-console {
     display: flex;
-    padding: 5px;
     /* background-color: blue; */
     flex-grow: 1;
     background-color: rgba(0, 0, 0, 0.212);
+    align-items: stretch;
+    flex-direction: column;
 }
 
 .scripting-actions {
@@ -43,4 +44,28 @@
 
 .actions-row p {
     margin-right: 10px;
+}
+
+.guild-console {
+    list-style: none;
+    margin-left: 0;
+    padding-left: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: stretch;
+}
+
+.guild-console-message {
+    padding: 5px;
+}
+
+.guild-console-message:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.411);
+}
+
+.guild-console-message-source {
+    margin-right: 5px;
+    color: var(--primary-color);
 }
