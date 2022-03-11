@@ -266,4 +266,24 @@ export namespace OpWrappers {
     export async function removeBan(userId: string, extras: Discord.AuditLogExtras): Promise<void> {
         return await Deno.core.opAsync("discord_delete_ban", userId, extras);
     }
+
+    // Reactions
+    export async function discord_create_reaction(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
+        return Deno.core.opAsync("discord_create_reaction", [channelId, messageId], emoji)
+    }
+    export async function discord_delete_own_reaction(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
+        return Deno.core.opAsync("discord_delete_own_reaction", [channelId, messageId], emoji)
+    }
+    export async function discord_delete_user_reaction(channelId: string, messageId: string, userId: string, emoji: Discord.SendEmoji): Promise<void> {
+        return Deno.core.opAsync("discord_delete_user_reaction", [channelId, messageId, userId], emoji)
+    }
+    export async function discord_get_reactions(channelId: string, messageId: string, fields: Internal.GetReactionsFields): Promise<Discord.User[]> {
+        return Deno.core.opAsync("discord_get_reactions", [channelId, messageId], fields)
+    }
+    export async function discord_delete_all_reactions(channelId: string, messageId: string): Promise<void> {
+        return Deno.core.opAsync("discord_delete_all_reactions", [channelId, messageId])
+    }
+    export async function discord_delete_all_reactions_for_emoji(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
+        return Deno.core.opAsync("discord_delete_all_reactions_for_emoji", [channelId, messageId], emoji)
+    }
 }

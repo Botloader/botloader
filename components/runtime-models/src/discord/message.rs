@@ -376,6 +376,49 @@ impl From<ReactionType> for twilight_model::channel::ReactionType {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/SendEmoji.ts")]
+#[serde(rename_all = "camelCase")]
+#[serde(untagged)]
+pub enum SendEmoji {
+    Custom {
+        // Even though it says that the id can be nil in the docs,
+        // it is a bit misleading as that should only happen when
+        // the reaction is a unicode emoji and then it is caught by
+        // the other variant.
+        id: String,
+        // Name is nil if the emoji data is no longer avaiable, for
+        // example if the emoji have been deleted off the guild.
+        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        name: Option<String>,
+    },
+    Unicode {
+        unicode: String,
+    },
+}
+
+impl<'a> From<&'a SendEmoji>
+    for twilight_http::request::channel::reaction::RequestReactionType<'a>
+{
+    fn from(v: &'a SendEmoji) -> Self {
+        match v {
+            SendEmoji::Custom { name, id } => Self::Custom {
+                name: name.as_deref(),
+                // TODO: maybe we change to TryFrom instead?
+                // or just keep it like this and silently fail i guess?
+                //
+                // Realistically this won't really change the behaviour if the user passes in
+                // a invalid custom emoji id it will be handled on discord's end and an
+                // error will be thrown there, were just changing where were catching the error is all
+                id: Id::from_str(id).unwrap_or_else(|_| Id::new(1)),
+            },
+            SendEmoji::Unicode { unicode } => Self::Unicode { name: unicode },
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]

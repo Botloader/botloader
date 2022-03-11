@@ -1,6 +1,9 @@
 use twilight_model::{
     channel::GuildChannel,
-    id::{marker::GenericMarker, Id},
+    id::{
+        marker::{ChannelMarker, GenericMarker},
+        Id,
+    },
 };
 use vm::AnyError;
 
@@ -13,7 +16,7 @@ pub mod storage;
 pub mod tasks;
 
 // ensures the provided channel is in the guild, also checking the api as fallback
-pub(crate) async fn get_guild_channel(
+pub(crate) async fn parse_get_guild_channel(
     rt_ctx: &RuntimeContext,
     channel_id_str: &str,
 ) -> Result<GuildChannel, AnyError> {
@@ -23,6 +26,13 @@ pub(crate) async fn get_guild_channel(
         return Err(anyhow::anyhow!("invalid channel id"));
     };
 
+    get_guild_channel(rt_ctx, channel_id).await
+}
+
+pub(crate) async fn get_guild_channel(
+    rt_ctx: &RuntimeContext,
+    channel_id: Id<ChannelMarker>,
+) -> Result<GuildChannel, AnyError> {
     match rt_ctx
         .bot_state
         .get_channel(rt_ctx.guild_id, channel_id)

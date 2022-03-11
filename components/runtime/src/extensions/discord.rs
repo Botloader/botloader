@@ -2,20 +2,21 @@ use anyhow::anyhow;
 use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
 use runtime_models::discord::guild::Ban;
-use runtime_models::discord::message::MessageFlags;
+use runtime_models::discord::message::{MessageFlags, SendEmoji};
+use runtime_models::discord::user::User;
 use runtime_models::discord::util::AuditLogExtras;
 use runtime_models::internal::interactions::InteractionCallback;
 use runtime_models::internal::member::UpdateGuildMemberFields;
-use runtime_models::internal::misc_op::CreateBanFields;
+use runtime_models::internal::misc_op::{CreateBanFields, GetReactionsFields};
 use std::str::FromStr;
 use std::{cell::RefCell, rc::Rc};
 use twilight_http::request::AuditLogReason;
-use twilight_model::id::marker::UserMarker;
+use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
 use vm::{AnyError, JsValue};
 
-use super::{get_guild_channel, parse_str_snowflake_id};
+use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
 use crate::dummy_op;
 use crate::RuntimeContext;
 use runtime_models::{
@@ -48,6 +49,25 @@ pub fn extension() -> Extension {
             (
                 "discord_bulk_delete_messages",
                 op_async(op_delete_messages_bulk),
+            ),
+            // Reactions
+            ("discord_create_reaction", op_async(discord_create_reaction)),
+            (
+                "discord_delete_own_reaction",
+                op_async(discord_delete_own_reaction),
+            ),
+            (
+                "discord_delete_user_reaction",
+                op_async(discord_delete_user_reaction),
+            ),
+            ("discord_get_reactions", op_async(discord_get_reactions)),
+            (
+                "discord_delete_all_reactions",
+                op_async(discord_delete_all_reactions),
+            ),
+            (
+                "discord_delete_all_reactions_for_emoji",
+                op_async(discord_delete_all_reactions_for_emoji),
             ),
             // roles
             ("discord_get_role", op_async(op_get_role)),
@@ -118,6 +138,7 @@ pub async fn op_get_guild(
     }
 }
 
+// Messages
 pub async fn op_get_message(
     state: Rc<RefCell<OpState>>,
     args: OpGetMessage,
@@ -128,7 +149,7 @@ pub async fn op_get_message(
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_id = if let Some(id) = Id::new_checked(args.message_id.parse()?) {
         id
     } else {
@@ -157,7 +178,7 @@ pub async fn op_get_messages(
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
 
     let limit = if let Some(limit) = args.limit {
         if limit > 100 {
@@ -212,7 +233,7 @@ pub async fn op_create_channel_message(
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
 
     let maybe_embeds = args
         .fields
@@ -258,7 +279,7 @@ pub async fn op_edit_channel_message(
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_id = parse_str_snowflake_id(&args.message_id)?;
 
     let maybe_embeds = args
@@ -401,7 +422,7 @@ pub async fn op_delete_message(
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_id = parse_str_snowflake_id(&args.message_id)?;
 
     rt_ctx
@@ -424,7 +445,7 @@ pub async fn op_delete_messages_bulk(
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let channel = get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_ids = args
         .message_ids
         .iter()
@@ -442,6 +463,7 @@ pub async fn op_delete_messages_bulk(
     Ok(())
 }
 
+// Roles
 pub async fn op_get_role(
     state: Rc<RefCell<OpState>>,
     role_id: Id<RoleMarker>,
@@ -472,6 +494,157 @@ pub async fn op_get_roles(
     Ok(roles.into_iter().map(Into::into).collect())
 }
 
+// Reactions
+pub async fn discord_create_reaction(
+    state: Rc<RefCell<OpState>>,
+    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    emoji: SendEmoji,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    // ensure the provided channel is on the ctx guild
+    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .create_reaction(channel_id, message_id, &(&emoji).into())
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+pub async fn discord_delete_own_reaction(
+    state: Rc<RefCell<OpState>>,
+    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    emoji: SendEmoji,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    // ensure the provided channel is on the ctx guild
+    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .delete_current_user_reaction(channel_id, message_id, &(&emoji).into())
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+pub async fn discord_delete_user_reaction(
+    state: Rc<RefCell<OpState>>,
+    (channel_id, message_id, user_id): (Id<ChannelMarker>, Id<MessageMarker>, Id<UserMarker>),
+    emoji: SendEmoji,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    // ensure the provided channel is on the ctx guild
+    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .delete_reaction(channel_id, message_id, &(&emoji).into(), user_id)
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+pub async fn discord_get_reactions(
+    state: Rc<RefCell<OpState>>,
+    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    fields: GetReactionsFields,
+) -> Result<Vec<User>, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+
+    let emoji = (&fields.emoji).into();
+
+    let mut req = rt_ctx
+        .discord_config
+        .client
+        .reactions(channel_id, message_id, &emoji);
+
+    if let Some(after_str) = &fields.after {
+        req = req.after(parse_str_snowflake_id(after_str)?.cast())
+    }
+    if let Some(limit) = fields.limit {
+        req = req.limit(limit.into())?;
+    }
+
+    Ok(req
+        .exec()
+        .await?
+        .model()
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+}
+
+pub async fn discord_delete_all_reactions(
+    state: Rc<RefCell<OpState>>,
+    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    _: (),
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .delete_all_reactions(channel_id, message_id)
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+pub async fn discord_delete_all_reactions_for_emoji(
+    state: Rc<RefCell<OpState>>,
+    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    emoji: SendEmoji,
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .delete_all_reaction(channel_id, message_id, &(&emoji).into())
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+// Channels
 pub async fn op_get_channel(
     state: Rc<RefCell<OpState>>,
     channel_id_str: String,
@@ -482,7 +655,7 @@ pub async fn op_get_channel(
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let channel = get_guild_channel(&rt_ctx, &channel_id_str).await?;
+    let channel = parse_get_guild_channel(&rt_ctx, &channel_id_str).await?;
     Ok(channel.into())
 }
 
@@ -500,6 +673,7 @@ pub async fn op_get_channels(
     Ok(channels.into_iter().map(Into::into).collect())
 }
 
+// Members
 pub async fn op_get_members(
     state: Rc<RefCell<OpState>>,
     user_ids: Vec<String>,
@@ -623,6 +797,7 @@ pub async fn discord_update_member(
     Ok(ret.into())
 }
 
+// Bans
 pub async fn op_create_ban(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
@@ -715,6 +890,7 @@ pub async fn op_remove_ban(
     Ok(())
 }
 
+// Other
 pub async fn op_remove_member(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,

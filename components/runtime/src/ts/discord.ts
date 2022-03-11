@@ -1,5 +1,5 @@
 export * from './generated/discord/index';
-import { Guild, GuildChannel, Member, Message, Role, Embed, Component, ComponentType, AuditLogExtras } from './generated/discord/index';
+import { Guild, GuildChannel, Member, Message, Role, Embed, Component, ComponentType, AuditLogExtras, SendEmoji, User } from './generated/discord/index';
 import * as Internal from './generated/internal/index';
 import { OpWrappers } from './op_wrappers';
 
@@ -254,6 +254,43 @@ export async function getBans() {
 
 export async function deleteBan(userId: string, extras?: AuditLogExtras): Promise<void> {
     return OpWrappers.removeBan(userId, extras ?? {});
+}
+
+// Reactions
+export async function createReaction(channelId: string, messageId: string, emoji: SendEmoji): Promise<void> {
+    return OpWrappers.discord_create_reaction(channelId, messageId, emoji);
+}
+export async function deleteOwnReaction(channelId: string, messageId: string, emoji: SendEmoji): Promise<void> {
+    return OpWrappers.discord_delete_own_reaction(channelId, messageId, emoji);
+}
+export async function deleteUserReaction(channelId: string, messageId: string, userId: string, emoji: SendEmoji): Promise<void> {
+    return OpWrappers.discord_delete_user_reaction(channelId, messageId, userId, emoji);
+}
+
+export interface GetReactionsExtras {
+    /**
+     * Return users after this Id.
+     * You can use this to paginate through all the results.
+     */
+    after?: string,
+
+    /**
+     * Limit the number of results, defaults to 25, max 100 at the time of writing
+     */
+    limit?: number,
+}
+
+export async function getReactions(channelId: string, messageId: string, emoji: SendEmoji, extra?: GetReactionsExtras): Promise<User[]> {
+    return OpWrappers.discord_get_reactions(channelId, messageId, {
+        ...extra,
+        emoji: emoji,
+    });
+}
+export async function deleteAllReactions(channelId: string, messageId: string): Promise<void> {
+    return OpWrappers.discord_delete_all_reactions(channelId, messageId);
+}
+export async function deleteAllEmojiReactions(channelId: string, messageId: string, emoji: SendEmoji): Promise<void> {
+    return OpWrappers.discord_delete_all_reactions_for_emoji(channelId, messageId, emoji);
 }
 
 /**
