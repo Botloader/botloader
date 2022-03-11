@@ -160,6 +160,10 @@ export class Script {
     on(eventType: "MEMBER_ADD", cb: (evt: EventSystem.EventTypes["MEMBER_ADD"]) => void): void;
     on(eventType: "MEMBER_UPDATE", cb: (evt: EventSystem.EventTypes["MEMBER_UPDATE"]) => void): void;
     on(eventType: "MEMBER_REMOVE", cb: (evt: EventSystem.EventTypes["MEMBER_REMOVE"]) => void): void;
+    on(eventType: "MESSAGE_REACTION_ADD", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_ADD"]) => void): void;
+    on(eventType: "MESSAGE_REACTION_REMOVE", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE"]) => void): void;
+    on(eventType: "MESSAGE_REACTION_REMOVE_ALL", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE_ALL"]) => void): void;
+    on(eventType: "MESSAGE_REACTION_REMOVE_ALL_EMOJI", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE_ALL_EMOJI"]) => void): void;
 
     /**
      * Register a general event handler such as for arbitrary discord events like when a new message is sent in the server (MESSAGE_CREATE)

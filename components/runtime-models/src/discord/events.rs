@@ -10,6 +10,8 @@ use crate::{
     util::NotBigU64,
 };
 
+use super::{member::Member, message::ReactionType};
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/EventMemberRemove.ts")]
@@ -106,6 +108,100 @@ impl From<twilight_model::gateway::payload::incoming::MessageUpdate> for EventMe
                 .timestamp
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             tts: v.tts,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/EventMessageReactionAdd.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventMessageReactionAdd {
+    pub channel_id: String,
+    pub message_id: String,
+    pub emoji: ReactionType,
+    pub member: Member,
+    pub user_id: String,
+}
+
+impl From<twilight_model::gateway::payload::incoming::ReactionAdd> for EventMessageReactionAdd {
+    fn from(v: twilight_model::gateway::payload::incoming::ReactionAdd) -> Self {
+        Self {
+            channel_id: v.channel_id.to_string(),
+            message_id: v.message_id.to_string(),
+            emoji: v.0.emoji.into(),
+            member: v
+                .0
+                .member
+                .expect("member is always available in guild events")
+                .into(),
+            user_id: v.0.user_id.to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/EventMessageReactionRemove.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventMessageReactionRemove {
+    pub channel_id: String,
+    pub message_id: String,
+    pub emoji: ReactionType,
+    pub user_id: String,
+}
+
+impl From<twilight_model::gateway::payload::incoming::ReactionRemove>
+    for EventMessageReactionRemove
+{
+    fn from(v: twilight_model::gateway::payload::incoming::ReactionRemove) -> Self {
+        Self {
+            channel_id: v.channel_id.to_string(),
+            message_id: v.message_id.to_string(),
+            emoji: v.0.emoji.into(),
+            user_id: v.0.user_id.to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/EventMessageReactionRemoveAll.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventMessageReactionRemoveAll {
+    pub channel_id: String,
+    pub message_id: String,
+}
+
+impl From<twilight_model::gateway::payload::incoming::ReactionRemoveAll>
+    for EventMessageReactionRemoveAll
+{
+    fn from(v: twilight_model::gateway::payload::incoming::ReactionRemoveAll) -> Self {
+        Self {
+            channel_id: v.channel_id.to_string(),
+            message_id: v.message_id.to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/EventMessageReactionRemoveAllEmoji.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventMessageReactionRemoveAllEmoji {
+    pub channel_id: String,
+    pub message_id: String,
+    pub emoji: ReactionType,
+}
+
+impl From<twilight_model::gateway::payload::incoming::ReactionRemoveEmoji>
+    for EventMessageReactionRemoveAllEmoji
+{
+    fn from(v: twilight_model::gateway::payload::incoming::ReactionRemoveEmoji) -> Self {
+        Self {
+            channel_id: v.channel_id.to_string(),
+            message_id: v.message_id.to_string(),
+            emoji: v.emoji.into(),
         }
     }
 }

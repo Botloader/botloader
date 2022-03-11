@@ -69,6 +69,11 @@ export namespace EventSystem {
         MEMBER_ADD: Discord.Member,
         MEMBER_UPDATE: Discord.Member,
         MEMBER_REMOVE: Discord.EventMemberRemove,
+
+        MESSAGE_REACTION_ADD: Discord.EventMessageReactionAdd,
+        MESSAGE_REACTION_REMOVE: Discord.EventMessageReactionRemove,
+        MESSAGE_REACTION_REMOVE_ALL: Discord.EventMessageReactionRemoveAll,
+        MESSAGE_REACTION_REMOVE_ALL_EMOJI: Discord.EventMessageReactionRemoveAllEmoji,
     }
 
 

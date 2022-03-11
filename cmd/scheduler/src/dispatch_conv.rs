@@ -46,6 +46,38 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
             ))
             .unwrap(),
         }),
+        DispatchEvent::ReactionAdd(r) => Some(DiscordDispatchEvent {
+            name: "MESSAGE_REACTION_ADD",
+            guild_id: r.guild_id.expect("only guild event sent to guild worker"),
+            data: serde_json::to_value(
+                &runtime_models::discord::events::EventMessageReactionAdd::from(*r),
+            )
+            .unwrap(),
+        }),
+        DispatchEvent::ReactionRemove(r) => Some(DiscordDispatchEvent {
+            name: "MESSAGE_REACTION_REMOVE",
+            guild_id: r.guild_id.expect("only guild event sent to guild worker"),
+            data: serde_json::to_value(
+                &runtime_models::discord::events::EventMessageReactionRemove::from(*r),
+            )
+            .unwrap(),
+        }),
+        DispatchEvent::ReactionRemoveAll(r) => Some(DiscordDispatchEvent {
+            name: "MESSAGE_REACTION_REMOVE_ALL",
+            guild_id: r.guild_id.expect("only guild event sent to guild worker"),
+            data: serde_json::to_value(
+                &runtime_models::discord::events::EventMessageReactionRemoveAll::from(r),
+            )
+            .unwrap(),
+        }),
+        DispatchEvent::ReactionRemoveEmoji(r) => Some(DiscordDispatchEvent {
+            name: "MESSAGE_REACTION_REMOVE_ALL_EMOJI",
+            guild_id: r.guild_id,
+            data: serde_json::to_value(
+                &runtime_models::discord::events::EventMessageReactionRemoveAllEmoji::from(r),
+            )
+            .unwrap(),
+        }),
         DispatchEvent::InteractionCreate(interaction) => match interaction.0 {
             twilight_model::application::interaction::Interaction::Ping(_) => None,
             twilight_model::application::interaction::Interaction::MessageComponent(comp) => {

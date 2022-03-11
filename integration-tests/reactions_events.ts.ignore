@@ -1,0 +1,88 @@
+// test is disabled cause of ratelimit issues 
+
+import { Discord } from "botloader";
+import { assertExpected, runOnce, sendScriptCompletion } from "lib";
+
+const emoji = { unicode: "😀" }
+const channelId = "531120790318350338";
+
+type States = "start" | "remove" | "removeall" | "removeallemoji";
+
+interface State {
+    stage: States,
+    msgId: string,
+}
+
+let stateStore = script.createGuildStorageJson<State>("reactions_events.ts");
+
+runOnce("reactions_events.ts", async () => {
+    let msg = await Discord.createMessage(channelId, { content: "Reactions testing 2" });
+    const messageId = msg.id;
+
+    stateStore.set("current", { msgId: msg.id, stage: "start" })
+
+    let reactions = await Discord.getReactions(channelId, messageId, emoji);
+    assertExpected(0, reactions.length);
+
+    // try creating
+    await Discord.createReaction(channelId, messageId, emoji);
+    // reactions = await Discord.getReactions(channelId, messageId, emoji);
+    // assertExpected(1, reactions.length);
+})
+
+script.on("MESSAGE_REACTION_ADD", async (evt) => {
+    let currentState = await stateStore.get("current");
+    if (evt.messageId !== currentState?.value.msgId) {
+        return
+    }
+
+    if (currentState?.value.stage === "start") {
+        await stateStore.set("current", {
+            ...currentState.value,
+            stage: "remove",
+        })
+
+        await Discord.deleteOwnReaction(channelId, evt.messageId, emoji);
+    } else if (currentState?.value.stage === "remove") {
+        await stateStore.set("current", {
+            ...currentState.value,
+            stage: "removeall",
+        })
+
+        await Discord.deleteAllReactions(channelId, evt.messageId);
+    } else if (currentState?.value.stage === "removeall") {
+        await stateStore.set("current", {
+            ...currentState.value,
+            stage: "removeallemoji",
+        })
+
+        await Discord.deleteAllEmojiReactions(channelId, evt.messageId, emoji);
+    }
+});
+
+script.on("MESSAGE_REACTION_REMOVE", async (evt) => {
+    let currentState = await stateStore.get("current");
+    if (evt.messageId !== currentState?.value.msgId) {
+        return
+    }
+
+    await Discord.createReaction(channelId, currentState.value.msgId, emoji);
+});
+
+script.on("MESSAGE_REACTION_REMOVE_ALL", async (evt) => {
+    let currentState = await stateStore.get("current");
+    if (evt.messageId !== currentState?.value.msgId) {
+        return
+    }
+
+    await Discord.createReaction(channelId, currentState.value.msgId, emoji);
+});
+
+script.on("MESSAGE_REACTION_REMOVE_ALL_EMOJI", async (evt) => {
+    let currentState = await stateStore.get("current");
+    if (evt.messageId !== currentState?.value.msgId) {
+        return
+    }
+
+    sendScriptCompletion();
+});

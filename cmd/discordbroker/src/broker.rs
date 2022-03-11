@@ -178,6 +178,36 @@ impl Broker {
                 }
             }
 
+            Event::ReactionAdd(r) => {
+                if let Some(guild_id) = r.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ReactionRemove(r) => {
+                if let Some(guild_id) = r.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ReactionRemoveAll(r) => {
+                if let Some(guild_id) = r.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ReactionRemoveEmoji(r) => {
+                r.guild_id
+                // if let Some(guild_id) = r.guild_id {
+                //     guild_id
+                // } else {
+                //     return;
+                // }
+            }
+
             Event::InteractionCreate(i) => {
                 if let Some(guild_id) = i.guild_id() {
                     guild_id
