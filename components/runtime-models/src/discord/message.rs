@@ -323,7 +323,7 @@ impl From<twilight_model::channel::message::MessageReaction> for MessageReaction
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[serde(tag = "kind")]
+#[serde(untagged)]
 #[ts(export_to = "bindings/discord/ReactionType.ts")]
 pub enum ReactionType {
     Custom {
@@ -339,7 +339,7 @@ pub enum ReactionType {
         name: Option<String>,
     },
     Unicode {
-        value: String,
+        unicode: String,
     },
 }
 
@@ -352,7 +352,7 @@ impl From<twilight_model::channel::ReactionType> for ReactionType {
                 id: id.to_string(),
             },
             twilight_model::channel::ReactionType::Unicode { name } => {
-                Self::Unicode { value: name }
+                Self::Unicode { unicode: name }
             }
         }
     }
@@ -371,7 +371,7 @@ impl From<ReactionType> for twilight_model::channel::ReactionType {
                 // a invalid custom emoji id
                 id: Id::from_str(&id).unwrap_or_else(|_| Id::new(1)),
             },
-            ReactionType::Unicode { value } => Self::Unicode { name: value },
+            ReactionType::Unicode { unicode } => Self::Unicode { name: unicode },
         }
     }
 }

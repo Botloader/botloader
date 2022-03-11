@@ -1,6 +1,5 @@
 export type ReactionType = {
-  kind: "custom";
   animated: boolean;
   id: string;
   name: string | null;
-} | { kind: "unicode"; value: string };
+} | { unicode: string };
