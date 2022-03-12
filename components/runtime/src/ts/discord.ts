@@ -293,6 +293,43 @@ export async function deleteAllEmojiReactions(channelId: string, messageId: stri
     return OpWrappers.discord_delete_all_reactions_for_emoji(channelId, messageId, emoji);
 }
 
+// Interactions
+export async function interactionCreateFollowupMessage(token: string, resp: string | InteractionCreateMessageFields) {
+    let flags: InteractionMessageFlags = {}
+    if (arguments.length === 2) {
+        // legacy support, remove at some point in the future
+        flags = arguments[1];
+    } else {
+        if (typeof resp === "object") {
+            if (resp.flags) {
+                flags = resp.flags
+            }
+        }
+    }
+
+    if (typeof resp === "string") {
+        return await OpWrappers.createInteractionFollowup({
+            interactionToken: token,
+            fields: { content: resp },
+            flags: flags || {},
+        })
+    } else {
+        return await OpWrappers.createInteractionFollowup({
+            interactionToken: token,
+            fields: toOpMessageFields(resp),
+            flags: flags || {},
+        })
+    }
+}
+
+export async function interactionDeleteFollowup(token: string, id: string) {
+    return OpWrappers.deleteInteractionFollowup(token, id);
+}
+
+export async function interactionDeleteOriginalResponse(token: string) {
+    return OpWrappers.deleteInteractionOriginal(token);
+}
+
 /**
  * Base interaction class, this class should be considered UNSTABLE and may change a lot in the future.
  */
@@ -391,31 +428,7 @@ export class Interaction {
     }
 
     async sendFollowup(resp: string | InteractionCreateMessageFields) {
-        let flags: InteractionMessageFlags = {}
-        if (arguments.length === 2) {
-            // legacy support, remove at some point in the future
-            flags = arguments[1];
-        } else {
-            if (typeof resp === "object") {
-                if (resp.flags) {
-                    flags = resp.flags
-                }
-            }
-        }
-
-        if (typeof resp === "string") {
-            await OpWrappers.createInteractionFollowup({
-                interactionToken: this.token,
-                fields: { content: resp },
-                flags: flags || {},
-            })
-        } else {
-            await OpWrappers.createInteractionFollowup({
-                interactionToken: this.token,
-                fields: toOpMessageFields(resp),
-                flags: flags || {},
-            })
-        }
+        return interactionCreateFollowupMessage(this.token, resp);
     }
 
     async deleteFollowup(id: string) {

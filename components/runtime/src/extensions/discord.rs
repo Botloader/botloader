@@ -40,10 +40,6 @@ pub fn extension() -> Extension {
                 "discord_create_message",
                 op_async(op_create_channel_message),
             ),
-            (
-                "discord_create_followup_message",
-                op_async(op_create_followup_message),
-            ),
             ("discord_edit_message", op_async(op_edit_channel_message)),
             ("discord_delete_message", op_async(op_delete_message)),
             (
@@ -99,6 +95,10 @@ pub fn extension() -> Extension {
             (
                 "discord_interaction_callback",
                 op_async(op_interaction_callback),
+            ),
+            (
+                "discord_interaction_followup",
+                op_async(op_create_followup_message),
             ),
             (
                 "discord_interaction_delete_original",

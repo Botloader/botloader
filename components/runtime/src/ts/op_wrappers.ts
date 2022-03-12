@@ -82,6 +82,7 @@ export namespace OpWrappers {
         return Deno.core.opAsync("discord_get_guild");
     }
 
+    // Messages
     export async function getMessage(args: Internal.OpGetMessage): Promise<Discord.Message> {
         return await Deno.core.opAsync(
             "discord_get_message",
@@ -123,9 +124,10 @@ export namespace OpWrappers {
         );
     }
 
+    // Interactions
     export async function createInteractionFollowup(args: Internal.OpCreateFollowUpMessage): Promise<Discord.Message> {
         return await Deno.core.opAsync(
-            "discord_create_followup_message",
+            "discord_interaction_followup",
             args
         );
     }
@@ -152,6 +154,7 @@ export namespace OpWrappers {
         );
     }
 
+    // Roles
     export async function getRole(roleId: string): Promise<Discord.Role> {
         return await Deno.core.opAsync(
             "discord_get_role",
@@ -165,6 +168,7 @@ export namespace OpWrappers {
         );
     }
 
+    // Channels
     export async function getChannels(): Promise<Discord.GuildChannel[]> {
         return await Deno.core.opAsync(
             "discord_get_channels",
