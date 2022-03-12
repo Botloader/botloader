@@ -1,4 +1,5 @@
 export * from './generated/discord/index';
+import { Discord } from './docs_index';
 import { Guild, GuildChannel, Member, Message, Role, Embed, Component, ComponentType, AuditLogExtras, SendEmoji, User } from './generated/discord/index';
 import * as Internal from './generated/internal/index';
 import { OpWrappers } from './op_wrappers';
@@ -294,11 +295,15 @@ export async function deleteAllEmojiReactions(channelId: string, messageId: stri
 }
 
 // Interactions
-export async function interactionCreateFollowupMessage(token: string, resp: string | InteractionCreateMessageFields) {
+export async function getInteractionFollowupMessage(token: string, messageId: string) {
+    return OpWrappers.getInteractionFollowupMessage(token, messageId);
+}
+
+export async function createInteractionFollowupMessage(token: string, resp: string | InteractionCreateMessageFields) {
     let flags: InteractionMessageFlags = {}
-    if (arguments.length === 2) {
+    if (arguments.length === 3) {
         // legacy support, remove at some point in the future
-        flags = arguments[1];
+        flags = arguments[2];
     } else {
         if (typeof resp === "object") {
             if (resp.flags) {
@@ -308,13 +313,13 @@ export async function interactionCreateFollowupMessage(token: string, resp: stri
     }
 
     if (typeof resp === "string") {
-        return await OpWrappers.createInteractionFollowup({
+        return await OpWrappers.createInteractionFollowupMessage({
             interactionToken: token,
             fields: { content: resp },
             flags: flags || {},
         })
     } else {
-        return await OpWrappers.createInteractionFollowup({
+        return await OpWrappers.createInteractionFollowupMessage({
             interactionToken: token,
             fields: toOpMessageFields(resp),
             flags: flags || {},
@@ -322,11 +327,31 @@ export async function interactionCreateFollowupMessage(token: string, resp: stri
     }
 }
 
-export async function interactionDeleteFollowup(token: string, id: string) {
-    return OpWrappers.deleteInteractionFollowup(token, id);
+export async function editInteractionFollowupMessage(token: string, messageId: string, fields: InteractionCreateMessageFields) {
+    return await OpWrappers.editInteractionFollowupMessage(messageId, {
+        interactionToken: token,
+        fields: toOpMessageFields(fields),
+        flags: fields.flags ?? {},
+    })
 }
 
-export async function interactionDeleteOriginalResponse(token: string) {
+export async function deleteInteractionFollowupMessage(token: string, id: string) {
+    return OpWrappers.deleteInteractionFollowupMessage(token, id);
+}
+
+export async function getInteractionOriginalResponse(token: string) {
+    return OpWrappers.getInteractionOriginal(token);
+}
+
+export async function editInteractionOriginalResponse(token: string, fields: InteractionCreateMessageFields) {
+    return await OpWrappers.editInteractionOriginal({
+        interactionToken: token,
+        fields: toOpMessageFields(fields),
+        flags: fields.flags ?? {},
+    })
+}
+
+export async function deleteInteractionOriginalResponse(token: string) {
     return OpWrappers.deleteInteractionOriginal(token);
 }
 
@@ -427,16 +452,36 @@ export class Interaction {
         return this.sendFollowup(resp);
     }
 
-    async sendFollowup(resp: string | InteractionCreateMessageFields) {
-        return interactionCreateFollowupMessage(this.token, resp);
+    async getOriginalResponse() {
+        return getInteractionOriginalResponse(this.token);
     }
 
-    async deleteFollowup(id: string) {
-        return OpWrappers.deleteInteractionFollowup(this.token, id);
+    async editOriginalResponse(fields: InteractionCreateMessageFields) {
+        return editInteractionOriginalResponse(this.token, fields)
     }
 
     async deleteOriginalResponse() {
-        return OpWrappers.deleteInteractionOriginal(this.token);
+        return deleteInteractionOriginalResponse(this.token);
+    }
+
+    async getFollowup(messageId: string) {
+        return getInteractionFollowupMessage(this.token, messageId);
+    }
+
+    async sendFollowup(resp: string | InteractionCreateMessageFields) {
+        return createInteractionFollowupMessage(this.token, resp);
+    }
+
+    async createFollowup(resp: string | InteractionCreateMessageFields) {
+        return createInteractionFollowupMessage(this.token, resp);
+    }
+
+    async editFollowup(messageId: string, fields: InteractionCreateMessageFields) {
+        return editInteractionFollowupMessage(this.token, messageId, fields);
+    }
+
+    async deleteFollowup(id: string) {
+        return deleteInteractionFollowupMessage(this.token, id);
     }
 }
 

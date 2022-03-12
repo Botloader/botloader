@@ -97,15 +97,31 @@ pub fn extension() -> Extension {
                 op_async(op_interaction_callback),
             ),
             (
-                "discord_interaction_followup",
-                op_async(op_create_followup_message),
+                "discord_interaction_get_original_response",
+                op_async(op_interaction_get_original),
+            ),
+            (
+                "discord_interaction_edit_original_response",
+                op_async(op_interaction_edit_original),
             ),
             (
                 "discord_interaction_delete_original",
                 op_async(op_interaction_delete_original),
             ),
             (
-                "discord_interaction_delete_followup",
+                "discord_interaction_followup_message",
+                op_async(op_create_followup_message),
+            ),
+            (
+                "discord_interaction_get_followup_message",
+                op_async(op_interaction_get_followup),
+            ),
+            (
+                "discord_interaction_edit_followup_message",
+                op_async(op_interaction_edit_followup),
+            ),
+            (
+                "discord_interaction_delete_followup_message",
                 op_async(op_interaction_delete_followup),
             ),
             // Bans
@@ -310,6 +326,119 @@ pub async fn op_edit_channel_message(
     Ok(mc.exec().await?.model().await?.into())
 }
 
+pub async fn op_interaction_callback(
+    state: Rc<RefCell<OpState>>,
+    args: InteractionCallback,
+    _: (),
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let client = rt_ctx.discord_config.interaction_client();
+    client
+        .interaction_callback(
+            Id::from_str(&args.interaction_id)?,
+            &args.ineraction_token,
+            &args.data.into(),
+        )
+        .exec()
+        .await?;
+    Ok(())
+}
+
+pub async fn op_interaction_get_original(
+    state: Rc<RefCell<OpState>>,
+    token: String,
+    _: (),
+) -> Result<Message, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let client = rt_ctx.discord_config.interaction_client();
+    Ok(client
+        .get_interaction_original(&token)
+        .exec()
+        .await?
+        .model()
+        .await?
+        .into())
+}
+
+pub async fn op_interaction_edit_original(
+    state: Rc<RefCell<OpState>>,
+    args: OpCreateFollowUpMessage,
+    _: (),
+) -> Result<Message, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let maybe_embeds = args
+        .fields
+        .embeds
+        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+
+    let components = args
+        .fields
+        .components
+        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+
+    let interaction_client = rt_ctx.discord_config.interaction_client();
+
+    let mut mc = interaction_client
+        .update_interaction_original(&args.interaction_token)
+        .content(args.fields.content.as_deref())?
+        .embeds(maybe_embeds.as_deref())?
+        .components(components.as_deref())?
+        .content(args.fields.content.as_deref())?;
+
+    if let Some(mentions) = args.fields.allowed_mentions {
+        mc = mc.allowed_mentions(mentions.into());
+    }
+
+    Ok(mc.exec().await?.model().await?.into())
+}
+
+pub async fn op_interaction_delete_original(
+    state: Rc<RefCell<OpState>>,
+    token: String,
+    _: (),
+) -> Result<(), AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let client = rt_ctx.discord_config.interaction_client();
+    client.delete_interaction_original(&token).exec().await?;
+    Ok(())
+}
+
+pub async fn op_interaction_get_followup(
+    state: Rc<RefCell<OpState>>,
+    token: String,
+    id: Id<MessageMarker>,
+) -> Result<Message, AnyError> {
+    let rt_ctx = {
+        let state = state.borrow();
+        state.borrow::<RuntimeContext>().clone()
+    };
+
+    let client = rt_ctx.discord_config.interaction_client();
+    Ok(client
+        .followup_message(&token, id)
+        .exec()
+        .await?
+        .model()
+        .await?
+        .into())
+}
+
 pub async fn op_create_followup_message(
     state: Rc<RefCell<OpState>>,
     args: OpCreateFollowUpMessage,
@@ -365,40 +494,41 @@ pub async fn op_create_followup_message(
     Ok(mc.exec().await?.model().await?.into())
 }
 
-pub async fn op_interaction_callback(
+pub async fn op_interaction_edit_followup(
     state: Rc<RefCell<OpState>>,
-    args: InteractionCallback,
-    _: (),
+    message_id: Id<MessageMarker>,
+    args: OpCreateFollowUpMessage,
 ) -> Result<(), AnyError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
     };
 
-    let client = rt_ctx.discord_config.interaction_client();
-    client
-        .interaction_callback(
-            Id::from_str(&args.interaction_id)?,
-            &args.ineraction_token,
-            &args.data.into(),
-        )
-        .exec()
-        .await?;
-    Ok(())
-}
+    let maybe_embeds = args
+        .fields
+        .embeds
+        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-pub async fn op_interaction_delete_original(
-    state: Rc<RefCell<OpState>>,
-    token: String,
-    _: (),
-) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let components = args
+        .fields
+        .components
+        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-    let client = rt_ctx.discord_config.interaction_client();
-    client.delete_interaction_original(&token).exec().await?;
+    let interaction_client = rt_ctx.discord_config.interaction_client();
+
+    let mut mc = interaction_client
+        .update_followup_message(&args.interaction_token, message_id)
+        .content(args.fields.content.as_deref())?
+        .embeds(maybe_embeds.as_deref())?
+        .components(components.as_deref())?
+        .content(args.fields.content.as_deref())?;
+
+    if let Some(mentions) = args.fields.allowed_mentions {
+        mc = mc.allowed_mentions(mentions.into());
+    }
+
+    mc.exec().await?;
+
     Ok(())
 }
 

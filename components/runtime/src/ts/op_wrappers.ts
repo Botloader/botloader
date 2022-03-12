@@ -125,13 +125,6 @@ export namespace OpWrappers {
     }
 
     // Interactions
-    export async function createInteractionFollowup(args: Internal.OpCreateFollowUpMessage): Promise<Discord.Message> {
-        return await Deno.core.opAsync(
-            "discord_interaction_followup",
-            args
-        );
-    }
-
     export async function interactionCallback(args: Internal.InteractionCallback): Promise<void> {
         return await Deno.core.opAsync(
             "discord_interaction_callback",
@@ -139,11 +132,49 @@ export namespace OpWrappers {
         );
     }
 
-    export async function deleteInteractionFollowup(token: string, messageId: string): Promise<void> {
+    export async function getInteractionFollowupMessage(token: string, messageId: string): Promise<Discord.Message> {
         return await Deno.core.opAsync(
-            "discord_interaction_delete_followup",
+            "discord_interaction_get_followup_message",
+            token,
+            messageId
+        );
+    }
+
+
+    export async function createInteractionFollowupMessage(args: Internal.OpCreateFollowUpMessage): Promise<Discord.Message> {
+        return await Deno.core.opAsync(
+            "discord_interaction_followup_message",
+            args
+        );
+    }
+
+    export async function editInteractionFollowupMessage(messageId: string, args: Internal.OpCreateFollowUpMessage): Promise<void> {
+        return await Deno.core.opAsync(
+            "discord_interaction_edit_followup_message",
+            messageId,
+            args,
+        );
+    }
+
+    export async function deleteInteractionFollowupMessage(token: string, messageId: string): Promise<void> {
+        return await Deno.core.opAsync(
+            "discord_interaction_delete_followup_message",
             token,
             messageId,
+        );
+    }
+
+    export async function getInteractionOriginal(token: string): Promise<Discord.Message> {
+        return await Deno.core.opAsync(
+            "discord_interaction_get_original_response",
+            token
+        );
+    }
+
+    export async function editInteractionOriginal(args: Internal.OpCreateFollowUpMessage): Promise<Discord.Message> {
+        return await Deno.core.opAsync(
+            "discord_interaction_edit_original_response",
+            args
         );
     }
 
