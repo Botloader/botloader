@@ -357,6 +357,11 @@ pub async fn op_create_followup_message(
         mc = mc.content(content)?
     }
 
+    let mentions = args.fields.allowed_mentions.map(Into::into);
+    if let Some(mentions) = &mentions {
+        mc = mc.allowed_mentions(mentions);
+    }
+
     Ok(mc.exec().await?.model().await?.into())
 }
 
