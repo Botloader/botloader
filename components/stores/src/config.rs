@@ -100,6 +100,28 @@ pub trait ConfigStore: Send + Sync {
     async fn delete_guild_config_data(&self, id: Id<GuildMarker>) -> ConfigStoreResult<()>;
 
     async fn get_left_guilds(&self, threshold_hours: u64) -> ConfigStoreResult<Vec<JoinedGuild>>;
+
+    async fn get_guild_premium_slots(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> ConfigStoreResult<Vec<PremiumSlot>>;
+
+    async fn get_user_premium_slots(
+        &self,
+        user_id: Id<UserMarker>,
+    ) -> ConfigStoreResult<Vec<PremiumSlot>>;
+
+    async fn create_update_premium_slot_by_source(
+        &self,
+        slot: CreateUpdatePremiumSlotBySource,
+    ) -> ConfigStoreResult<PremiumSlot>;
+
+    async fn update_premium_slot_attachment(
+        &self,
+        user_id: Id<UserMarker>,
+        slot_id: u64,
+        guild_id: Option<Id<GuildMarker>>,
+    ) -> ConfigStoreResult<PremiumSlot>;
 }
 
 /// Struct you get back from the store
@@ -167,4 +189,48 @@ pub struct JoinedGuild {
     pub icon: String,
     pub owner_id: Id<UserMarker>,
     pub left_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PremiumSlot {
+    pub id: u64,
+    pub title: String,
+    pub user_id: Option<Id<UserMarker>>,
+    pub message: String,
+    pub source: String,
+    pub source_id: String,
+    pub tier: PremiumSlotTier,
+    pub state: PremiumSlotState,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub manage_url: String,
+    pub attached_guild_id: Option<Id<GuildMarker>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateUpdatePremiumSlotBySource {
+    pub title: String,
+    pub user_id: Option<Id<UserMarker>>,
+    pub message: String,
+    pub source: String,
+    pub source_id: String,
+    pub tier: PremiumSlotTier,
+    pub state: PremiumSlotState,
+    pub expires_at: DateTime<Utc>,
+    pub manage_url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PremiumSlotState {
+    Active,
+    Cancelling,
+    Cancelled,
+    PaymentFailed,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PremiumSlotTier {
+    Lite,
+    Premium,
 }

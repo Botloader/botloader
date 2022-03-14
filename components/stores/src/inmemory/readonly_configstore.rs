@@ -1,9 +1,13 @@
 use crate::config::{
-    ConfigStore, ConfigStoreError, ConfigStoreResult, CreateScript, GuildMetaConfig, JoinedGuild,
-    Script, ScriptContributes, UpdateScript,
+    ConfigStore, ConfigStoreError, ConfigStoreResult, CreateScript,
+    CreateUpdatePremiumSlotBySource, GuildMetaConfig, JoinedGuild, PremiumSlot, Script,
+    ScriptContributes, UpdateScript,
 };
 use async_trait::async_trait;
-use twilight_model::id::{marker::GuildMarker, Id};
+use twilight_model::id::{
+    marker::{GuildMarker, UserMarker},
+    Id,
+};
 
 #[derive(Debug, Clone)]
 pub struct ReadOnlyConfigStore {
@@ -139,5 +143,35 @@ impl ConfigStore for ReadOnlyConfigStore {
 
     async fn get_left_guilds(&self, _threshold_hours: u64) -> ConfigStoreResult<Vec<JoinedGuild>> {
         todo!();
+    }
+
+    async fn get_guild_premium_slots(
+        &self,
+        _guild_id: Id<GuildMarker>,
+    ) -> ConfigStoreResult<Vec<PremiumSlot>> {
+        todo!()
+    }
+
+    async fn get_user_premium_slots(
+        &self,
+        _user_id: Id<UserMarker>,
+    ) -> ConfigStoreResult<Vec<PremiumSlot>> {
+        todo!()
+    }
+
+    async fn create_update_premium_slot_by_source(
+        &self,
+        _slot: CreateUpdatePremiumSlotBySource,
+    ) -> ConfigStoreResult<PremiumSlot> {
+        todo!()
+    }
+
+    async fn update_premium_slot_attachment(
+        &self,
+        _user_id: Id<UserMarker>,
+        _slot_id: u64,
+        _guild_id: Option<Id<GuildMarker>>,
+    ) -> ConfigStoreResult<PremiumSlot> {
+        todo!()
     }
 }

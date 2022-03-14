@@ -2,10 +2,14 @@ use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::postgres::types::PgInterval;
-use twilight_model::id::{marker::GuildMarker, Id};
+use twilight_model::id::{
+    marker::{GuildMarker, UserMarker},
+    Id,
+};
 
 use crate::config::{
-    ConfigStoreError, ConfigStoreResult, CreateScript, GuildMetaConfig, JoinedGuild, Script,
+    ConfigStoreError, ConfigStoreResult, CreateScript, CreateUpdatePremiumSlotBySource,
+    GuildMetaConfig, JoinedGuild, PremiumSlot, PremiumSlotState, PremiumSlotTier, Script,
     ScriptContributes, UpdateScript,
 };
 
@@ -362,6 +366,106 @@ impl crate::config::ConfigStore for Postgres {
 
         Ok(())
     }
+
+    async fn get_guild_premium_slots(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> ConfigStoreResult<Vec<PremiumSlot>> {
+        let res = sqlx::query_as!(
+            DbPremiumSlot,
+            "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, \
+             updated_at, expires_at, manage_url, attached_guild_id
+             FROM premium_slots WHERE attached_guild_id = $1;",
+            guild_id.get() as i64,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(res.into_iter().map(Into::into).collect())
+    }
+
+    async fn get_user_premium_slots(
+        &self,
+        user_id: Id<UserMarker>,
+    ) -> ConfigStoreResult<Vec<PremiumSlot>> {
+        let res = sqlx::query_as!(
+            DbPremiumSlot,
+            "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, \
+             updated_at, expires_at, manage_url, attached_guild_id
+             FROM premium_slots WHERE user_id = $1;",
+            user_id.get() as i64,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(res.into_iter().map(Into::into).collect())
+    }
+
+    async fn create_update_premium_slot_by_source(
+        &self,
+        slot: CreateUpdatePremiumSlotBySource,
+    ) -> ConfigStoreResult<PremiumSlot> {
+        let res = sqlx::query_as!(
+            DbPremiumSlot,
+            r#"
+INSERT INTO premium_slots 
+       (title, user_id, message, source, source_id, tier, state, created_at, updated_at,
+          expires_at, manage_url, attached_guild_id) 
+VALUES ($1,       $2,      $3,     $4,       $5,     $6,    $7,     now(),      now(),
+            $8,          $9,           null        )
+ON CONFLICT (source, source_id) DO UPDATE SET
+    title = $1,
+    user_id = $2,
+    message = $3,
+    source = $4,
+    source_id = $5,
+    tier = $6,
+    state = $7,
+    updated_at = now(),
+    expires_at = $8,
+    manage_url = $9
+RETURNING id, title, user_id, message, source, source_id, tier, state, created_at, 
+            updated_at, expires_at, manage_url, attached_guild_id;
+             "#,
+            slot.title,
+            slot.user_id.map(|v| v.get() as i64),
+            slot.message,
+            slot.source,
+            slot.source_id,
+            tier_to_int(slot.tier),
+            state_to_int(slot.state),
+            slot.expires_at,
+            slot.manage_url,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.into())
+    }
+
+    async fn update_premium_slot_attachment(
+        &self,
+        user_id: Id<UserMarker>,
+        slot_id: u64,
+        guild_id: Option<Id<GuildMarker>>,
+    ) -> ConfigStoreResult<PremiumSlot> {
+        let res = sqlx::query_as!(
+            DbPremiumSlot,
+            r#"
+UPDATE premium_slots SET attached_guild_id = $3
+WHERE id = $1 AND user_id = $2
+RETURNING id, title, user_id, message, source, source_id, tier, state, created_at, 
+            updated_at, expires_at, manage_url, attached_guild_id;
+             "#,
+            slot_id as i64,
+            user_id.get() as i64,
+            guild_id.map(|v| v.get() as i64),
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.into())
+    }
 }
 
 #[allow(dead_code)]
@@ -435,5 +539,74 @@ impl From<DbJoinedGuild> for JoinedGuild {
 impl From<sqlx::Error> for ConfigStoreError {
     fn from(err: sqlx::Error) -> Self {
         Self::Other(Box::new(err))
+    }
+}
+
+struct DbPremiumSlot {
+    id: i64,
+    title: String,
+    user_id: Option<i64>,
+    message: String,
+    source: String,
+    source_id: String,
+    tier: i32,
+    state: i32,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    expires_at: DateTime<Utc>,
+    manage_url: String,
+    attached_guild_id: Option<i64>,
+}
+
+impl From<DbPremiumSlot> for PremiumSlot {
+    fn from(v: DbPremiumSlot) -> Self {
+        Self {
+            id: v.id as u64,
+            title: v.title,
+            user_id: v.user_id.map(|uid| Id::new(uid as u64)),
+            message: v.message,
+            source: v.source,
+            source_id: v.source_id,
+            tier: match v.tier {
+                1 => PremiumSlotTier::Lite,
+                2 => PremiumSlotTier::Premium,
+                _ => panic!("unknown premium slot tier, id: {}, tier: {}", v.id, v.tier),
+            },
+            state: match v.state {
+                1 => PremiumSlotState::Active,
+                2 => PremiumSlotState::Cancelling,
+                3 => PremiumSlotState::Cancelled,
+                4 => PremiumSlotState::PaymentFailed,
+                _ => panic!(
+                    "unknown premium slot state, id: {}, state: {}",
+                    v.id, v.state
+                ),
+            },
+            created_at: v.created_at,
+            updated_at: v.updated_at,
+            expires_at: v.expires_at,
+            manage_url: v.manage_url,
+            attached_guild_id: v.attached_guild_id.map(|gid| Id::new(gid as u64)),
+        }
+    }
+}
+
+// since the int representation is specific to this postgres implementation, i don't want
+// to implement From<PremiumSlotTier> for i32
+fn tier_to_int(tier: PremiumSlotTier) -> i32 {
+    match tier {
+        PremiumSlotTier::Lite => 1,
+        PremiumSlotTier::Premium => 2,
+    }
+}
+
+// since the int representation is specific to this postgres implementation, i don't want
+// to implement From<PremiumSlotTier> for i32
+fn state_to_int(state: PremiumSlotState) -> i32 {
+    match state {
+        PremiumSlotState::Active => 1,
+        PremiumSlotState::Cancelling => 2,
+        PremiumSlotState::Cancelled => 3,
+        PremiumSlotState::PaymentFailed => 4,
     }
 }
