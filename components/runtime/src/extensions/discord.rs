@@ -10,6 +10,8 @@ use runtime_models::internal::member::UpdateGuildMemberFields;
 use runtime_models::internal::misc_op::{CreateBanFields, GetReactionsFields};
 use std::str::FromStr;
 use std::{cell::RefCell, rc::Rc};
+use twilight_http::api_error::{ApiError, GeneralApiError};
+use twilight_http::error::ErrorType;
 use twilight_http::request::AuditLogReason;
 use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
@@ -836,16 +838,32 @@ pub async fn op_get_members(
     for item in ids {
         if let Some(id) = item {
             // fall back to http api
-            let member = rt_ctx
+            match rt_ctx
                 .discord_config
                 .client
                 .guild_member(rt_ctx.guild_id, id)
                 .exec()
-                .await?
-                .model()
-                .await?;
+                .await
+            {
+                Ok(next) => {
+                    let member = next.model().await?;
+                    res.push(Some(member.into()))
+                }
+                Err(err) => {
+                    if !matches!(
+                        err.kind(),
+                        ErrorType::Response {
+                            // 10007 is unknown member
+                            error: ApiError::General(GeneralApiError { code: 10007, .. }),
+                            ..
+                        },
+                    ) {
+                        return Err(anyhow!("failed fetching member: {}", err));
+                    }
 
-            res.push(Some(member.into()))
+                    res.push(None);
+                }
+            }
         } else {
             res.push(None)
         }

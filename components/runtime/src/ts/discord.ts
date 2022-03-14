@@ -191,7 +191,7 @@ async function editSticker() { }
 async function deleteSticker() { }
 
 export async function getMember(id: string): Promise<Member | undefined> {
-    return (await OpWrappers.getMembers([id]))[0] || undefined;
+    return (await OpWrappers.getMembers([id]))[0] ?? undefined;
 }
 
 export async function getMembers(ids: string[]): Promise<(Member | null)[]> {
