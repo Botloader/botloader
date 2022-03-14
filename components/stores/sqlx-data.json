@@ -492,6 +492,98 @@
       "nullable": []
     }
   },
+  "22478f0665fc8d1bfe289311323ab57b2a4915510c2cc8b1f968efa2a07ed84c": {
+    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE user_id = $1;",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "message",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "source",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "source_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "tier",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 7,
+          "name": "state",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 9,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 10,
+          "name": "expires_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 11,
+          "name": "manage_url",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 12,
+          "name": "attached_guild_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
   "28ba8c9f00ead06d759107bb246a004852ce954301f57e7a54cf54f3d01610ba": {
     "query": "SELECT count(*) FROM web_sessions WHERE user_id = $1 AND kind = $2;",
     "describe": {
@@ -510,6 +602,106 @@
       },
       "nullable": [
         null
+      ]
+    }
+  },
+  "2af7820bad837340a79a4008d4a5de9eca35dfe4928c68e65c59262c1767cde4": {
+    "query": "\nINSERT INTO premium_slots \n       (title, user_id, message, source, source_id, tier, state, created_at, updated_at,\n          expires_at, manage_url, attached_guild_id) \nVALUES ($1,       $2,      $3,     $4,       $5,     $6,    $7,     now(),      now(),\n            $8,          $9,           null        )\nON CONFLICT (source, source_id) DO UPDATE SET\n    title = $1,\n    user_id = $2,\n    message = $3,\n    source = $4,\n    source_id = $5,\n    tier = $6,\n    state = $7,\n    updated_at = now(),\n    expires_at = $8,\n    manage_url = $9\nRETURNING id, title, user_id, message, source, source_id, tier, state, created_at, \n            updated_at, expires_at, manage_url, attached_guild_id;\n             ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "message",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "source",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "source_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "tier",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 7,
+          "name": "state",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 9,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 10,
+          "name": "expires_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 11,
+          "name": "manage_url",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 12,
+          "name": "attached_guild_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Int8",
+          "Text",
+          "Text",
+          "Text",
+          "Int4",
+          "Int4",
+          "Timestamptz",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
       ]
     }
   },
@@ -1704,6 +1896,100 @@
       ]
     }
   },
+  "ba654f9767141e1d557bda5a9159b42007cf169328e6e0c41078868adf575647": {
+    "query": "\nUPDATE premium_slots SET attached_guild_id = $3\nWHERE id = $1 AND user_id = $2\nRETURNING id, title, user_id, message, source, source_id, tier, state, created_at, \n            updated_at, expires_at, manage_url, attached_guild_id;\n             ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "message",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "source",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "source_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "tier",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 7,
+          "name": "state",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 9,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 10,
+          "name": "expires_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 11,
+          "name": "manage_url",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 12,
+          "name": "attached_guild_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
   "bb50f239b607ff236b11a843a3724fc36ffc4c67e0d3fa58d43f763e08e15486": {
     "query": "INSERT INTO discord_oauth_tokens (user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (user_id) DO UPDATE SET \n            discord_bearer_token = $2,\n            discord_refresh_token = $3,\n            discord_token_expires_at = $4\n            RETURNING user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at;",
     "describe": {
@@ -2141,6 +2427,98 @@
         false,
         false,
         false
+      ]
+    }
+  },
+  "f58b0775234707bb5aa58e6dba98ed007dad8af946041a762d445267f89e4703": {
+    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE attached_guild_id = $1;",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "message",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "source",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "source_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "tier",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 7,
+          "name": "state",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 9,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 10,
+          "name": "expires_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 11,
+          "name": "manage_url",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 12,
+          "name": "attached_guild_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
       ]
     }
   },
