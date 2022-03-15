@@ -192,8 +192,8 @@ function PremiumSlotComponent(props: { slot: PremiumSlot, onChange: () => any })
     }
 
     return <div className={`premium-slot premium-slot-${props.slot.tier.toLowerCase()}`}>
-        <h4>{props.slot.title}</h4>
-        <p>Tier: <b>{props.slot.tier}</b></p>
+        <h4>{props.slot.tier === "Premium" ? "👑" : "🍔"}{props.slot.title}</h4>
+        <p>Tier: <b>{props.slot.tier}</b>{props.slot.tier === "Premium" ? "👑" : "🍔"}</p>
         <p>Expires at {expiresAt.toLocaleString()}</p>
         <p>State: <b>{props.slot.state}</b></p>
         <p>Attached to: <b>{attachedGuild}</b></p>
