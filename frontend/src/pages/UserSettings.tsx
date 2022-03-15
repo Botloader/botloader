@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Redirect } from "react-router";
-import { isErrorResponse, SessionMeta } from "botloader-common";
+import { isErrorResponse, PremiumSlot, SessionMeta } from "botloader-common";
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { DisplayDateTime } from "../components/DateTime";
 import { Panel } from "../components/Panel";
 import { useSession } from "../components/Session";
 import "./UserSettings.css"
+import { useGuilds } from "../components/GuildsProvider";
 
 export function UserSettingsPage() {
 
@@ -46,6 +47,8 @@ export function UserSettingsPage() {
             <p>Log out this session</p>
             <AsyncOpButton label="Logout" onClick={() => doLogout()}></AsyncOpButton>
         </Panel>
+
+        <PremiumPanel></PremiumPanel>
 
         <Panel title="Create API key">
             <CreateApiKeyComponent onCreated={(s) => setAllSessions([...(allSessions || []), s])} />
@@ -119,4 +122,92 @@ function CreateApiKeyComponent(props: CreateApiTokenProps) {
 
         {status.error ? <p> Error: <code>{status.error}</code></p> : null}
     </>
+}
+
+function PremiumPanel() {
+    const session = useSession();
+    const [slots, setSlots] = useState<null | undefined | PremiumSlot[]>(undefined);
+
+    async function doFetchSlots() {
+        let resp = await session.apiClient.getUserPremiumSlots();
+        if (!isErrorResponse(resp)) {
+            setSlots(resp);
+        } else {
+            setSlots(null);
+        }
+    }
+
+    useEffect(() => {
+        doFetchSlots();
+    }, [])
+
+    function onChanged() {
+        setSlots(undefined);
+        doFetchSlots();
+    }
+
+    return <Panel>
+        <h3>Premium</h3>
+        <p>Note: premium offers no benefits at the time of writing</p>
+        <p>It might take a minute before your subscription is processed and shows up here.</p>
+        <p><a href="https://upgrade.chat/botloader" className="bl-button">Buy premium slots through upgrade.chat</a></p>
+
+        {slots === undefined ?
+            <p>Loading...</p> :
+            slots === null ? <p>failed fetching slots, refresh the page to try again...</p> :
+                slots.map(v => <PremiumSlotComponent key={v.id} slot={v} onChange={onChanged}></PremiumSlotComponent>)
+        }
+    </Panel>
+}
+
+function PremiumSlotComponent(props: { slot: PremiumSlot, onChange: () => any }) {
+    const [isChangingGuild, setIsChangingGuild] = useState(false);
+    const changeGuildRef = useRef<HTMLSelectElement>(null);
+    const session = useSession();
+
+    const guilds = useGuilds();
+
+    let expiresAt = new Date(Date.parse(props.slot.expires_at));
+
+    const attachedGuild = props.slot.attached_guild_id ?
+        guilds?.guilds.find(v => v.guild.id === props.slot.attached_guild_id)?.guild.name ?? props.slot.attached_guild_id
+        : "Not assigned to a server"
+
+    function setServer() {
+        setIsChangingGuild(true);
+    }
+
+    async function saveNewServer() {
+        let newGuild: string | null = changeGuildRef.current!.value;
+        if (newGuild === "none") {
+            newGuild = null
+        }
+
+        console.log(changeGuildRef.current?.value);
+        let resp = await session.apiClient.updatePremiumSlotGuild(props.slot.id + "", newGuild);
+        props.onChange();
+        if (isErrorResponse(resp)) {
+            alert("failed updating guild_id, try again later or contact support");
+        }
+    }
+
+    return <div className={`premium-slot premium-slot-${props.slot.tier.toLowerCase()}`}>
+        <h4>{props.slot.title}</h4>
+        <p>Tier: <b>{props.slot.tier}</b></p>
+        <p>Expires at {expiresAt.toLocaleString()}</p>
+        <p>Attached to: <b>{attachedGuild}</b></p>
+        {isChangingGuild ?
+            <div className="premium-slot-change-guild">
+                <select ref={changeGuildRef}>
+                    <option value="none">none</option>
+                    {guilds?.guilds.map(v => <option defaultValue={props.slot.attached_guild_id ?? undefined} key={v.guild.id} value={v.guild.id + ""}>{v.guild.name}</option>)}
+                </select>
+                <AsyncOpButton label="Save" onClick={saveNewServer}></AsyncOpButton>
+            </div>
+            :
+            <button className="bl-button" onClick={setServer}>Set server</button>
+        }
+    </div>
+
+    // <p>{props.slot.id}</p>
 }

@@ -101,27 +101,47 @@ async fn main() {
         )
         .layer(auth_guild_mw_stack);
 
-    let authorized_api_routes = Router::new()
-        .nest("/guilds/:guild", authorized_api_guild_routes)
-        .route(
-            "/guilds",
-            get(routes::guilds::list_user_guilds_route::<CurrentSessionStore, CurrentConfigStore>),
-        )
-        .route(
-            "/sessions",
-            get(routes::sessions::get_all_sessions::<CurrentSessionStore>)
-                .delete(routes::sessions::del_session::<CurrentSessionStore>)
-                .put(routes::sessions::create_api_token::<CurrentSessionStore>),
-        )
-        .route(
-            "/sessions/all",
-            delete(routes::sessions::del_all_sessions::<CurrentSessionStore>),
-        )
-        .route(
-            "/current_user",
-            get(routes::general::get_current_user::<CurrentSessionStore>),
-        )
-        .route("/logout", post(AuthHandlerData::handle_logout));
+    let authorized_api_routes =
+        Router::new()
+            .nest("/guilds/:guild", authorized_api_guild_routes)
+            .route(
+                "/guilds",
+                get(routes::guilds::list_user_guilds_route::<
+                    CurrentSessionStore,
+                    CurrentConfigStore,
+                >),
+            )
+            .route(
+                "/premium_slots/:slot_id/update_guild",
+                post(
+                    routes::premium::update_premium_slot_guild::<
+                        CurrentSessionStore,
+                        CurrentConfigStore,
+                    >,
+                ),
+            )
+            .route(
+                "/premium_slots",
+                get(routes::premium::list_user_premium_slots::<
+                    CurrentSessionStore,
+                    CurrentConfigStore,
+                >),
+            )
+            .route(
+                "/sessions",
+                get(routes::sessions::get_all_sessions::<CurrentSessionStore>)
+                    .delete(routes::sessions::del_session::<CurrentSessionStore>)
+                    .put(routes::sessions::create_api_token::<CurrentSessionStore>),
+            )
+            .route(
+                "/sessions/all",
+                delete(routes::sessions::del_all_sessions::<CurrentSessionStore>),
+            )
+            .route(
+                "/current_user",
+                get(routes::general::get_current_user::<CurrentSessionStore>),
+            )
+            .route("/logout", post(AuthHandlerData::handle_logout));
 
     let auth_routes_mw_stack = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(handle_mw_err_no_auth))

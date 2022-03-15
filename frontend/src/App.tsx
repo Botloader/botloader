@@ -34,15 +34,15 @@ function App() {
         </Route>
         <Route path="/">
           <SessionProvider>
-            <Switch>
-              <Route path="/settings">
-                <TopNav />
-                <RequireLoggedInSession>
-                  <div className="page-wrapper"><UserSettingsPage /></div>
-                </RequireLoggedInSession>
-              </Route>
-              <Route path="/servers">
-                <GuildsProvider>
+            <GuildsProvider>
+              <Switch>
+                <Route path="/settings">
+                  <TopNav />
+                  <RequireLoggedInSession>
+                    <div className="page-wrapper"><UserSettingsPage /></div>
+                  </RequireLoggedInSession>
+                </Route>
+                <Route path="/servers">
                   <Switch>
                     <Route path="/servers/:guildId">
                       <RequireLoggedInSession>
@@ -54,13 +54,13 @@ function App() {
                       <div className="page-wrapper"><SelectServerPage /></div>
                     </Route>
                   </Switch>
-                </GuildsProvider>
-              </Route>
-              <Route path="/">
-                <TopNav />
-                <LandingPage />
-              </Route>
-            </Switch>
+                </Route>
+                <Route path="/">
+                  <TopNav />
+                  <LandingPage />
+                </Route>
+              </Switch>
+            </GuildsProvider>
           </SessionProvider>
         </Route>
       </Switch>

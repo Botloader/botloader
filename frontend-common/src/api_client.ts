@@ -111,6 +111,13 @@ export class ApiClient {
         });
     }
 
+    async getUserPremiumSlots(): Promise<ApiResult<PremiumSlot[]>> {
+        return await this.get("/api/premium_slots");
+    }
+    async updatePremiumSlotGuild(slotId: string, guildId: string | null): Promise<ApiResult<PremiumSlot>> {
+        return await this.post(`/api/premium_slots/${slotId}/update_guild`, { guild_id: guildId });
+    }
+
     async getAllScripts(guildId: string,): Promise<ApiResult<Script[]>> {
         return await this.get(`/api/guilds/${guildId}/scripts`);
     }
@@ -176,3 +183,28 @@ export interface FetchResponse {
     json(): Promise<unknown>,
     status: number,
 }
+
+export interface PremiumSlot {
+    id: number,
+    title: string,
+    user_id: string | null,
+    message: string,
+    source: string,
+    source_id: string,
+    tier: PremiumSlotTier,
+    state: PremiumSlotState,
+    created_at: string,
+    updated_at: string,
+    expires_at: string,
+    manage_url: string,
+    attached_guild_id: string | null,
+}
+
+export type PremiumSlotState =
+    "Active" |
+    "Cancelling" |
+    "Cancelled" |
+    "PaymentFailed";
+
+export type PremiumSlotTier = "Lite" | "Premium";
+
