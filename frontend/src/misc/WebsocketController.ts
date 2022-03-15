@@ -189,19 +189,20 @@ function getWsUrl() {
 }
 
 export const WebsocketSession = new BotloaderWS(getWsUrl(), (item) => {
-    let tag = item.level;
+    let context = "";
     if (item.script_context) {
-        tag += ` ${item.script_context.filename}`;
+        context += ` ${item.script_context.filename}`;
         if (item.script_context.line_col) {
             const [line, col] = item.script_context.line_col;
-            tag += `:${line}:${col}`;
+            context += `:${line}:${col}`;
         }
     }
 
-    console.log(`[WS]:[${tag}] ${item.message}`)
+    console.log(`[WS]:[${item.level} ${context}] ${item.message}`)
     if (item.guild_id) {
         GuildMessages.pushGuildMessage(item.guild_id, {
-            source: tag,
+            level: item.level,
+            context: context,
             message: item.message,
         })
     }

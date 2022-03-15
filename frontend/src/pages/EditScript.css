@@ -61,6 +61,8 @@
 
 .guild-console-message {
     padding: 5px;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: small;
 }
 
 .guild-console-message:nth-of-type(odd) {
@@ -69,5 +71,28 @@
 
 .guild-console-message-source {
     margin-right: 5px;
-    color: var(--primary-color);
+}
+
+.guild-console-message-level-critical .guild-console-message-source {
+    color: red;
+}
+
+.guild-console-message-level-error .guild-console-message-source {
+    color: red;
+}
+
+.guild-console-message-level-warn .guild-console-message-source {
+    color: rgb(192, 183, 54);
+}
+
+.guild-console-message-level-info .guild-console-message-source {
+    color: rgb(117, 117, 117);
+}
+
+.guild-console-message-level-consolelog .guild-console-message-source {
+    color: rgb(119, 128, 255);
+}
+
+.guild-console-message-level-client .guild-console-message-source {
+    color: rgb(87, 87, 87);
 }

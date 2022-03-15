@@ -72,13 +72,21 @@ export namespace GuildMessages {
     }
 }
 
+export type MessageLevel = "Critical" |
+    "Error" |
+    "Warn" |
+    "Info" |
+    "ConsoleLog" | "Client";
+
 export interface CreateGuildMessage {
-    source: string,
+    level: MessageLevel,
+    context?: string,
     message: string,
 }
 
 export interface GuildMessage {
     id: number,
-    source: string,
+    level: MessageLevel,
+    context?: string,
     message: string,
 }

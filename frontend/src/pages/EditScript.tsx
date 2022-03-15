@@ -187,7 +187,7 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
             return;
         }
         GuildMessages.pushGuildMessage(props.guild.guild.id, {
-            source: "Client",
+            level: "Client",
             message: "Saving..."
         });
 
@@ -198,13 +198,13 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
         await props.refreshScripts();
 
         GuildMessages.pushGuildMessage(props.guild.guild.id, {
-            source: "Client",
+            level: "Client",
             message: "Successfully saved! Reloading guild vm..."
         });
 
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
         GuildMessages.pushGuildMessage(props.guild.guild.id, {
-            source: "Client",
+            level: "Client",
             message: "Reloaded guild vm, changes are now live!"
         });
 
@@ -317,9 +317,8 @@ function GuildConsole(props: { guild: BotGuild }) {
 
     return <ul className="guild-console">
         {messages.map(v =>
-            <li key={v.id} className="guild-console-message"><span className="guild-console-message-source">{v.source}:</span>{v.message}</li>
+            <li key={v.id} className={`guild-console-message guild-console-message-level-${v.level.toLowerCase()}`}><span className="guild-console-message-source">[{v.level}{`${v.context ? " " + v.context : ""}`}]:</span>{v.message}</li>
         )}
         <li ref={bottom}></li>
     </ul>
-
 }
