@@ -14,9 +14,9 @@ export function TopNav() {
         <p className="brand"><Link to="/">Botloader <small>alpha</small></Link></p>
         <div className="top-nav-right">
             <a href="/docs/">Docs</a>
-            <Link to="/news">News</Link>
-            <Link to="/samples">Samples</Link>
-            <Link to="/premium">Premium</Link>
+            {/* <Link to="/news">News</Link> */}
+            {/* <Link to="/samples">Samples</Link> */}
+            {/* <Link to="/premium">Premium</Link> */}
             <div className="current-server">
                 {currentGuild && session.user ? <CurrentGuild guild={currentGuild} /> : session.user ? <NoCurrentGuild /> : null}
             </div>
