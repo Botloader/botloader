@@ -141,6 +141,10 @@ export class ApiClient {
     async getGuildMetaConfig(guildId: string): Promise<ApiResult<GuildMetaConfig>> {
         return await this.get(`/api/guilds/${guildId}/settings`);
     }
+
+    async getNews(): Promise<ApiResult<NewsItem[]>> {
+        return await this.get(`/api/news`);
+    }
 }
 
 export type ApiResult<T> = T | ApiError;
@@ -208,3 +212,17 @@ export type PremiumSlotState =
 
 export type PremiumSlotTier = "Lite" | "Premium";
 
+
+export interface NewsItem {
+    author: NewsAuthor,
+    message_id: string,
+    channel_id: string,
+    channel_name: string,
+    content: string,
+    posted_at: number,
+}
+
+export interface NewsAuthor {
+    username: string,
+    avatar_url: string | null,
+}

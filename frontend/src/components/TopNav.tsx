@@ -15,7 +15,7 @@ export function TopNav() {
         <div className="top-nav-right">
             <a href="/docs/" target="_blank">Docs</a>
             <a href="/book/" target="_blank">Guide</a>
-            {/* <Link to="/news">News</Link> */}
+            <Link to="/news">News</Link>
             {/* <Link to="/samples">Samples</Link> */}
             {/* <Link to="/premium">Premium</Link> */}
             <div className="current-server">

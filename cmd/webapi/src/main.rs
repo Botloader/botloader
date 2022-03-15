@@ -14,9 +14,14 @@ use stores::{inmemory::web::InMemoryCsrfStore, postgres::Postgres};
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
+use twilight_model::id::{
+    marker::{ChannelMarker, GuildMarker},
+    Id,
+};
 
 mod errors;
 mod middlewares;
+mod news_poller;
 mod routes;
 mod util;
 
@@ -38,9 +43,32 @@ type ApiResult<T> = Result<T, ApiErrorResponse>;
 #[tokio::main]
 async fn main() {
     common::common_init(Some("0.0.0.0:7801"));
-    let conf = common::config::RunConfig::parse();
+    let web_conf = WebConfig::parse();
+    let conf = web_conf.common;
 
     info!("starting...");
+
+    let news_handle = if let Some(guild_id) = web_conf.news_guild {
+        let split = web_conf.news_channels.split(',');
+
+        let poller = news_poller::NewsPoller::new(
+            Arc::new(twilight_http::Client::new(conf.discord_token.clone())),
+            split
+                .into_iter()
+                .map(|v| Id::new(v.parse().unwrap()))
+                .collect(),
+            guild_id,
+        )
+        .await
+        .unwrap();
+
+        let handle = poller.handle();
+        info!("running news poller");
+        tokio::spawn(poller.run());
+        handle
+    } else {
+        Default::default()
+    };
 
     let oatuh_client = conf.get_discord_oauth2_client();
 
@@ -69,6 +97,7 @@ async fn main() {
         .layer(Extension(config_store))
         .layer(Extension(session_store.clone()))
         .layer(Extension(client_cache))
+        .layer(Extension(news_handle))
         .layer(session_layer)
         .layer(CorsLayer {
             run_config: conf.clone(),
@@ -154,6 +183,7 @@ async fn main() {
     let public_routes = Router::new()
         .route("/error", get(routes::errortest::handle_errortest))
         .route("/login", get(AuthHandlerData::handle_login))
+        .route("/api/news", get(routes::general::get_news))
         .route(
             "/api/ws",
             get(routes::ws::ws_headler::<CurrentSessionStore>),
@@ -195,4 +225,16 @@ async fn handle_mw_err_no_auth(err: BoxError) -> impl IntoResponse {
         Ok(_) => ApiErrorResponse::SessionExpired,
         Err(_) => ApiErrorResponse::InternalError,
     }
+}
+
+#[derive(Clone, clap::Parser)]
+pub struct WebConfig {
+    #[clap(flatten)]
+    pub(crate) common: common::config::RunConfig,
+
+    #[clap(long, env = "BL_NEWS_CHANNELS", default_value = "")]
+    pub(crate) news_channels: String,
+
+    #[clap(long, env = "BL_NEWS_GUILD")]
+    pub(crate) news_guild: Option<Id<GuildMarker>>,
 }
