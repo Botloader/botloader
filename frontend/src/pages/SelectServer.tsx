@@ -31,7 +31,7 @@ export function SelectServerPage() {
         <Panel>
             <h2>Alpha version</h2>
             <p>Botloader is currently in a alpha state, everything you're seeing is work in progress and will likely change a lot</p>
-            <p><a href="/docs/" className="button">Scripting API Documentation</a></p>
+            <p><a href="/docs/">Scripting API Documentation</a></p>
         </Panel>
         <Panel>
             <h2>Joined servers</h2>

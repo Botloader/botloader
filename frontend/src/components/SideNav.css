@@ -2,9 +2,12 @@
     background-color: var(--nav-bg-color);
     display: flex;
     flex-direction: column;
-    position: fixed;
-    bottom: 0;
-    top: 55px;
+    /* position: absolute; */
+    /* margin-top: 2px; */
+    /* height: 100vh; */
+    /* position: fixed; */
+    /* bottom: 0; */
+    top: var(--top-nav-height);
     width: 150px;
 }
 
@@ -28,6 +31,11 @@
 
 .side-nav ul a {
     padding: 10px;
+    border: none;
+}
+
+.side-nav ul a:hover {
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .side-nav ul a.active {

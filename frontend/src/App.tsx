@@ -18,6 +18,7 @@ import loaderScreenshot from './img/loaderscreenshot.png';
 import { TosPage } from './pages/TOS';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicy';
 import './misc/WebsocketController';
+import { Panel } from './components/Panel';
 
 function App() {
   return (
@@ -36,6 +37,18 @@ function App() {
           <SessionProvider>
             <GuildsProvider>
               <Switch>
+                <Route path="/news">
+                  <TopNav />
+                  <TodoPage></TodoPage>
+                </Route>
+                <Route path="/samples">
+                  <TopNav />
+                  <TodoPage></TodoPage>
+                </Route>
+                <Route path="/premium">
+                  <TopNav />
+                  <TodoPage></TodoPage>
+                </Route>
                 <Route path="/settings">
                   <TopNav />
                   <RequireLoggedInSession>
@@ -105,4 +118,8 @@ function LandingPage() {
       </div>
     </div>
   </>
+}
+
+function TodoPage() {
+  return <Panel>TODO</Panel>
 }

@@ -73,6 +73,11 @@ code {
 a {
   text-decoration: none;
   color: white;
+  border-bottom: 1px solid transparent;
+}
+
+a:hover {
+  border-color: white;
 }
 
 .bl-button {
@@ -83,14 +88,19 @@ a {
   text-decoration: none;
   background: none;
   color: white;
-  /* border: 2px solid black; */
-  border: none;
+  border: none !important;
   padding: 1px 10px;
   font-size: 1em;
   border-radius: 4px;
   background-color: var(--primary-color);
   cursor: pointer;
-  margin: 5px 5px;
+  width: fit-content;
+  height: fit-content;
+  min-height: 35px;
+}
+
+.bl-button:hover {
+  background-color: var(--primary-color-dark);
 }
 
 .bl-button:disabled {
@@ -100,6 +110,10 @@ a {
 
 .bl-button.danger {
   background-color: var(--danger-color);
+}
+
+.bl-button.danger:hover {
+  background-color: var(--danger-color-dark);
 }
 
 /* button:hover,

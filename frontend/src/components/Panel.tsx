@@ -9,7 +9,7 @@ type Props = {
 
 export function Panel(props: Props) {
     return <div className={props.className ? "panel " + props.className : "panel"}>
-        {props.title ? <h3 className="panel-title"><p>{props.title}</p></h3> : null}
+        {props.title ? <h3 className="panel-title">{props.title}</h3> : null}
         <div className="panel-body">
             {props.children}
         </div>

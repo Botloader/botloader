@@ -15,6 +15,7 @@
 
 .guild-select-list a {
     text-decoration: none;
+    border: none;
 }
 
 .guild-list-item {
@@ -29,6 +30,10 @@
     padding: 10px;
 
     color: white;
+}
+
+.guild-list-item:hover {
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .user-session-item {
