@@ -195,6 +195,7 @@ function PremiumSlotComponent(props: { slot: PremiumSlot, onChange: () => any })
         <h4>{props.slot.title}</h4>
         <p>Tier: <b>{props.slot.tier}</b></p>
         <p>Expires at {expiresAt.toLocaleString()}</p>
+        <p>State: <b>{props.slot.state}</b></p>
         <p>Attached to: <b>{attachedGuild}</b></p>
         {isChangingGuild ?
             <div className="premium-slot-change-guild">
