@@ -782,6 +782,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "dbserver"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "axum-metrics-layer",
+ "clap",
+ "common",
+ "dbrokerapi",
+ "futures-util",
+ "metrics",
+ "serde",
+ "serde_json",
+ "simpleproto",
+ "stores",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "debug_unreachable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

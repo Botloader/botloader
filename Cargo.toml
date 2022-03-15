@@ -18,5 +18,6 @@ members = [
     "cmd/discordbroker",
     "cmd/scheduler",
     "cmd/vmworker",
+    "cmd/dbserver",
     "cmd/jobs",
 ]
