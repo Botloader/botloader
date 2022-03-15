@@ -19,6 +19,7 @@ import { TosPage } from './pages/TOS';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicy';
 import './misc/WebsocketController';
 import { Panel } from './components/Panel';
+import { NewsPage } from './pages/NewsPage';
 
 function App() {
   return (
@@ -39,7 +40,7 @@ function App() {
               <Switch>
                 <Route path="/news">
                   <TopNav />
-                  <TodoPage></TodoPage>
+                  <NewsPage></NewsPage>
                 </Route>
                 <Route path="/samples">
                   <TopNav />

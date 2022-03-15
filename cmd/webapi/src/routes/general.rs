@@ -15,3 +15,10 @@ pub async fn get_current_user<ST: SessionStore + 'static>(
 
     Ok(Json(user))
 }
+
+pub async fn get_news(
+    Extension(news_handle): Extension<crate::news_poller::NewsHandle>,
+) -> impl IntoResponse {
+    let latest = news_handle.get_items();
+    Json(latest)
+}
