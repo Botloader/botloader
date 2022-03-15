@@ -54,7 +54,7 @@ export function UserSettingsPage() {
         <Panel title="Active sessions">
             <p>Manage your active sessions</p>
             <div className="user-active-sessions">
-                {allSessions?.map((elem) => <SessionItem key={elem.token} item={elem} />)}
+                {allSessions?.map((elem) => <SessionItem key={elem.created_at} item={elem} />)}
             </div>
             <br />
             <AsyncOpButton label="Clear all sessions (including logging you out from this one)" onClick={() => clearAllSessions()} className="danger"></AsyncOpButton>
