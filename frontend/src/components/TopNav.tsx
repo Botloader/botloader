@@ -13,7 +13,8 @@ export function TopNav() {
     return <div className="top-nav">
         <p className="brand"><Link to="/">Botloader <small>alpha</small></Link></p>
         <div className="top-nav-right">
-            <a href="/docs/">Docs</a>
+            <a href="/docs/" target="_blank">Docs</a>
+            <a href="/book/" target="_blank">Guide</a>
             {/* <Link to="/news">News</Link> */}
             {/* <Link to="/samples">Samples</Link> */}
             {/* <Link to="/premium">Premium</Link> */}
