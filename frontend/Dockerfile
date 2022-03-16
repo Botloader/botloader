@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as build-book
+FROM debian:bullseye as build-book
 
 RUN apt-get update
 RUN apt-get install -y curl
