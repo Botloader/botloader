@@ -11,15 +11,15 @@ This API is centered around `buckets`, a bucket can be thought of as a namespace
 The same bucket can also be used in multiple scripts safely, allowing you to share data between them without any problems.
 
 As of writing there are 2 different kind of buckets:
- - Json objet buckets [API](https://botloader.io/docs/classes/Script.html#createGuildStorageJson)
- - Number buckets [API](https://botloader.io/docs/classes/Script.html#createGuildStorageNumber)
+ - Json objet buckets [API](/docs/classes/Script.html#createGuildStorageJson)
+ - Number buckets [API](/docs/classes/Script.html#createGuildStorageNumber)
 
 
 ## Json buckets
 
 Json buckets can hold any kind of object that can be used in `JSON.stringify`. Botloader handles the encoding and decoding from and to json for you.
 
-**See the API docs for Json buckets for all the methods available:** [here](https://botloader.io/docs/classes/Storage.JsonBucket.html)
+**See the API docs for Json buckets for all the methods available:** [here](/docs/classes/Storage.JsonBucket.html)
 
 ## Number buckets
 
@@ -27,4 +27,4 @@ Number buckets are a bit special, since they only hold numbers they can be sorte
 
 An example of this would be a bucket for user scores where the key is the users id and the value is their score. Using this you can easily fetch the top entries for display in a leader-board without having to worry about sorting yourself.
 
-**See the API docs for Number buckets for all the methods available:** [here](https://botloader.io/docs/classes/Storage.NumberBucket.html)
+**See the API docs for Number buckets for all the methods available:** [here](/docs/classes/Storage.NumberBucket.html)

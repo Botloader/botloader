@@ -1,6 +1,6 @@
 # Interval timers
 
-Botloader provides [Script.onInterval](https://botloader.io/docs/classes/Script.html#onInterval) for executing a function on a interval.
+Botloader provides [Script.onInterval](/docs/classes/Script.html#onInterval) for executing a function on a interval.
 
 Keep in mind that as mentioned in the [script lifecycle](script_lifecycle.md) section that your server's vm gets shut down whenever it's not in use, so your vm may shut down between these intervals and any variables set will be lost. (see the Storage section for persistent storage)
 

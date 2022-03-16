@@ -4,7 +4,7 @@
 
 To use the visual studio code extension, download the `botloader` extension from the marketplace.
 
-After that you need to grab an API key from the botloader.io website, you do this by logging in and navigating to your [user settings](https://botloader.io/settings).
+After that you need to grab an API key from the botloader.io website, you do this by logging in and navigating to your [user settings](/settings).
 
 Once you have copied a API key you can press `ctrl-shift-p` in vs code to bring up the command palette then use the `botloader set api key` command
 

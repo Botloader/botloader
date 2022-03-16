@@ -19,4 +19,3 @@
 - [Interactions TODO](./interactions.md)
     - [Message components](./message_components.md)
     - [Handling interactions](./handling_interactions.md)
-
