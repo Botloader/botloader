@@ -1,0 +1,7 @@
+[book]
+authors = ["jonastar"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Botloader Guide"
+site-url = "/book/"
