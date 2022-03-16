@@ -1,9 +1,13 @@
-FROM alpine:3.15 as build-book
+FROM ubuntu:22.04 as build-book
+
+RUN apt-get update
+RUN apt-get install -y curl
 
 WORKDIR /app/book
 COPY book/ .
 
 # Download mdbook
+
 RUN curl -L -o mdbook.tar.gz https://github.com/rust-lang/mdBook/releases/download/v0.4.15/mdbook-v0.4.15-x86_64-unknown-linux-gnu.tar.gz
 RUN tar xvf mdbook.tar.gz
 
