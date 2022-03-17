@@ -316,11 +316,13 @@ function GuildConsole(props: { guild: BotGuild }) {
     }
 
     return <ul className="guild-console">
-        {messages.map(v =>
-            <li key={v.id} className={`guild-console-message guild-console-message-level-${v.level.toLowerCase()}`}>
-                <span className="guild-console-message-source">[{v.level}{`${v.context ? " " + v.context : ""}`}]:</span>{v.message}
-            </li>
-        )}
+        {messages.map(v => <ConsoleMessage key={v.id} message={v}></ConsoleMessage>)}
         <li ref={bottom}></li>
     </ul>
+}
+
+function ConsoleMessage(props: { message: GuildMessage }) {
+    return <li className={`guild-console-message guild-console-message-level-${props.message.level.toLowerCase()}`}>
+        <pre><span className="guild-console-message-source">[{props.message.level}{`${props.message.context ? " " + props.message.context : ""}`}]:</span>{props.message.message}</pre>
+    </li>
 }

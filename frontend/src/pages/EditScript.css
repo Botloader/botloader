@@ -65,6 +65,10 @@
     word-break: break-word;
 }
 
+.guild-console-message pre {
+    margin: 0;
+}
+
 .guild-console-message:nth-of-type(odd) {
     background-color: rgba(0, 0, 0, 0.411);
 }
