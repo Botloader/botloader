@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { setTimeout } from "timers";
 import { User } from "botloader-common";
 import { BuildConfig } from "../BuildConfig";
 import { GuildMessages } from "./GuildMessages";
