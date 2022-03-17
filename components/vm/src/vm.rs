@@ -718,13 +718,23 @@ impl<'a, 'b> core::future::Future for CompleteModuleEval<'a, 'b> {
             Poll::Pending => {}
         }
 
-        let mut rt = self.cell.enter_isolate(self.rt);
+        {
+            let mut rt = self.cell.enter_isolate(self.rt);
 
-        match rt.poll_event_loop(cx, false) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
-            Poll::Ready(_) => Poll::Ready(Ok(())),
+            match rt.poll_event_loop(cx, false) {
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(Err(e)) => return Poll::Ready(Err(e)),
+                Poll::Ready(_) => {}
+            }
         }
+
+        // we might have gotten a result on the channel after polling the event loop
+        let pinned = Pin::new(&mut self.rcv);
+        if let Poll::Ready(r) = pinned.poll(cx) {
+            return Poll::Ready(if let Ok(inner) = r { inner } else { Ok(()) });
+        }
+
+        Poll::Ready(Ok(()))
     }
 }
 
