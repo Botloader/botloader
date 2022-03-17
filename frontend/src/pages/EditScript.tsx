@@ -323,6 +323,6 @@ function GuildConsole(props: { guild: BotGuild }) {
 
 function ConsoleMessage(props: { message: GuildMessage }) {
     return <li className={`guild-console-message guild-console-message-level-${props.message.level.toLowerCase()}`}>
-        <pre><span className="guild-console-message-source">[{props.message.level}{`${props.message.context ? " " + props.message.context : ""}`}]:</span>{props.message.message}</pre>
+        <pre><span className="guild-console-message-source">[{props.message.level}{props.message.context}]:</span>{props.message.message}</pre>
     </li>
 }
