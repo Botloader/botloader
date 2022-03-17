@@ -317,7 +317,9 @@ function GuildConsole(props: { guild: BotGuild }) {
 
     return <ul className="guild-console">
         {messages.map(v =>
-            <li key={v.id} className={`guild-console-message guild-console-message-level-${v.level.toLowerCase()}`}><span className="guild-console-message-source">[{v.level}{`${v.context ? " " + v.context : ""}`}]:</span>{v.message}</li>
+            <li key={v.id} className={`guild-console-message guild-console-message-level-${v.level.toLowerCase()}`}>
+                <span className="guild-console-message-source">[{v.level}{`${v.context ? " " + v.context : ""}`}]:</span>{v.message}
+            </li>
         )}
         <li ref={bottom}></li>
     </ul>
