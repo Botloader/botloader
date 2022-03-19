@@ -16,6 +16,7 @@ const DEFAULT_EMPTY_SCRIPT_CONTENT =
 // Newly created scripts are disabled, you can enable it in the sidebar
 // You can find a lot of script examples in the support server
 // Docs are located at: https://botloader.io/docs/
+// There's also more in depth guides available at: https://botloader.io/book/
 `
 
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
