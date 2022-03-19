@@ -67,6 +67,7 @@
 
 .guild-console-message pre {
     margin: 0;
+    white-space: pre-wrap;
 }
 
 .guild-console-message:nth-of-type(odd) {
