@@ -14,7 +14,7 @@ import { ConfirmLoginPage } from './pages/ConfirmLogin';
 import { SelectServerPage } from './pages/SelectServer';
 import { UserSettingsPage } from './pages/UserSettings';
 import { GuildPage } from './pages/GuildPage';
-import loaderScreenshot from './img/loaderscreenshot.png';
+import pogshowcase from './img/pogshowcase.png';
 import { TosPage } from './pages/TOS';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicy';
 import './misc/WebsocketController';
@@ -96,7 +96,8 @@ export default App;
 function LandingPage() {
   return <>
     <header className="App-header">
-      <p>Botloader coming soon™</p>
+      <p>Botloader<br></br>A programmable discord bot</p>
+      <small>Now verified!</small>
       <img src="/logo192.png" alt="zzz" className="avatar"></img>
       <div className='frontpage-links'>
         <Link to="/servers" className='bl-button' >Control panel</Link>
@@ -106,15 +107,9 @@ function LandingPage() {
     </header>
     <div className='frontpage-intro-container'>
       <div className='frontpage-intro'>
-        <p>
-          <b>Botloader is a programmable discord bot that is currently in a early private alpha phase.</b><br />
-          <br />This project has 2 goals
-          <br />The first goal is to be a platform for server admins to create server specific scripts, tools, games etc.
-          <br />How it works is you add botloader to your server, then you can instantly start programming it.<br />
-          <br />The second goal is to provide a marketplace of user created "plugins" that you can add to your server with a single click.<br />
-          <br />The project is currently in a early private alpha phase where were focusing on adding all the scripting API's and making sure that the programming experience is ergonomic and other fancy ass words.
-        </p>
-        <img src={loaderScreenshot} alt="screenshot"></img>
+        <p>Botloader is a programmable discord bot that is currently in a alpha phase.</p>
+        <p>You can find more information using the links at the top and by joining the server.</p>
+        <img src={pogshowcase} alt="screenshot"></img>
       </div>
     </div>
   </>
