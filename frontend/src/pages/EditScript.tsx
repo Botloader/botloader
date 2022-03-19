@@ -295,8 +295,7 @@ function GuildConsole(props: { guild: BotGuild }) {
 
 
     useEffect(() => {
-        let messages = GuildMessages.getGuildMessages(props.guild.guild.id);
-        setMessages(messages);
+        setMessages(GuildMessages.getGuildMessages(props.guild.guild.id));
 
         WebsocketSession.subscribeGuild(props.guild.guild.id);
     }, [props.guild.guild.id])
@@ -309,7 +308,7 @@ function GuildConsole(props: { guild: BotGuild }) {
                 GuildMessages.removeListener(props.guild.guild.id, listenerId.current);
             }
         }
-    })
+    }, [props.guild.guild.id])
 
     useEffect(() => {
         if (bottom.current) {
@@ -318,11 +317,14 @@ function GuildConsole(props: { guild: BotGuild }) {
     })
 
     function onNewMessage(message: GuildMessage) {
-        let newMessages = [
-            ...messages,
-            message
-        ]
-        setMessages(newMessages);
+        setMessages((current) => {
+            let newMessages = [
+                ...current,
+                message
+            ]
+
+            return newMessages
+        });
     }
 
     return <ul className="guild-console">
