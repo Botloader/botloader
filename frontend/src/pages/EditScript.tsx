@@ -80,6 +80,15 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
                 ]
             )
 
+            monaco.languages.typescript.typescriptDefaults.setInlayHintsOptions({
+                includeInlayFunctionLikeReturnTypeHints: true,
+                includeInlayParameterNameHints: "all",
+                includeInlayVariableTypeHints: true,
+                includeInlayFunctionParameterTypeHints: true,
+                includeInlayPropertyDeclarationTypeHints: true,
+                includeInlayEnumMemberValueHints: true
+            })
+
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
                 // typeRoots: ["typings/"],
                 moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
