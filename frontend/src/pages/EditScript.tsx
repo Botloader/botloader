@@ -65,7 +65,6 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
                 [
                     ...typings.filter(v => v.type === "0")
                         .map(v => {
-                            // console.log(v.name);
                             return {
                                 content: v.readAsString(),
                                 filePath: "file:///" + v.name,
@@ -121,7 +120,6 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
             })
 
             setHasSetTypings(true);
-            console.log("set extra libs!");
         }
 
         // This is probably fine because of the if statement
@@ -142,19 +140,8 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
 
 function Loaded(props: { guild: BotGuild, script: Script, files: File[], refreshScripts: () => unknown }) {
     const session = useSession();
-    const monaco = useMonaco();
     const currentValue = useRef(props.script.original_source);
     const [isDirty, setIsDirty] = useState(false);
-
-    useEffect(() => {
-        if (monaco) {
-            console.log(monaco.languages.typescript.typescriptDefaults.getExtraLibs());
-            console.log(monaco.languages.typescript.typescriptDefaults.getCompilerOptions());
-            console.log(monaco.languages.typescript.typescriptDefaults.getEagerModelSync());
-        }
-
-    }, [monaco]);
-
 
     useEffect(() => {
         document.addEventListener("keydown", handleKeyDown);
@@ -193,7 +180,6 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
     let isSaving = false;
     async function save() {
         if (!isDirty || isSaving) {
-            console.log(isDirty, isSaving);
             return;
         }
         GuildMessages.pushGuildMessage(props.guild.guild.id, {
@@ -230,7 +216,6 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
         }
     }
 
-    console.log("render")
     return <div className="scripting-ide">
         <Editor
             // loading

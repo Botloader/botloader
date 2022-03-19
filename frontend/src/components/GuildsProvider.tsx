@@ -17,7 +17,6 @@ export function GuildsProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (session.user) {
-            console.log("YOOOOOOOOOOOOOOOOOOOOOOOOO");
             inner();
         } else {
             console.log("no user, not fetching guilds");
