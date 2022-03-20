@@ -113,7 +113,10 @@ impl crate::web::SessionStore for Postgres {
             user.id.get() as i64,
             user.discriminator as i16,
             user.name,
-            user.avatar.as_ref().map(ToString::to_string),
+            user.avatar
+                .as_ref()
+                .map(ToString::to_string)
+                .unwrap_or_default(),
         )
         .fetch_one(&self.pool)
         .await?;
