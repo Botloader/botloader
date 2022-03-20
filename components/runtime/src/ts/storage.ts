@@ -321,4 +321,96 @@ export namespace Storage {
             return undefined
         }
     }
+
+    /**
+     * A single persistent variable.
+     * 
+     * This internally just uses a storage bucket so the functionality is identical to storage buckets.
+     * 
+     * You can think of this as just a single entry inside a storage bucket
+     */
+    export abstract class Var<T> {
+        bucket: Bucket<T>;
+        key: string;
+
+        constructor(b: Bucket<T>, key: string) {
+            this.key = key;
+            this.bucket = b;
+        }
+
+        /**
+         * Store a value at the provided key in the bucket, this will overwrite the previous value stored there, if any.
+         * 
+         * @param value The value you're storing, for objects this will be converted to json behind the scenes
+         * @param options Optional options
+         * @returns The storage entry
+         */
+        async set(value: T, options?: SetValueOptions) {
+            return this.bucket.set(this.key, value, options);
+        }
+
+
+        /**
+         * Similar to {@link set} but stores the value conditionally.
+         * 
+         * @param value The value you're storing, for objects this will be converted to json behind the scenes
+         * @param cond The condition that has to pass to store the value.
+         *  - IfExists: will only store the value if the key existed beforehand. 
+         *  - IfNotExists: will only store the value if the key did not exist. 
+         * @param options Optional options
+         * @returns Either the new entry, or undefined if the condition failed. 
+         */
+        async setIf(value: T, cond: "IfExists" | "IfNotExists", options?: SetValueOptions) {
+            return this.bucket.setIf(this.key, value, cond, options);
+        }
+
+        /**
+         * Fetches the current value
+         * 
+         * @returns The entry, or undefined if it did not exist
+         */
+        async get() {
+            return this.bucket.get(this.key);
+        }
+
+        /**
+         * Deletes the key from the database
+         * 
+         * @returns The deleted entry, or undefined if none
+         */
+        async delete() {
+            return this.bucket.delete(this.key);
+        }
+    }
+
+    export class NumberVar extends Var<number> {
+        bucket: NumberBucket;
+
+        constructor(namespace: string, key: string) {
+            const bucket = new NumberBucket(namespace);
+            super(bucket, key);
+            this.bucket = bucket;
+        }
+
+
+        /**
+         * Atomically increments the value stored at key. If the entry did not exist beforehand a new one is created and set to `amount`
+         * 
+         * @param amount The amount to increment the value by
+         * @returns The entry after incrementing the value
+         */
+        async incr(amount: number) {
+            return this.bucket.incr(this.key, amount);
+        }
+    }
+
+    export class JsonVar<T> extends Var<T> {
+        bucket: JsonBucket<T>;
+
+        constructor(namespace: string, key: string) {
+            const bucket = new JsonBucket<T>(namespace);
+            super(bucket, key);
+            this.bucket = bucket;
+        }
+    }
 }
