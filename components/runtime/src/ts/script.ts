@@ -84,6 +84,35 @@ export class Script {
     }
 
     /**
+     * Create a new persistent variable.
+     * 
+     * This is built on top of storage buckets so you can think of it as a single entry inside a storage bucket.
+     * 
+     * @param key Key for the variable inside the storage bucket, the same key in another script will refer to the same entry
+     * @param options Additional options
+     * @returns 
+     */
+    createGuildStorageVarJson<T>(key: string, options?: StorageVarExtraOptions) {
+        const namespace = options?.namespace ?? "bl:vars_json";
+        return new Storage.JsonVar<T>(namespace, key);
+    }
+
+    /**
+     * Create a new persistent variable.
+     * 
+     * This is built on top of storage buckets so you can think of it as a single entry inside a storage bucket.
+     * 
+     * @param key Key for the variable inside the storage bucket, the same key in another script will refer to the same entry
+     * @param options Additional options
+     * @returns 
+     */
+    createGuildStorageVarNumber(key: string, options?: StorageVarExtraOptions) {
+        const namespace = options?.namespace ?? "bl:vars_number";
+        return new Storage.NumberVar(namespace, key);
+    }
+
+
+    /**
      * Register a scheduled task handler for the provided namespace.
      * 
      * See {@link Tasks} for more info about scheduled tasks and how to schedule a new one.
@@ -277,4 +306,8 @@ export class Script {
 interface IntervalTimerListener {
     timer: Internal.IntervalTimer,
     callback: () => any,
-} 
+}
+
+interface StorageVarExtraOptions {
+    namespace?: string,
+}
