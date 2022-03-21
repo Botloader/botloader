@@ -199,12 +199,12 @@ function generateTsConfig(context: vscode.ExtensionContext) {
 			"removeComments": true,
 			"preserveConstEnums": true,
 			"sourceMap": false,
-			"target": "ES2020",
+			"target": "esnext",
 			"alwaysStrict": true,
 			"strict": true,
 			"strictNullChecks": true,
 			"baseUrl": "./",
-			"lib": ["ES2020"],
+			"lib": ["esnext"],
 			"paths": {
 				"botloader": [
 					indexPath
