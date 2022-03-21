@@ -446,10 +446,10 @@ export class Interaction {
     }
 
     /**
-     * @deprecated use {@link sendFollowup} instead
+     * @deprecated use {@link createFollowup} instead
      */
     async sendResponse(resp: string | CreateMessageFields) {
-        return this.sendFollowup(resp);
+        return this.createFollowup(resp);
     }
 
     async getOriginalResponse() {
@@ -468,6 +468,9 @@ export class Interaction {
         return getInteractionFollowupMessage(this.token, messageId);
     }
 
+    /**
+     * @deprecated use {@link createFollowup} instead
+     */
     async sendFollowup(resp: string | InteractionCreateMessageFields) {
         return createInteractionFollowupMessage(this.token, resp);
     }
