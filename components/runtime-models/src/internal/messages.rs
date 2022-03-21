@@ -7,8 +7,8 @@ use crate::{
             Attachment, ChannelMention, MessageActivity, MessageApplication, MessageFlags,
             MessageReaction, MessageReference, MessageType, UserMention,
         },
-        user::User,
     },
+    internal::user::User,
     util::NotBigU64,
 };
 use serde::{Deserialize, Serialize};
@@ -168,7 +168,7 @@ pub struct OpGetMessages {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export, rename = "IMessage")]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/IMessage.ts")]
+#[ts(export_to = "bindings/internal/IMessage.ts")]
 pub struct Message {
     pub activity: Option<MessageActivity>,
     pub application: Option<MessageApplication>,

@@ -1,6 +1,6 @@
-import type { User } from "./User";
+import type { IUser } from "../internal/IUser";
 
 export interface Ban {
   reason: string | null;
-  user: User;
+  user: IUser;
 }

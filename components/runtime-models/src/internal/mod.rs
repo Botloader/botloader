@@ -10,3 +10,4 @@ pub mod script;
 pub mod storage;
 pub mod tasks;
 pub mod timers;
+pub mod user;

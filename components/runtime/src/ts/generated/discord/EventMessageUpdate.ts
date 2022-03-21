@@ -1,12 +1,12 @@
 import type { Attachment } from "./Attachment";
 import type { Embed } from "./Embed";
+import type { IUser } from "../internal/IUser";
 import type { MessageType } from "./MessageType";
-import type { User } from "./User";
 import type { UserMention } from "./UserMention";
 
 export interface EventMessageUpdate {
   attachments?: Array<Attachment>;
-  author?: User;
+  author?: IUser;
   channelId: string;
   content: string | null;
   editedTimestamp?: number;

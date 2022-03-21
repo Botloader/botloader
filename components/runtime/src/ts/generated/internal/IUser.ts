@@ -1,7 +1,7 @@
+import type { IUserFlags } from "./IUserFlags";
 import type { PremiumType } from "./PremiumType";
-import type { UserFlags } from "./UserFlags";
 
-export interface User {
+export interface IUser {
   avatar: string | null;
   bot: boolean;
   discriminator: string;
@@ -9,6 +9,6 @@ export interface User {
   locale: string | null;
   username: string;
   premiumType: PremiumType | null;
-  publicFlags: UserFlags | null;
+  publicFlags: IUserFlags | null;
   system: boolean | null;
 }

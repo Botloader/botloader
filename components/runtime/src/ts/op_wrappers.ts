@@ -83,28 +83,28 @@ export namespace OpWrappers {
     }
 
     // Messages
-    export async function getMessage(args: Internal.OpGetMessage): Promise<Discord.IMessage> {
+    export async function getMessage(args: Internal.OpGetMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "discord_get_message",
             args
         );
     }
 
-    export async function getMessages(args: Internal.OpGetMessages): Promise<Discord.IMessage[]> {
+    export async function getMessages(args: Internal.OpGetMessages): Promise<Internal.IMessage[]> {
         return await Deno.core.opAsync(
             "discord_get_messages",
             args
         );
     }
 
-    export async function createChannelMessage(args: Internal.OpCreateChannelMessage): Promise<Discord.IMessage> {
+    export async function createChannelMessage(args: Internal.OpCreateChannelMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "discord_create_message",
             args
         );
     }
 
-    export async function editChannelMessage(args: Internal.OpEditChannelMessage): Promise<Discord.IMessage> {
+    export async function editChannelMessage(args: Internal.OpEditChannelMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "discord_edit_message",
             args
@@ -132,7 +132,7 @@ export namespace OpWrappers {
         );
     }
 
-    export async function getInteractionFollowupMessage(token: string, messageId: string): Promise<Discord.IMessage> {
+    export async function getInteractionFollowupMessage(token: string, messageId: string): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "discord_interaction_get_followup_message",
             token,
@@ -141,7 +141,7 @@ export namespace OpWrappers {
     }
 
 
-    export async function createInteractionFollowupMessage(args: Internal.OpCreateFollowUpMessage): Promise<Discord.IMessage> {
+    export async function createInteractionFollowupMessage(args: Internal.OpCreateFollowUpMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "discord_interaction_followup_message",
             args
@@ -164,14 +164,14 @@ export namespace OpWrappers {
         );
     }
 
-    export async function getInteractionOriginal(token: string): Promise<Discord.IMessage> {
+    export async function getInteractionOriginal(token: string): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "discord_interaction_get_original_response",
             token
         );
     }
 
-    export async function editInteractionOriginal(args: Internal.OpCreateFollowUpMessage): Promise<Discord.IMessage> {
+    export async function editInteractionOriginal(args: Internal.OpCreateFollowUpMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "discord_interaction_edit_original_response",
             args
@@ -312,7 +312,7 @@ export namespace OpWrappers {
     export async function discord_delete_user_reaction(channelId: string, messageId: string, userId: string, emoji: Discord.SendEmoji): Promise<void> {
         return Deno.core.opAsync("discord_delete_user_reaction", [channelId, messageId, userId], emoji)
     }
-    export async function discord_get_reactions(channelId: string, messageId: string, fields: Internal.GetReactionsFields): Promise<Discord.User[]> {
+    export async function discord_get_reactions(channelId: string, messageId: string, fields: Internal.GetReactionsFields): Promise<Internal.IUser[]> {
         return Deno.core.opAsync("discord_get_reactions", [channelId, messageId], fields)
     }
     export async function discord_delete_all_reactions(channelId: string, messageId: string): Promise<void> {

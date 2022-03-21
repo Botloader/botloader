@@ -1,5 +1,5 @@
+import type { IUserFlags } from "../internal/IUserFlags";
 import type { PartialMember } from "./PartialMember";
-import type { UserFlags } from "./UserFlags";
 
 export interface UserMention {
   avatar: string | null;
@@ -8,5 +8,5 @@ export interface UserMention {
   id: string;
   member: PartialMember | null;
   username: string;
-  publicFlags: UserFlags;
+  publicFlags: IUserFlags;
 }

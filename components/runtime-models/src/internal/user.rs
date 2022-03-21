@@ -2,9 +2,9 @@ use serde::Serialize;
 use ts_rs::TS;
 
 #[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
+#[ts(export, rename = "IUser")]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/User.ts")]
+#[ts(export_to = "bindings/internal/IUser.ts")]
 pub struct User {
     pub avatar: Option<String>,
     pub bot: bool,
@@ -36,7 +36,7 @@ impl From<twilight_model::user::User> for User {
 #[derive(Clone, Copy, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/PremiumType.ts")]
+#[ts(export_to = "bindings/internal/PremiumType.ts")]
 pub enum PremiumType {
     None,
     NitroClassic,
@@ -54,9 +54,9 @@ impl From<twilight_model::user::PremiumType> for PremiumType {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, TS)]
-#[ts(export)]
+#[ts(export, rename = "IUserFlags")]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/UserFlags.ts")]
+#[ts(export_to = "bindings/internal/IUserFlags.ts")]
 pub struct UserFlags {
     pub(crate) staff: bool,                    // Discord Employee
     pub(crate) partner: bool,                  // Partnered Server Owner

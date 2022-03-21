@@ -5,8 +5,8 @@ use crate::{
     discord::{
         embed::Embed,
         message::{Attachment, MessageType, UserMention},
-        user::User,
     },
+    internal::user::User,
     util::NotBigU64,
 };
 

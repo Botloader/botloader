@@ -1,4 +1,4 @@
-use crate::{discord::user::User, util::NotBigU64};
+use crate::{internal::user::User, util::NotBigU64};
 use serde::Serialize;
 use ts_rs::TS;
 

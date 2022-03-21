@@ -9,9 +9,7 @@ use twilight_model::guild::{
     VerificationLevel as TwilightVerificationLevel,
 };
 
-use crate::util::NotBigU64;
-
-use super::user::User;
+use crate::{internal::user::User, util::NotBigU64};
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]

@@ -1,4 +1,4 @@
-import type { User } from "./User";
+import type { IUser } from "../internal/IUser";
 
 export interface Member {
   deaf: boolean;
@@ -8,5 +8,5 @@ export interface Member {
   pending: boolean;
   premiumSince: number | null;
   roles: Array<string>;
-  user: User;
+  user: IUser;
 }

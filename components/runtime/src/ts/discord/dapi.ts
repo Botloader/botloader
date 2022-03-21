@@ -1,7 +1,8 @@
-import { Guild, GuildChannel, Member, Role, Embed, Component, ComponentType, AuditLogExtras, SendEmoji, User } from '../generated/discord/index';
+import { Guild, GuildChannel, Member, Role, Embed, Component, ComponentType, AuditLogExtras, SendEmoji } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { Message } from './message';
+import { User } from './user';
 
 let a: GuildChannel | null = null;
 
@@ -289,10 +290,10 @@ export interface GetReactionsExtras {
 }
 
 export async function getReactions(channelId: string, messageId: string, emoji: SendEmoji, extra?: GetReactionsExtras): Promise<User[]> {
-    return OpWrappers.discord_get_reactions(channelId, messageId, {
+    return (await OpWrappers.discord_get_reactions(channelId, messageId, {
         ...extra,
         emoji: emoji,
-    });
+    })).map(v => new User(v));
 }
 export async function deleteAllReactions(channelId: string, messageId: string): Promise<void> {
     return OpWrappers.discord_delete_all_reactions(channelId, messageId);
