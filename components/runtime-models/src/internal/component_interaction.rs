@@ -1,4 +1,5 @@
-use crate::discord::{component::ComponentType, member::Member, message::Message};
+use super::messages::Message;
+use crate::discord::{component::ComponentType, member::Member};
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -18,6 +19,7 @@ pub struct MessageComponentInteraction {
     pub component_type: ComponentType,
     pub values: Vec<String>,
 }
+
 use twilight_model::application::interaction::MessageComponentInteraction as TwilightComponentInteraction;
 impl From<TwilightComponentInteraction> for MessageComponentInteraction {
     fn from(v: TwilightComponentInteraction) -> Self {

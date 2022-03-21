@@ -1,6 +1,6 @@
 import type { ComponentType } from "../discord/ComponentType";
+import type { IMessage } from "../discord/IMessage";
 import type { Member } from "../discord/Member";
-import type { Message } from "../discord/Message";
 
 export interface MessageComponentInteraction {
   channelId: string;
@@ -8,7 +8,7 @@ export interface MessageComponentInteraction {
   id: string;
   locale: string;
   member: Member;
-  message: Message;
+  message: IMessage;
   token: string;
   customId: string;
   componentType: ComponentType;
