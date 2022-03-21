@@ -2,7 +2,7 @@ import { Storage } from "botloader";
 import { assertExpected, runOnce, sendScriptCompletion } from "lib";
 
 runOnce("storage_simple2", async () => {
-    let bucket = script.createGuildStorageNumber("storage_simple2.ts");
+    let bucket = script.createStorageNumber("storage_simple2.ts");
 
     await assertCount(bucket, 0);
 

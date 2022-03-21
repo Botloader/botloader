@@ -46,18 +46,7 @@ export class Script {
     }
 
     /**
-     * Create new json storage buckets for persistent storage
-     * 
-     * @param namespace a "name" or "id" for the bucket. 
-     * This is not script scoped and the same storage bucket can be registered in multiple scripts to have access to the same data, this is perfectly safe.
-     * 
-     * @example ```ts
-     * interface Data{
-     *     key: string,
-     * }
-     * let funStorage = script.createGuildStorageJson(new Storage.JsonBucket<Data>("fun-data"));
-     * ```
-     *
+     * @deprecated use {@link createStorageJson}
      */
     createGuildStorageJson<T>(namespace: string) {
         let bucket = new Storage.JsonBucket<T>(namespace);
@@ -67,16 +56,47 @@ export class Script {
     }
 
     /**
+     * Create new json storage buckets for persistent storage
+     * 
+     * @param namespace a "name" or "id" for the bucket. 
+     * This is not script scoped and the same storage bucket can be registered in multiple scripts to have access to the same data, this is perfectly safe.
+     * 
+     * @example ```ts
+     * interface Data{
+     *     key: string,
+     * }
+     * let funStorage = script.createStorageJson(new Storage.JsonBucket<Data>("fun-data"));
+     * ```
+     *
+     */
+    createStorageJson<T>(namespace: string) {
+        let bucket = new Storage.JsonBucket<T>(namespace);
+        this.storageBuckets.push(bucket);
+
+        return bucket;
+    }
+
+    /**
+     * @deprecated use {@łink createStorageNumber}
+     */
+    createGuildStorageNumber(namespace: string) {
+        let bucket = new Storage.NumberBucket(namespace);
+        this.storageBuckets.push(bucket);
+
+        return bucket;
+    }
+
+    /**
      * Creates a new number storage bucket for persistent storage.
      * 
-     * This is the same as {@link createGuildStorageJson} except that this bucket can only store number values, the upside of this is that it can be sorted.
+     * This is the same as {@link createStorageJson} except that this bucket can only store number values, the upside of this is that it can be sorted.
      * 
      * An example use case could be storing the scores of users in a leveling system with the key being their user ID and the value being their score
      * this way you can use {@link Storage.NumberBucket.sortedList} to get a sorted list of entries.
      * 
-     * See {@link createGuildStorageJson} for more general info on storage buckets
+     * See {@link createStorageJson} for more general info on storage buckets
      */
-    createGuildStorageNumber(namespace: string) {
+    createStorageNumber(namespace: string) {
         let bucket = new Storage.NumberBucket(namespace);
         this.storageBuckets.push(bucket);
 
@@ -92,7 +112,7 @@ export class Script {
      * @param options Additional options
      * @returns 
      */
-    createGuildStorageVarJson<T>(key: string, options?: StorageVarExtraOptions) {
+    createStorageVarJson<T>(key: string, options?: StorageVarExtraOptions) {
         const namespace = options?.namespace ?? "bl:vars_json";
         return new Storage.JsonVar<T>(namespace, key);
     }
@@ -106,7 +126,7 @@ export class Script {
      * @param options Additional options
      * @returns 
      */
-    createGuildStorageVarNumber(key: string, options?: StorageVarExtraOptions) {
+    createStorageVarNumber(key: string, options?: StorageVarExtraOptions) {
         const namespace = options?.namespace ?? "bl:vars_number";
         return new Storage.NumberVar(namespace, key);
     }

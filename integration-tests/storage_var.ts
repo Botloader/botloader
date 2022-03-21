@@ -1,6 +1,6 @@
 import { assertExpected, runOnce, sendScriptCompletion } from "lib";
 
-const counter = script.createGuildStorageVarNumber("storage_var_counter");
+const counter = script.createStorageVarNumber("storage_var_counter");
 
 runOnce("storage_var.ts", async () => {
 
