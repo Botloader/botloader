@@ -1,5 +1,6 @@
 import * as Internal from "./generated/internal/index";
-import { ChannelType, Interaction, Message, Role, User } from "./discord/index";
+import { ChannelType, Interaction, Message, Role } from "./discord/index";
+import { User } from "./discord/user";
 
 /**
  * The commands namespace provides a command system that works with discord slash commands, as well as 
@@ -57,7 +58,7 @@ export namespace Commands {
                     let member = interaction.dataMap.members[interaction.targetId];
                     let user = interaction.dataMap.users[interaction.targetId]
                     let args: InteractionUser = {
-                        user,
+                        user: new User(user),
                         member,
                     };
                     await command.cb(ctx, args)
@@ -78,7 +79,7 @@ export namespace Commands {
                     }
 
                     const ret: InteractionUser = {
-                        user,
+                        user: new User(user),
                         member: map.members[opt.value],
                     }
                     return ret
@@ -99,7 +100,7 @@ export namespace Commands {
                         metionableRet = {
                             kind: "User",
                             value: {
-                                user: mentionableUser,
+                                user: new User(mentionableUser),
                                 member: map.members[opt.value],
                             }
                         }

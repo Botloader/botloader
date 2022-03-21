@@ -1,13 +1,23 @@
 use anyhow::anyhow;
 use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
-use runtime_models::discord::guild::Ban;
-use runtime_models::discord::message::{MessageFlags, SendEmoji};
-use runtime_models::discord::user::User;
-use runtime_models::discord::util::AuditLogExtras;
-use runtime_models::internal::interactions::InteractionCallback;
-use runtime_models::internal::member::UpdateGuildMemberFields;
-use runtime_models::internal::misc_op::{CreateBanFields, GetReactionsFields};
+use runtime_models::{
+    discord::{
+        guild::{Ban, Guild},
+        message::{MessageFlags, SendEmoji},
+        util::AuditLogExtras,
+    },
+    internal::{
+        interactions::InteractionCallback,
+        member::UpdateGuildMemberFields,
+        messages::{
+            Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
+            OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessage, OpGetMessages,
+        },
+        misc_op::{CreateBanFields, GetReactionsFields},
+        user::User,
+    },
+};
 use std::str::FromStr;
 use std::{cell::RefCell, rc::Rc};
 use twilight_http::api_error::{ApiError, GeneralApiError};
@@ -21,13 +31,6 @@ use vm::{AnyError, JsValue};
 use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
 use crate::dummy_op;
 use crate::RuntimeContext;
-use runtime_models::{
-    discord::guild::Guild,
-    internal::messages::{
-        Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
-        OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessage, OpGetMessages,
-    },
-};
 
 pub fn extension() -> Extension {
     Extension::builder()

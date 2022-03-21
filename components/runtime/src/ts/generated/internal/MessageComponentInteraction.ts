@@ -1,5 +1,5 @@
 import type { ComponentType } from "../discord/ComponentType";
-import type { IMessage } from "../discord/IMessage";
+import type { IMessage } from "./IMessage";
 import type { Member } from "../discord/Member";
 
 export interface MessageComponentInteraction {

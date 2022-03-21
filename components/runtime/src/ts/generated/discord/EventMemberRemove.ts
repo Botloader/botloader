@@ -1,6 +1,6 @@
-import type { User } from "./User";
+import type { IUser } from "../internal/IUser";
 
 export interface EventMemberRemove {
   guildId: string;
-  user: User;
+  user: IUser;
 }

@@ -1,4 +1,4 @@
-export interface UserFlags {
+export interface IUserFlags {
   staff: boolean;
   partner: boolean;
   hypesquad: boolean;

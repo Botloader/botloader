@@ -1,4 +1,4 @@
-import { IMessage } from "../generated/discord/IMessage";
+import { IMessage } from "../generated/internal/IMessage";
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
 import type { Component } from "../generated/discord/Component";
@@ -10,8 +10,8 @@ import type { MessageReaction } from "../generated/discord/MessageReaction";
 import type { MessageReference } from "../generated/discord/MessageReference";
 import type { MessageType } from "../generated/discord/MessageType";
 import type { PartialMember } from "../generated/discord/PartialMember";
-import type { User } from "../generated/discord/User";
 import type { UserMention } from "../generated/discord/UserMention";
+import { User } from "./user";
 
 export class Message {
     activity: MessageActivity | null;
@@ -44,7 +44,7 @@ export class Message {
         this.activity = json.activity;
         this.application = json.application;
         this.attachments = json.attachments;
-        this.author = json.author;
+        this.author = new User(json.author);
         this.channelId = json.channelId;
         this.content = json.content;
         this.components = json.components;

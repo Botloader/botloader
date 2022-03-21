@@ -1,10 +1,11 @@
 use std::str::FromStr;
 
-use super::{
-    member::PartialMember,
-    user::{User, UserFlags},
+use super::member::PartialMember;
+use crate::{
+    discord::channel::ChannelType,
+    internal::user::{User, UserFlags},
+    util::NotBigU64,
 };
-use crate::{discord::channel::ChannelType, util::NotBigU64};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::id::Id;

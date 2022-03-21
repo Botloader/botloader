@@ -1,5 +1,5 @@
 import { Commands } from './commands';
-import { ComponentInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, EventMessageReactionRemove, EventMessageReactionRemoveAll, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, IMessage, Interaction, Member, Message, SelectMenuInteraction } from './discord/index';
+import { ComponentInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, EventMessageReactionRemove, EventMessageReactionRemoveAll, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, Interaction, Member, Message, SelectMenuInteraction } from './discord/index';
 import * as Internal from './generated/internal/index';
 
 export namespace EventSystem {
@@ -200,6 +200,6 @@ export namespace EventSystem {
     }
 
     const converters = {
-        MESSAGE_CREATE: (v: IMessage) => new Message(v),
+        MESSAGE_CREATE: (v: Internal.IMessage) => new Message(v),
     }
 }
