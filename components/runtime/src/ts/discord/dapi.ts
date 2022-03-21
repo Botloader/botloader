@@ -1,8 +1,7 @@
-export * from './generated/discord/index';
-import { Discord } from './docs_index';
-import { Guild, GuildChannel, Member, Message, Role, Embed, Component, ComponentType, AuditLogExtras, SendEmoji, User } from './generated/discord/index';
-import * as Internal from './generated/internal/index';
-import { OpWrappers } from './op_wrappers';
+import { Guild, GuildChannel, Member, Role, Embed, Component, ComponentType, AuditLogExtras, SendEmoji, User } from '../generated/discord/index';
+import * as Internal from '../generated/internal/index';
+import { OpWrappers } from '../op_wrappers';
+import { Message } from './message';
 
 let a: GuildChannel | null = null;
 
@@ -14,11 +13,11 @@ export function getGuild(): Promise<Guild> {
 function editGuild() { }
 
 // Message functions
-export function getMessage(channelId: string, messageId: string): Promise<Message> {
-    return OpWrappers.getMessage({
+export async function getMessage(channelId: string, messageId: string): Promise<Message> {
+    return new Message(await OpWrappers.getMessage({
         channelId,
         messageId,
-    })
+    }));
 }
 
 export interface GetMessagesOptions {
@@ -37,13 +36,13 @@ export interface GetMessagesOptions {
     before?: string,
 }
 
-export function getMessages(channelId: string, options?: GetMessagesOptions): Promise<Message[]> {
-    return OpWrappers.getMessages({
+export async function getMessages(channelId: string, options?: GetMessagesOptions): Promise<Message[]> {
+    return (await OpWrappers.getMessages({
         channelId,
         after: options?.after,
         before: options?.before,
         limit: options?.limit,
-    })
+    })).map(v => new Message(v));
 }
 
 export interface CreateMessageFields {
@@ -65,6 +64,14 @@ export interface CreateMessageFields {
 export interface InteractionCreateMessageFields extends CreateMessageFields {
     flags?: InteractionMessageFlags,
 }
+
+export interface InteractionMessageFlags {
+    /**
+     * Ephemeral messages can only be seen by the author of the interaction
+     */
+    ephemeral?: boolean,
+}
+
 
 export interface AllowedMentions {
     /**
@@ -115,18 +122,19 @@ export function toOpMessageFields(fields: CreateMessageFields): Internal.OpCreat
 
 export type MentionParseTypes = "Everyone" | "Roles" | "Users";
 
-export function createMessage(channelId: string, fields: CreateMessageFields): Promise<Message> {
-    return OpWrappers.createChannelMessage({
+export async function createMessage(channelId: string, fields: CreateMessageFields): Promise<Message> {
+
+    return new Message(await OpWrappers.createChannelMessage({
         channelId,
         fields: toOpMessageFields(fields),
-    });
+    }));
 }
-export function editMessage(channelId: string, messageId: string, fields: CreateMessageFields): Promise<Message> {
-    return OpWrappers.editChannelMessage({
+export async function editMessage(channelId: string, messageId: string, fields: CreateMessageFields): Promise<Message> {
+    return new Message(await OpWrappers.editChannelMessage({
         channelId,
         messageId,
         fields: toOpMessageFields(fields),
-    });
+    }));
 }
 
 export function deleteMessage(channelId: string, messageId: string): Promise<void> {
@@ -142,7 +150,6 @@ export function bulkDeleteMessages(channelId: string, ...messageIds: string[]): 
         messageIds,
     })
 }
-
 
 
 // Role functions
@@ -353,256 +360,4 @@ export async function editInteractionOriginalResponse(token: string, fields: Int
 
 export async function deleteInteractionOriginalResponse(token: string) {
     return OpWrappers.deleteInteractionOriginal(token);
-}
-
-/**
- * Base interaction class, this class should be considered UNSTABLE and may change a lot in the future.
- */
-export class Interaction {
-    interactionId: string;
-    token: string;
-
-    /**
-     * The user that started the interaction
-     */
-    member: Member;
-
-    protected _hasSentCallback = false;
-
-    get hasSentCallback() {
-        return this._hasSentCallback;
-    }
-
-    constructor(id: string, token: string, member: Member) {
-        this.interactionId = id;
-        this.member = member;
-        this.token = token;
-    }
-
-    protected setCallbackSent() {
-        if (this.hasSentCallback) {
-            throw new Error("tried sending a callback when one has already been sent, only one callback per interaction can be sent.")
-        } else {
-            this._hasSentCallback = true;
-        }
-    }
-
-    /**
-     * @deprecated use {@link ackWithMessage} 
-     */
-    async sendCallbackWithMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
-        this.ackWithMessage({
-            ...fields,
-            flags: flags,
-        })
-    }
-
-    /**
-     * @deprecated use {@link ackWithDeferredMessage} 
-     */
-    async sendCallbackWithDeferredMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
-        this.ackWithDeferredMessage({
-            ...fields,
-            flags: flags,
-        })
-    }
-
-    /**
-     * Acknowledge this interaction and send a message in response to this interaction
-     */
-    async ackWithMessage(fields: InteractionCreateMessageFields) {
-        this.setCallbackSent();
-
-        return OpWrappers.interactionCallback({
-            interactionId: this.interactionId,
-            ineractionToken: this.token,
-            data: {
-                kind: "ChannelMessageWithSource",
-                fields: toOpMessageFields(fields),
-                flags: fields.flags || {},
-            }
-        })
-    }
-
-    /**
-     * Acknowledge this interaction and display a "thinking" state to the user for you to then send a followUp 
-     * message later.
-     * 
-     * You have to ack interactions within 3 seconds but if you are doing things that can take longer than that you can
-     * use this function first to tell discord that you are processing the interaction then send the message itself later.
-     */
-    async ackWithDeferredMessage(fields?: InteractionCreateMessageFields) {
-        this.setCallbackSent();
-
-        return OpWrappers.interactionCallback({
-            interactionId: this.interactionId,
-            ineractionToken: this.token,
-            data: {
-                kind: "DeferredChannelMessageWithSource",
-                fields: toOpMessageFields(fields ?? {}),
-                flags: fields?.flags ?? {},
-            }
-        })
-    }
-
-    /**
-     * @deprecated use {@link createFollowup} instead
-     */
-    async sendResponse(resp: string | CreateMessageFields) {
-        return this.createFollowup(resp);
-    }
-
-    async getOriginalResponse() {
-        return getInteractionOriginalResponse(this.token);
-    }
-
-    async editOriginalResponse(fields: InteractionCreateMessageFields) {
-        return editInteractionOriginalResponse(this.token, fields)
-    }
-
-    async deleteOriginalResponse() {
-        return deleteInteractionOriginalResponse(this.token);
-    }
-
-    async getFollowup(messageId: string) {
-        return getInteractionFollowupMessage(this.token, messageId);
-    }
-
-    /**
-     * @deprecated use {@link createFollowup} instead
-     */
-    async sendFollowup(resp: string | InteractionCreateMessageFields) {
-        return createInteractionFollowupMessage(this.token, resp);
-    }
-
-    async createFollowup(resp: string | InteractionCreateMessageFields) {
-        return createInteractionFollowupMessage(this.token, resp);
-    }
-
-    async editFollowup(messageId: string, fields: InteractionCreateMessageFields) {
-        return editInteractionFollowupMessage(this.token, messageId, fields);
-    }
-
-    async deleteFollowup(id: string) {
-        return deleteInteractionFollowupMessage(this.token, id);
-    }
-}
-
-export class ComponentInteraction extends Interaction {
-    customIdRaw: string;
-    componentType: ComponentType;
-    channelId: string;
-
-    constructor(interaction: Internal.MessageComponentInteraction) {
-        super(interaction.id, interaction.token, interaction.member);
-
-        this.componentType = interaction.componentType;
-        this.customIdRaw = interaction.customId;
-        this.channelId = interaction.channelId;
-    }
-
-    /**
-     * @deprecated use {@link ackWithUpdateMessage}
-     */
-    async sendCallbackUpdateMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {
-        return this.ackWithUpdateMessage({
-            ...fields,
-            flags: flags,
-        })
-    }
-
-    /**
-     * @deprecated use {@link ackWithDeferredUpdateMessage}
-     */
-    async sendCallbackDeferredUpdateMessage() {
-        return this.ackWithDeferredUpdateMessage();
-    }
-
-    /**
-     * Acknowledge this interaction and update the message the component was on
-     * 
-     * Use updateOriginalResponse to update the message
-     */
-    async ackWithUpdateMessage(fields: InteractionCreateMessageFields) {
-        this.setCallbackSent();
-
-        return OpWrappers.interactionCallback({
-            interactionId: this.interactionId,
-            ineractionToken: this.token,
-            data: {
-                kind: "UpdateMessage",
-                fields: toOpMessageFields(fields),
-                flags: fields.flags || {},
-            }
-        })
-    }
-
-    /**
-     * Acknowledge this interaction and update the message the component was on at a later time (within 15 mins).
-     * 
-     * You have to ack interactions within 3 seconds but if you are doing things that can take longer than that you can
-     * use this function first to tell discord that you are processing the interaction then update the message later.
-     * 
-     * Use updateOriginalResponse to update the message
-     */
-    async ackWithDeferredUpdateMessage() {
-        this.setCallbackSent();
-
-        return OpWrappers.interactionCallback({
-            interactionId: this.interactionId,
-            ineractionToken: this.token,
-            data: {
-                kind: "DeferredUpdateMessage",
-            }
-        })
-    }
-}
-
-export class SelectMenuInteraction extends ComponentInteraction {
-    values: string[];
-
-
-    constructor(interaction: Internal.MessageComponentInteraction) {
-        super(interaction);
-
-        this.values = interaction.values;
-    }
-}
-
-export interface InteractionMessageFlags {
-    /**
-     * Ephemeral messages can only be seen by the author of the interaction
-     */
-    ephemeral?: boolean,
-}
-
-/**
- * Creates a 'customId' for you to use in message component's 'customId fields
- * 
- * This is needed as otherwise the interaction will not be handled by botloader.
- * 
- * DO NOT try to emulate this function yourself, we may change to different techniques entirely in the future and if you try to 
- * emulate this function them by implmenting it yourself you WILL break stuff.
- * 
- * Note that name + json(data) has to be less than 80 characters
- * 
- * @param name Name of the component, this is used when creating listeners using {@link Script.onInteractionButton} and {@link Script.onInteractionSelectMenu}
- * @param data Arbitrary data that will be passed to the interaction handlers, can be used to track a small amount of state.
- * Note that name + json(data) has to be less than 80 characters
- * @returns The customId for use in the customId field
- */
-export function encodeInteractionCustomId(name: string, data: any) {
-    let res = name + ":";
-    if (data !== undefined && data !== null) {
-        res += JSON.stringify(data);
-    }
-
-    // The string iterator that is used here iterates over characters,
-    // not mere code units
-    let length = [...res].length;
-    if (res.length >= 80) {
-        throw new Error("name + JSON.stringify(data) exceeds 80 characters")
-    }
-
-    return "0:" + res
 }

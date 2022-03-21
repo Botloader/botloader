@@ -1,5 +1,5 @@
-import { DiscordModels, Internal } from "./generated";
-import { Interaction } from "./discord";
+import * as Internal from "./generated/internal/index";
+import { ChannelType, Interaction, Message, Role, User } from "./discord/index";
 
 /**
  * The commands namespace provides a command system that works with discord slash commands, as well as 
@@ -48,7 +48,7 @@ export namespace Commands {
             } else if (interaction.kind === "Message") {
                 if (interaction.targetId) {
                     let message = interaction.dataMap.messages[interaction.targetId];
-                    await command.cb(ctx, message)
+                    await command.cb(ctx, new Message(message))
                 } else {
                     throw new Error("message not found in datamap")
                 }
@@ -84,7 +84,7 @@ export namespace Commands {
                     return ret
 
                 case "role":
-                    const role: DiscordModels.Role = map.roles[opt.value];
+                    const role: Role = map.roles[opt.value];
                     if (role === undefined) {
                         throw new Error("interaction role not found in data map");
                     }
@@ -191,13 +191,13 @@ export namespace Commands {
 
 
     export interface InteractionUser {
-        user: DiscordModels.User,
+        user: User,
         member?: Internal.InteractionPartialMember,
     }
 
     export type InteractionMentionable = {
         kind: "Role",
-        value: DiscordModels.Role
+        value: Role
     } | {
         kind: "User",
         value: InteractionUser
@@ -265,7 +265,7 @@ export namespace Commands {
     }
 
     export interface ChannelOption {
-        channelTypes?: DiscordModels.ChannelType[],
+        channelTypes?: ChannelType[],
     }
 
     export interface RoleOption {
@@ -536,7 +536,7 @@ export namespace Commands {
         T extends { kind: "Boolean" } ? boolean :
         T extends { kind: "User" } ? InteractionUser :
         T extends { kind: "Channel" } ? Internal.InteractionPartialChannel :
-        T extends { kind: "Role" } ? DiscordModels.Role :
+        T extends { kind: "Role" } ? Role :
         T extends { kind: "Mentionable" } ? InteractionMentionable :
         unknown;
 
@@ -621,7 +621,7 @@ export namespace Commands {
             return this;
         }
 
-        build(cb: (ctx: ExecutedCommandContext, target: DiscordModels.Message) => any): Command {
+        build(cb: (ctx: ExecutedCommandContext, target: Message) => any): Command {
             return {
                 name: this.name,
                 kind: "Message",

@@ -12,7 +12,7 @@ import type { PartialMember } from "./PartialMember";
 import type { User } from "./User";
 import type { UserMention } from "./UserMention";
 
-export interface Message {
+export interface IMessage {
   activity: MessageActivity | null;
   application: MessageApplication | null;
   attachments: Array<Attachment>;
@@ -34,7 +34,7 @@ export interface Message {
   pinned: boolean;
   reactions: Array<MessageReaction>;
   reference: MessageReference | null;
-  referencedMessage: Message | null;
+  referencedMessage: IMessage | null;
   timestamp: number;
   tts: boolean;
   webhookId: string | null;

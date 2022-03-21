@@ -8,7 +8,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         DispatchEvent::MessageCreate(m) if m.guild_id.is_some() => Some(DiscordDispatchEvent {
             name: "MESSAGE_CREATE",
             guild_id: m.guild_id.unwrap(),
-            data: serde_json::to_value(&runtime_models::discord::message::Message::from(m.0))
+            data: serde_json::to_value(&runtime_models::internal::messages::Message::from(m.0))
                 .unwrap(),
         }),
         DispatchEvent::MessageUpdate(m) if m.guild_id.is_some() => Some(DiscordDispatchEvent {

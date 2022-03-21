@@ -22,10 +22,10 @@ use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
 use crate::dummy_op;
 use crate::RuntimeContext;
 use runtime_models::{
-    discord::{guild::Guild, message::Message},
+    discord::guild::Guild,
     internal::messages::{
-        OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage, OpDeleteMessagesBulk,
-        OpEditChannelMessage, OpGetMessage, OpGetMessages,
+        Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
+        OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessage, OpGetMessages,
     },
 };
 

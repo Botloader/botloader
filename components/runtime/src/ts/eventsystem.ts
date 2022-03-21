@@ -1,7 +1,6 @@
 import { Commands } from './commands';
-import { ComponentInteraction, Interaction, SelectMenuInteraction } from './discord';
-import { Internal } from './generated';
-import * as Discord from './generated/discord/index';
+import { ComponentInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, EventMessageReactionRemove, EventMessageReactionRemoveAll, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, IMessage, Interaction, Member, Message, SelectMenuInteraction } from './discord/index';
+import * as Internal from './generated/internal/index';
 
 export namespace EventSystem {
 
@@ -26,13 +25,18 @@ export namespace EventSystem {
      * @internal
      */
     export function dispatchEvent(evt: DispatchEvent) {
+        let data = evt.data;
+        if (evt.name in converters) {
+            data = converters[evt.name as keyof typeof converters](evt.data);
+        }
+
         if (evt.name === "BOTLOADER_COMPONENT_INTERACTION_CREATE") {
-            handleComponentInteraction(evt.data);
+            handleComponentInteraction(data);
         } else if (evt.name === "BOTLOADER_COMMAND_INTERACTION_CREATE") {
-            commandSystem.handleInteractionCreate(evt.data)
+            commandSystem.handleInteractionCreate(data)
         } else {
             for (let muxer of eventMuxers) {
-                muxer.handleEvent(evt)
+                muxer.handleEvent(evt.name, data);
             }
         }
     }
@@ -62,18 +66,18 @@ export namespace EventSystem {
          */
         BOTLOADER_SCHEDULED_TASK_FIRED: Internal.ScheduledTask,
 
-        MESSAGE_CREATE: Discord.Message,
-        MESSAGE_UPDATE: Discord.EventMessageUpdate,
-        MESSAGE_DELETE: Discord.EventMessageDelete,
+        MESSAGE_CREATE: Message,
+        MESSAGE_UPDATE: EventMessageUpdate,
+        MESSAGE_DELETE: EventMessageDelete,
 
-        MEMBER_ADD: Discord.Member,
-        MEMBER_UPDATE: Discord.Member,
-        MEMBER_REMOVE: Discord.EventMemberRemove,
+        MEMBER_ADD: Member,
+        MEMBER_UPDATE: Member,
+        MEMBER_REMOVE: EventMemberRemove,
 
-        MESSAGE_REACTION_ADD: Discord.EventMessageReactionAdd,
-        MESSAGE_REACTION_REMOVE: Discord.EventMessageReactionRemove,
-        MESSAGE_REACTION_REMOVE_ALL: Discord.EventMessageReactionRemoveAll,
-        MESSAGE_REACTION_REMOVE_ALL_EMOJI: Discord.EventMessageReactionRemoveAllEmoji,
+        MESSAGE_REACTION_ADD: EventMessageReactionAdd,
+        MESSAGE_REACTION_REMOVE: EventMessageReactionRemove,
+        MESSAGE_REACTION_REMOVE_ALL: EventMessageReactionRemoveAll,
+        MESSAGE_REACTION_REMOVE_ALL_EMOJI: EventMessageReactionRemoveAllEmoji,
     }
 
 
@@ -96,12 +100,12 @@ export namespace EventSystem {
         /**
          * @internal
          */
-        async handleEvent(evt: DispatchEvent) {
-            let handlers = this.listeners[evt.name as keyof EventTypes];
+        async handleEvent(name: string, data: any) {
+            let handlers = this.listeners[name as keyof EventTypes];
 
             if (handlers) {
                 for (let handler of handlers) {
-                    handler(evt.data);
+                    handler(data);
                 }
             }
         }
@@ -193,5 +197,9 @@ export namespace EventSystem {
                 })
             }
         }
+    }
+
+    const converters = {
+        MESSAGE_CREATE: (v: IMessage) => new Message(v),
     }
 }

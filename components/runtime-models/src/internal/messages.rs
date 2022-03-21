@@ -1,4 +1,16 @@
-use crate::discord::{component::Component, embed::Embed, message::MessageFlags};
+use crate::{
+    discord::{
+        component::Component,
+        embed::Embed,
+        member::PartialMember,
+        message::{
+            Attachment, ChannelMention, MessageActivity, MessageApplication, MessageFlags,
+            MessageReaction, MessageReference, MessageType, UserMention,
+        },
+        user::User,
+    },
+    util::NotBigU64,
+};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::{
@@ -151,4 +163,70 @@ pub struct OpGetMessages {
     #[serde(default)]
     #[ts(optional)]
     pub limit: Option<i32>,
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IMessage")]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/discord/IMessage.ts")]
+pub struct Message {
+    pub activity: Option<MessageActivity>,
+    pub application: Option<MessageApplication>,
+    pub attachments: Vec<Attachment>,
+    pub author: User,
+    pub channel_id: String,
+    pub content: String,
+    pub components: Vec<Component>,
+    pub edited_timestamp: Option<NotBigU64>,
+    pub embeds: Vec<Embed>,
+    pub flags: Option<MessageFlags>,
+    pub guild_id: Option<String>,
+    pub id: String,
+    pub kind: MessageType,
+    pub member: Option<PartialMember>,
+    pub mention_channels: Vec<ChannelMention>,
+    pub mention_everyone: bool,
+    pub mention_roles: Vec<String>,
+    pub mentions: Vec<UserMention>,
+    pub pinned: bool,
+    pub reactions: Vec<MessageReaction>,
+    pub reference: Option<MessageReference>,
+    pub referenced_message: Option<Box<Message>>,
+    pub timestamp: NotBigU64,
+    pub tts: bool,
+    pub webhook_id: Option<String>,
+}
+
+impl From<twilight_model::channel::Message> for Message {
+    fn from(v: twilight_model::channel::Message) -> Self {
+        Self {
+            activity: v.activity.map(From::from),
+            application: v.application.map(From::from),
+            attachments: v.attachments.into_iter().map(From::from).collect(),
+            author: v.author.into(),
+            channel_id: v.channel_id.to_string(),
+            content: v.content,
+            components: v.components.into_iter().map(Into::into).collect(),
+            edited_timestamp: v
+                .edited_timestamp
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
+            embeds: v.embeds.into_iter().map(From::from).collect(),
+            flags: v.flags.map(From::from),
+            guild_id: v.guild_id.as_ref().map(ToString::to_string),
+            id: v.id.to_string(),
+            kind: v.kind.into(),
+            member: v.member.map(From::from),
+            mention_channels: v.mention_channels.into_iter().map(From::from).collect(),
+            mention_everyone: v.mention_everyone,
+            mention_roles: v.mention_roles.iter().map(ToString::to_string).collect(),
+            mentions: v.mentions.into_iter().map(From::from).collect(),
+            pinned: v.pinned,
+            reactions: v.reactions.into_iter().map(From::from).collect(),
+            reference: v.reference.map(From::from),
+            referenced_message: v.referenced_message.map(|e| Box::new((*e).into())),
+            timestamp: NotBigU64(v.timestamp.as_micros() as u64 / 1000),
+            tts: v.tts,
+            webhook_id: v.webhook_id.as_ref().map(ToString::to_string),
+        }
+    }
 }

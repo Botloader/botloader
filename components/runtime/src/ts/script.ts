@@ -3,12 +3,12 @@ import "./core_util";
 
 
 import { Commands } from "./commands";
-import { Internal } from "./generated";
+import * as Internal from "./generated/internal/index";
 import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
 import { Tasks } from "./scheduled_tasks";
-import { ComponentInteraction, Interaction, SelectMenuInteraction } from "./discord";
+import { ComponentInteraction, SelectMenuInteraction } from "./discord/index";
 
 /**
  * The script class is the main way you interact with botloader and discord.

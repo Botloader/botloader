@@ -7,9 +7,13 @@ use twilight_model::application::interaction::{
     ApplicationCommand,
 };
 
-use crate::discord::{member::Member, message::Message, role::Role, user::User};
-
-use crate::internal::interactions::{InteractionPartialChannel, InteractionPartialMember};
+use crate::{
+    discord::{member::Member, role::Role, user::User},
+    internal::{
+        interactions::{InteractionPartialChannel, InteractionPartialMember},
+        messages::Message,
+    },
+};
 
 // we perform some normalization to make things simpler on the script side
 // and also simpler overall
