@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -34,6 +35,8 @@ pub struct Manager {
     rcv_loaded_script: mpsc::UnboundedReceiver<LoadedScript>,
     pending_checks: Vec<PendingCheckGroup>,
     guild_logger: GuildLogger,
+
+    cached_commands: HashMap<Id<GuildMarker>, String>,
 }
 
 pub fn create_manager_pair(
@@ -50,6 +53,7 @@ pub fn create_manager_pair(
             rcv_loaded_script: rcv,
             pending_checks: Vec::new(),
             guild_logger,
+            cached_commands: HashMap::new(),
         },
         Handle {
             send_loaded_script: send,
@@ -139,6 +143,21 @@ impl Manager {
 
         let merged = merge_script_commands(all_guild_scripts);
 
+        let serialized = serde_json::to_string(&merged).unwrap();
+        if let Some(current) = self.cached_commands.get(&guild_id) {
+            if current == &serialized {
+                self.guild_logger.log(LogEntry::info(
+                    guild_id,
+                    format!(
+                        "skipped updating commands as there was no changes, top level commands: {}",
+                        merged.len()
+                    ),
+                ));
+
+                return Ok(());
+            }
+        }
+
         self.guild_logger.log(LogEntry::info(
             guild_id,
             format!(
@@ -164,6 +183,8 @@ impl Manager {
             // more validation we could reutrn an err here and have it retry
             // (but not for client errors)
         }
+
+        self.cached_commands.insert(guild_id, serialized);
 
         Ok(())
     }
