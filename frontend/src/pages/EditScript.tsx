@@ -109,7 +109,7 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
                 "removeComments": true,
                 "preserveConstEnums": true,
                 "sourceMap": false,
-                "target": monaco.languages.typescript.ScriptTarget.ES2020,
+                "target": monaco.languages.typescript.ScriptTarget.ESNext,
                 "alwaysStrict": true,
                 "strict": true,
                 "strictNullChecks": true,
