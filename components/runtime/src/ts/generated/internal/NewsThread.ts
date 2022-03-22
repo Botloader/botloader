@@ -1,11 +1,11 @@
-import type { ThreadMember } from "./ThreadMember";
-import type { ThreadMetadata } from "./ThreadMetadata";
+import type { IThreadMember } from "./ThreadMember";
+import type { ThreadMetadata } from "../discord/ThreadMetadata";
 
-export interface PublicThread {
+export interface INewsThread {
   defaultAutoArchiveDurationMinutes: number | null;
   id: string;
-  kind: "PublicThread";
-  member: ThreadMember | null;
+  kind: "NewsThread";
+  member: IThreadMember | null;
   memberCount: number;
   messageCount: number;
   name: string;

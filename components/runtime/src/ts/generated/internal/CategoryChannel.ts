@@ -1,6 +1,6 @@
-import type { PermissionOverwrite } from "./PermissionOverwrite";
+import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
 
-export interface CategoryChannel {
+export interface ICategoryChannel {
   id: string;
   kind: "Category";
   name: string;

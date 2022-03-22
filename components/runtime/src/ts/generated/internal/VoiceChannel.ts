@@ -1,7 +1,7 @@
-import type { PermissionOverwrite } from "./PermissionOverwrite";
-import type { VideoQualityMode } from "./VideoQualityMode";
+import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
+import type { VideoQualityMode } from "../discord/VideoQualityMode";
 
-export interface VoiceChannel {
+export interface IVoiceChannel {
   bitrate: number;
   id: string;
   kind: "Voice" | "StageVoice";

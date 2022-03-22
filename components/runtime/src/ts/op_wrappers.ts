@@ -200,13 +200,13 @@ export namespace OpWrappers {
     }
 
     // Channels
-    export async function getChannels(): Promise<Discord.GuildChannel[]> {
+    export async function getChannels(): Promise<Internal.InternalGuildChannel[]> {
         return await Deno.core.opAsync(
             "discord_get_channels",
         );
     }
 
-    export async function getChannel(channelId: string): Promise<Discord.GuildChannel> {
+    export async function getChannel(channelId: string): Promise<Internal.InternalGuildChannel> {
         return await Deno.core.opAsync(
             "discord_get_channel",
             channelId,
