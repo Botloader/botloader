@@ -1,6 +1,6 @@
-import type { IUser } from "../internal/IUser";
+import type { IUser } from "./IUser";
 
-export interface Member {
+export interface IMember {
   deaf: boolean;
   joinedAt: number;
   mute: boolean;

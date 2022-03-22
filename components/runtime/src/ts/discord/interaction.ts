@@ -1,7 +1,8 @@
-import { Member, ComponentType } from '../generated/discord/index';
+import { ComponentType } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { CreateMessageFields, InteractionMessageFlags, InteractionCreateMessageFields, createInteractionFollowupMessage, getInteractionFollowupMessage, deleteInteractionOriginalResponse, editInteractionOriginalResponse, getInteractionOriginalResponse, editInteractionFollowupMessage, deleteInteractionFollowupMessage, toOpMessageFields } from './dapi';
 import { OpWrappers } from '../op_wrappers';
+import { Member } from './member';
 
 /**
  * Base interaction class, this class should be considered UNSTABLE and may change a lot in the future.
@@ -141,8 +142,11 @@ export class ComponentInteraction extends Interaction {
     componentType: ComponentType;
     channelId: string;
 
+    /**
+     * @internal
+     */
     constructor(interaction: Internal.MessageComponentInteraction) {
-        super(interaction.id, interaction.token, interaction.member);
+        super(interaction.id, interaction.token, new Member(interaction.member));
 
         this.componentType = interaction.componentType;
         this.customIdRaw = interaction.customId;

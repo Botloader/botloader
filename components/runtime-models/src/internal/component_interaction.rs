@@ -1,5 +1,5 @@
-use super::messages::Message;
-use crate::discord::{component::ComponentType, member::Member};
+use super::{member::Member, messages::Message};
+use crate::discord::component::ComponentType;
 use serde::Serialize;
 use ts_rs::TS;
 

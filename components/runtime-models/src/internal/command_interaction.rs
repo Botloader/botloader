@@ -8,9 +8,10 @@ use twilight_model::application::interaction::{
 };
 
 use crate::{
-    discord::{member::Member, role::Role},
+    discord::role::Role,
     internal::{
         interactions::{InteractionPartialChannel, InteractionPartialMember},
+        member::Member,
         messages::Message,
         user::User,
     },

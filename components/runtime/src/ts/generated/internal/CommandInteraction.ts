@@ -1,12 +1,12 @@
 import type { CommandInteractionDataMap } from "./CommandInteractionDataMaps";
 import type { CommandInteractionOption } from "./CommandInteractionOption";
 import type { CommandType } from "./CommandType";
-import type { Member } from "../discord/Member";
+import type { IMember } from "./Member";
 
 export interface CommandInteraction {
   channelId: string;
   id: string;
-  member: Member;
+  member: IMember;
   token: string;
   name: string;
   parentName: string | null;

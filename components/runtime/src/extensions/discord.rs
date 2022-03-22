@@ -818,7 +818,7 @@ pub async fn op_get_members(
     state: Rc<RefCell<OpState>>,
     user_ids: Vec<String>,
     _: (),
-) -> Result<Vec<Option<runtime_models::discord::member::Member>>, AnyError> {
+) -> Result<Vec<Option<runtime_models::internal::member::Member>>, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -919,7 +919,7 @@ pub async fn discord_update_member(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
     fields: UpdateGuildMemberFields,
-) -> Result<runtime_models::discord::member::Member, AnyError> {
+) -> Result<runtime_models::internal::member::Member, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()

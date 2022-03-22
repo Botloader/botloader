@@ -1,6 +1,7 @@
 import * as Internal from "./generated/internal/index";
 import { ChannelType, Interaction, Message, Role } from "./discord/index";
 import { User } from "./discord/user";
+import { Member } from "./discord/member";
 
 /**
  * The commands namespace provides a command system that works with discord slash commands, as well as 
@@ -181,7 +182,7 @@ export namespace Commands {
         parentParentName?: string;
 
         constructor(interaction: Internal.CommandInteraction) {
-            super(interaction.id, interaction.token, interaction.member);
+            super(interaction.id, interaction.token, new Member(interaction.member));
 
             this.channelId = interaction.channelId;
             this.commandName = interaction.name;

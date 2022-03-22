@@ -1,10 +1,10 @@
-import type { Member } from "./Member";
+import type { IMember } from "../internal/Member";
 import type { ReactionType } from "./ReactionType";
 
 export interface EventMessageReactionAdd {
   channelId: string;
   messageId: string;
   emoji: ReactionType;
-  member: Member;
+  member: IMember;
   userId: string;
 }
