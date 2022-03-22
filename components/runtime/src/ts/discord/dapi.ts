@@ -245,7 +245,7 @@ export async function removeMemberRole(userId: string, roleId: string): Promise<
     return await OpWrappers.removeMemberRole(userId, roleId);
 }
 
-export async function removeMember(userId: string, extras?: AuditLogExtras) {
+export async function removeMember(userId: string, extras?: AuditLogExtras): Promise<void> {
     return OpWrappers.removeMember(userId, extras ?? {});
 }
 
@@ -309,11 +309,11 @@ export async function deleteAllEmojiReactions(channelId: string, messageId: stri
 }
 
 // Interactions
-export async function getInteractionFollowupMessage(token: string, messageId: string) {
-    return OpWrappers.getInteractionFollowupMessage(token, messageId);
+export async function getInteractionFollowupMessage(token: string, messageId: string): Promise<Message> {
+    return new Message(await OpWrappers.getInteractionFollowupMessage(token, messageId));
 }
 
-export async function createInteractionFollowupMessage(token: string, resp: string | InteractionCreateMessageFields) {
+export async function createInteractionFollowupMessage(token: string, resp: string | InteractionCreateMessageFields): Promise<Message> {
     let flags: InteractionMessageFlags = {}
     if (arguments.length === 3) {
         // legacy support, remove at some point in the future
@@ -327,21 +327,21 @@ export async function createInteractionFollowupMessage(token: string, resp: stri
     }
 
     if (typeof resp === "string") {
-        return await OpWrappers.createInteractionFollowupMessage({
+        return new Message(await OpWrappers.createInteractionFollowupMessage({
             interactionToken: token,
             fields: { content: resp },
             flags: flags || {},
-        })
+        }))
     } else {
-        return await OpWrappers.createInteractionFollowupMessage({
+        return new Message(await OpWrappers.createInteractionFollowupMessage({
             interactionToken: token,
             fields: toOpMessageFields(resp),
             flags: flags || {},
-        })
+        }))
     }
 }
 
-export async function editInteractionFollowupMessage(token: string, messageId: string, fields: InteractionCreateMessageFields) {
+export async function editInteractionFollowupMessage(token: string, messageId: string, fields: InteractionCreateMessageFields): Promise<void> {
     return await OpWrappers.editInteractionFollowupMessage(messageId, {
         interactionToken: token,
         fields: toOpMessageFields(fields),
@@ -349,22 +349,22 @@ export async function editInteractionFollowupMessage(token: string, messageId: s
     })
 }
 
-export async function deleteInteractionFollowupMessage(token: string, id: string) {
+export async function deleteInteractionFollowupMessage(token: string, id: string): Promise<void> {
     return OpWrappers.deleteInteractionFollowupMessage(token, id);
 }
 
-export async function getInteractionOriginalResponse(token: string) {
-    return OpWrappers.getInteractionOriginal(token);
+export async function getInteractionOriginalResponse(token: string): Promise<Message> {
+    return new Message(await OpWrappers.getInteractionOriginal(token));
 }
 
-export async function editInteractionOriginalResponse(token: string, fields: InteractionCreateMessageFields) {
-    return await OpWrappers.editInteractionOriginal({
+export async function editInteractionOriginalResponse(token: string, fields: InteractionCreateMessageFields): Promise<Message> {
+    return new Message(await OpWrappers.editInteractionOriginal({
         interactionToken: token,
         fields: toOpMessageFields(fields),
         flags: fields.flags ?? {},
-    })
+    }))
 }
 
-export async function deleteInteractionOriginalResponse(token: string) {
+export async function deleteInteractionOriginalResponse(token: string): Promise<void> {
     return OpWrappers.deleteInteractionOriginal(token);
 }

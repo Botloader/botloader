@@ -244,7 +244,7 @@ export namespace OpWrappers {
             roleId,
         );
     }
-    export async function removeMember(userId: string, extras: Discord.AuditLogExtras) {
+    export async function removeMember(userId: string, extras: Discord.AuditLogExtras): Promise<void> {
         return await Deno.core.opAsync("discord_remove_member", userId, extras);
     }
 
