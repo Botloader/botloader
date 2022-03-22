@@ -1,6 +1,7 @@
-import { Guild, GuildChannel, Member, Role, Embed, Component, ComponentType, AuditLogExtras, SendEmoji } from '../generated/discord/index';
+import { Guild, GuildChannel, Role, Embed, Component, AuditLogExtras, SendEmoji } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
+import { Member } from './member';
 import { Message } from './message';
 import { User } from './user';
 
@@ -199,11 +200,16 @@ async function editSticker() { }
 async function deleteSticker() { }
 
 export async function getMember(id: string): Promise<Member | undefined> {
-    return (await OpWrappers.getMembers([id]))[0] ?? undefined;
+    const member = (await OpWrappers.getMembers([id]))[0];
+    if (member) {
+        return new Member(member);
+    }
+
+    return undefined;
 }
 
 export async function getMembers(ids: string[]): Promise<(Member | null)[]> {
-    return await OpWrappers.getMembers(ids);
+    return (await OpWrappers.getMembers(ids)).map(v => v ? new Member(v) : null);
 }
 
 /**
@@ -228,7 +234,7 @@ export interface UpdateGuildMemberFields {
 }
 
 export async function editMember(userId: string, fields: UpdateGuildMemberFields): Promise<Member> {
-    return await OpWrappers.updateMember(userId, fields);
+    return new Member(await OpWrappers.updateMember(userId, fields));
 }
 
 export async function addMemberRole(userId: string, roleId: string): Promise<void> {

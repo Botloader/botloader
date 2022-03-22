@@ -4,13 +4,11 @@ use ts_rs::TS;
 use crate::{
     discord::{
         embed::Embed,
-        message::{Attachment, MessageType, UserMention},
+        message::{Attachment, MessageType, ReactionType, UserMention},
     },
-    internal::user::User,
+    internal::{member::Member, user::User},
     util::NotBigU64,
 };
-
-use super::{member::Member, message::ReactionType};
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]

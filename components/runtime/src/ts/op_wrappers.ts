@@ -214,14 +214,14 @@ export namespace OpWrappers {
     }
 
     // Members
-    export async function getMembers(ids: string[]): Promise<(Discord.Member | null)[]> {
+    export async function getMembers(ids: string[]): Promise<(Internal.IMember | null)[]> {
         return await Deno.core.opAsync(
             "discord_get_members",
             ids,
         );
     }
 
-    export async function updateMember(userId: string, fields: Internal.UpdateGuildMemberFields): Promise<Discord.Member> {
+    export async function updateMember(userId: string, fields: Internal.UpdateGuildMemberFields): Promise<Internal.IMember> {
         return await Deno.core.opAsync(
             "discord_update_member",
             userId,
