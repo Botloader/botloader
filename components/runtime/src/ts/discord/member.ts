@@ -26,5 +26,3 @@ export class Member {
         return this.nick ?? this.user.username;
     }
 }
-
-

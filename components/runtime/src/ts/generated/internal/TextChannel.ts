@@ -1,6 +1,6 @@
-import type { PermissionOverwrite } from "./PermissionOverwrite";
+import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
 
-export interface TextChannel {
+export interface ITextChannel {
   id: string;
   kind: "Text" | "News" | "Store";
   lastPinTimestamp: number | null;

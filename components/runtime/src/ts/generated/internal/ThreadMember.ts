@@ -1,6 +1,6 @@
-import type { IMember } from "../internal/Member";
+import type { IMember } from "./Member";
 
-export interface ThreadMember {
+export interface IThreadMember {
   id: string | null;
   joinTimestamp: number;
   member: IMember | null;

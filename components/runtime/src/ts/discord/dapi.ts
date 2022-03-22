@@ -1,12 +1,10 @@
-import { Guild, GuildChannel, Role, Embed, Component, AuditLogExtras, SendEmoji } from '../generated/discord/index';
+import { Guild, Role, Embed, Component, AuditLogExtras, SendEmoji } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
+import { GuildChannel, guildChannelFromInternal } from './channel';
 import { Member } from './member';
 import { Message } from './message';
 import { User } from './user';
-
-let a: GuildChannel | null = null;
-
 
 // Guild functions
 export function getGuild(): Promise<Guild> {
@@ -167,11 +165,11 @@ async function editRole() { }
 async function deleteRole() { }
 
 // Channel functions
-export function getChannel(channelId: string): Promise<GuildChannel> {
-    return OpWrappers.getChannel(channelId);
+export async function getChannel(channelId: string): Promise<GuildChannel> {
+    return guildChannelFromInternal(await OpWrappers.getChannel(channelId));
 }
-export function getChannels(): Promise<GuildChannel[]> {
-    return OpWrappers.getChannels();
+export async function getChannels(): Promise<GuildChannel[]> {
+    return (await OpWrappers.getChannels()).map(v => guildChannelFromInternal(v));
 }
 
 async function createChannel() { }

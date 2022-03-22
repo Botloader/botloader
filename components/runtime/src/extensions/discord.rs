@@ -789,7 +789,7 @@ pub async fn op_get_channel(
     state: Rc<RefCell<OpState>>,
     channel_id_str: String,
     _: (),
-) -> Result<runtime_models::discord::channel::GuildChannel, AnyError> {
+) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -803,7 +803,7 @@ pub async fn op_get_channels(
     state: Rc<RefCell<OpState>>,
     _: (),
     _: (),
-) -> Result<Vec<runtime_models::discord::channel::GuildChannel>, AnyError> {
+) -> Result<Vec<runtime_models::internal::channel::GuildChannel>, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()

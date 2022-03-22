@@ -1,13 +1,13 @@
-import type { PermissionOverwrite } from "./PermissionOverwrite";
-import type { ThreadMember } from "./ThreadMember";
-import type { ThreadMetadata } from "./ThreadMetadata";
+import type { IThreadMember } from "./ThreadMember";
+import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
+import type { ThreadMetadata } from "../discord/ThreadMetadata";
 
-export interface PrivateThread {
+export interface IPrivateThread {
   defaultAutoArchiveDurationMinutes: number | null;
   id: string;
   invitable: boolean | null;
   kind: "PrivateThread";
-  member: ThreadMember | null;
+  member: IThreadMember | null;
   memberCount: number;
   messageCount: number;
   name: string;
