@@ -2,7 +2,7 @@ import { User } from "./user";
 
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
-import type { Component } from "../generated/discord/Component";
+import type { IComponent } from "../generated/discord/IComponent";
 import type { Embed } from "../generated/discord/Embed";
 import type { MessageActivity } from "../generated/discord/MessageActivity";
 import type { MessageApplication } from "../generated/discord/MessageApplication";
@@ -22,7 +22,7 @@ export class Message {
     author: User;
     channelId: string;
     content: string;
-    components: Component[];
+    components: IComponent[];
     editedTimestamp: number | null;
     embeds: Embed[];
     flags: MessageFlags | null;

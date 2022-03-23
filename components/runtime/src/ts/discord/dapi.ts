@@ -1,4 +1,4 @@
-import { Guild, Role, Embed, Component, AuditLogExtras, SendEmoji } from '../generated/discord/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
@@ -58,7 +58,7 @@ export interface CreateMessageFields {
      */
     allowedMentions?: AllowedMentions;
 
-    components?: Component[],
+    components?: IComponent[],
 }
 
 export interface InteractionCreateMessageFields extends CreateMessageFields {
