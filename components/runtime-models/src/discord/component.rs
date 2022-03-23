@@ -23,7 +23,11 @@ impl From<TwilightComponentType> for ComponentType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(export, export_to = "bindings/discord/Component.ts")]
+#[ts(
+    export,
+    rename = "IComponent",
+    export_to = "bindings/discord/IComponent.ts"
+)]
 // #[serde(rename_all = "camelCase")]
 #[serde(tag = "kind")]
 pub enum Component {
@@ -53,7 +57,11 @@ impl From<Component> for TwilightComponent {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(export, export_to = "bindings/discord/ActionRow.ts")]
+#[ts(
+    export,
+    rename = "IActionRow",
+    export_to = "bindings/discord/IActionRow.ts"
+)]
 #[serde(rename_all = "camelCase")]
 pub struct ActionRow {
     pub components: Vec<Component>,
@@ -76,7 +84,7 @@ impl From<ActionRow> for TwilightActionRow {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(export, export_to = "bindings/discord/Button.ts")]
+#[ts(export, rename = "IButton", export_to = "bindings/discord/IButton.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct Button {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -106,6 +114,7 @@ impl From<TwilightButton> for Button {
         }
     }
 }
+
 impl From<Button> for TwilightButton {
     fn from(v: Button) -> Self {
         Self {
@@ -120,7 +129,11 @@ impl From<Button> for TwilightButton {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(export, export_to = "bindings/discord/SelectMenu.ts")]
+#[ts(
+    export,
+    rename = "ISelectMenu",
+    export_to = "bindings/discord/ISelectMenu.ts"
+)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectMenu {
     pub custom_id: String,
@@ -161,7 +174,11 @@ impl From<SelectMenu> for TwilightSelectMenu {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(export, export_to = "bindings/discord/SelectMenuOption.ts")]
+#[ts(
+    export,
+    rename = "ISelectMenuOption",
+    export_to = "bindings/discord/ISelectMenuOption.ts"
+)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectMenuOption {
     pub default: bool,

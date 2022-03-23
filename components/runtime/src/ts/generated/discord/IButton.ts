@@ -1,7 +1,7 @@
 import type { ButtonStyle } from "./ButtonStyle";
 import type { ReactionType } from "./ReactionType";
 
-export interface Button {
+export interface IButton {
   customId?: string;
   style: ButtonStyle;
   disabled?: boolean;

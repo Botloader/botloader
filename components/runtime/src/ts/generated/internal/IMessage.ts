@@ -1,7 +1,7 @@
 import type { Attachment } from "../discord/Attachment";
 import type { ChannelMention } from "../discord/ChannelMention";
-import type { Component } from "../discord/Component";
 import type { Embed } from "../discord/Embed";
+import type { IComponent } from "../discord/IComponent";
 import type { IUser } from "./IUser";
 import type { IUserMention } from "./UserMention";
 import type { MessageActivity } from "../discord/MessageActivity";
@@ -19,7 +19,7 @@ export interface IMessage {
   author: IUser;
   channelId: string;
   content: string;
-  components: Array<Component>;
+  components: Array<IComponent>;
   editedTimestamp: number | null;
   embeds: Array<Embed>;
   flags: MessageFlags | null;
