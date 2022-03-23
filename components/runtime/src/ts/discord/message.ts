@@ -42,6 +42,9 @@ export class Message {
     tts: boolean;
     webhookId: string | null;
 
+    /**
+     * @internal
+     */
     constructor(json: IMessage) {
         this.activity = json.activity;
         this.application = json.application;
@@ -78,6 +81,9 @@ export class Message {
 export class UserMention extends User {
     member: PartialMember | null;
 
+    /**
+     * @internal
+     */
     constructor(json: IUserMention) {
         super(json.user);
 

@@ -49,6 +49,10 @@ export abstract class BaseChannel {
     kind: ChannelType;
     name: string;
 
+
+    /**
+     * @internal
+     */
     constructor(json: InternalGuildChannel) {
         this.id = json.id;
         this.kind = json.kind;
@@ -69,7 +73,9 @@ export class PrivateThread extends BaseChannel {
     rateLimitPerUser: number | null;
     threadMetadata: ThreadMetadata;
 
-
+    /**
+     * @internal
+     */
     constructor(json: IPrivateThread) {
         super(json);
 
@@ -97,6 +103,9 @@ export class PublicThread extends BaseChannel {
     rateLimitPerUser: number | null;
     threadMetadata: ThreadMetadata;
 
+    /**
+     * @internal
+     */
     constructor(json: IPublicThread) {
         super(json);
 
@@ -116,6 +125,9 @@ export class CategoryChannel extends BaseChannel {
     permissionOverwrites: PermissionOverwrite[];
     position: bigint;
 
+    /**
+     * @internal
+     */
     constructor(json: ICategoryChannel) {
         super(json);
 
@@ -134,6 +146,9 @@ export class TextChannel extends BaseChannel {
     rateLimitPerUser: number | null;
     topic: string | null;
 
+    /**
+     * @internal
+     */
     constructor(json: ITextChannel) {
         super(json);
 
@@ -159,6 +174,9 @@ export class NewsThread extends BaseChannel {
     rateLimitPerUser: number | null;
     threadMetadata: ThreadMetadata;
 
+    /**
+     * @internal
+     */
     constructor(json: INewsThread) {
         super(json);
 
@@ -184,6 +202,9 @@ export class VoiceChannel extends BaseChannel {
     userLimit: number | null;
     videoQualityMode: VideoQualityMode | null;
 
+    /**
+     * @internal
+     */
     constructor(json: IVoiceChannel) {
         super(json);
 
@@ -205,6 +226,9 @@ export class ThreadMember {
     member: Member | null;
     userId: string | null;
 
+    /**
+     * @internal
+     */
     constructor(json: IThreadMember) {
         this.id = json.id;
         this.joinTimestamp = json.joinTimestamp;
