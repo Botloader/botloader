@@ -5,7 +5,7 @@ use crate::{
         member::PartialMember,
         message::{
             Attachment, ChannelMention, MessageActivity, MessageApplication, MessageFlags,
-            MessageReaction, MessageReference, MessageType, UserMention,
+            MessageReaction, MessageReference, MessageType,
         },
     },
     internal::user::User,
@@ -227,6 +227,34 @@ impl From<twilight_model::channel::Message> for Message {
             timestamp: NotBigU64(v.timestamp.as_micros() as u64 / 1000),
             tts: v.tts,
             webhook_id: v.webhook_id.as_ref().map(ToString::to_string),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IUserMention")]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/UserMention.ts")]
+pub struct UserMention {
+    user: User,
+    member: Option<PartialMember>,
+}
+
+impl From<twilight_model::channel::message::Mention> for UserMention {
+    fn from(v: twilight_model::channel::message::Mention) -> Self {
+        Self {
+            user: User {
+                avatar: v.avatar.as_ref().map(ToString::to_string),
+                bot: v.bot,
+                discriminator: v.discriminator().to_string(),
+                id: v.id.to_string(),
+                public_flags: Some(v.public_flags.into()),
+                username: v.name,
+                locale: None,
+                premium_type: None,
+                system: None,
+            },
+            member: v.member.map(From::from),
         }
     }
 }

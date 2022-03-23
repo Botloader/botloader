@@ -1,4 +1,5 @@
 import { IMember } from "../generated/internal/Member";
+import { IBan } from "../generated/internal/Ban";
 import { User } from "./user";
 
 export class Member {
@@ -24,5 +25,15 @@ export class Member {
 
     name(): string {
         return this.nick ?? this.user.username;
+    }
+}
+
+export class Ban {
+    reason: string | null;
+    user: User;
+
+    constructor(json: IBan) {
+        this.reason = json.reason;
+        this.user = new User(json.user);
     }
 }

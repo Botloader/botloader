@@ -114,3 +114,21 @@ impl From<twilight_model::gateway::payload::incoming::MemberUpdate> for Member {
         }
     }
 }
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IBan")]
+#[ts(export_to = "bindings/internal/Ban.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct Ban {
+    reason: Option<String>,
+    user: User,
+}
+
+impl From<twilight_model::guild::Ban> for Ban {
+    fn from(v: twilight_model::guild::Ban) -> Self {
+        Self {
+            reason: v.reason,
+            user: v.user.into(),
+        }
+    }
+}

@@ -290,11 +290,11 @@ export namespace OpWrappers {
         return await Deno.core.opAsync("discord_create_ban", userId, extras);
     }
 
-    export async function getBan(userId: string): Promise<Discord.Ban> {
+    export async function getBan(userId: string): Promise<Internal.IBan> {
         return Deno.core.opAsync("discord_get_ban", userId);
     }
 
-    export async function getBans(): Promise<Discord.Ban[]> {
+    export async function getBans(): Promise<Internal.IBan[]> {
         return Deno.core.opAsync("discord_get_bans");
     }
 

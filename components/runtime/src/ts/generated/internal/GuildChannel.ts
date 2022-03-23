@@ -1,7 +1,7 @@
 import type { ICategoryChannel } from "./CategoryChannel";
 import type { INewsThread } from "./NewsThread";
 import type { IPrivateThread } from "./PrivateThread";
-import type { IPublicThread } from "../interna/PublicThread";
+import type { IPublicThread } from "./PublicThread";
 import type { ITextChannel } from "./TextChannel";
 import type { IVoiceChannel } from "./VoiceChannel";
 

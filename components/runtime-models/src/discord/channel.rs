@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{internal::member::Member, util::NotBigU64};
+use crate::util::NotBigU64;
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]

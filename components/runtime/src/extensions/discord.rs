@@ -3,13 +3,13 @@ use deno_core::{op_async, op_sync, Extension, OpState};
 use futures::TryFutureExt;
 use runtime_models::{
     discord::{
-        guild::{Ban, Guild},
+        guild::Guild,
         message::{MessageFlags, SendEmoji},
         util::AuditLogExtras,
     },
     internal::{
         interactions::InteractionCallback,
-        member::UpdateGuildMemberFields,
+        member::{Ban, UpdateGuildMemberFields},
         messages::{
             Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
             OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessage, OpGetMessages,

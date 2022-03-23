@@ -14,9 +14,9 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         DispatchEvent::MessageUpdate(m) if m.guild_id.is_some() => Some(DiscordDispatchEvent {
             name: "MESSAGE_UPDATE",
             guild_id: m.guild_id.unwrap(),
-            data: serde_json::to_value(&runtime_models::discord::events::EventMessageUpdate::from(
-                *m,
-            ))
+            data: serde_json::to_value(
+                &runtime_models::internal::events::EventMessageUpdate::from(*m),
+            )
             .unwrap(),
         }),
         DispatchEvent::MessageDelete(m) if m.guild_id.is_some() => Some(DiscordDispatchEvent {
@@ -42,7 +42,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         DispatchEvent::MemberRemove(m) => Some(DiscordDispatchEvent {
             name: "MEMBER_REMOVE",
             guild_id: m.guild_id,
-            data: serde_json::to_value(&runtime_models::discord::events::EventMemberRemove::from(
+            data: serde_json::to_value(&runtime_models::internal::events::EventMemberRemove::from(
                 m,
             ))
             .unwrap(),
@@ -51,7 +51,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
             name: "MESSAGE_REACTION_ADD",
             guild_id: r.guild_id.expect("only guild event sent to guild worker"),
             data: serde_json::to_value(
-                &runtime_models::discord::events::EventMessageReactionAdd::from(*r),
+                &runtime_models::internal::events::EventMessageReactionAdd::from(*r),
             )
             .unwrap(),
         }),

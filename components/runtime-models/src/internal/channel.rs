@@ -123,7 +123,7 @@ impl From<twilight_model::channel::TextChannel> for TextChannel {
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export, rename = "IPublicThread")]
-#[ts(export_to = "bindings/interna/PublicThread.ts")]
+#[ts(export_to = "bindings/internal/PublicThread.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct PublicThread {
     pub default_auto_archive_duration_minutes: Option<u32>,
