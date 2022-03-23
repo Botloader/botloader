@@ -1,11 +1,6 @@
 use std::str::FromStr;
 
-use super::member::PartialMember;
-use crate::{
-    discord::channel::ChannelType,
-    internal::user::{User, UserFlags},
-    util::NotBigU64,
-};
+use crate::{discord::channel::ChannelType, util::NotBigU64};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::id::Id;
@@ -193,47 +188,6 @@ impl From<twilight_model::channel::ChannelMention> for ChannelMention {
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/UserMention.ts")]
-pub struct UserMention {
-    /// Hash of the user's avatar, if any.
-    pub avatar: Option<String>,
-    /// Whether the user is a bot.
-    pub bot: bool,
-    /// Discriminator used to differentiate people with the same username.
-    ///
-    /// # serde
-    ///
-    /// The discriminator field can be deserialized from either a string or an
-    /// integer. The field will always serialize into a string due to that being
-    /// the type Discord's API uses.
-    pub discriminator: u16,
-    /// Unique ID of the user.
-    pub id: String,
-    /// Member object for the user in the guild, if available.
-    pub member: Option<PartialMember>,
-    /// Username of the user.
-    pub username: String,
-    /// Public flags on the user's account.
-    pub public_flags: UserFlags,
-}
-
-impl From<twilight_model::channel::message::Mention> for UserMention {
-    fn from(v: twilight_model::channel::message::Mention) -> Self {
-        Self {
-            avatar: v.avatar.as_ref().map(ToString::to_string),
-            bot: v.bot,
-            discriminator: v.discriminator,
-            id: v.id.to_string(),
-            member: v.member.map(From::from),
-            username: v.name,
-            public_flags: v.public_flags.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-#[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/MessageReaction.ts")]
 pub struct MessageReaction {
     pub count: NotBigU64,
@@ -368,114 +322,6 @@ impl From<twilight_model::channel::message::MessageReference> for MessageReferen
             guild_id: v.guild_id.as_ref().map(ToString::to_string),
             message_id: v.message_id.as_ref().map(ToString::to_string),
             fail_if_not_exists: v.fail_if_not_exists,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(export)]
-#[ts(export_to = "bindings/discord/StickerType.ts")]
-pub enum StickerType {
-    /// Official sticker in a pack.
-    ///
-    /// Part of nitro or in a removed purchasable pack.
-    Standard = 1,
-    /// Sticker uploaded to a boosted guild for the guild's members.
-    Guild = 2,
-}
-
-impl From<twilight_model::channel::message::sticker::StickerType> for StickerType {
-    fn from(v: twilight_model::channel::message::sticker::StickerType) -> Self {
-        match v {
-            twilight_model::channel::message::sticker::StickerType::Standard => Self::Standard,
-            twilight_model::channel::message::sticker::StickerType::Guild => Self::Guild,
-        }
-    }
-}
-
-impl From<StickerType> for twilight_model::channel::message::sticker::StickerType {
-    fn from(v: StickerType) -> Self {
-        match v {
-            StickerType::Standard => Self::Standard,
-            StickerType::Guild => Self::Guild,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-#[serde(rename_all = "camelCase")]
-#[ts(export_to = "bindings/discord/Sticker.ts")]
-pub struct Sticker {
-    /// Whether the sticker is available.
-    pub available: bool,
-    /// Description of the sticker.
-    pub description: Option<String>,
-    /// Format type.
-    pub format_type: StickerFormatType,
-    /// ID of the guild that owns the sticker.
-    pub guild_id: Option<String>,
-    /// Unique ID of the sticker.
-    pub id: String,
-    /// Name of the sticker.
-    pub name: String,
-    /// Unique ID of the pack the sticker is in.
-    pub pack_id: Option<String>,
-    /// Sticker's sort order within a pack.
-    pub sort_value: Option<NotBigU64>,
-    /// CSV list of tags the sticker is assigned to, if any.
-    pub tags: String,
-    /// ID of the user that uploaded the sticker.
-    pub user: Option<User>,
-
-    pub kind: StickerType,
-}
-
-impl From<twilight_model::channel::message::Sticker> for Sticker {
-    fn from(v: twilight_model::channel::message::Sticker) -> Self {
-        Self {
-            description: v.description,
-            format_type: v.format_type.into(),
-            id: v.id.to_string(),
-            name: v.name,
-            pack_id: v.pack_id.as_ref().map(ToString::to_string),
-            tags: v.tags,
-            available: v.available,
-            guild_id: v.guild_id.as_ref().map(ToString::to_string),
-            sort_value: v.sort_value.map(NotBigU64),
-            user: v.user.map(|u| u.into()),
-            kind: v.kind.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-#[ts(export_to = "bindings/discord/StickerFormatType.ts")]
-pub enum StickerFormatType {
-    /// Sticker format is a PNG.
-    Png,
-    /// Sticker format is an APNG.
-    Apng,
-    /// Sticker format is a LOTTIE.
-    Lottie,
-}
-
-impl From<twilight_model::channel::message::sticker::StickerFormatType> for StickerFormatType {
-    fn from(v: twilight_model::channel::message::sticker::StickerFormatType) -> Self {
-        match v {
-            twilight_model::channel::message::sticker::StickerFormatType::Apng => Self::Apng,
-            twilight_model::channel::message::sticker::StickerFormatType::Png => Self::Png,
-            twilight_model::channel::message::sticker::StickerFormatType::Lottie => Self::Lottie,
-        }
-    }
-}
-impl From<StickerFormatType> for twilight_model::channel::message::sticker::StickerFormatType {
-    fn from(v: StickerFormatType) -> Self {
-        match v {
-            StickerFormatType::Apng => Self::Apng,
-            StickerFormatType::Png => Self::Png,
-            StickerFormatType::Lottie => Self::Lottie,
         }
     }
 }

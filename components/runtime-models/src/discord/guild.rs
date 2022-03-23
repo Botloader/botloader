@@ -9,7 +9,7 @@ use twilight_model::guild::{
     VerificationLevel as TwilightVerificationLevel,
 };
 
-use crate::{internal::user::User, util::NotBigU64};
+use crate::util::NotBigU64;
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
@@ -278,24 +278,6 @@ impl From<twilight_model::guild::SystemChannelFlags> for SystemChannelFlags {
             suppress_premium_subscriptions: v.contains(
                 twilight_model::guild::SystemChannelFlags::SUPPRESS_PREMIUM_SUBSCRIPTIONS,
             ),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-#[ts(export_to = "bindings/discord/Ban.ts")]
-#[serde(rename_all = "camelCase")]
-pub struct Ban {
-    reason: Option<String>,
-    user: User,
-}
-
-impl From<twilight_model::guild::Ban> for Ban {
-    fn from(v: twilight_model::guild::Ban) -> Self {
-        Self {
-            reason: v.reason,
-            user: v.user.into(),
         }
     }
 }

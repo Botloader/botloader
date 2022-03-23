@@ -1,4 +1,5 @@
-import { IMessage } from "../generated/internal/IMessage";
+import { User } from "./user";
+
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
 import type { Component } from "../generated/discord/Component";
@@ -10,30 +11,31 @@ import type { MessageReaction } from "../generated/discord/MessageReaction";
 import type { MessageReference } from "../generated/discord/MessageReference";
 import type { MessageType } from "../generated/discord/MessageType";
 import type { PartialMember } from "../generated/discord/PartialMember";
-import type { UserMention } from "../generated/discord/UserMention";
-import { User } from "./user";
+
+import type { IMessage } from "../generated/internal/IMessage";
+import type { IUserMention } from "../generated/internal/UserMention";
 
 export class Message {
     activity: MessageActivity | null;
     application: MessageApplication | null;
-    attachments: Array<Attachment>;
+    attachments: Attachment[];
     author: User;
     channelId: string;
     content: string;
-    components: Array<Component>;
+    components: Component[];
     editedTimestamp: number | null;
-    embeds: Array<Embed>;
+    embeds: Embed[];
     flags: MessageFlags | null;
     guildId: string | null;
     id: string;
     kind: MessageType;
     member: PartialMember | null;
-    mentionChannels: Array<ChannelMention>;
+    mentionChannels: ChannelMention[];
     mentionEveryone: boolean;
-    mentionRoles: Array<string>;
-    mentions: Array<UserMention>;
+    mentionRoles: string[];
+    mentions: UserMention[];
     pinned: boolean;
-    reactions: Array<MessageReaction>;
+    reactions: MessageReaction[];
     reference: MessageReference | null;
     referencedMessage: Message | null;
     timestamp: number;
@@ -58,7 +60,7 @@ export class Message {
         this.mentionChannels = json.mentionChannels;
         this.mentionEveryone = json.mentionEveryone;
         this.mentionRoles = json.mentionRoles;
-        this.mentions = json.mentions;
+        this.mentions = json.mentions.map(v => new UserMention(v));
         this.pinned = json.pinned;
         this.reactions = json.reactions;
         this.reference = json.reference;
@@ -70,5 +72,15 @@ export class Message {
 
     hyperlink() {
         return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`
+    }
+}
+
+export class UserMention extends User {
+    member: PartialMember | null;
+
+    constructor(json: IUserMention) {
+        super(json.user);
+
+        this.member = json.member;
     }
 }

@@ -1,16 +1,18 @@
 import { Member } from "./member";
+
 import type { PermissionOverwrite } from "../generated/discord/PermissionOverwrite";
 import type { ThreadMetadata } from "../generated/discord/ThreadMetadata";
 import type { VideoQualityMode } from "../generated/discord/VideoQualityMode";
-import { InternalGuildChannel } from "../generated/internal/GuildChannel";
-import { IPrivateThread } from "../generated/internal/PrivateThread";
-import { IThreadMember } from "../generated/internal/ThreadMember";
-import { IPublicThread } from "../generated/interna/PublicThread";
-import { ICategoryChannel } from "../generated/internal/CategoryChannel";
-import { INewsThread } from "../generated/internal/NewsThread";
-import { ITextChannel } from "../generated/internal/TextChannel";
-import { IVoiceChannel } from "../generated/internal/VoiceChannel";
-import { ChannelType } from "../generated/discord/ChannelType";
+import type { ChannelType } from "../generated/discord/ChannelType";
+
+import type { InternalGuildChannel } from "../generated/internal/GuildChannel";
+import type { IPrivateThread } from "../generated/internal/PrivateThread";
+import type { IThreadMember } from "../generated/internal/ThreadMember";
+import type { IPublicThread } from "../generated/internal/PublicThread";
+import type { ICategoryChannel } from "../generated/internal/CategoryChannel";
+import type { INewsThread } from "../generated/internal/NewsThread";
+import type { ITextChannel } from "../generated/internal/TextChannel";
+import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
 
 export type GuildChannel =
     | CategoryChannel

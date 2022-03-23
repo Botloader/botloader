@@ -2,7 +2,7 @@ import { Guild, Role, Embed, Component, AuditLogExtras, SendEmoji } from '../gen
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
-import { Member } from './member';
+import { Ban, Member } from './member';
 import { Message } from './message';
 import { User } from './user';
 
@@ -257,12 +257,12 @@ export async function createBan(userId: string, extras?: CreateBanExtras): Promi
     return OpWrappers.createBan(userId, extras ?? {});
 }
 
-export async function getBan(userID: string) {
-    return OpWrappers.getBan(userID);
+export async function getBan(userID: string): Promise<Ban> {
+    return new Ban(await OpWrappers.getBan(userID));
 }
 
-export async function getBans() {
-    return OpWrappers.getBans();
+export async function getBans(): Promise<Ban[]> {
+    return (await OpWrappers.getBans()).map(v => new Ban(v));
 }
 
 export async function deleteBan(userId: string, extras?: AuditLogExtras): Promise<void> {

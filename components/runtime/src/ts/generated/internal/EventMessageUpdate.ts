@@ -1,10 +1,10 @@
-import type { Attachment } from "./Attachment";
-import type { Embed } from "./Embed";
-import type { IUser } from "../internal/IUser";
-import type { MessageType } from "./MessageType";
-import type { UserMention } from "./UserMention";
+import type { Attachment } from "../discord/Attachment";
+import type { Embed } from "../discord/Embed";
+import type { IUser } from "./IUser";
+import type { IUserMention } from "./UserMention";
+import type { MessageType } from "../discord/MessageType";
 
-export interface EventMessageUpdate {
+export interface IEventMessageUpdate {
   attachments?: Array<Attachment>;
   author?: IUser;
   channelId: string;
@@ -16,7 +16,7 @@ export interface EventMessageUpdate {
   kind?: MessageType;
   mentionEveryone?: boolean;
   mentionRoles?: Array<string>;
-  mentions?: Array<UserMention>;
+  mentions?: Array<IUserMention>;
   pinned?: boolean;
   timestamp?: number;
   tts?: boolean;

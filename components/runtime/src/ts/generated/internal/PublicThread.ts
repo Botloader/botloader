@@ -1,4 +1,4 @@
-import type { IThreadMember } from "../internal/ThreadMember";
+import type { IThreadMember } from "./ThreadMember";
 import type { ThreadMetadata } from "../discord/ThreadMetadata";
 
 export interface IPublicThread {
