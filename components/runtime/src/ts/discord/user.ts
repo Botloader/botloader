@@ -11,6 +11,9 @@ export class User {
     publicFlags: UserFlags | null;
     system: boolean | null;
 
+    /**
+     * @internal
+     */
     constructor(json: IUser) {
         this.avatar = json.avatar;
         this.bot = json.bot;

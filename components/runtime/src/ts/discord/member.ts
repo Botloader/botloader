@@ -12,6 +12,9 @@ export class Member {
     roles: Array<string>;
     user: User;
 
+    /**
+     * @internal
+     */
     constructor(json: IMember) {
         this.deaf = json.deaf;
         this.joinedAt = json.joinedAt;
@@ -32,6 +35,9 @@ export class Ban {
     reason: string | null;
     user: User;
 
+    /**
+     * @internal
+     */
     constructor(json: IBan) {
         this.reason = json.reason;
         this.user = new User(json.user);
