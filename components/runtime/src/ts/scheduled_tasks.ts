@@ -1,4 +1,3 @@
-import { ScheduledTask } from "./generated/internal/ScheduledTask";
 import { OpWrappers } from "./op_wrappers";
 
 /**
@@ -121,6 +120,14 @@ export namespace Tasks {
 
     export interface Task<T> extends ScheduledTask {
         data: T;
+    }
+
+    export interface ScheduledTask {
+        id: number;
+        namespace: string;
+        key?: string;
+        executeAt: number;
+        data: unknown;
     }
 }
 
