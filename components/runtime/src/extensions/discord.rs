@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use deno_core::{op_async, op_sync, Extension, OpState};
+use deno_core::{op, Extension, OpState};
 use futures::TryFutureExt;
 use runtime_models::{
     discord::{
@@ -26,127 +26,64 @@ use twilight_http::request::AuditLogReason;
 use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
-use vm::{AnyError, JsValue};
+use vm::AnyError;
 
 use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
-use crate::dummy_op;
-use crate::RuntimeContext;
+use crate::get_rt_ctx;
 
 pub fn extension() -> Extension {
     Extension::builder()
         .ops(vec![
             // guild
-            ("discord_get_guild", op_async(op_get_guild)),
-            ("discord_edit_guild", op_sync(dummy_op)),
+            op_discord_get_guild::decl(),
             // messages
-            ("discord_get_message", op_async(op_get_message)),
-            ("discord_get_messages", op_async(op_get_messages)),
-            (
-                "discord_create_message",
-                op_async(op_create_channel_message),
-            ),
-            ("discord_edit_message", op_async(op_edit_channel_message)),
-            ("discord_delete_message", op_async(op_delete_message)),
-            (
-                "discord_bulk_delete_messages",
-                op_async(op_delete_messages_bulk),
-            ),
+            op_discord_get_message::decl(),
+            op_discord_get_messages::decl(),
+            op_discord_create_message::decl(),
+            op_discord_edit_message::decl(),
+            op_discord_delete_message::decl(),
+            op_discord_bulk_delete_messages::decl(),
             // Reactions
-            ("discord_create_reaction", op_async(discord_create_reaction)),
-            (
-                "discord_delete_own_reaction",
-                op_async(discord_delete_own_reaction),
-            ),
-            (
-                "discord_delete_user_reaction",
-                op_async(discord_delete_user_reaction),
-            ),
-            ("discord_get_reactions", op_async(discord_get_reactions)),
-            (
-                "discord_delete_all_reactions",
-                op_async(discord_delete_all_reactions),
-            ),
-            (
-                "discord_delete_all_reactions_for_emoji",
-                op_async(discord_delete_all_reactions_for_emoji),
-            ),
+            op_discord_create_reaction::decl(),
+            op_discord_delete_own_reaction::decl(),
+            op_discord_delete_user_reaction::decl(),
+            op_discord_get_reactions::decl(),
+            op_discord_delete_all_reactions::decl(),
+            op_discord_delete_all_reactions_for_emoji::decl(),
             // roles
-            ("discord_get_role", op_async(op_get_role)),
-            ("discord_get_roles", op_async(op_get_roles)),
-            ("discord_create_role", op_sync(dummy_op)),
-            ("discord_edit_role", op_sync(dummy_op)),
-            ("discord_delete_role", op_sync(dummy_op)),
+            op_discord_get_role::decl(),
+            op_discord_get_roles::decl(),
             // channels
-            ("discord_get_channel", op_async(op_get_channel)),
-            ("discord_get_channels", op_async(op_get_channels)),
-            ("discord_create_channel", op_sync(dummy_op)),
-            ("discord_edit_channel", op_sync(dummy_op)),
-            ("discord_delete_channel", op_sync(dummy_op)),
+            op_discord_get_channel::decl(),
+            op_discord_get_channels::decl(),
             // invites
-            ("discord_get_invite", op_sync(dummy_op)),
-            ("discord_get_invites", op_sync(dummy_op)),
-            ("discord_create_invite", op_sync(dummy_op)),
-            ("discord_delete_invite", op_sync(dummy_op)),
             // members
-            ("discord_remove_member", op_async(op_remove_member)),
-            ("discord_get_members", op_async(op_get_members)),
-            ("discord_update_member", op_async(discord_update_member)),
-            ("discord_add_member_role", op_async(discord_add_member_role)),
-            (
-                "discord_remove_member_role",
-                op_async(discord_remove_member_role),
-            ),
+            op_discord_remove_member::decl(),
+            op_discord_get_members::decl(),
+            op_discord_update_member::decl(),
+            op_discord_add_member_role::decl(),
+            op_discord_remove_member_role::decl(),
             // interactions
-            (
-                "discord_interaction_callback",
-                op_async(op_interaction_callback),
-            ),
-            (
-                "discord_interaction_get_original_response",
-                op_async(op_interaction_get_original),
-            ),
-            (
-                "discord_interaction_edit_original_response",
-                op_async(op_interaction_edit_original),
-            ),
-            (
-                "discord_interaction_delete_original",
-                op_async(op_interaction_delete_original),
-            ),
-            (
-                "discord_interaction_followup_message",
-                op_async(op_create_followup_message),
-            ),
-            (
-                "discord_interaction_get_followup_message",
-                op_async(op_interaction_get_followup),
-            ),
-            (
-                "discord_interaction_edit_followup_message",
-                op_async(op_interaction_edit_followup),
-            ),
-            (
-                "discord_interaction_delete_followup_message",
-                op_async(op_interaction_delete_followup),
-            ),
+            op_discord_interaction_callback::decl(),
+            op_discord_interaction_get_original_response::decl(),
+            op_discord_interaction_edit_original_response::decl(),
+            op_discord_interaction_delete_original::decl(),
+            op_discord_interaction_followup_message::decl(),
+            op_discord_interaction_get_followup_message::decl(),
+            op_discord_interaction_edit_followup_message::decl(),
+            op_discord_interaction_delete_followup_message::decl(),
             // Bans
-            ("discord_create_ban", op_async(op_create_ban)),
-            ("discord_get_ban", op_async(op_get_ban)),
-            ("discord_get_bans", op_async(op_get_bans)),
-            ("discord_delete_ban", op_async(op_remove_ban)),
+            op_discord_create_ban::decl(),
+            op_discord_get_ban::decl(),
+            op_discord_get_bans::decl(),
+            op_discord_delete_ban::decl(),
         ])
         .build()
 }
 
-pub async fn op_get_guild(
-    state: Rc<RefCell<OpState>>,
-    _args: JsValue,
-    _: (),
-) -> Result<Guild, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+#[op]
+pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
 
     match rt_ctx
         .bot_state
@@ -160,15 +97,12 @@ pub async fn op_get_guild(
 }
 
 // Messages
-pub async fn op_get_message(
+#[op]
+pub async fn op_discord_get_message(
     state: Rc<RefCell<OpState>>,
     args: OpGetMessage,
-    _: (),
 ) -> Result<Message, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_id = if let Some(id) = Id::new_checked(args.message_id.parse()?) {
@@ -189,15 +123,12 @@ pub async fn op_get_message(
     Ok(message.into())
 }
 
-pub async fn op_get_messages(
+#[op]
+pub async fn op_discord_get_messages(
     state: Rc<RefCell<OpState>>,
     args: OpGetMessages,
-    _: (),
 ) -> Result<Vec<Message>, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
 
@@ -244,15 +175,12 @@ pub async fn op_get_messages(
     Ok(messages.into_iter().map(Into::into).collect())
 }
 
-pub async fn op_create_channel_message(
+#[op]
+pub async fn op_discord_create_message(
     state: Rc<RefCell<OpState>>,
     args: OpCreateChannelMessage,
-    _: (),
 ) -> Result<Message, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
 
@@ -290,15 +218,12 @@ pub async fn op_create_channel_message(
     Ok(mc.exec().await?.model().await?.into())
 }
 
-pub async fn op_edit_channel_message(
+#[op]
+pub async fn op_discord_edit_message(
     state: Rc<RefCell<OpState>>,
     args: OpEditChannelMessage,
-    _: (),
 ) -> Result<Message, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_id = parse_str_snowflake_id(&args.message_id)?;
@@ -331,15 +256,12 @@ pub async fn op_edit_channel_message(
     Ok(mc.exec().await?.model().await?.into())
 }
 
-pub async fn op_interaction_callback(
+#[op]
+pub async fn op_discord_interaction_callback(
     state: Rc<RefCell<OpState>>,
     args: InteractionCallback,
-    _: (),
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let client = rt_ctx.discord_config.interaction_client();
     client
@@ -353,15 +275,12 @@ pub async fn op_interaction_callback(
     Ok(())
 }
 
-pub async fn op_interaction_get_original(
+#[op]
+pub async fn op_discord_interaction_get_original_response(
     state: Rc<RefCell<OpState>>,
     token: String,
-    _: (),
 ) -> Result<Message, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let client = rt_ctx.discord_config.interaction_client();
     Ok(client
@@ -373,15 +292,12 @@ pub async fn op_interaction_get_original(
         .into())
 }
 
-pub async fn op_interaction_edit_original(
+#[op]
+pub async fn op_discord_interaction_edit_original_response(
     state: Rc<RefCell<OpState>>,
     args: OpCreateFollowUpMessage,
-    _: (),
 ) -> Result<Message, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let maybe_embeds = args
         .fields
@@ -409,30 +325,25 @@ pub async fn op_interaction_edit_original(
     Ok(mc.exec().await?.model().await?.into())
 }
 
-pub async fn op_interaction_delete_original(
+#[op]
+pub async fn op_discord_interaction_delete_original(
     state: Rc<RefCell<OpState>>,
     token: String,
-    _: (),
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let client = rt_ctx.discord_config.interaction_client();
     client.delete_interaction_original(&token).exec().await?;
     Ok(())
 }
 
-pub async fn op_interaction_get_followup(
+#[op]
+pub async fn op_discord_interaction_get_followup_message(
     state: Rc<RefCell<OpState>>,
     token: String,
     id: Id<MessageMarker>,
 ) -> Result<Message, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let client = rt_ctx.discord_config.interaction_client();
     Ok(client
@@ -444,15 +355,12 @@ pub async fn op_interaction_get_followup(
         .into())
 }
 
-pub async fn op_create_followup_message(
+#[op]
+pub async fn op_discord_interaction_followup_message(
     state: Rc<RefCell<OpState>>,
     args: OpCreateFollowUpMessage,
-    _: (),
 ) -> Result<Message, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let maybe_embeds = args
         .fields
@@ -499,15 +407,13 @@ pub async fn op_create_followup_message(
     Ok(mc.exec().await?.model().await?.into())
 }
 
-pub async fn op_interaction_edit_followup(
+#[op]
+pub async fn op_discord_interaction_edit_followup_message(
     state: Rc<RefCell<OpState>>,
     message_id: Id<MessageMarker>,
     args: OpCreateFollowUpMessage,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let maybe_embeds = args
         .fields
@@ -537,30 +443,25 @@ pub async fn op_interaction_edit_followup(
     Ok(())
 }
 
-pub async fn op_interaction_delete_followup(
+#[op]
+pub async fn op_discord_interaction_delete_followup_message(
     state: Rc<RefCell<OpState>>,
     token: String,
     id: Id<MessageMarker>,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let client = rt_ctx.discord_config.interaction_client();
     client.delete_followup_message(&token, id).exec().await?;
     Ok(())
 }
 
-pub async fn op_delete_message(
+#[op]
+pub async fn op_discord_delete_message(
     state: Rc<RefCell<OpState>>,
     args: OpDeleteMessage,
-    _: (),
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_id = parse_str_snowflake_id(&args.message_id)?;
@@ -575,15 +476,12 @@ pub async fn op_delete_message(
     Ok(())
 }
 
-pub async fn op_delete_messages_bulk(
+#[op]
+pub async fn op_discord_bulk_delete_messages(
     state: Rc<RefCell<OpState>>,
     args: OpDeleteMessagesBulk,
-    _: (),
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
     let message_ids = args
@@ -604,15 +502,12 @@ pub async fn op_delete_messages_bulk(
 }
 
 // Roles
-pub async fn op_get_role(
+#[op]
+pub async fn op_discord_get_role(
     state: Rc<RefCell<OpState>>,
     role_id: Id<RoleMarker>,
-    _: (),
 ) -> Result<runtime_models::discord::role::Role, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     match rt_ctx.bot_state.get_role(rt_ctx.guild_id, role_id).await? {
         Some(c) => Ok(c.into()),
@@ -620,30 +515,24 @@ pub async fn op_get_role(
     }
 }
 
-pub async fn op_get_roles(
+#[op]
+pub async fn op_discord_get_roles(
     state: Rc<RefCell<OpState>>,
-    _: (),
-    _: (),
 ) -> Result<Vec<runtime_models::discord::role::Role>, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let roles = rt_ctx.bot_state.get_roles(rt_ctx.guild_id).await?;
     Ok(roles.into_iter().map(Into::into).collect())
 }
 
 // Reactions
-pub async fn discord_create_reaction(
+#[op]
+pub async fn op_discord_create_reaction(
     state: Rc<RefCell<OpState>>,
     (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     emoji: SendEmoji,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
     let _ = get_guild_channel(&rt_ctx, channel_id).await?;
@@ -658,15 +547,13 @@ pub async fn discord_create_reaction(
     Ok(())
 }
 
-pub async fn discord_delete_own_reaction(
+#[op]
+pub async fn op_discord_delete_own_reaction(
     state: Rc<RefCell<OpState>>,
     (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     emoji: SendEmoji,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
     let _ = get_guild_channel(&rt_ctx, channel_id).await?;
@@ -681,15 +568,13 @@ pub async fn discord_delete_own_reaction(
     Ok(())
 }
 
-pub async fn discord_delete_user_reaction(
+#[op]
+pub async fn op_discord_delete_user_reaction(
     state: Rc<RefCell<OpState>>,
     (channel_id, message_id, user_id): (Id<ChannelMarker>, Id<MessageMarker>, Id<UserMarker>),
     emoji: SendEmoji,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
     let _ = get_guild_channel(&rt_ctx, channel_id).await?;
@@ -704,15 +589,13 @@ pub async fn discord_delete_user_reaction(
     Ok(())
 }
 
-pub async fn discord_get_reactions(
+#[op]
+pub async fn op_discord_get_reactions(
     state: Rc<RefCell<OpState>>,
     (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     fields: GetReactionsFields,
 ) -> Result<Vec<User>, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let _ = get_guild_channel(&rt_ctx, channel_id).await?;
 
@@ -740,15 +623,12 @@ pub async fn discord_get_reactions(
         .collect())
 }
 
-pub async fn discord_delete_all_reactions(
+#[op]
+pub async fn op_discord_delete_all_reactions(
     state: Rc<RefCell<OpState>>,
     (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
-    _: (),
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let _ = get_guild_channel(&rt_ctx, channel_id).await?;
 
@@ -762,15 +642,13 @@ pub async fn discord_delete_all_reactions(
     Ok(())
 }
 
-pub async fn discord_delete_all_reactions_for_emoji(
+#[op]
+pub async fn op_discord_delete_all_reactions_for_emoji(
     state: Rc<RefCell<OpState>>,
     (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     emoji: SendEmoji,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let _ = get_guild_channel(&rt_ctx, channel_id).await?;
 
@@ -785,44 +663,34 @@ pub async fn discord_delete_all_reactions_for_emoji(
 }
 
 // Channels
-pub async fn op_get_channel(
+#[op]
+pub async fn op_discord_get_channel(
     state: Rc<RefCell<OpState>>,
     channel_id_str: String,
-    _: (),
 ) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&rt_ctx, &channel_id_str).await?;
     Ok(channel.into())
 }
 
-pub async fn op_get_channels(
+#[op]
+pub async fn op_discord_get_channels(
     state: Rc<RefCell<OpState>>,
-    _: (),
-    _: (),
 ) -> Result<Vec<runtime_models::internal::channel::GuildChannel>, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let channels = rt_ctx.bot_state.get_channels(rt_ctx.guild_id).await?;
     Ok(channels.into_iter().map(Into::into).collect())
 }
 
 // Members
-pub async fn op_get_members(
+#[op]
+pub async fn op_discord_get_members(
     state: Rc<RefCell<OpState>>,
     user_ids: Vec<String>,
-    _: (),
 ) -> Result<Vec<Option<runtime_models::internal::member::Member>>, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     if user_ids.len() > 100 {
         return Err(anyhow!("too many user ids provided, max 100"));
@@ -875,15 +743,13 @@ pub async fn op_get_members(
     Ok(res)
 }
 
-pub async fn discord_add_member_role(
+#[op]
+pub async fn op_discord_add_member_role(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
     role_id: Id<RoleMarker>,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     rt_ctx
         .discord_config
@@ -895,15 +761,13 @@ pub async fn discord_add_member_role(
     Ok(())
 }
 
-pub async fn discord_remove_member_role(
+#[op]
+pub async fn op_discord_remove_member_role(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
     role_id: Id<RoleMarker>,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     rt_ctx
         .discord_config
@@ -915,15 +779,13 @@ pub async fn discord_remove_member_role(
     Ok(())
 }
 
-pub async fn discord_update_member(
+#[op]
+pub async fn op_discord_update_member(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
     fields: UpdateGuildMemberFields,
 ) -> Result<runtime_models::internal::member::Member, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
     let mut builder = rt_ctx
         .discord_config
         .client
@@ -954,15 +816,13 @@ pub async fn discord_update_member(
 }
 
 // Bans
-pub async fn op_create_ban(
+#[op]
+pub async fn op_discord_create_ban(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
     extras: CreateBanFields,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let mut req = rt_ctx
         .discord_config
@@ -982,15 +842,12 @@ pub async fn op_create_ban(
     Ok(())
 }
 
-pub async fn op_get_ban(
+#[op]
+pub async fn op_discord_get_ban(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
-    _: (),
 ) -> Result<Ban, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let result = rt_ctx
         .discord_config
@@ -1004,11 +861,9 @@ pub async fn op_get_ban(
     Ok(result.into())
 }
 
-pub async fn op_get_bans(state: Rc<RefCell<OpState>>, _: (), _: ()) -> Result<Vec<Ban>, AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+#[op]
+pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
 
     let result = rt_ctx
         .discord_config
@@ -1022,15 +877,13 @@ pub async fn op_get_bans(state: Rc<RefCell<OpState>>, _: (), _: ()) -> Result<Ve
     Ok(result.into_iter().map(Into::into).collect())
 }
 
-pub async fn op_remove_ban(
+#[op]
+pub async fn op_discord_delete_ban(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
     extras: AuditLogExtras,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let mut req = rt_ctx
         .discord_config
@@ -1047,15 +900,13 @@ pub async fn op_remove_ban(
 }
 
 // Other
-pub async fn op_remove_member(
+#[op]
+pub async fn op_discord_remove_member(
     state: Rc<RefCell<OpState>>,
     user_id: Id<UserMarker>,
     extras: AuditLogExtras,
 ) -> Result<(), AnyError> {
-    let rt_ctx = {
-        let state = state.borrow();
-        state.borrow::<RuntimeContext>().clone()
-    };
+    let rt_ctx = get_rt_ctx(&state);
 
     let mut req = rt_ctx
         .discord_config

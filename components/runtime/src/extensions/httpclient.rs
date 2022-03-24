@@ -4,8 +4,8 @@ use std::{
 };
 
 use deno_core::{
-    op_async, op_sync, AsyncRefCell, AsyncResult, CancelFuture, CancelHandle, CancelTryFuture,
-    Extension, OpState, RcRef, Resource, ResourceId, ZeroCopyBuf,
+    op, AsyncRefCell, AsyncResult, CancelFuture, CancelHandle, CancelTryFuture, Extension, OpState,
+    RcRef, Resource, ResourceId, ZeroCopyBuf,
 };
 use futures::Stream;
 use reqwest::Body;
@@ -19,18 +19,15 @@ use vm::AnyError;
 
 pub fn extension() -> Extension {
     Extension::builder()
-        .ops(vec![(
-            "op_bl_http_client_stream",
-            op_sync(op_bl_http_client_stream),
-        )])
-        .ops(vec![(
-            "op_bl_http_request_send",
-            op_async(op_bl_http_request_send),
-        )])
+        .ops(vec![
+            op_bl_http_client_stream::decl(),
+            op_bl_http_request_send::decl(),
+        ])
         .build()
 }
 
-pub fn op_bl_http_client_stream(state: &mut OpState, _: (), _: ()) -> Result<ResourceId, AnyError> {
+#[op]
+pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<ResourceId, AnyError> {
     let (tx, rx) = mpsc::channel(2);
     let resource = RequestBodyResource {
         cancel: CancelHandle::new(),
@@ -41,10 +38,10 @@ pub fn op_bl_http_client_stream(state: &mut OpState, _: (), _: ()) -> Result<Res
     crate::try_insert_resource_table(&mut state.resource_table, resource)
 }
 
+#[op]
 pub async fn op_bl_http_request_send(
     state_rc: Rc<RefCell<OpState>>,
     args: ClientHttpRequest,
-    _: (),
 ) -> Result<ClientHttpResponse, AnyError> {
     crate::RateLimiters::ops_until_ready(state_rc.clone(), crate::RatelimiterType::UserHttp).await;
 

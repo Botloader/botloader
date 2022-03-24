@@ -14,9 +14,9 @@ tscompiler = {path="../../components/tscompiler"}
 
 twilight-model = "0.9.1"
 
-deno_core = "0.118"
-v8 = "0.38.1"
-serde_v8 = "0.29"
+deno_core = "0.124"
+v8 = "0.41.0"
+serde_v8 = "0.35"
 
 tracing = "0.1"
 tracing-futures = { version = "0.2.5" }
@@ -32,4 +32,4 @@ lazy_static = "1.4"
 regex = "1.5"
 
 [build-dependencies]
-deno_core = "0.118"
+deno_core = "0.124"

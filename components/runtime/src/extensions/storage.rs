@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use anyhow::anyhow;
-use deno_core::{op_async, Extension, OpState};
+use deno_core::{op, Extension, OpState};
 use runtime_models::internal::storage::{
     OpStorageBucketEntry, OpStorageBucketEntryId, OpStorageBucketIncr, OpStorageBucketList,
     OpStorageBucketSetIf, OpStorageBucketSetValue, OpStorageBucketSortedList, OpStorageBucketValue,
@@ -16,33 +16,15 @@ pub fn extension() -> Extension {
     Extension::builder()
         .ops(vec![
             // botloader stuff
-            ("op_botloader_bucket_storage_set", op_async(op_storage_set)),
-            (
-                "op_botloader_bucket_storage_set_if",
-                op_async(op_storage_set_if),
-            ),
-            ("op_botloader_bucket_storage_get", op_async(op_storage_get)),
-            ("op_botloader_bucket_storage_del", op_async(op_storage_del)),
-            (
-                "op_botloader_bucket_storage_del_many",
-                op_async(op_storage_del_many),
-            ),
-            (
-                "op_botloader_bucket_storage_list",
-                op_async(op_storage_list),
-            ),
-            (
-                "op_botloader_bucket_storage_count",
-                op_async(op_storage_count),
-            ),
-            (
-                "op_botloader_bucket_storage_incr",
-                op_async(op_storage_incr),
-            ),
-            (
-                "op_botloader_bucket_storage_sorted_list",
-                op_async(op_storage_sorted_list),
-            ),
+            op_botloader_bucket_storage_set::decl(),
+            op_botloader_bucket_storage_set_if::decl(),
+            op_botloader_bucket_storage_get::decl(),
+            op_botloader_bucket_storage_del::decl(),
+            op_botloader_bucket_storage_del_many::decl(),
+            op_botloader_bucket_storage_list::decl(),
+            op_botloader_bucket_storage_count::decl(),
+            op_botloader_bucket_storage_incr::decl(),
+            op_botloader_bucket_storage_sorted_list::decl(),
         ])
         .state(move |state| {
             state.put(StorageState {
@@ -61,10 +43,10 @@ struct StorageState {
     hit_limit: bool,
 }
 
-pub async fn op_storage_set(
+#[op]
+pub async fn op_botloader_bucket_storage_set(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketSetValue,
-    _: (),
 ) -> Result<OpStorageBucketEntry, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
@@ -89,10 +71,10 @@ pub async fn op_storage_set(
     Ok(entry.into())
 }
 
-pub async fn op_storage_set_if(
+#[op]
+pub async fn op_botloader_bucket_storage_set_if(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketSetIf,
-    _: (),
 ) -> Result<Option<OpStorageBucketEntry>, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
@@ -118,10 +100,10 @@ pub async fn op_storage_set_if(
     Ok(entry.map(Into::into))
 }
 
-pub async fn op_storage_get(
+#[op]
+pub async fn op_botloader_bucket_storage_get(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketEntryId,
-    _: (),
 ) -> Result<Option<OpStorageBucketEntry>, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
@@ -136,10 +118,10 @@ pub async fn op_storage_get(
     Ok(entry.map(Into::into))
 }
 
-pub async fn op_storage_del(
+#[op]
+pub async fn op_botloader_bucket_storage_del(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketEntryId,
-    _: (),
 ) -> Result<Option<OpStorageBucketEntry>, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
@@ -162,7 +144,8 @@ pub async fn op_storage_del(
     Ok(entry.map(Into::into))
 }
 
-pub async fn op_storage_del_many(
+#[op]
+pub async fn op_botloader_bucket_storage_del_many(
     state: Rc<RefCell<OpState>>,
     bucket_name: String,
     key_pattern: String,
@@ -188,7 +171,8 @@ pub async fn op_storage_del_many(
     Ok(res)
 }
 
-pub async fn op_storage_list(
+#[op]
+pub async fn op_botloader_bucket_storage_list(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketList,
     _: (),
@@ -222,7 +206,8 @@ pub async fn op_storage_list(
     Ok(entries.into_iter().map(Into::into).collect())
 }
 
-pub async fn op_storage_count(
+#[op]
+pub async fn op_botloader_bucket_storage_count(
     state: Rc<RefCell<OpState>>,
     bucket_name: String,
     key_pattern: String,
@@ -240,10 +225,10 @@ pub async fn op_storage_count(
     Ok(res)
 }
 
-pub async fn op_storage_incr(
+#[op]
+pub async fn op_botloader_bucket_storage_incr(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketIncr,
-    _: (),
 ) -> Result<OpStorageBucketEntry, AnyError> {
     let rt_ctx = {
         let state = state.borrow();
@@ -261,7 +246,8 @@ pub async fn op_storage_incr(
     Ok(entry.into())
 }
 
-pub async fn op_storage_sorted_list(
+#[op]
+pub async fn op_botloader_bucket_storage_sorted_list(
     state: Rc<RefCell<OpState>>,
     args: OpStorageBucketSortedList,
     _: (),

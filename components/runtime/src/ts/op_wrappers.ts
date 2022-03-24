@@ -79,47 +79,47 @@ export namespace OpWrappers {
     }
 
     export async function getGuild(): Promise<Discord.Guild> {
-        return Deno.core.opAsync("discord_get_guild");
+        return Deno.core.opAsync("op_discord_get_guild");
     }
 
     // Messages
     export async function getMessage(args: Internal.OpGetMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
-            "discord_get_message",
+            "op_discord_get_message",
             args
         );
     }
 
     export async function getMessages(args: Internal.OpGetMessages): Promise<Internal.IMessage[]> {
         return await Deno.core.opAsync(
-            "discord_get_messages",
+            "op_discord_get_messages",
             args
         );
     }
 
     export async function createChannelMessage(args: Internal.OpCreateChannelMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
-            "discord_create_message",
+            "op_discord_create_message",
             args
         );
     }
 
     export async function editChannelMessage(args: Internal.OpEditChannelMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
-            "discord_edit_message",
+            "op_discord_edit_message",
             args
         );
     }
 
     export async function deleteChannelMessage(args: Internal.OpDeleteMessage): Promise<void> {
         await Deno.core.opAsync(
-            "discord_delete_message",
+            "op_discord_delete_message",
             args
         );
     }
     export async function deleteChannelMessagesBulk(args: Internal.OpDeleteMessagesBulk): Promise<void> {
         await Deno.core.opAsync(
-            "discord_bulk_delete_messages",
+            "op_discord_bulk_delete_messages",
             args
         );
     }
@@ -127,14 +127,14 @@ export namespace OpWrappers {
     // Interactions
     export async function interactionCallback(args: Internal.InteractionCallback): Promise<void> {
         return await Deno.core.opAsync(
-            "discord_interaction_callback",
+            "op_discord_interaction_callback",
             args
         );
     }
 
     export async function getInteractionFollowupMessage(token: string, messageId: string): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
-            "discord_interaction_get_followup_message",
+            "op_discord_interaction_get_followup_message",
             token,
             messageId
         );
@@ -143,14 +143,14 @@ export namespace OpWrappers {
 
     export async function createInteractionFollowupMessage(args: Internal.OpCreateFollowUpMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
-            "discord_interaction_followup_message",
+            "op_discord_interaction_followup_message",
             args
         );
     }
 
     export async function editInteractionFollowupMessage(messageId: string, args: Internal.OpCreateFollowUpMessage): Promise<void> {
         return await Deno.core.opAsync(
-            "discord_interaction_edit_followup_message",
+            "op_discord_interaction_edit_followup_message",
             messageId,
             args,
         );
@@ -158,7 +158,7 @@ export namespace OpWrappers {
 
     export async function deleteInteractionFollowupMessage(token: string, messageId: string): Promise<void> {
         return await Deno.core.opAsync(
-            "discord_interaction_delete_followup_message",
+            "op_discord_interaction_delete_followup_message",
             token,
             messageId,
         );
@@ -166,21 +166,21 @@ export namespace OpWrappers {
 
     export async function getInteractionOriginal(token: string): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
-            "discord_interaction_get_original_response",
+            "op_discord_interaction_get_original_response",
             token
         );
     }
 
     export async function editInteractionOriginal(args: Internal.OpCreateFollowUpMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
-            "discord_interaction_edit_original_response",
+            "op_discord_interaction_edit_original_response",
             args
         );
     }
 
     export async function deleteInteractionOriginal(token: string): Promise<void> {
         return await Deno.core.opAsync(
-            "discord_interaction_delete_original",
+            "op_discord_interaction_delete_original",
             token,
         );
     }
@@ -188,27 +188,27 @@ export namespace OpWrappers {
     // Roles
     export async function getRole(roleId: string): Promise<Discord.Role> {
         return await Deno.core.opAsync(
-            "discord_get_role",
+            "op_discord_get_role",
             roleId
         );
     }
 
     export async function getRoles(): Promise<Discord.Role[]> {
         return await Deno.core.opAsync(
-            "discord_get_roles",
+            "op_discord_get_roles",
         );
     }
 
     // Channels
     export async function getChannels(): Promise<Internal.InternalGuildChannel[]> {
         return await Deno.core.opAsync(
-            "discord_get_channels",
+            "op_discord_get_channels",
         );
     }
 
     export async function getChannel(channelId: string): Promise<Internal.InternalGuildChannel> {
         return await Deno.core.opAsync(
-            "discord_get_channel",
+            "op_discord_get_channel",
             channelId,
         );
     }
@@ -216,14 +216,14 @@ export namespace OpWrappers {
     // Members
     export async function getMembers(ids: string[]): Promise<(Internal.IMember | null)[]> {
         return await Deno.core.opAsync(
-            "discord_get_members",
+            "op_discord_get_members",
             ids,
         );
     }
 
     export async function updateMember(userId: string, fields: Internal.UpdateGuildMemberFields): Promise<Internal.IMember> {
         return await Deno.core.opAsync(
-            "discord_update_member",
+            "op_discord_update_member",
             userId,
             fields
         );
@@ -231,7 +231,7 @@ export namespace OpWrappers {
 
     export async function addMemberRole(userId: string, roleId: string): Promise<void> {
         return await Deno.core.opAsync(
-            "discord_add_member_role",
+            "op_discord_add_member_role",
             userId,
             roleId,
         );
@@ -239,13 +239,13 @@ export namespace OpWrappers {
 
     export async function removeMemberRole(userId: string, roleId: string): Promise<void> {
         return await Deno.core.opAsync(
-            "discord_remove_member_role",
+            "op_discord_remove_member_role",
             userId,
             roleId,
         );
     }
     export async function removeMember(userId: string, extras: Discord.AuditLogExtras): Promise<void> {
-        return await Deno.core.opAsync("discord_remove_member", userId, extras);
+        return await Deno.core.opAsync("op_discord_remove_member", userId, extras);
     }
 
     // Storage
@@ -287,38 +287,38 @@ export namespace OpWrappers {
 
     // Bans
     export async function createBan(userId: string, extras: Internal.CreateBanFields): Promise<void> {
-        return await Deno.core.opAsync("discord_create_ban", userId, extras);
+        return await Deno.core.opAsync("op_discord_create_ban", userId, extras);
     }
 
     export async function getBan(userId: string): Promise<Internal.IBan> {
-        return Deno.core.opAsync("discord_get_ban", userId);
+        return Deno.core.opAsync("op_discord_get_ban", userId);
     }
 
     export async function getBans(): Promise<Internal.IBan[]> {
-        return Deno.core.opAsync("discord_get_bans");
+        return Deno.core.opAsync("op_discord_get_bans");
     }
 
     export async function removeBan(userId: string, extras: Discord.AuditLogExtras): Promise<void> {
-        return await Deno.core.opAsync("discord_delete_ban", userId, extras);
+        return await Deno.core.opAsync("op_discord_delete_ban", userId, extras);
     }
 
     // Reactions
     export async function discord_create_reaction(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
-        return Deno.core.opAsync("discord_create_reaction", [channelId, messageId], emoji)
+        return Deno.core.opAsync("op_discord_create_reaction", [channelId, messageId], emoji)
     }
     export async function discord_delete_own_reaction(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
-        return Deno.core.opAsync("discord_delete_own_reaction", [channelId, messageId], emoji)
+        return Deno.core.opAsync("op_discord_delete_own_reaction", [channelId, messageId], emoji)
     }
     export async function discord_delete_user_reaction(channelId: string, messageId: string, userId: string, emoji: Discord.SendEmoji): Promise<void> {
-        return Deno.core.opAsync("discord_delete_user_reaction", [channelId, messageId, userId], emoji)
+        return Deno.core.opAsync("op_discord_delete_user_reaction", [channelId, messageId, userId], emoji)
     }
     export async function discord_get_reactions(channelId: string, messageId: string, fields: Internal.GetReactionsFields): Promise<Internal.IUser[]> {
-        return Deno.core.opAsync("discord_get_reactions", [channelId, messageId], fields)
+        return Deno.core.opAsync("op_discord_get_reactions", [channelId, messageId], fields)
     }
     export async function discord_delete_all_reactions(channelId: string, messageId: string): Promise<void> {
-        return Deno.core.opAsync("discord_delete_all_reactions", [channelId, messageId])
+        return Deno.core.opAsync("op_discord_delete_all_reactions", [channelId, messageId])
     }
     export async function discord_delete_all_reactions_for_emoji(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
-        return Deno.core.opAsync("discord_delete_all_reactions_for_emoji", [channelId, messageId], emoji)
+        return Deno.core.opAsync("op_discord_delete_all_reactions_for_emoji", [channelId, messageId], emoji)
     }
 }

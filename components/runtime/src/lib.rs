@@ -1,8 +1,7 @@
-use std::future::Future;
 use std::{cell::RefCell, num::NonZeroU32, rc::Rc, sync::Arc};
 
 use common::DiscordConfig;
-use deno_core::{op_sync, Extension, OpState, ResourceId, ResourceTable};
+use deno_core::{op, Extension, OpState, ResourceId, ResourceTable};
 use governor::{
     clock::DefaultClock,
     state::{InMemoryState, NotKeyed},
@@ -35,7 +34,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
     let core_extension = Extension::builder()
         .ops(vec![
             // botloader stuff
-            ("op_botloader_script_start", op_sync(op_script_start)),
+            op_botloader_script_start::decl(),
         ])
         .state(move |state| {
             state.put(RuntimeContext {
@@ -57,11 +56,13 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
 
             Ok(())
         })
-        .middleware(Box::new(|name, b| match name {
+        .middleware(|deno_op| match deno_op.name {
             // we have our own custom print function
-            "op_print" => op_sync(disabled_op),
-            _ => b,
-        }))
+            "op_print" => disabled_op::decl(),
+            "op_wasm_streaming_feed" => disabled_op::decl(),
+            "op_wasm_streaming_set_url" => disabled_op::decl(),
+            _ => deno_op,
+        })
         .build();
 
     vec![
@@ -78,13 +79,8 @@ pub fn in_mem_source_load_fn(src: &'static str) -> Box<dyn Fn() -> Result<String
     Box::new(move || Ok(src.to_string()))
 }
 
-pub fn dummy_op(_state: &mut OpState, _args: JsValue, _: ()) -> Result<(), AnyError> {
-    Err(anyhow::anyhow!(
-        "unimplemented, this op is not implemented yet"
-    ))
-}
-
-pub fn disabled_op(_state: &mut OpState, _args: JsValue, _: ()) -> Result<(), AnyError> {
+#[op]
+pub fn disabled_op() -> Result<(), AnyError> {
     Err(anyhow::anyhow!("this op is disabled"))
 }
 
@@ -118,7 +114,8 @@ pub struct CreateRuntimeContext {
     pub timer_store: Arc<dyn TimerStore>,
 }
 
-pub fn op_script_start(state: &mut OpState, args: JsValue, _: ()) -> Result<(), AnyError> {
+#[op]
+pub fn op_botloader_script_start(state: &mut OpState, args: JsValue) -> Result<(), AnyError> {
     let des: ScriptMeta = serde_json::from_value(args)?;
 
     info!(
@@ -226,22 +223,12 @@ impl RateLimiters {
     }
 }
 
-fn wrap_bl_op_async<F, A, B, RV, R>(f: F) -> impl Fn(Rc<RefCell<OpState>>, A, B) -> R
-where
-    F: Fn(Rc<RefCell<OpState>>, RuntimeContext, A, B) -> R + 'static,
-    R: Future<Output = Result<RV, AnyError>>,
-{
-    move |state_rc, b, c| {
-        let rt_ctx = {
-            let state = state_rc.borrow();
-            state.borrow::<RuntimeContext>().clone()
-        };
-
-        f(state_rc, rt_ctx, b, c)
-    }
-}
-
 pub enum RuntimeEvent {
     ScriptStarted(ScriptMeta),
     NewTaskScheduled,
+}
+
+pub fn get_rt_ctx(state: &Rc<RefCell<OpState>>) -> RuntimeContext {
+    let state = state.borrow();
+    state.borrow::<RuntimeContext>().clone()
 }

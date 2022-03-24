@@ -1,16 +1,17 @@
-use deno_core::{op_sync, Extension, OpState};
+use deno_core::{op, Extension, OpState};
 use guild_logger::LogEntry;
 use runtime_models::internal::console::ConsoleLogMessage;
-use vm::{AnyError, ScriptsStateStoreHandle};
+use vm::ScriptsStateStoreHandle;
 
 use crate::RuntimeContext;
 pub fn extension() -> Extension {
     Extension::builder()
-        .ops(vec![("op_botloader_log", op_sync(console_log))])
+        .ops(vec![op_botloader_log::decl()])
         .build()
 }
 
-pub fn console_log(state: &mut OpState, args: ConsoleLogMessage, _: ()) -> Result<(), AnyError> {
+#[op]
+pub fn op_botloader_log(state: &mut OpState, args: ConsoleLogMessage) {
     let script_store = state.borrow::<ScriptsStateStoreHandle>();
 
     let (name, line_col) = if let (Some(orig_name), Some(line)) = (args.file_name, args.line_number)
@@ -37,6 +38,4 @@ pub fn console_log(state: &mut OpState, args: ConsoleLogMessage, _: ()) -> Resul
         name,
         line_col,
     ));
-
-    Ok(())
 }

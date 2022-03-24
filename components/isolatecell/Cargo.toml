@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-deno_core = "0.118"
-v8 = "0.38.1"
+deno_core = "0.124"
+v8 = "0.41.0"
 cpu-time = "1.0"
 tracing = "0.1"

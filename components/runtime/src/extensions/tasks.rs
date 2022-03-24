@@ -1,48 +1,33 @@
 use std::{cell::RefCell, rc::Rc};
 
 use chrono::TimeZone;
-use deno_core::{op_async, Extension, OpState};
+use deno_core::{op, Extension, OpState};
 use runtime_models::internal::tasks::{CreateScheduledTask, ScheduledTask};
 use vm::AnyError;
 
-use crate::{wrap_bl_op_async, RuntimeContext, RuntimeEvent};
+use crate::{get_rt_ctx, RuntimeEvent};
 
 pub fn extension() -> Extension {
     Extension::builder()
         .ops(vec![
             // botloader stuff
-            (
-                "op_bl_schedule_task",
-                op_async(wrap_bl_op_async(op_bl_schedule_task)),
-            ),
-            ("op_bl_del_task", op_async(wrap_bl_op_async(op_bl_del_task))),
-            (
-                "op_bl_del_task_by_key",
-                op_async(wrap_bl_op_async(op_bl_del_task_by_key)),
-            ),
-            (
-                "op_bl_del_all_tasks",
-                op_async(wrap_bl_op_async(op_bl_del_all_tasks)),
-            ),
-            ("op_bl_get_task", op_async(wrap_bl_op_async(op_bl_get_task))),
-            (
-                "op_bl_get_task_by_key",
-                op_async(wrap_bl_op_async(op_bl_get_task_by_key)),
-            ),
-            (
-                "op_bl_get_all_tasks",
-                op_async(wrap_bl_op_async(op_bl_get_all_tasks)),
-            ),
+            op_bl_schedule_task::decl(),
+            op_bl_del_task::decl(),
+            op_bl_del_task_by_key::decl(),
+            op_bl_del_all_tasks::decl(),
+            op_bl_get_task::decl(),
+            op_bl_get_task_by_key::decl(),
+            op_bl_get_all_tasks::decl(),
         ])
         .build()
 }
 
+#[op]
 async fn op_bl_schedule_task(
     state: Rc<RefCell<OpState>>,
-    rt_ctx: RuntimeContext,
     opts: CreateScheduledTask,
-    _: (),
 ) -> Result<ScheduledTask, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
     crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
 
     let seconds = (opts.execute_at.0 as f64 / 1000f64).floor() as i64;
@@ -77,12 +62,9 @@ async fn op_bl_schedule_task(
     Ok(res)
 }
 
-async fn op_bl_del_task(
-    state: Rc<RefCell<OpState>>,
-    rt_ctx: RuntimeContext,
-    task_id: u64,
-    _: (),
-) -> Result<bool, AnyError> {
+#[op]
+async fn op_bl_del_task(state: Rc<RefCell<OpState>>, task_id: u64) -> Result<bool, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
     crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
 
     let del = rt_ctx
@@ -92,12 +74,13 @@ async fn op_bl_del_task(
     Ok(del > 0)
 }
 
+#[op]
 async fn op_bl_del_task_by_key(
     state: Rc<RefCell<OpState>>,
-    rt_ctx: RuntimeContext,
     name: String,
     key: String,
 ) -> Result<bool, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
     crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
 
     let del = rt_ctx
@@ -108,12 +91,10 @@ async fn op_bl_del_task_by_key(
     Ok(del > 0)
 }
 
-async fn op_bl_del_all_tasks(
-    state: Rc<RefCell<OpState>>,
-    rt_ctx: RuntimeContext,
-    name: String,
-    _: (),
-) -> Result<u64, AnyError> {
+#[op]
+async fn op_bl_del_all_tasks(state: Rc<RefCell<OpState>>, name: String) -> Result<u64, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
     crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
 
     let del = rt_ctx
@@ -123,12 +104,13 @@ async fn op_bl_del_all_tasks(
     Ok(del)
 }
 
+#[op]
 async fn op_bl_get_task(
     state: Rc<RefCell<OpState>>,
-    rt_ctx: RuntimeContext,
     id: u64,
-    _: (),
 ) -> Result<Option<ScheduledTask>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
     crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
 
     Ok(rt_ctx
@@ -138,12 +120,13 @@ async fn op_bl_get_task(
         .map(Into::into))
 }
 
+#[op]
 async fn op_bl_get_task_by_key(
     state: Rc<RefCell<OpState>>,
-    rt_ctx: RuntimeContext,
     name: String,
     key: String,
 ) -> Result<Option<ScheduledTask>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
     crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
 
     Ok(rt_ctx
@@ -153,12 +136,13 @@ async fn op_bl_get_task_by_key(
         .map(Into::into))
 }
 
+#[op]
 async fn op_bl_get_all_tasks(
     state: Rc<RefCell<OpState>>,
-    rt_ctx: RuntimeContext,
     name: Option<String>,
     after_id: u64,
 ) -> Result<Vec<ScheduledTask>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
     crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
 
     Ok(rt_ctx

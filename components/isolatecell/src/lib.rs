@@ -112,7 +112,6 @@ pub struct ManagedIsolate {
 impl ManagedIsolate {
     pub fn new(opts: RuntimeOptions) -> Self {
         let mut rt = JsRuntime::new(opts);
-        rt.sync_ops_cache();
 
         // SAFETY: new enters the isolate
         unsafe { rt.v8_isolate().exit() }
@@ -122,7 +121,6 @@ impl ManagedIsolate {
 
     pub fn new_with_state<T: 'static>(opts: RuntimeOptions, initial_state: T) -> Self {
         let mut rt = JsRuntime::new(opts);
-        rt.sync_ops_cache();
         {
             let op_state = rt.op_state();
             op_state.borrow_mut().put(initial_state);
@@ -139,7 +137,6 @@ impl ManagedIsolate {
         cb: C,
     ) -> Self {
         let mut rt = JsRuntime::new(opts);
-        rt.sync_ops_cache();
         rt.add_near_heap_limit_callback(cb);
 
         // SAFETY: new enters the isolate
