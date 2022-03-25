@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use deno_core::{op, Extension, OpState};
+use deno_core::{error::custom_error, op, Extension, OpState};
 use futures::TryFutureExt;
 use runtime_models::{
     discord::{
@@ -12,17 +12,20 @@ use runtime_models::{
         member::{Ban, UpdateGuildMemberFields},
         messages::{
             Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
-            OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessage, OpGetMessages,
+            OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessages,
         },
         misc_op::{CreateBanFields, GetReactionsFields},
         user::User,
     },
 };
-use std::str::FromStr;
+use std::{borrow::Cow, str::FromStr};
 use std::{cell::RefCell, rc::Rc};
-use twilight_http::api_error::{ApiError, GeneralApiError};
 use twilight_http::error::ErrorType;
 use twilight_http::request::AuditLogReason;
+use twilight_http::{
+    api_error::{ApiError, GeneralApiError},
+    response::StatusCode,
+};
 use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
@@ -81,6 +84,48 @@ pub fn extension() -> Extension {
         .build()
 }
 
+pub fn handle_discord_error(_state: &Rc<RefCell<OpState>>, err: twilight_http::Error) -> AnyError {
+    let kind = err.kind();
+    match kind {
+        ErrorType::Response {
+            // 10008 is unknown message
+            error: ApiError::General(GeneralApiError { code, message, .. }),
+            status,
+            ..
+        } => error_from_code(*status, *code, message),
+        _ => err.into(),
+    }
+}
+
+pub fn error_from_code(resp_code: StatusCode, code: u64, message: &str) -> AnyError {
+    match resp_code.raw() {
+        404 => not_found_error(format!("{code}: {message}")),
+        403 => custom_error("DiscordPermissionsError", format!("{code}: {message}")),
+        400..=499 => match code {
+            30001..=40000 => custom_error("DiscordLimitReachedError", format!("{code}: {message}")),
+            _ => custom_error("DiscordGenericErrorResponse", format!("{code}: {message}")),
+        },
+        status @ 500..=599 => custom_error(
+            "DiscordServerErrorResponse",
+            format!(
+                "Discord failed handling the request (5xx response), http status: {status}, code: \
+                 {code}, message: {message}"
+            ),
+        ),
+        other => custom_error(
+            "DiscordGenericErrorResponse",
+            format!(
+                "An error occured with the discord API, http status: {other}, code: {code}, \
+                 message: {message}"
+            ),
+        ),
+    }
+}
+
+pub fn not_found_error(message: impl Into<Cow<'static, str>>) -> AnyError {
+    custom_error("DiscordNotFoundError", message)
+}
+
 #[op]
 pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
@@ -100,27 +145,23 @@ pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, 
 #[op]
 pub async fn op_discord_get_message(
     state: Rc<RefCell<OpState>>,
-    args: OpGetMessage,
+    channel_id: Id<ChannelMarker>,
+    message_id: Id<MessageMarker>,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
-    let message_id = if let Some(id) = Id::new_checked(args.message_id.parse()?) {
-        id
-    } else {
-        return Err(anyhow::anyhow!("invalid message id"));
-    };
+    let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    let message = rt_ctx
+    Ok(rt_ctx
         .discord_config
         .client
         .message(channel.id(), message_id)
         .exec()
-        .await?
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
         .model()
-        .await?;
-
-    Ok(message.into())
+        .await?
+        .into())
 }
 
 #[op]
@@ -130,7 +171,7 @@ pub async fn op_discord_get_messages(
 ) -> Result<Vec<Message>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
 
     let limit = if let Some(limit) = args.limit {
         if limit > 100 {
@@ -148,14 +189,13 @@ pub async fn op_discord_get_messages(
         .discord_config
         .client
         .channel_messages(channel.id())
-        .limit(limit as u64)
-        .unwrap();
+        .limit(limit as u64)?;
 
     let res = if let Some(before) = args.before {
         let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
             id
         } else {
-            return Err(anyhow::anyhow!("invalid message id"));
+            return Err(anyhow::anyhow!("invalid 'before' message id"));
         };
 
         req.before(message_id).exec().await
@@ -163,7 +203,7 @@ pub async fn op_discord_get_messages(
         let message_id = if let Some(id) = Id::new_checked(after.parse()?) {
             id
         } else {
-            return Err(anyhow::anyhow!("invalid message id"));
+            return Err(anyhow::anyhow!("invalid 'after' message id"));
         };
 
         req.after(message_id).exec().await
@@ -171,7 +211,11 @@ pub async fn op_discord_get_messages(
         req.exec().await
     };
 
-    let messages = res?.model().await?;
+    let messages = res
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
     Ok(messages.into_iter().map(Into::into).collect())
 }
 
@@ -182,7 +226,7 @@ pub async fn op_discord_create_message(
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
 
     let maybe_embeds = args
         .fields
@@ -215,7 +259,13 @@ pub async fn op_discord_create_message(
         mc = mc.allowed_mentions(mentions.into());
     }
 
-    Ok(mc.exec().await?.model().await?.into())
+    Ok(mc
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .into())
 }
 
 #[op]
@@ -225,7 +275,7 @@ pub async fn op_discord_edit_message(
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
     let message_id = parse_str_snowflake_id(&args.message_id)?;
 
     let maybe_embeds = args
@@ -253,7 +303,13 @@ pub async fn op_discord_edit_message(
         mc = mc.allowed_mentions(mentions.into());
     }
 
-    Ok(mc.exec().await?.model().await?.into())
+    Ok(mc
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .into())
 }
 
 #[op]
@@ -271,7 +327,9 @@ pub async fn op_discord_interaction_callback(
             &args.data.into(),
         )
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
+
     Ok(())
 }
 
@@ -286,7 +344,8 @@ pub async fn op_discord_interaction_get_original_response(
     Ok(client
         .get_interaction_original(&token)
         .exec()
-        .await?
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
         .model()
         .await?
         .into())
@@ -322,7 +381,13 @@ pub async fn op_discord_interaction_edit_original_response(
         mc = mc.allowed_mentions(mentions.into());
     }
 
-    Ok(mc.exec().await?.model().await?.into())
+    Ok(mc
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .into())
 }
 
 #[op]
@@ -349,7 +414,8 @@ pub async fn op_discord_interaction_get_followup_message(
     Ok(client
         .followup_message(&token, id)
         .exec()
-        .await?
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
         .model()
         .await?
         .into())
@@ -404,7 +470,13 @@ pub async fn op_discord_interaction_followup_message(
         mc = mc.allowed_mentions(mentions);
     }
 
-    Ok(mc.exec().await?.model().await?.into())
+    Ok(mc
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .into())
 }
 
 #[op]
@@ -438,7 +510,9 @@ pub async fn op_discord_interaction_edit_followup_message(
         mc = mc.allowed_mentions(mentions.into());
     }
 
-    mc.exec().await?;
+    mc.exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -452,7 +526,11 @@ pub async fn op_discord_interaction_delete_followup_message(
     let rt_ctx = get_rt_ctx(&state);
 
     let client = rt_ctx.discord_config.interaction_client();
-    client.delete_followup_message(&token, id).exec().await?;
+    client
+        .delete_followup_message(&token, id)
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
     Ok(())
 }
 
@@ -463,7 +541,7 @@ pub async fn op_discord_delete_message(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
     let message_id = parse_str_snowflake_id(&args.message_id)?;
 
     rt_ctx
@@ -471,7 +549,8 @@ pub async fn op_discord_delete_message(
         .client
         .delete_message(channel.id(), message_id.cast())
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -483,7 +562,7 @@ pub async fn op_discord_bulk_delete_messages(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&rt_ctx, &args.channel_id).await?;
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
     let message_ids = args
         .message_ids
         .iter()
@@ -496,7 +575,8 @@ pub async fn op_discord_bulk_delete_messages(
         .client
         .delete_messages(channel.id(), &message_ids)
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -511,7 +591,7 @@ pub async fn op_discord_get_role(
 
     match rt_ctx.bot_state.get_role(rt_ctx.guild_id, role_id).await? {
         Some(c) => Ok(c.into()),
-        _ => Err(anyhow::anyhow!("role not in state")),
+        _ => Err(not_found_error(format!("role `{role_id}` not found"))),
     }
 }
 
@@ -535,14 +615,15 @@ pub async fn op_discord_create_reaction(
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
-    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+    let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
     rt_ctx
         .discord_config
         .client
         .create_reaction(channel_id, message_id, &(&emoji).into())
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -556,14 +637,15 @@ pub async fn op_discord_delete_own_reaction(
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
-    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+    let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
     rt_ctx
         .discord_config
         .client
         .delete_current_user_reaction(channel_id, message_id, &(&emoji).into())
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -577,14 +659,15 @@ pub async fn op_discord_delete_user_reaction(
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
-    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+    let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
     rt_ctx
         .discord_config
         .client
         .delete_reaction(channel_id, message_id, &(&emoji).into(), user_id)
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -597,7 +680,7 @@ pub async fn op_discord_get_reactions(
 ) -> Result<Vec<User>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+    let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
     let emoji = (&fields.emoji).into();
 
@@ -615,7 +698,8 @@ pub async fn op_discord_get_reactions(
 
     Ok(req
         .exec()
-        .await?
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
         .model()
         .await?
         .into_iter()
@@ -630,14 +714,15 @@ pub async fn op_discord_delete_all_reactions(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+    let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
     rt_ctx
         .discord_config
         .client
         .delete_all_reactions(channel_id, message_id)
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -650,14 +735,15 @@ pub async fn op_discord_delete_all_reactions_for_emoji(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let _ = get_guild_channel(&rt_ctx, channel_id).await?;
+    let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
     rt_ctx
         .discord_config
         .client
         .delete_all_reaction(channel_id, message_id, &(&emoji).into())
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -670,7 +756,7 @@ pub async fn op_discord_get_channel(
 ) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&rt_ctx, &channel_id_str).await?;
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &channel_id_str).await?;
     Ok(channel.into())
 }
 
@@ -729,7 +815,7 @@ pub async fn op_discord_get_members(
                             ..
                         },
                     ) {
-                        return Err(anyhow!("failed fetching member: {}", err));
+                        return Err(handle_discord_error(&state, err));
                     }
 
                     res.push(None);
@@ -756,7 +842,8 @@ pub async fn op_discord_add_member_role(
         .client
         .add_guild_member_role(rt_ctx.guild_id, user_id, role_id)
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -774,7 +861,8 @@ pub async fn op_discord_remove_member_role(
         .client
         .remove_guild_member_role(rt_ctx.guild_id, user_id, role_id)
         .exec()
-        .await?;
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -811,7 +899,12 @@ pub async fn op_discord_update_member(
         builder = builder.roles(roles);
     }
 
-    let ret = builder.exec().await?.model().await?;
+    let ret = builder
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
     Ok(ret.into())
 }
 
@@ -837,7 +930,9 @@ pub async fn op_discord_create_ban(
         req = req.reason(reason)?;
     }
 
-    req.exec().await?;
+    req.exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -854,7 +949,8 @@ pub async fn op_discord_get_ban(
         .client
         .ban(rt_ctx.guild_id, user_id)
         .exec()
-        .await?
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
         .model()
         .await?;
 
@@ -870,7 +966,8 @@ pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>
         .client
         .bans(rt_ctx.guild_id)
         .exec()
-        .await?
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
         .model()
         .await?;
 
@@ -894,7 +991,9 @@ pub async fn op_discord_delete_ban(
         req = req.reason(reason)?;
     }
 
-    req.exec().await?;
+    req.exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
@@ -917,7 +1016,9 @@ pub async fn op_discord_remove_member(
         req = req.reason(reason)?;
     }
 
-    req.exec().await?;
+    req.exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }

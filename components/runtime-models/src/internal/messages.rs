@@ -138,15 +138,6 @@ impl From<MentionParseTypes> for TwilightParseTypes {
 
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/internal/GetMessage.ts")]
-#[serde(rename_all = "camelCase")]
-pub struct OpGetMessage {
-    pub channel_id: String,
-    pub message_id: String,
-}
-
-#[derive(Clone, Debug, Deserialize, TS)]
-#[ts(export)]
 #[ts(export_to = "bindings/internal/GetMessages.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpGetMessages {

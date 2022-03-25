@@ -14,10 +14,7 @@ function editGuild() { }
 
 // Message functions
 export async function getMessage(channelId: string, messageId: string): Promise<Message> {
-    return new Message(await OpWrappers.getMessage({
-        channelId,
-        messageId,
-    }));
+    return new Message(await OpWrappers.getMessage(channelId, messageId));
 }
 
 export interface GetMessagesOptions {

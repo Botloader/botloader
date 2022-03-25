@@ -1,4 +1,4 @@
-// Copyright 2018-2021 the Deno authors. All rights reserved. MIT license.
+// Copyright 2018-2022 the Deno authors. All rights reserved. MIT license.
 
 // deno-lint-ignore-file no-explicit-any
 
@@ -20,6 +20,14 @@ declare namespace Deno {
             a?: any,
             b?: any,
         ): Promise<any>;
+
+        /** Mark following promise as "ref", ie. event loop won't exit
+         * until all "ref" promises are resolved. All async ops are "ref" by default. */
+        function refOp(promiseId: number): void;
+
+        /** Mark following promise as "unref", ie. event loop will exit
+         * if there are only "unref" promises left. */
+        function unrefOps(promiseId: number): void;
 
         /**
          * Retrieve a list of all registered ops, in the form of a map that maps op
@@ -110,5 +118,57 @@ declare namespace Deno {
         function setMacrotaskCallback(
             cb: () => boolean,
         ): void;
+
+        /**
+         * Set a callback that will be called when a promise without a .catch
+         * handler is rejected. Returns the old handler or undefined.
+         */
+        function setPromiseRejectCallback(
+            cb: PromiseRejectCallback,
+        ): undefined | PromiseRejectCallback;
+
+        export type PromiseRejectCallback = (
+            type: number,
+            promise: Promise<unknown>,
+            reason: any,
+        ) => void;
+
+        /**
+         * Set a callback that will be called when an exception isn't caught
+         * by any try/catch handlers. Currently only invoked when the callback
+         * to setPromiseRejectCallback() throws an exception but that is expected
+         * to change in the future. Returns the old handler or undefined.
+         */
+        function setUncaughtExceptionCallback(
+            cb: UncaughtExceptionCallback,
+        ): undefined | UncaughtExceptionCallback;
+
+        export type UncaughtExceptionCallback = (err: any) => void;
+
+        /**
+         * Enables collection of stack traces of all async ops. This allows for
+         * debugging of where a given async op was started. Deno CLI uses this for
+         * improving error message in op sanitizer errors for `deno test`.
+         *
+         * **NOTE:** enabling tracing has a significant negative performance impact.
+         * To get high level metrics on async ops with no added performance cost,
+         * use `Deno.core.metrics()`.
+         */
+        function enableOpCallTracing(): void;
+
+        export interface OpCallTrace {
+            opName: string;
+            stack: string;
+        }
+
+        /**
+         * A map containing traces for all ongoing async ops. The key is the op id.
+         * Tracing only occurs when `Deno.core.enableOpCallTracing()` was previously
+         * enabled.
+         */
+        const opCallTraces: Map<number, OpCallTrace>;
+
+
+        function registerErrorClass(name: string, builder: any): void;
     }
 }

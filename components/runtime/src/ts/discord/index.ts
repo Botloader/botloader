@@ -5,5 +5,6 @@ export * from './member';
 export * from './channel';
 export * from './events';
 export * from './user';
+export * from './error';
 export * from './components';
 export * from '../generated/discord/index';

@@ -83,10 +83,11 @@ export namespace OpWrappers {
     }
 
     // Messages
-    export async function getMessage(args: Internal.OpGetMessage): Promise<Internal.IMessage> {
+    export async function getMessage(channelId: string, messageId: string): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "op_discord_get_message",
-            args
+            channelId,
+            messageId,
         );
     }
 
