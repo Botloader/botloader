@@ -82,6 +82,14 @@ export namespace OpWrappers {
         return Deno.core.opAsync("op_discord_get_guild");
     }
 
+    export function getCurrentUser(): Internal.IUser {
+        return Deno.core.opSync("op_get_current_bot_user");
+    }
+
+    export function getCurrentGuildId(): string {
+        return Deno.core.opSync("op_get_current_guild_id");
+    }
+
     // Messages
     export async function getMessage(channelId: string, messageId: string): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(

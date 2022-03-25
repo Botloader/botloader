@@ -32,6 +32,21 @@ impl From<twilight_model::user::User> for User {
         }
     }
 }
+impl From<twilight_model::user::CurrentUser> for User {
+    fn from(v: twilight_model::user::CurrentUser) -> Self {
+        Self {
+            avatar: v.avatar.as_ref().map(ToString::to_string),
+            bot: v.bot,
+            discriminator: v.discriminator().to_string(),
+            id: v.id.to_string(),
+            locale: v.locale,
+            username: v.name,
+            premium_type: v.premium_type.map(From::from),
+            public_flags: v.public_flags.map(From::from),
+            system: Some(false),
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Serialize, TS)]
 #[ts(export)]

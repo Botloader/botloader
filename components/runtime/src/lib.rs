@@ -35,6 +35,8 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
         .ops(vec![
             // botloader stuff
             op_botloader_script_start::decl(),
+            op_get_current_bot_user::decl(),
+            op_get_current_guild_id::decl(),
         ])
         .state(move |state| {
             state.put(RuntimeContext {
@@ -60,6 +62,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             // we have our own custom print function
             "op_print" => disabled_op::decl(),
             "op_wasm_streaming_feed" => disabled_op::decl(),
+            "op_wasm_streaming_set_url" => disabled_op::decl(),
             "op_wasm_streaming_set_url" => disabled_op::decl(),
             _ => deno_op,
         })
@@ -112,6 +115,20 @@ pub struct CreateRuntimeContext {
     pub bucket_store: Arc<dyn BucketStore>,
     pub config_store: Arc<dyn ConfigStore>,
     pub timer_store: Arc<dyn TimerStore>,
+}
+
+#[op]
+pub fn op_get_current_bot_user(
+    state: &mut OpState,
+) -> Result<runtime_models::internal::user::User, AnyError> {
+    let ctx = state.borrow::<RuntimeContext>();
+    Ok(ctx.discord_config.bot_user.clone().into())
+}
+
+#[op]
+pub fn op_get_current_guild_id(state: &mut OpState) -> Result<String, AnyError> {
+    let ctx = state.borrow::<RuntimeContext>();
+    Ok(ctx.guild_id.to_string())
 }
 
 #[op]

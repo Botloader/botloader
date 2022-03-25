@@ -6,6 +6,20 @@ import { Ban, Member } from './member';
 import { Message } from './message';
 import { User } from './user';
 
+/**
+ * @returns Botloader's discord user 
+ */
+export function getBotUser(): User {
+    return new User(OpWrappers.getCurrentUser());
+}
+
+/**
+ * @returns The current guild's Id
+ */
+export function getCurrentGuildId(): string {
+    return OpWrappers.getCurrentGuildId();
+}
+
 // Guild functions
 export function getGuild(): Promise<Guild> {
     return OpWrappers.getGuild()
