@@ -1,4 +1,5 @@
-import { IUser } from "../generated/internal/IUser";
+import type { IUser } from "../generated/internal/IUser";
+import type { CdnImageSize } from "./common";
 
 export class User {
     avatar: string | null;
@@ -28,6 +29,23 @@ export class User {
 
     mention() {
         return `<@${this.id}>`;
+    }
+
+    /**
+     * @returns a url to the user's avatar with the desired size (defaults to 256) 
+     */
+    avatarUrl(options?: { size?: CdnImageSize }): string {
+        const base = "https://cdn.discordapp.com/"
+        const size = options?.size ?? 128;
+
+
+        if (this.avatar) {
+            let format = this.avatar.startsWith("a_") ? "gif" : "png";
+            return base + `avatars/${this.id}/${this.avatar}.${format}?size=${size}`
+        }
+
+        const parsedDiscrim = parseInt(this.discriminator);
+        return base + `embed/avatars/${parsedDiscrim % 5}.png?size=${size}`
     }
 }
 

@@ -6,5 +6,6 @@ export * from './channel';
 export * from './events';
 export * from './user';
 export * from './error';
+export * from './common';
 export * from './components';
 export * from '../generated/discord/index';
