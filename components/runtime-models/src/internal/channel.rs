@@ -130,7 +130,7 @@ pub struct PublicThread {
     pub id: String,
     #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
-    pub member: Option<ThreadMember>,
+    pub member: Option<SelfThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
     pub name: String,
@@ -170,7 +170,7 @@ pub struct PrivateThread {
     pub invitable: Option<bool>,
     #[ts(type = "'PrivateThread'")]
     pub kind: ChannelType,
-    pub member: Option<ThreadMember>,
+    pub member: Option<SelfThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
     pub name: String,
@@ -216,7 +216,7 @@ pub struct NewsThread {
     pub id: String,
     #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
-    pub member: Option<ThreadMember>,
+    pub member: Option<SelfThreadMember>,
     pub member_count: u8,
     pub message_count: u8,
     pub name: String,
@@ -271,6 +271,26 @@ impl From<twilight_model::channel::thread::ThreadMember> for ThreadMember {
             join_timestamp: NotBigU64(v.join_timestamp.as_micros() as u64 / 1000),
             member: v.member.map(Into::into),
             user_id: v.user_id.as_ref().map(ToString::to_string),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "ISelfThreadMember")]
+#[ts(export_to = "bindings/internal/ISelfThreadMember.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct SelfThreadMember {
+    // Removed as the values aren't documented anywhere and i want to make a proper
+    // abstraction for this similar to UserFlags and the like.
+    // pub flags: NotBigU64,
+    pub join_timestamp: NotBigU64,
+}
+
+impl From<twilight_model::channel::thread::ThreadMember> for SelfThreadMember {
+    fn from(v: twilight_model::channel::thread::ThreadMember) -> Self {
+        Self {
+            // flags: NotBigU64(v.flags),
+            join_timestamp: NotBigU64(v.join_timestamp.as_micros() as u64 / 1000),
         }
     }
 }

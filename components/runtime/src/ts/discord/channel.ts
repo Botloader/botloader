@@ -13,6 +13,7 @@ import type { ICategoryChannel } from "../generated/internal/CategoryChannel";
 import type { INewsThread } from "../generated/internal/NewsThread";
 import type { ITextChannel } from "../generated/internal/TextChannel";
 import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
+import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
 
 export type GuildChannel =
     | CategoryChannel
@@ -41,14 +42,13 @@ export function guildChannelFromInternal(json: InternalGuildChannel): GuildChann
         return new PublicThread(json);
     }
 
-    throw new Error("unknown channel")
+    throw new Error("unknown channel type: " + json.kind)
 }
 
 export abstract class BaseChannel {
     id: string;
     kind: ChannelType;
     name: string;
-
 
     /**
      * @internal
@@ -58,13 +58,41 @@ export abstract class BaseChannel {
         this.kind = json.kind;
         this.name = json.name;
     }
+
+    isCategoryChannel(): this is CategoryChannel {
+        return this instanceof CategoryChannel;
+    }
+
+    isNewsThread(): this is NewsThread {
+        return this instanceof NewsThread;
+    }
+
+    isPrivateThread(): this is PrivateThread {
+        return this instanceof PrivateThread;
+    }
+
+    isPublicThread(): this is PublicThread {
+        return this instanceof PublicThread;
+    }
+
+    isTextChannel(): this is TextChannel {
+        return this instanceof TextChannel;
+    }
+
+    isVoiceChannel(): this is VoiceChannel {
+        return this instanceof VoiceChannel;
+    }
+
+    isAnyThread(): this is (NewsThread | PrivateThread | PublicThread) {
+        return this.isNewsThread() || this.isPrivateThread() || this.isPublicThread();
+    }
 }
 
 export class PrivateThread extends BaseChannel {
     kind: "PrivateThread" = "PrivateThread";
     defaultAutoArchiveDurationMinutes: number | null;
     invitable: boolean | null;
-    member: ThreadMember | null;
+    member: SelfThreadMember | null;
     memberCount: number;
     messageCount: number;
     ownerId: string | null;
@@ -81,7 +109,7 @@ export class PrivateThread extends BaseChannel {
 
         this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes;
         this.invitable = json.invitable;
-        this.member = json.member ? new ThreadMember(json.member) : null;
+        this.member = json.member ? new SelfThreadMember(json.member) : null;
         this.memberCount = json.memberCount;
         this.messageCount = json.messageCount;
         this.ownerId = json.ownerId;
@@ -95,7 +123,7 @@ export class PrivateThread extends BaseChannel {
 export class PublicThread extends BaseChannel {
     kind: "PublicThread" = "PublicThread";
     defaultAutoArchiveDurationMinutes: number | null;
-    member: ThreadMember | null;
+    member: SelfThreadMember | null;
     memberCount: number;
     messageCount: number;
     ownerId: string | null;
@@ -110,7 +138,7 @@ export class PublicThread extends BaseChannel {
         super(json);
 
         this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes;
-        this.member = json.member ? new ThreadMember(json.member) : null;
+        this.member = json.member ? new SelfThreadMember(json.member) : null;
         this.memberCount = json.memberCount;
         this.messageCount = json.messageCount;
         this.ownerId = json.ownerId;
@@ -166,7 +194,7 @@ export class TextChannel extends BaseChannel {
 export class NewsThread extends BaseChannel {
     defaultAutoArchiveDurationMinutes: number | null;
     kind: "NewsThread" = "NewsThread";
-    member: ThreadMember | null;
+    member: SelfThreadMember | null;
     memberCount: number;
     messageCount: number;
     ownerId: string | null;
@@ -182,7 +210,7 @@ export class NewsThread extends BaseChannel {
 
         this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes;
         this.kind = json.kind;
-        this.member = json.member ? new ThreadMember(json.member) : null;
+        this.member = json.member ? new SelfThreadMember(json.member) : null;
         this.memberCount = json.memberCount;
         this.messageCount = json.messageCount;
         this.ownerId = json.ownerId;
@@ -219,10 +247,22 @@ export class VoiceChannel extends BaseChannel {
     }
 }
 
-
-export class ThreadMember {
-    id: string | null;
+export class SelfThreadMember {
+    /**
+     * When this use joined the thread, in unix milliseconds time
+     */
     joinTimestamp: number;
+
+    /**
+     * @internal
+     */
+    constructor(json: ISelfThreadMember) {
+        this.joinTimestamp = json.joinTimestamp;
+    }
+}
+
+export class ThreadMember extends SelfThreadMember {
+    id: string | null;
     member: Member | null;
     userId: string | null;
 
@@ -230,8 +270,8 @@ export class ThreadMember {
      * @internal
      */
     constructor(json: IThreadMember) {
+        super(json)
         this.id = json.id;
-        this.joinTimestamp = json.joinTimestamp;
         this.member = json.member ? new Member(json.member) : null;
         this.userId = json.userId;
     }

@@ -1,4 +1,4 @@
-import type { IThreadMember } from "./ThreadMember";
+import type { ISelfThreadMember } from "./ISelfThreadMember";
 import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
 import type { ThreadMetadata } from "../discord/ThreadMetadata";
 
@@ -7,7 +7,7 @@ export interface IPrivateThread {
   id: string;
   invitable: boolean | null;
   kind: "PrivateThread";
-  member: IThreadMember | null;
+  member: ISelfThreadMember | null;
   memberCount: number;
   messageCount: number;
   name: string;
