@@ -47,6 +47,15 @@ export class User {
         const parsedDiscrim = parseInt(this.discriminator);
         return base + `embed/avatars/${parsedDiscrim % 5}.png?size=${size}`
     }
+
+    /**
+     * @returns a timestamp for when the user was created
+     */
+    createdAt(): Date {
+        const snowflake = BigInt(this.id);
+        const unixTime = (snowflake >> 22n) + 1420070400000n
+        return new Date(Number(unixTime));
+    }
 }
 
 export interface UserFlags {
