@@ -40,10 +40,10 @@ function UserNotLoggedIn() {
 }
 
 function CurrentGuild(props: { guild: BotGuild }) {
-    return <>
+    return <Link to="/servers">
         {props.guild.guild.icon ? <img src={guildIconUrl(props.guild.guild, 32)} alt="guild icon" className="avatar" /> : null}
         <p>{props.guild.guild.name}</p>
-    </>
+    </Link>
 }
 
 function NoCurrentGuild() {

@@ -50,7 +50,7 @@
     padding-right: 5px;
 }
 
-.top-nav .current-server {
+.top-nav .current-server a {
     display: flex;
     flex-direction: row;
 }
