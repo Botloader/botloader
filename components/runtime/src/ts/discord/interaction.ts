@@ -3,6 +3,7 @@ import * as Internal from '../generated/internal/index';
 import { CreateMessageFields, InteractionMessageFlags, InteractionCreateMessageFields, createInteractionFollowupMessage, getInteractionFollowupMessage, deleteInteractionOriginalResponse, editInteractionOriginalResponse, getInteractionOriginalResponse, editInteractionFollowupMessage, deleteInteractionFollowupMessage, toOpMessageFields } from './dapi';
 import { OpWrappers } from '../op_wrappers';
 import { Member } from './member';
+import { Message } from './message';
 
 /**
  * Base interaction class, this class should be considered UNSTABLE and may change a lot in the future.
@@ -141,6 +142,7 @@ export class ComponentInteraction extends Interaction {
     customIdRaw: string;
     componentType: ComponentType;
     channelId: string;
+    message: Message;
 
     /**
      * @internal
@@ -151,6 +153,7 @@ export class ComponentInteraction extends Interaction {
         this.componentType = interaction.componentType;
         this.customIdRaw = interaction.customId;
         this.channelId = interaction.channelId;
+        this.message = new Message(interaction.message);
     }
 
     /**
