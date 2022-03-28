@@ -7,6 +7,10 @@
     - [VS code extension](./script_management_vscode.md)
 - [Script lifecycle](./script_lifecycle.md)
 
+# Tutorials
+
+- [Echo command](./tutorial_echo.md)
+
 # Topics
 
 - [Storage](./storage.md)
