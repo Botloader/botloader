@@ -7,6 +7,7 @@ import untar from "js-untar";
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { GuildMessage, GuildMessages } from "../misc/GuildMessages";
 import { WebsocketSession } from "../misc/WebsocketController";
+import monaco from "monaco-editor";
 
 const DEFAULT_EMPTY_SCRIPT_CONTENT =
     `import {} from 'botloader';
@@ -140,8 +141,8 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
 
 function Loaded(props: { guild: BotGuild, script: Script, files: File[], refreshScripts: () => unknown }) {
     const session = useSession();
-    const currentValue = useRef(props.script.original_source);
     const [isDirty, setIsDirty] = useState(false);
+    const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
     useEffect(() => {
         document.addEventListener("keydown", handleKeyDown);
@@ -177,9 +178,20 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
         }
     }
 
+    function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
+        // here is another way to get monaco instance
+        // you can also store it in `useRef` for further usage
+        monacoRef.current = editor;
+    }
+
     let isSaving = false;
     async function save() {
-        if (!isDirty || isSaving) {
+        await monacoRef.current?.getAction('editor.action.formatDocument').run()
+        const value = monacoRef.current?.getValue() || "";
+        let innerIsDirty = value !== props.script.original_source
+        setIsDirty(innerIsDirty);
+
+        if (!innerIsDirty || isSaving) {
             return;
         }
         GuildMessages.pushGuildMessage(props.guild.guild.id, {
@@ -187,9 +199,10 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
             message: "Saving..."
         });
 
+
         console.log("Saving!");
         await session.apiClient.updateScript(props.guild.guild.id, props.script.id, {
-            original_source: currentValue.current,
+            original_source: value,
         });
         await props.refreshScripts();
 
@@ -208,8 +221,7 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
     }
 
     function onvalueChange(value: string | undefined) {
-        currentValue.current = value || "";
-        if (currentValue.current !== props.script.original_source) {
+        if (value !== props.script.original_source) {
             setIsDirty(true);
         } else {
             setIsDirty(false);
@@ -229,7 +241,7 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
             defaultValue={props.script.original_source || DEFAULT_EMPTY_SCRIPT_CONTENT}
             saveViewState={false}
             onChange={onvalueChange}
-        // onMount={handleEditorDidMount}
+            onMount={handleEditorDidMount}
         />
         {/* <div className="scripting-editor"> */}
         {/* <p>test</p> */}
