@@ -75,11 +75,10 @@ code {
 a {
   text-decoration: none;
   color: white;
-  border-bottom: 1px solid transparent;
 }
 
 a:hover {
-  border-color: white;
+  text-decoration: underline !important;
 }
 
 .bl-button {
