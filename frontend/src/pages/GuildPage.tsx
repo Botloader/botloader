@@ -44,18 +44,18 @@ function GuildLoadedPage(props: { guild: BotGuild }) {
             exact: true,
             path: `/servers/${props.guild.guild.id}/`,
         },
-        "scripts": {
-            label: "Scripts",
-            isNavLink: true,
-            exact: true,
-            path: `/servers/${props.guild.guild.id}/scripts`,
-        },
-        "settings": {
-            label: "Settings",
-            isNavLink: true,
-            exact: true,
-            path: `/servers/${props.guild.guild.id}/settings`,
-        },
+        // "scripts": {
+        //     label: "Scripts",
+        //     isNavLink: true,
+        //     exact: true,
+        //     path: `/servers/${props.guild.guild.id}/scripts`,
+        // },
+        // "settings": {
+        //     label: "Settings",
+        //     isNavLink: true,
+        //     exact: true,
+        //     path: `/servers/${props.guild.guild.id}/settings`,
+        // },
     }
 
     return <div className="guild-page">
@@ -71,22 +71,23 @@ function GuildLoadedPage(props: { guild: BotGuild }) {
                 {/* <GuildSideNav guild={guild} activePage="settings" ></GuildSideNav> */}
                 <EditScript guild={props.guild}></EditScript>
             </Route>
-            <Route path={`/servers/${props.guild.guild.id}/scripts`}>
-                <SideNav items={navItems} activePage={"scripts"}></SideNav>
-                {/* <GuildSideNav guild={guild} activePage="scripts" ></GuildSideNav> */}
-                <div className="guild-wrapper page-wrapper">
-                    <GuildScripts guild={props.guild} />
-                </div>
-            </Route>
-            <Route path={`/servers/${props.guild.guild.id}/settings`}>
-                <SideNav items={navItems} activePage={"settings"}></SideNav>
-                {/* <GuildSideNav guild={guild} activePage="settings" ></GuildSideNav> */}
-                <div className="guild-wrapper page-wrapper">
-                    <GuildSettings guild={props.guild} />
-                </div>
-            </Route>
         </Switch>
     </div>
+
+    // <Route path={`/servers/${props.guild.guild.id}/scripts`}>
+    // <SideNav items={navItems} activePage={"scripts"}></SideNav>
+    // {/* <GuildSideNav guild={guild} activePage="scripts" ></GuildSideNav> */}
+    // <div className="guild-wrapper page-wrapper">
+    //     <GuildScripts guild={props.guild} />
+    // </div>
+    // </Route>
+    // <Route path={`/servers/${props.guild.guild.id}/settings`}>
+    // <SideNav items={navItems} activePage={"settings"}></SideNav>
+    // {/* <GuildSideNav guild={guild} activePage="settings" ></GuildSideNav> */}
+    // <div className="guild-wrapper page-wrapper">
+    //     <GuildSettings guild={props.guild} />
+    // </div>
+    // </Route>
 }
 
 function EditScript(props: { guild: BotGuild }) {
@@ -98,10 +99,11 @@ function EditScript(props: { guild: BotGuild }) {
 
 
 function GuildHome(props: { guild: BotGuild }) {
-    return <Panel>
-        <p>Eventually we will display a bunch of usefull stuff here</p>
+    return <><Panel>
         <p>This is a reminder that this service is currently in a ALPHA state and everything you're seeing is in a unfinished state.</p>
     </Panel>
+        <GuildScripts guild={props.guild}></GuildScripts>
+    </>
 }
 
 function GuildSettings(props: { guild: BotGuild }) {
