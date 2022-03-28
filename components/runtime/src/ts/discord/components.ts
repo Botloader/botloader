@@ -75,7 +75,7 @@ export class UrlButton extends Button implements IButton {
 
 export class CustomButton extends Button implements IButton {
     constructor(label: string, name: string, data?: any) {
-        super(label, "Link");
+        super(label, "Primary");
 
         this.customId = encodeInteractionCustomId(name, data ?? null);
     }
