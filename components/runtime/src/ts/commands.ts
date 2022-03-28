@@ -487,8 +487,12 @@ export namespace Commands {
             // Return a new builder with new typings
             // The new opts type is "layered" on top of the old one, making us able to use
             // the generic typings of all the options in the callback
-            return new SlashCommandBuilder<LayerOption<TOpts, TKey, { kind: TKind, required: TRequired }>>
+            let next = new SlashCommandBuilder<LayerOption<TOpts, TKey, { kind: TKind, required: TRequired }>>
                 (this.name, this.description, fullOpts, this.group);
+            Object.assign(next, this);
+            next.options = fullOpts;
+
+            return next;
         }
 
         /**
