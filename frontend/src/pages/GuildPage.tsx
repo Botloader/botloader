@@ -100,7 +100,7 @@ function EditScript(props: { guild: BotGuild }) {
 
 function GuildHome(props: { guild: BotGuild }) {
     return <><Panel>
-        <p>This is a reminder that this service is currently in a ALPHA state and everything you're seeing is in a unfinished state.</p>
+        <p>This is a reminder that this service is currently in a early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</p>
     </Panel>
         <GuildScripts guild={props.guild}></GuildScripts>
     </>

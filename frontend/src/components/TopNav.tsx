@@ -11,7 +11,7 @@ export function TopNav() {
     let currentGuild = useCurrentGuild();
 
     return <div className="top-nav">
-        <p className="brand"><Link to="/">Botloader <small>alpha</small></Link></p>
+        <p className="brand"><Link to="/">Botloader <small>beta</small></Link></p>
         <div className="top-nav-right">
             <a href="/docs/" target="_blank">Docs</a>
             <a href="/book/" target="_blank">Guide</a>

@@ -99,7 +99,7 @@ function LandingPage() {
   return <>
     <header className="App-header">
       <p>Botloader<br></br>A programmable discord bot</p>
-      <small>Now verified!</small>
+      <small>Verified and in beta!</small>
       <img src="/logo192.png" alt="zzz" className="avatar"></img>
       <div className='frontpage-links'>
         <Link to="/servers" className='bl-button' >Control panel</Link>
@@ -109,7 +109,7 @@ function LandingPage() {
     </header>
     <div className='frontpage-intro-container'>
       <div className='frontpage-intro'>
-        <p>Botloader is a programmable discord bot that is currently in a alpha phase.</p>
+        <p>Botloader is a programmable discord bot that is currently in a beta phase.</p>
         <p>You can find more information using the links at the top and by joining the server.</p>
         <img src={pogshowcase} alt="screenshot"></img>
       </div>
