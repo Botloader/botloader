@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BotGuild, GuildMetaConfig, isErrorResponse, Script } from "botloader-common";
+import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Script } from "botloader-common";
 import { useCurrentGuild } from "../components/GuildsProvider";
 import { useSession } from "../components/Session";
 import './GuildPage.css'
@@ -35,6 +35,8 @@ function InviteGuildPage(props: { guild: BotGuild }) {
 function NoGuildPage() {
     return <p>That's and unknown guild m8</p>
 }
+
+
 
 function GuildLoadedPage(props: { guild: BotGuild }) {
     const navItems = {
@@ -99,11 +101,41 @@ function EditScript(props: { guild: BotGuild }) {
 
 
 function GuildHome(props: { guild: BotGuild }) {
-    return <><Panel>
-        <p>This is a reminder that this service is currently in a early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</p>
-    </Panel>
+    return <>
+        <Panel>
+            <p>This is a reminder that this service is currently in a early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</p>
+        </Panel>
+        <PremiumPanel guild={props.guild}></PremiumPanel>
         <GuildScripts guild={props.guild}></GuildScripts>
     </>
+}
+
+function PremiumPanel(props: { guild: BotGuild }) {
+    const [slots, setSlots] = useState<GuildPremiumSlot[] | undefined | null>(undefined);
+    const session = useSession();
+
+    useEffect(() => {
+        loadConfig();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props, session])
+
+    async function loadConfig() {
+        let resp = await session.apiClient.getGuildPremiumSlots(props.guild.guild.id);
+        if (isErrorResponse(resp)) {
+            setSlots(null);
+        } else {
+            setSlots(resp);
+        }
+    }
+
+
+    return <Panel>
+        <h3>Premium/Lite</h3>
+        {slots === null ? <p>Failed loading slots</p>
+            : slots === undefined ? <p>Loading...</p>
+                : slots.length > 0 ? slots.map(v => <div className="guild-premium-slots" key={v.id}>{v.tier} by <code>{v.user_id}</code></div>)
+                    : <p>This server is on the free plan</p>}
+    </Panel>
 }
 
 function GuildSettings(props: { guild: BotGuild }) {

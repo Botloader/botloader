@@ -145,6 +145,10 @@ export class ApiClient {
     async getNews(): Promise<ApiResult<NewsItem[]>> {
         return await this.get(`/api/news`);
     }
+
+    async getGuildPremiumSlots(guildId: string): Promise<ApiResult<GuildPremiumSlot[]>> {
+        return await this.get(`/api/guilds/${guildId}/premium_slots`);
+    }
 }
 
 export type ApiResult<T> = T | ApiError;
@@ -225,4 +229,15 @@ export interface NewsItem {
 export interface NewsAuthor {
     username: string,
     avatar_url: string | null,
+}
+
+export interface GuildPremiumSlot {
+    id: number,
+    title: String,
+    user_id: string | null,
+    tier: PremiumSlotTier,
+    created_at: string,
+    updated_at: string,
+    expires_at: string,
+    attached_guild_id: string | null,
 }
