@@ -16,7 +16,7 @@ export function TopNav() {
             <a href="/docs/" target="_blank">Docs</a>
             <a href="/book/" target="_blank">Guide</a>
             <Link to="/news">News</Link>
-            {/* <Link to="/samples">Samples</Link> */}
+            <Link to="/samples">Samples</Link>
             {/* <Link to="/premium">Premium</Link> */}
             <div className="current-server">
                 {currentGuild && session.user ? <CurrentGuild guild={currentGuild} /> : session.user ? <NoCurrentGuild /> : null}

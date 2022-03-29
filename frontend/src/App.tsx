@@ -20,6 +20,7 @@ import { PrivacyPolicyPage } from './pages/PrivacyPolicy';
 import './misc/WebsocketController';
 import { Panel } from './components/Panel';
 import { NewsPage } from './pages/NewsPage';
+import { SamplesPage } from './pages/SamplesPage';
 
 function App() {
   return (
@@ -44,7 +45,7 @@ function App() {
                 </Route>
                 <Route path="/samples">
                   <TopNav />
-                  <TodoPage></TodoPage>
+                  <div className="page-wrapper"><SamplesPage></SamplesPage></div>
                 </Route>
                 <Route path="/premium">
                   <TopNav />
