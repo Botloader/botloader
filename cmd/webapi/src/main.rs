@@ -120,6 +120,10 @@ async fn main() {
             get(routes::guilds::get_guild_settings::<CurrentSessionStore>),
         )
         .route(
+            "/premium_slots",
+            get(routes::guilds::get_guild_premium_slots::<CurrentConfigStore>),
+        )
+        .route(
             "/scripts",
             get(routes::scripts::get_all_guild_scripts).put(routes::scripts::create_guild_script),
         )
