@@ -3,6 +3,7 @@ package botrpc;
 
 service BotService {
     rpc ReloadVm(GuildScriptSpecifier) returns (Empty);
+    rpc PurgeGuildCache(GuildScriptSpecifier) returns (Empty);
     rpc StreamGuildLogs(GuildSpecifier) returns (stream GuildLogItem);
 }
 

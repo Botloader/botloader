@@ -57,6 +57,19 @@ impl proto::bot_service_server::BotService for Server {
         Ok(Response::new(proto::Empty {}))
     }
 
+    async fn purge_guild_cache(
+        &self,
+        request: tonic::Request<proto::GuildScriptSpecifier>,
+    ) -> Result<Response<proto::Empty>, Status> {
+        let guild_id = Id::new(request.into_inner().guild_id);
+
+        let _ = self
+            .scheduler_tx
+            .send(SchedulerCommand::PurgeGuildCache(guild_id));
+
+        Ok(Response::new(proto::Empty {}))
+    }
+
     type StreamGuildLogsStream = ResponseStream;
 
     async fn stream_guild_logs(

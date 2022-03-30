@@ -31,6 +31,7 @@ pub async fn list_user_premium_slots<ST: SessionStore + 'static, CT: ConfigStore
 pub async fn update_premium_slot_guild<ST: SessionStore + 'static, CT: ConfigStore + 'static>(
     Extension(session): Extension<LoggedInSession<ST>>,
     Extension(config_store): Extension<CT>,
+    Extension(bot_rpc): Extension<botrpc::Client>,
     Path(UpdateSlotPathParams { slot_id }): Path<UpdateSlotPathParams>,
     Json(body): Json<UpdateSlotGuildBody>,
 ) -> ApiResult<Json<PremiumSlot>> {
@@ -41,6 +42,13 @@ pub async fn update_premium_slot_guild<ST: SessionStore + 'static, CT: ConfigSto
             error!(%err, "failed updating premium slot");
             ApiErrorResponse::InternalError
         })?;
+
+    if let Some(guild_id) = res.attached_guild_id {
+        bot_rpc.restart_guild_vm(guild_id).await.map_err(|err| {
+            error!(%err, "failed reloading guild vm");
+            ApiErrorResponse::InternalError
+        })?;
+    }
 
     Ok(Json(res))
 }

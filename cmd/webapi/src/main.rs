@@ -14,10 +14,7 @@ use stores::{inmemory::web::InMemoryCsrfStore, postgres::Postgres};
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
-use twilight_model::id::{
-    marker::{ChannelMarker, GuildMarker},
-    Id,
-};
+use twilight_model::id::{marker::GuildMarker, Id};
 
 mod errors;
 mod middlewares;

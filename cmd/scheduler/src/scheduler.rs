@@ -26,6 +26,7 @@ pub enum SchedulerCommand {
     DiscordEvent(GuildEvent),
     Shutdown,
     ReloadGuildScripts(Id<GuildMarker>),
+    PurgeGuildCache(Id<GuildMarker>),
 }
 
 pub struct Scheduler {
@@ -240,6 +241,13 @@ impl Scheduler {
                 if let Some(g) = self.guilds.get(&guild_id) {
                     if let Some(tx) = &g.tx {
                         let _ = tx.send(GuildCommand::ReloadScripts);
+                    }
+                }
+            }
+            SchedulerCommand::PurgeGuildCache(guild_id) => {
+                if let Some(g) = self.guilds.get(&guild_id) {
+                    if let Some(tx) = &g.tx {
+                        let _ = tx.send(GuildCommand::PurgeCache);
                     }
                 }
             }

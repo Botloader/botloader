@@ -229,8 +229,17 @@ pub enum PremiumSlotState {
     PaymentFailed,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub enum PremiumSlotTier {
     Lite,
     Premium,
+}
+
+impl PremiumSlotTier {
+    pub fn is_higher_than(&self, other: PremiumSlotTier) -> bool {
+        matches!(
+            (self, other),
+            (PremiumSlotTier::Premium, PremiumSlotTier::Lite)
+        )
+    }
 }

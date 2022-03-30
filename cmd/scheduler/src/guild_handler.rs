@@ -15,7 +15,7 @@ use scheduler_worker_rpc::{
 };
 use std::future::Future;
 use stores::{
-    config::{IntervalTimerContrib, Script, ScriptContributes},
+    config::{IntervalTimerContrib, PremiumSlotTier, Script, ScriptContributes},
     timers::{IntervalTimer, ScheduledTask},
 };
 use tokio::sync::{mpsc, oneshot};
@@ -29,7 +29,22 @@ pub enum GuildCommand {
     BrokerEvent(GuildEvent),
     // Dispatch(oneshot::Sender<()>, String, serde_json::Value),
     ReloadScripts,
+    PurgeCache,
     Shutdown,
+}
+
+enum PremiumTierState {
+    Fetched(Option<PremiumSlotTier>),
+    Unknown,
+}
+
+impl PremiumTierState {
+    fn option(&self) -> Option<PremiumSlotTier> {
+        match self {
+            PremiumTierState::Fetched(inner) => *inner,
+            PremiumTierState::Unknown => None,
+        }
+    }
 }
 
 pub struct GuildHandler {
@@ -44,6 +59,8 @@ pub struct GuildHandler {
     interval_timers_man: crate::interval_timer_manager::Manager,
     cmd_manager_handle: command_manager::Handle,
     scheduled_tasks_man: scheduled_task_manager::Manager,
+
+    premium_tier: PremiumTierState,
 
     pending_acks: HashMap<u64, PendingAck>,
     current_worker: Option<WorkerHandle>,
@@ -89,6 +106,7 @@ impl GuildHandler {
             current_worker: None,
             scripts: Vec::new(),
             force_load_scripts_next: false,
+            premium_tier: PremiumTierState::Unknown,
 
             interval_timers_man: interval_timer_man,
             cmd_manager_handle,
@@ -104,6 +122,7 @@ impl GuildHandler {
     async fn run(mut self) {
         self.try_retry_load_scripts().await;
         self.load_contribs().await;
+        self.fetch_premium_tier().await;
 
         while let Some(next) = self.next_event().await {
             match next {
@@ -337,7 +356,31 @@ impl GuildHandler {
             GuildCommand::Shutdown => {
                 panic!("shutdown should be handled by caller")
             }
+            GuildCommand::PurgeCache => {}
         }
+    }
+
+    async fn fetch_premium_tier(&mut self) {
+        self.premium_tier = PremiumTierState::Unknown;
+
+        let slots = if let Ok(slots) = self.stores.get_guild_premium_slots(self.guild_id).await {
+            slots
+        } else {
+            return;
+        };
+
+        let mut highest_tier = Option::<PremiumSlotTier>::None;
+        for slot in slots {
+            if let Some(current_highest) = highest_tier {
+                if slot.tier.is_higher_than(current_highest) {
+                    highest_tier = Some(slot.tier);
+                }
+            } else {
+                highest_tier = Some(slot.tier);
+            }
+        }
+
+        self.premium_tier = PremiumTierState::Fetched(highest_tier);
     }
 
     async fn dispatch_scheduled_task(&mut self, task: ScheduledTask) {
@@ -447,9 +490,16 @@ impl GuildHandler {
     }
 
     async fn ensure_claim_worker(&mut self) {
+        if matches!(self.premium_tier, PremiumTierState::Unknown) {
+            self.fetch_premium_tier().await;
+        }
+
         if self.current_worker.is_none() {
             loop {
-                let mut worker = self.worker_pool.req_worker(self.guild_id).await;
+                let mut worker = self
+                    .worker_pool
+                    .req_worker(self.guild_id, self.premium_tier.option())
+                    .await;
 
                 #[allow(clippy::collapsible_if)]
                 if self.should_send_scripts(&worker) {
@@ -476,12 +526,10 @@ impl GuildHandler {
                     }
                 }
 
+                info!(tier = worker.priority_index, "claimed new worker");
                 worker.last_active_guild = Some(self.guild_id);
                 self.force_load_scripts_next = false;
                 self.current_worker = Some(worker);
-
-                // new worker, clear pending acks, should trigger retries for most things
-                info!("claimed new worker");
                 break;
             }
         }

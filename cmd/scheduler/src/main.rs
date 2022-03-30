@@ -1,7 +1,10 @@
 use std::{num::NonZeroU64, sync::Arc, time::Duration};
 
 use clap::Parser;
-use stores::{config::ConfigStore, postgres::Postgres};
+use stores::{
+    config::{ConfigStore, PremiumSlotTier},
+    postgres::Postgres,
+};
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::Id;
@@ -80,8 +83,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     worker_listener::listen_for_workers("/tmp/botloader_scheduler_workers", worker_pool.clone());
     tokio::time::sleep(Duration::from_secs(1)).await;
-    info!("spawning {} workers", config.num_workers);
-    worker_pool.spawn_workers(config.num_workers as usize);
+    info!(
+        "spawning {},{},{}, free, lite, premium workers",
+        config.num_workers_free, config.num_workers_lite, config.num_workers_premium,
+    );
+    worker_pool.spawn_workers(None, config.num_workers_free as usize);
+    worker_pool.spawn_workers(
+        Some(PremiumSlotTier::Lite),
+        config.num_workers_lite as usize,
+    );
+    worker_pool.spawn_workers(
+        Some(PremiumSlotTier::Premium),
+        config.num_workers_premium as usize,
+    );
 
     let scheduler = scheduler::Scheduler::new(
         scheduler_rx,
@@ -154,6 +168,10 @@ pub struct SchedulerConfig {
     )]
     pub vmworker_bin_path: String,
 
-    #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS", default_value = "2")]
-    pub(crate) num_workers: u16,
+    #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS_FREE", default_value = "2")]
+    pub(crate) num_workers_free: u16,
+    #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS_LITE", default_value = "0")]
+    pub(crate) num_workers_lite: u16,
+    #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS_PREMIUM", default_value = "0")]
+    pub(crate) num_workers_premium: u16,
 }
