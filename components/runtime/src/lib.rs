@@ -242,6 +242,7 @@ impl RateLimiters {
 pub enum RuntimeEvent {
     ScriptStarted(ScriptMeta),
     NewTaskScheduled,
+    InvalidRequestsExceeded,
 }
 
 pub fn get_rt_ctx(state: &Rc<RefCell<OpState>>) -> RuntimeContext {

@@ -18,8 +18,14 @@ use runtime_models::{
         user::User,
     },
 };
-use std::{borrow::Cow, str::FromStr};
+use std::{
+    borrow::Cow,
+    collections::VecDeque,
+    str::FromStr,
+    time::{Duration, Instant},
+};
 use std::{cell::RefCell, rc::Rc};
+use tracing::warn;
 use twilight_http::error::ErrorType;
 use twilight_http::request::AuditLogReason;
 use twilight_http::{
@@ -30,9 +36,10 @@ use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
 use vm::AnyError;
+use vmthread::ShutdownHandle;
 
 use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
-use crate::get_rt_ctx;
+use crate::{get_rt_ctx, RuntimeContext, RuntimeEvent};
 
 pub fn extension() -> Extension {
     Extension::builder()
@@ -81,11 +88,64 @@ pub fn extension() -> Extension {
             op_discord_get_bans::decl(),
             op_discord_delete_ban::decl(),
         ])
+        .state(move |state| {
+            state.put(DiscordOpsState {
+                recent_bad_requests: VecDeque::new(),
+            });
+
+            Ok(())
+        })
         .build()
 }
 
-pub fn handle_discord_error(_state: &Rc<RefCell<OpState>>, err: twilight_http::Error) -> AnyError {
+struct DiscordOpsState {
+    recent_bad_requests: VecDeque<Instant>,
+}
+
+impl DiscordOpsState {
+    fn add_failed_req(&mut self) {
+        self.recent_bad_requests.push_back(Instant::now());
+
+        while self.recent_bad_requests.len() > 29 {
+            self.recent_bad_requests.pop_front();
+        }
+    }
+
+    fn should_suspend_guild(&self) -> bool {
+        if self.recent_bad_requests.len() < 29 {
+            return false;
+        }
+
+        self.recent_bad_requests[0].elapsed() < Duration::from_secs(60)
+    }
+}
+
+pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Error) -> AnyError {
     let kind = err.kind();
+    if let ErrorType::Response { status, .. } = kind {
+        // check if this guild has run into a lot of "invalid" requests
+        //
+        // this is needed because discord will ban our IP if we exceed 10_000 invalid req/10min as of writing
+        let raw = status.raw();
+        if raw == 401 || raw == 403 || raw == 429 {
+            let mut rc = state.borrow_mut();
+            let dstate = rc.borrow_mut::<DiscordOpsState>();
+            dstate.add_failed_req();
+            if dstate.should_suspend_guild() {
+                let handle = rc.borrow::<vm::vm::VmShutdownHandle>().clone();
+                let rt_ctx = rc.borrow::<RuntimeContext>().clone();
+                drop(rc);
+
+                warn!(
+                    guild_id = rt_ctx.guild_id.get(),
+                    "guild hit >30 invalid requests within 60s, suspending it"
+                );
+                let _ = rt_ctx.event_tx.send(RuntimeEvent::InvalidRequestsExceeded);
+                handle.shutdown_vm(vmthread::ShutdownReason::Unknown);
+            }
+        }
+    }
+
     match kind {
         ErrorType::Response {
             // 10008 is unknown message

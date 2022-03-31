@@ -51,6 +51,7 @@ pub enum ShutdownReason {
     Runaway,
     OutOfMemory,
     Other,
+    TooManyInvalidRequests,
 }
 
 #[derive(Deserialize, Serialize, Debug)]

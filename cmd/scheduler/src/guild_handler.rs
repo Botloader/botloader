@@ -139,7 +139,17 @@ impl GuildHandler {
                         self.guild_id,
                         format!("vm was forcibly shut down, reason: {:?}", reason),
                     ));
-                    let _ = self.scheduler_tx.send(GuildHandlerEvent::ForciblyShutdown);
+                    match reason {
+                        scheduler_worker_rpc::ShutdownReason::TooManyInvalidRequests => {
+                            let _ = self
+                                .scheduler_tx
+                                .send(GuildHandlerEvent::TooManyInvalidRequests);
+                        }
+                        _ => {
+                            let _ = self.scheduler_tx.send(GuildHandlerEvent::ForciblyShutdown);
+                        }
+                    }
+
                     break;
                 }
                 NextGuildAction::WorkerMessage(Some(msg)) => {
@@ -663,6 +673,7 @@ impl Future for NextGuildHandlerActionFuture<'_> {
 }
 
 pub enum GuildHandlerEvent {
+    TooManyInvalidRequests,
     ForciblyShutdown,
 }
 

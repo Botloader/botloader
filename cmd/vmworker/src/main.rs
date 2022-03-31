@@ -226,6 +226,12 @@ impl Worker {
             RuntimeEvent::NewTaskScheduled => {
                 self.write_message(WorkerMessage::TaskScheduled).await?;
             }
+            RuntimeEvent::InvalidRequestsExceeded => {
+                self.write_message(WorkerMessage::Shutdown(
+                    ShutdownReason::TooManyInvalidRequests,
+                ))
+                .await?;
+            }
         }
         Ok(ContinueState::Continue)
     }

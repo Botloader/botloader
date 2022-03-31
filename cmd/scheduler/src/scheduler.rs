@@ -170,6 +170,16 @@ impl Scheduler {
                 info!("guild {} forcibly shut down, blacklisting it", guild_id);
                 self.mark_guild_as_suspended(guild_id, SuspensionReason::ExcessCpu);
             }
+            GuildHandlerEvent::TooManyInvalidRequests => {
+                info!(
+                    "guild {} forcibly shut down from too many invalid requests, blacklisting it",
+                    guild_id
+                );
+                self.mark_guild_as_suspended(
+                    guild_id,
+                    SuspensionReason::ExcessInvalidDiscordRequests,
+                );
+            }
         }
     }
 
