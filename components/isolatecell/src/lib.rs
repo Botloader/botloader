@@ -144,6 +144,24 @@ impl ManagedIsolate {
 
         Self { inner: rt }
     }
+
+    pub fn new_with_oom_handler_and_state<C: FnMut(usize, usize) -> usize + 'static, T: 'static>(
+        opts: RuntimeOptions,
+        cb: C,
+        initial_state: T,
+    ) -> Self {
+        let mut rt = JsRuntime::new(opts);
+        {
+            let op_state = rt.op_state();
+            op_state.borrow_mut().put(initial_state);
+        }
+        rt.add_near_heap_limit_callback(cb);
+
+        // SAFETY: new enters the isolate
+        unsafe { rt.v8_isolate().exit() }
+
+        Self { inner: rt }
+    }
 }
 
 impl Drop for ManagedIsolate {

@@ -113,10 +113,9 @@ where
         self.shutting_down = true;
 
         for vm in &self.vms {
-            T::shutdown(
-                &vm.handle.shutdown_handle,
-                ShutdownReason::ThreadTermination,
-            );
+            vm.handle
+                .shutdown_handle
+                .shutdown_vm(ShutdownReason::ThreadTermination);
         }
     }
 
@@ -150,7 +149,7 @@ where
                             // if there's a bad actor
                             let maybe_handle = handle.running_vm.read().unwrap();
                             match &*maybe_handle {
-                                Some(h) => T::shutdown(&h.shutdown_handle, ShutdownReason::Runaway),
+                                Some(h) => h.shutdown_handle.shutdown_vm(ShutdownReason::Runaway),
                                 None => {
                                     // This could be possible during very high load scenarios where the thread never gets
                                     // cpu time form something else on the system, so for now we just ignore this case
@@ -290,11 +289,7 @@ pub trait VmInterface {
 
     // this is a handle that can contain for example a v8 isolate handle to interrupt execution
     // this is to stop runaway scripts.
-    type ShutdownHandle: Send + Sync + Unpin + Clone;
-
-    // shut down a runaway vm using the provided timeout handle
-    // note that this means the vm thread is  currently busy executing the future
-    fn shutdown(shutdown_handle: &Self::ShutdownHandle, reason: ShutdownReason);
+    type ShutdownHandle: Send + Sync + Unpin + Clone + ShutdownHandle;
 }
 
 #[derive(Debug, Clone)]
@@ -311,4 +306,9 @@ pub struct CreateVmSuccess<T, U, V> {
     pub id: T,
     pub future: U,
     pub shutdown_handle: V,
+}
+
+pub trait ShutdownHandle {
+    // shut down a runaway vm using the provided timeout handle
+    fn shutdown_vm(&self, reason: ShutdownReason);
 }

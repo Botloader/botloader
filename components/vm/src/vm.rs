@@ -23,7 +23,7 @@ use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
 use url::Url;
 use v8::{CreateParams, HeapStatistics, IsolateHandle};
-use vmthread::{CreateVmSuccess, ShutdownReason, VmInterface};
+use vmthread::{CreateVmSuccess, ShutdownHandle, ShutdownReason, VmInterface};
 
 #[derive(Debug, Clone)]
 pub enum VmCommand {
@@ -68,7 +68,7 @@ pub struct Vm {
 
     script_store: ScriptsStateStoreHandle,
 
-    timeout_handle: ShutdownHandle,
+    timeout_handle: VmShutdownHandle,
     guild_logger: GuildLogger,
 
     isolate_cell: Rc<IsolateCell>,
@@ -88,7 +88,7 @@ pub struct VmContext {
 impl Vm {
     async fn create_run(
         create_req: CreateRt,
-        timeout_handle: ShutdownHandle,
+        timeout_handle: VmShutdownHandle,
         isolate_cell: Rc<IsolateCell>,
         wakeup_rx: UnboundedReceiver<()>,
     ) {
@@ -132,7 +132,7 @@ impl Vm {
         extension_factory: &ExtensionFactory,
         module_manager: Rc<ModuleManager>,
         script_load_states: ScriptsStateStoreHandle,
-        shutdown_handle: ShutdownHandle,
+        shutdown_handle: VmShutdownHandle,
     ) -> ManagedIsolate {
         let create_err_fn = create_error_fn(script_load_states.clone());
 
@@ -169,18 +169,23 @@ impl Vm {
             ..Default::default()
         };
 
-        ManagedIsolate::new_with_oom_handler(options, move |current, initial| {
-            info!(
-                "near heap limit: current: {}, initial: {}",
-                current, initial
-            );
-            Self::shutdown(&shutdown_handle, ShutdownReason::OutOfMemory);
-            if current != initial {
-                current
-            } else {
-                current + initial
-            }
-        })
+        let another_handle = shutdown_handle.clone();
+        ManagedIsolate::new_with_oom_handler_and_state(
+            options,
+            move |current, initial| {
+                info!(
+                    "near heap limit: current: {}, initial: {}",
+                    current, initial
+                );
+                shutdown_handle.shutdown_vm(ShutdownReason::OutOfMemory);
+                if current != initial {
+                    current
+                } else {
+                    current + initial
+                }
+            },
+            another_handle,
+        )
     }
 
     fn emit_isolate_handle(&mut self) {
@@ -753,7 +758,7 @@ impl VmInterface for Vm {
         isolate_cell: Rc<IsolateCell>,
     ) -> vmthread::VmCreateResult<Self::VmId, Self::Future, Self::ShutdownHandle> {
         let (wakeup_tx, wakeup_rx) = mpsc::unbounded_channel();
-        let shutdown_handle = ShutdownHandle {
+        let shutdown_handle = VmShutdownHandle {
             terminated: Arc::new(AtomicBool::new(false)),
             inner: Arc::new(StdRwLock::new(ShutdownHandleInner {
                 isolate_handle: None,
@@ -785,14 +790,22 @@ impl VmInterface for Vm {
         })
     }
 
-    type ShutdownHandle = ShutdownHandle;
+    type ShutdownHandle = VmShutdownHandle;
+}
 
-    fn shutdown(shutdown_handle: &Self::ShutdownHandle, reason: ShutdownReason) {
-        let mut inner = shutdown_handle.inner.write().unwrap();
+#[derive(Clone)]
+pub struct VmShutdownHandle {
+    terminated: Arc<AtomicBool>,
+    inner: Arc<StdRwLock<ShutdownHandleInner>>,
+    wakeup: mpsc::UnboundedSender<()>,
+}
+
+impl ShutdownHandle for VmShutdownHandle {
+    fn shutdown_vm(&self, reason: ShutdownReason) {
+        let mut inner = self.inner.write().unwrap();
         inner.shutdown_reason = Some(reason);
         if let Some(iso_handle) = &inner.isolate_handle {
-            shutdown_handle
-                .terminated
+            self.terminated
                 .store(true, std::sync::atomic::Ordering::SeqCst);
             iso_handle.terminate_execution();
         } else {
@@ -800,15 +813,8 @@ impl VmInterface for Vm {
         }
 
         // trigger a shutdown check if we weren't in the js runtime
-        shutdown_handle.wakeup.send(()).ok();
+        self.wakeup.send(()).ok();
     }
-}
-
-#[derive(Clone)]
-pub struct ShutdownHandle {
-    terminated: Arc<AtomicBool>,
-    inner: Arc<StdRwLock<ShutdownHandleInner>>,
-    wakeup: mpsc::UnboundedSender<()>,
 }
 
 struct ShutdownHandleInner {
