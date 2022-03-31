@@ -3,6 +3,7 @@ use std::{
     pin::Pin,
     sync::Arc,
     task::Poll,
+    time::{Duration, Instant},
 };
 
 use crate::{
@@ -11,6 +12,7 @@ use crate::{
 };
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::{GuildEvent, HelloData};
+use guild_logger::LogEntry;
 use std::future::Future;
 use tokio::sync::mpsc;
 use tracing::info;
@@ -40,8 +42,7 @@ pub struct Scheduler {
     worker_pool: crate::vmworkerpool::VmWorkerPool,
     discord_config: Arc<DiscordConfig>,
 
-    // guilds that had their vm's forcibly shut down
-    shutdown_guilds: HashSet<Id<GuildMarker>>,
+    suspended_guilds: HashMap<Id<GuildMarker>, GuildSuspension>,
 }
 
 impl Scheduler {
@@ -64,7 +65,7 @@ impl Scheduler {
             cmd_rx: scheduler_rx,
             queued_events: Vec::new(),
             pending_starts: Vec::new(),
-            shutdown_guilds: HashSet::new(),
+            suspended_guilds: HashMap::new(),
         }
     }
 
@@ -81,7 +82,8 @@ impl Scheduler {
                 SchedulerAction::GuildHandler(guild_id, None) => {
                     // worker finished, remove it
                     self.guilds.remove(&guild_id);
-                    if !self.shutdown_guilds.contains(&guild_id) {
+
+                    if self.try_unsuspend_guild(guild_id) {
                         self.check_queue_start_worker(guild_id).await;
                     }
                 }
@@ -166,23 +168,29 @@ impl Scheduler {
         match event {
             GuildHandlerEvent::ForciblyShutdown => {
                 info!("guild {} forcibly shut down, blacklisting it", guild_id);
-                self.shutdown_guilds.insert(guild_id);
-
-                // remove all queued starts and events
-                let new_pending_starts = self
-                    .pending_starts
-                    .iter()
-                    .filter_map(|v| (*v != guild_id).then(|| *v))
-                    .collect::<Vec<_>>();
-                self.pending_starts = new_pending_starts;
-
-                let old_events = std::mem::take(&mut self.queued_events);
-                self.queued_events = old_events
-                    .into_iter()
-                    .filter(|v| v.guild_id != guild_id)
-                    .collect();
+                self.mark_guild_as_suspended(guild_id, SuspensionReason::ExcessCpu);
             }
         }
+    }
+
+    fn mark_guild_as_suspended(&mut self, guild_id: Id<GuildMarker>, reason: SuspensionReason) {
+        info!("guild {guild_id} marked as suspended, reason: {reason:?}");
+        self.suspended_guilds
+            .insert(guild_id, GuildSuspension::new(guild_id, reason));
+
+        // remove all queued starts and events
+        let new_pending_starts = self
+            .pending_starts
+            .iter()
+            .filter_map(|v| (*v != guild_id).then(|| *v))
+            .collect::<Vec<_>>();
+        self.pending_starts = new_pending_starts;
+
+        let old_events = std::mem::take(&mut self.queued_events);
+        self.queued_events = old_events
+            .into_iter()
+            .filter(|v| v.guild_id != guild_id)
+            .collect();
     }
 
     async fn handle_scheduler_command(&mut self, cmd: SchedulerCommand) {
@@ -197,7 +205,7 @@ impl Scheduler {
 
                 // start all the workers we can
                 for g in d.connected_guilds {
-                    if self.shutdown_guilds.contains(&g) {
+                    if !self.try_unsuspend_guild(g) {
                         continue;
                     }
 
@@ -214,7 +222,7 @@ impl Scheduler {
             }
             SchedulerCommand::BrokerConnected => {}
             SchedulerCommand::DiscordEvent(evt) => {
-                if self.shutdown_guilds.contains(&evt.guild_id) {
+                if !self.try_unsuspend_guild(evt.guild_id) {
                     return;
                 }
 
@@ -234,8 +242,14 @@ impl Scheduler {
             }
             SchedulerCommand::ReloadGuildScripts(guild_id) => {
                 // reset the blacklisted state
-                if self.shutdown_guilds.remove(&guild_id) {
+                if self.try_unsuspend_guild(guild_id) {
                     self.get_or_start_guild(guild_id);
+                } else {
+                    self.logger.log(LogEntry::error(
+                        guild_id,
+                        "can't unsuspend your guild yet, please wait 10 minutes".to_owned(),
+                    ));
+                    return;
                 }
 
                 if let Some(g) = self.guilds.get(&guild_id) {
@@ -300,6 +314,18 @@ impl Scheduler {
             }
         }
     }
+
+    fn try_unsuspend_guild(&mut self, guild_id: Id<GuildMarker>) -> bool {
+        if let Some(susp) = self.suspended_guilds.get(&guild_id) {
+            if susp.can_remove() {
+                self.suspended_guilds.remove(&guild_id);
+            } else {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 enum SchedulerAction {
@@ -336,3 +362,40 @@ impl<'a> Future for SchedulerNextActionFuture<'a> {
 pub trait Store: stores::config::ConfigStore + stores::timers::TimerStore {}
 
 impl<T: stores::config::ConfigStore + stores::timers::TimerStore> Store for T {}
+
+#[derive(Debug)]
+enum SuspensionReason {
+    ExcessCpu,
+    ExcessInvalidDiscordRequests,
+}
+
+impl SuspensionReason {
+    fn duration(&self) -> Duration {
+        match self {
+            Self::ExcessCpu => Duration::from_secs(15),
+            Self::ExcessInvalidDiscordRequests => Duration::from_secs(60 * 10),
+        }
+    }
+}
+
+struct GuildSuspension {
+    guild_id: Id<GuildMarker>,
+    reason: SuspensionReason,
+    suspended_at: Instant,
+}
+
+impl GuildSuspension {
+    fn new(guild_id: Id<GuildMarker>, reason: SuspensionReason) -> Self {
+        Self {
+            guild_id,
+            reason,
+            suspended_at: Instant::now(),
+        }
+    }
+
+    fn can_remove(&self) -> bool {
+        let dur = self.reason.duration();
+
+        dur < self.suspended_at.elapsed()
+    }
+}
