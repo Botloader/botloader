@@ -63,7 +63,6 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             "op_print" => disabled_op::decl(),
             "op_wasm_streaming_feed" => disabled_op::decl(),
             "op_wasm_streaming_set_url" => disabled_op::decl(),
-            "op_wasm_streaming_set_url" => disabled_op::decl(),
             _ => deno_op,
         })
         .build();
