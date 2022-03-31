@@ -5,6 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use metrics::counter;
 use simpleproto::{message_reader, message_writer};
 use stores::config::PremiumSlotTier;
 use tokio::{
@@ -17,6 +18,11 @@ use tokio::{
 };
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
+
+pub enum WorkerRetrieved {
+    SameGuild,
+    OtherGuild,
+}
 
 struct PoolInner {
     worker_id_gen: u64,
@@ -47,6 +53,22 @@ impl VmWorkerPool {
     }
 
     pub async fn req_worker(
+        &self,
+        guild_id: Id<GuildMarker>,
+        premium_tier: Option<PremiumSlotTier>,
+    ) -> (WorkerHandle, WorkerRetrieved) {
+        let mut worker = self.inner_get_worker(guild_id, premium_tier).await;
+        let wr = if matches!(worker.last_active_guild, Some(g) if g == guild_id) {
+            WorkerRetrieved::SameGuild
+        } else {
+            WorkerRetrieved::OtherGuild
+        };
+
+        worker.claim(guild_id);
+        (worker, wr)
+    }
+
+    async fn inner_get_worker(
         &self,
         guild_id: Id<GuildMarker>,
         premium_tier: Option<PremiumSlotTier>,
@@ -124,6 +146,12 @@ impl VmWorkerPool {
 
     pub fn return_worker(&self, mut worker: WorkerHandle, broken: bool) {
         worker.returned_at = Instant::now();
+        let elapsed = worker.returned_at - worker.claimed_at;
+        if let Some(guild_id) = worker.last_active_guild {
+            let micros = elapsed.as_micros() as u64;
+            counter!("bl.worker.claimed_microseconds_total", micros, "guild_id" => guild_id.get().to_string());
+        }
+
         if broken {
             error!(
                 "returned broken worker to the pool: {:?}",
@@ -132,7 +160,11 @@ impl VmWorkerPool {
             metrics::counter!("bl.scheduler.broken_workers_total", 1);
             self.spawn_worker(worker.priority_index);
         } else {
-            info!(tier = worker.priority_index, "returned worker to the pool");
+            info!(
+                tier = worker.priority_index,
+                dur = elapsed.as_secs_f64(),
+                "returned worker to the pool"
+            );
             self.add_worker_to_pool(worker);
         }
     }
@@ -213,11 +245,20 @@ pub struct WorkerHandle {
     pub child: Child,
     pub tx: UnboundedSender<scheduler_worker_rpc::SchedulerMessage>,
     pub rx: UnboundedReceiver<scheduler_worker_rpc::WorkerMessage>,
-    pub last_active_guild: Option<Id<GuildMarker>>,
+    last_active_guild: Option<Id<GuildMarker>>,
     pub returned_at: Instant,
+    pub claimed_at: Instant,
     pub worker_id: u64,
     pub priority_index: usize,
 }
+
+impl WorkerHandle {
+    fn claim(&mut self, guild_id: Id<GuildMarker>) {
+        self.last_active_guild = Some(guild_id);
+        self.claimed_at = Instant::now();
+    }
+}
+
 struct PendingWorkerHandle {
     child: Child,
     worker_id: u64,
@@ -241,6 +282,7 @@ fn init_worker_handles(pending: PendingWorkerHandle, stream: UnixStream) -> Work
 
         last_active_guild: None,
         returned_at: Instant::now(),
+        claimed_at: Instant::now(),
         worker_id: pending.worker_id,
         priority_index: pending.priority_index,
     }

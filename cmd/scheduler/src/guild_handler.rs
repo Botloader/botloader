@@ -1,8 +1,9 @@
 use std::{collections::HashMap, sync::Arc, task::Poll, time::Duration};
 
 use crate::{
-    command_manager, interval_timer_manager, scheduled_task_manager, scheduler::Store,
-    vmworkerpool::WorkerHandle,
+    command_manager, interval_timer_manager, scheduled_task_manager,
+    scheduler::Store,
+    vmworkerpool::{WorkerHandle, WorkerRetrieved},
 };
 use chrono::{DateTime, Utc};
 use common::DiscordConfig;
@@ -496,13 +497,13 @@ impl GuildHandler {
 
         if self.current_worker.is_none() {
             loop {
-                let mut worker = self
+                let (worker, wr) = self
                     .worker_pool
                     .req_worker(self.guild_id, self.premium_tier.option())
                     .await;
 
                 #[allow(clippy::collapsible_if)]
-                if self.should_send_scripts(&worker) {
+                if self.should_send_scripts(wr) {
                     self.pending_acks.clear();
                     self.reset_contribs();
 
@@ -518,8 +519,6 @@ impl GuildHandler {
                         ))
                         .is_err()
                     {
-                        worker.last_active_guild = Some(self.guild_id);
-
                         // broken worker, get a new one
                         self.worker_pool.return_worker(worker, true);
                         continue;
@@ -527,7 +526,6 @@ impl GuildHandler {
                 }
 
                 info!(tier = worker.priority_index, "claimed new worker");
-                worker.last_active_guild = Some(self.guild_id);
                 self.force_load_scripts_next = false;
                 self.current_worker = Some(worker);
                 break;
@@ -555,13 +553,9 @@ impl GuildHandler {
         self.scheduled_tasks_man.clear_next();
     }
 
-    fn should_send_scripts(&mut self, worker: &WorkerHandle) -> bool {
-        if !self.force_load_scripts_next {
-            if let Some(guild_id) = worker.last_active_guild {
-                if guild_id == self.guild_id {
-                    return false;
-                }
-            }
+    fn should_send_scripts(&mut self, wr: WorkerRetrieved) -> bool {
+        if !self.force_load_scripts_next && matches!(wr, WorkerRetrieved::SameGuild) {
+            return false;
         }
 
         true
