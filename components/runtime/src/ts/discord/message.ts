@@ -1,4 +1,5 @@
 import { User } from "./user";
+import { getCurrentGuildId } from "./dapi";
 
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
@@ -26,7 +27,7 @@ export class Message {
     editedTimestamp: number | null;
     embeds: Embed[];
     flags: MessageFlags | null;
-    guildId: string | null;
+    guildId: string;
     id: string;
     kind: MessageType;
     member: PartialMember | null;
@@ -56,7 +57,7 @@ export class Message {
         this.editedTimestamp = json.editedTimestamp;
         this.embeds = json.embeds;
         this.flags = json.flags;
-        this.guildId = json.guildId;
+        this.guildId = json.guildId ?? getCurrentGuildId();
         this.id = json.id;
         this.kind = json.kind;
         this.member = json.member;
