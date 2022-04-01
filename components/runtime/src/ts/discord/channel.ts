@@ -14,6 +14,7 @@ import type { INewsThread } from "../generated/internal/NewsThread";
 import type { ITextChannel } from "../generated/internal/TextChannel";
 import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
 import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
+import { Discord } from "../docs_index";
 
 export type GuildChannel =
     | CategoryChannel
@@ -85,6 +86,10 @@ export abstract class BaseChannel {
 
     isAnyThread(): this is (NewsThread | PrivateThread | PublicThread) {
         return this.isNewsThread() || this.isPrivateThread() || this.isPublicThread();
+    }
+
+    pins() {
+        return Discord.getPins(this.id);
     }
 }
 
