@@ -187,6 +187,17 @@ async function createChannel() { }
 async function editChannel() { }
 async function deleteChannel() { }
 
+// Pins 
+export async function getPins(channelId: string): Promise<Message[]> {
+    return (await OpWrappers.op_discord_get_channel_pins(channelId)).map(v => new Message(v));
+}
+export async function createPin(channelId: string, messageId: string): Promise<void> {
+    return OpWrappers.op_discord_create_pin(channelId, messageId);
+}
+export async function deletePin(channelId: string, messageId: string): Promise<void> {
+    return OpWrappers.op_discord_delete_pin(channelId, messageId);
+}
+
 // Invite functions
 async function getInvite() { }
 async function getInvites() { }

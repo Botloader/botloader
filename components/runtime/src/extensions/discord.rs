@@ -66,6 +66,10 @@ pub fn extension() -> Extension {
             // channels
             op_discord_get_channel::decl(),
             op_discord_get_channels::decl(),
+            // pins
+            op_discord_get_channel_pins::decl(),
+            op_discord_create_pin::decl(),
+            op_discord_delete_pin::decl(),
             // invites
             // members
             op_discord_remove_member::decl(),
@@ -828,6 +832,74 @@ pub async fn op_discord_get_channels(
 
     let channels = rt_ctx.bot_state.get_channels(rt_ctx.guild_id).await?;
     Ok(channels.into_iter().map(Into::into).collect())
+}
+
+// Pins
+#[op]
+pub async fn op_discord_get_channel_pins(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+) -> Result<Vec<Message>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // ensure the provided channel is on the guild
+    get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    let pins = rt_ctx
+        .discord_config
+        .client
+        .pins(channel_id)
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
+    Ok(pins.into_iter().map(Into::into).collect())
+}
+
+#[op]
+pub async fn op_discord_create_pin(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+    message_id: Id<MessageMarker>,
+) -> Result<(), AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // ensure the provided channel is on the guild
+    get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .create_pin(channel_id, message_id)
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
+
+    Ok(())
+}
+
+#[op]
+pub async fn op_discord_delete_pin(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+    message_id: Id<MessageMarker>,
+) -> Result<(), AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // ensure the provided channel is on the guild
+    get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .delete_pin(channel_id, message_id)
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
+
+    Ok(())
 }
 
 // Members

@@ -222,6 +222,29 @@ export namespace OpWrappers {
         );
     }
 
+    // Pins
+    export async function op_discord_get_channel_pins(channelId: string): Promise<Internal.IMessage[]> {
+        return await Deno.core.opAsync(
+            "op_discord_get_channel_pins",
+            channelId,
+        );
+    }
+
+    export async function op_discord_create_pin(channelId: string, messageId: string): Promise<void> {
+        return await Deno.core.opAsync(
+            "op_discord_create_pin",
+            channelId,
+            messageId,
+        );
+    }
+    export async function op_discord_delete_pin(channelId: string, messageId: string): Promise<void> {
+        return await Deno.core.opAsync(
+            "op_discord_delete_pin",
+            channelId,
+            messageId,
+        );
+    }
+
     // Members
     export async function getMembers(ids: string[]): Promise<(Internal.IMember | null)[]> {
         return await Deno.core.opAsync(

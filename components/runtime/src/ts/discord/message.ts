@@ -1,5 +1,5 @@
 import { User } from "./user";
-import { getCurrentGuildId } from "./dapi";
+import { createPin, deletePin, getCurrentGuildId } from "./dapi";
 
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
@@ -76,6 +76,14 @@ export class Message {
 
     hyperlink() {
         return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`
+    }
+
+    pin() {
+        return createPin(this.channelId, this.id);
+    }
+
+    unPin() {
+        return deletePin(this.channelId, this.id);
     }
 }
 
