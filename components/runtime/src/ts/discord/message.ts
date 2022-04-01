@@ -1,5 +1,5 @@
 import { User } from "./user";
-import { createPin, deletePin, getCurrentGuildId } from "./dapi";
+import { CreateMessageFields, createPin, deleteMessage, deletePin, editMessage, getCurrentGuildId } from "./dapi";
 
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
@@ -84,6 +84,14 @@ export class Message {
 
     unPin() {
         return deletePin(this.channelId, this.id);
+    }
+
+    delete() {
+        return deleteMessage(this.channelId, this.id);
+    }
+
+    edit(fields: CreateMessageFields) {
+        return editMessage(this.channelId, this.id, fields);
     }
 }
 
