@@ -14,7 +14,7 @@ import type { INewsThread } from "../generated/internal/NewsThread";
 import type { ITextChannel } from "../generated/internal/TextChannel";
 import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
 import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
-import { Discord } from "../docs_index";
+import { getPins } from "./dapi";
 
 export type GuildChannel =
     | CategoryChannel
@@ -89,7 +89,7 @@ export abstract class BaseChannel {
     }
 
     pins() {
-        return Discord.getPins(this.id);
+        return getPins(this.id);
     }
 }
 
