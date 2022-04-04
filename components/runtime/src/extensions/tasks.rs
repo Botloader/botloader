@@ -35,14 +35,20 @@ async fn op_bl_schedule_task(
     let t = chrono::Utc.timestamp(seconds, millis as u32 * 1_000_000);
 
     let data_serialized = serde_json::to_string(&opts.data)?;
-    if data_serialized.len() > 10_000 {
-        return Err(anyhow::anyhow!("data cannot be over 10KB"));
+    let limit_data_len = crate::limits::tasks_data_size(&state);
+    if data_serialized.len() as u64 > limit_data_len {
+        return Err(anyhow::anyhow!(
+            "data cannot be over {limit_data_len}bytes on your guild's plan"
+        ));
     }
 
     // TODO: make a more efficient check
     let current = rt_ctx.timer_store.get_task_count(rt_ctx.guild_id).await?;
-    if current > 100_000 {
-        return Err(anyhow::anyhow!("over 100k tasks scheduled"));
+    let limit_num_tasks = crate::limits::tasks_scheduled_count(&state);
+    if current > limit_num_tasks {
+        return Err(anyhow::anyhow!(
+            "max {limit_num_tasks} can be scheduled on this guild's plan"
+        ));
     }
 
     let res = rt_ctx

@@ -333,23 +333,20 @@ async fn check_validate_storage_usage(
 
     if do_check {
         info!("doing a storage check");
+        let limit = crate::limits::storage_total_size(&state_rc);
         let used_storage = ctx.bucket_store.guild_storage_usage_bytes(guild_id).await;
 
         let mut state = state_rc.borrow_mut();
         let storage_ctx = state.borrow_mut::<StorageState>();
         storage_ctx.doing_limit_check = false;
 
-        match used_storage {
-            Err(e) => Err(e.into()),
-            Ok(0...10_000_000) => {
-                storage_ctx.requests_until_limit_check = 10;
-                Ok(())
-            }
-            // hit the limit
-            _ => {
-                storage_ctx.hit_limit = true;
-                Err(anyhow!("hit storage limit, delete some entries"))
-            }
+        let used = used_storage?;
+        if used >= limit {
+            storage_ctx.hit_limit = true;
+            Err(anyhow!("hit storage limit, delete some entries"))
+        } else {
+            storage_ctx.requests_until_limit_check = 10;
+            Ok(())
         }
     } else {
         info!("waiting for result of storage check");

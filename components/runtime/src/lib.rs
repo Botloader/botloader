@@ -45,6 +45,8 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             op_get_current_guild_id::decl(),
         ])
         .state(move |state| {
+            let premium_tier = *ctx.premium_tier.read().unwrap();
+
             state.put(RuntimeContext {
                 guild_id: ctx.guild_id,
                 bot_state: ctx.bot_state.clone(),
@@ -53,6 +55,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
                 guild_logger: ctx.guild_logger.clone(),
                 script_http_client_proxy: ctx.script_http_client_proxy.clone(),
                 event_tx: ctx.event_tx.clone(),
+                premium_tier,
 
                 bucket_store: ctx.bucket_store.clone(),
                 config_store: ctx.config_store.clone(),
@@ -60,9 +63,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             });
             state.put(http_client.clone());
 
-            state.put(Rc::new(RateLimiters::new(
-                *ctx.premium_tier.read().unwrap(),
-            )));
+            state.put(Rc::new(RateLimiters::new(premium_tier)));
 
             Ok(())
         })
@@ -103,6 +104,7 @@ pub struct RuntimeContext {
     pub guild_logger: GuildLogger,
     pub script_http_client_proxy: Option<String>,
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
+    pub premium_tier: Option<PremiumSlotTier>,
 
     pub bucket_store: Arc<dyn BucketStore>,
     pub config_store: Arc<dyn ConfigStore>,
