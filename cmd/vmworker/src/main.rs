@@ -4,10 +4,8 @@ use clap::Parser;
 use common::DiscordConfig;
 use guild_logger::GuildLogger;
 use runtime::{CreateRuntimeContext, RuntimeEvent};
-use scheduler_worker_rpc::{
-    RunStateChangeReq, SchedulerMessage, ShutdownReason, UpdateRunStateRequest, WorkerMessage,
-};
-use stores::{config::PremiumSlotTier, postgres::Postgres};
+use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
+use stores::postgres::Postgres;
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
@@ -212,10 +210,7 @@ impl Worker {
                 Ok(ContinueState::Continue)
             }
             SchedulerMessage::Shutdown => Ok(ContinueState::Stop),
-            SchedulerMessage::UpdateRunState(seq, premium_tier, req) => {
-                self.apply_change_req(seq, premium_tier, req).await?;
-                Ok(ContinueState::Continue)
-            }
+            SchedulerMessage::CreateScriptsVm(data) => self.handle_create_scripts_vm(data).await,
         }
     }
     async fn handle_runtime_evt(&mut self, evt: RuntimeEvent) -> anyhow::Result<ContinueState> {
@@ -284,11 +279,9 @@ impl Worker {
         Ok(ContinueState::Continue)
     }
 
-    async fn apply_change_req(
+    async fn handle_create_scripts_vm(
         &mut self,
-        seq: u64,
-        premium_tier: Option<PremiumSlotTier>,
-        req: UpdateRunStateRequest,
+        req: CreateScriptsVmReq,
     ) -> anyhow::Result<ContinueState> {
         if let Some(current) = &self.current_state {
             if current.guild_id != req.guild_id {
@@ -296,69 +289,60 @@ impl Worker {
             }
         };
 
-        match req.guild_scripts {
-            RunStateChangeReq::Keep => {}
-            RunStateChangeReq::Stop => {
-                self.wait_shutdown_current_vm().await;
-            }
-            RunStateChangeReq::Start(scripts) => {
-                if let Some(current) = &self.current_state {
-                    let _ = current.scripts_vm.send(VmCommand::Restart(scripts));
-                    self.write_message(WorkerMessage::Ack(seq)).await?;
-                    return Ok(ContinueState::Continue);
-                }
-
-                let vmthread = VmThreadFuture::create();
-                let (vm_cmd_tx, vm_cmd_rx) = mpsc::unbounded_channel();
-                let (vm_evt_tx, vm_evt_rx) = mpsc::unbounded_channel();
-
-                let rt_ctx = CreateRuntimeContext {
-                    bot_state: self.broker_client.clone(),
-                    discord_config: self.discord_config.clone(),
-                    guild_id: req.guild_id,
-                    role: VmRole::Main,
-                    guild_logger: self.guild_logger.clone(),
-                    script_http_client_proxy: self.user_http_proxy.clone(),
-                    premium_tier,
-
-                    bucket_store: self.stores.clone(),
-                    config_store: self.stores.clone(),
-                    timer_store: self.stores.clone(),
-
-                    event_tx: self.runtime_evt_tx.clone(),
-                };
-
-                let _ = vmthread
-                    .send_cmd
-                    .send(VmThreadCommand::StartVM(CreateRt {
-                        guild_logger: self.guild_logger.clone(),
-                        rx: vm_cmd_rx,
-                        tx: vm_evt_tx,
-                        load_scripts: scripts,
-
-                        ctx: VmContext {
-                            // bot_state: self.inner.shared_state.bot_context.state.clone(),
-                            // dapi: self.inner.shared_state.bot_context.http.clone(),
-                            guild_id: req.guild_id,
-                            role: VmRole::Main,
-                        },
-                        extension_factory: Box::new(move || {
-                            runtime::create_extensions(rt_ctx.clone())
-                        }),
-                        extension_modules: runtime::jsmodules::create_module_map(),
-                    }))
-                    .map_err(|_| unreachable!());
-
-                self.current_state = Some(WorkerState {
-                    guild_id: req.guild_id,
-                    scripts_vm: vm_cmd_tx,
-                    evt_rx: vm_evt_rx,
-                    vm_thread: vmthread,
-                })
-            }
+        if let Some(current) = &self.current_state {
+            // we were already running a vm for this guild, issue a restart command with the new scripts instead
+            let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
+            self.write_message(WorkerMessage::Ack(req.seq)).await?;
+            return Ok(ContinueState::Continue);
         }
 
-        self.write_message(WorkerMessage::Ack(seq)).await?;
+        let vmthread = VmThreadFuture::create();
+        let (vm_cmd_tx, vm_cmd_rx) = mpsc::unbounded_channel();
+        let (vm_evt_tx, vm_evt_rx) = mpsc::unbounded_channel();
+
+        let rt_ctx = CreateRuntimeContext {
+            bot_state: self.broker_client.clone(),
+            discord_config: self.discord_config.clone(),
+            guild_id: req.guild_id,
+            role: VmRole::Main,
+            guild_logger: self.guild_logger.clone(),
+            script_http_client_proxy: self.user_http_proxy.clone(),
+            premium_tier: req.premium_tier,
+
+            bucket_store: self.stores.clone(),
+            config_store: self.stores.clone(),
+            timer_store: self.stores.clone(),
+
+            event_tx: self.runtime_evt_tx.clone(),
+        };
+
+        let _ = vmthread
+            .send_cmd
+            .send(VmThreadCommand::StartVM(CreateRt {
+                guild_logger: self.guild_logger.clone(),
+                rx: vm_cmd_rx,
+                tx: vm_evt_tx,
+                load_scripts: req.scripts,
+
+                ctx: VmContext {
+                    // bot_state: self.inner.shared_state.bot_context.state.clone(),
+                    // dapi: self.inner.shared_state.bot_context.http.clone(),
+                    guild_id: req.guild_id,
+                    role: VmRole::Main,
+                },
+                extension_factory: Box::new(move || runtime::create_extensions(rt_ctx.clone())),
+                extension_modules: runtime::jsmodules::create_module_map(),
+            }))
+            .map_err(|_| unreachable!());
+
+        self.current_state = Some(WorkerState {
+            guild_id: req.guild_id,
+            scripts_vm: vm_cmd_tx,
+            evt_rx: vm_evt_rx,
+            vm_thread: vmthread,
+        });
+
+        self.write_message(WorkerMessage::Ack(req.seq)).await?;
         Ok(ContinueState::Continue)
     }
 

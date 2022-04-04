@@ -11,8 +11,7 @@ use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::{GuildLogger, LogEntry};
 use runtime_models::internal::script::ScriptMeta;
 use scheduler_worker_rpc::{
-    MetricEvent, RunStateChangeReq, SchedulerMessage, UpdateRunStateRequest, VmDispatchEvent,
-    WorkerMessage,
+    CreateScriptsVmReq, MetricEvent, SchedulerMessage, VmDispatchEvent, WorkerMessage,
 };
 use std::future::Future;
 use stores::{
@@ -187,15 +186,12 @@ impl GuildHandler {
         if let Some(worker) = &self.current_worker {
             if worker
                 .tx
-                .send(SchedulerMessage::UpdateRunState(
-                    evt_id,
-                    self.premium_tier.option(),
-                    UpdateRunStateRequest {
-                        guild_id: self.guild_id,
-                        guild_scripts: RunStateChangeReq::Start(self.scripts.clone()),
-                        packs: RunStateChangeReq::Stop,
-                    },
-                ))
+                .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
+                    seq: evt_id,
+                    guild_id: self.guild_id,
+                    premium_tier: self.premium_tier.option(),
+                    scripts: self.scripts.clone(),
+                }))
                 .is_err()
             {
                 self.broken_worker().await;
@@ -520,15 +516,12 @@ impl GuildHandler {
 
                     if worker
                         .tx
-                        .send(SchedulerMessage::UpdateRunState(
-                            self.gen_id(),
-                            self.premium_tier.option(),
-                            UpdateRunStateRequest {
-                                guild_id: self.guild_id,
-                                guild_scripts: RunStateChangeReq::Start(self.scripts.clone()),
-                                packs: RunStateChangeReq::Stop,
-                            },
-                        ))
+                        .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
+                            seq: self.gen_id(),
+                            guild_id: self.guild_id,
+                            premium_tier: self.premium_tier.option(),
+                            scripts: self.scripts.clone(),
+                        }))
                         .is_err()
                     {
                         // broken worker, get a new one

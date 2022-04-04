@@ -8,8 +8,17 @@ use twilight_model::id::{marker::GuildMarker, Id};
 #[derive(Deserialize, Serialize)]
 pub enum SchedulerMessage {
     Dispatch(VmDispatchEvent),
-    UpdateRunState(u64, Option<PremiumSlotTier>, UpdateRunStateRequest),
+    /// stops the current vm and creates a new one to run the provided scripts
+    CreateScriptsVm(CreateScriptsVmReq),
     Shutdown,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct CreateScriptsVmReq {
+    pub seq: u64,
+    pub premium_tier: Option<PremiumSlotTier>,
+    pub guild_id: Id<GuildMarker>,
+    pub scripts: Vec<Script>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -30,20 +39,6 @@ pub enum WorkerMessage {
     GuildLog(guild_logger::LogEntry),
     Hello(u64),
     Metric(String, MetricEvent, HashMap<String, String>),
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct UpdateRunStateRequest {
-    pub guild_id: Id<GuildMarker>,
-    pub guild_scripts: RunStateChangeReq<Vec<Script>>,
-    pub packs: RunStateChangeReq<()>,
-}
-
-#[derive(Deserialize, Serialize)]
-pub enum RunStateChangeReq<T> {
-    Keep,
-    Stop,
-    Start(T),
 }
 
 #[derive(Deserialize, Serialize, Debug)]
