@@ -5,7 +5,7 @@ use deno_core::{op, Extension, OpState};
 use runtime_models::internal::tasks::{CreateScheduledTask, ScheduledTask};
 use vm::AnyError;
 
-use crate::{get_rt_ctx, RuntimeEvent};
+use crate::{get_rt_ctx, limits::RateLimiters, RuntimeEvent};
 
 pub fn extension() -> Extension {
     Extension::builder()
@@ -28,7 +28,7 @@ async fn op_bl_schedule_task(
     opts: CreateScheduledTask,
 ) -> Result<ScheduledTask, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
-    crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
+    RateLimiters::task_ops(&state).await;
 
     let seconds = (opts.execute_at.0 as f64 / 1000f64).floor() as i64;
     let millis = opts.execute_at.0 as i64 - (seconds * 1000);
@@ -65,7 +65,7 @@ async fn op_bl_schedule_task(
 #[op]
 async fn op_bl_del_task(state: Rc<RefCell<OpState>>, task_id: u64) -> Result<bool, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
-    crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
+    RateLimiters::task_ops(&state).await;
 
     let del = rt_ctx
         .timer_store
@@ -81,7 +81,7 @@ async fn op_bl_del_task_by_key(
     key: String,
 ) -> Result<bool, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
-    crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
+    RateLimiters::task_ops(&state).await;
 
     let del = rt_ctx
         .timer_store
@@ -95,7 +95,7 @@ async fn op_bl_del_task_by_key(
 async fn op_bl_del_all_tasks(state: Rc<RefCell<OpState>>, name: String) -> Result<u64, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
+    RateLimiters::task_ops(&state).await;
 
     let del = rt_ctx
         .timer_store
@@ -111,7 +111,7 @@ async fn op_bl_get_task(
 ) -> Result<Option<ScheduledTask>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
+    RateLimiters::task_ops(&state).await;
 
     Ok(rt_ctx
         .timer_store
@@ -127,7 +127,7 @@ async fn op_bl_get_task_by_key(
     key: String,
 ) -> Result<Option<ScheduledTask>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
-    crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
+    RateLimiters::task_ops(&state).await;
 
     Ok(rt_ctx
         .timer_store
@@ -143,7 +143,7 @@ async fn op_bl_get_all_tasks(
     after_id: u64,
 ) -> Result<Vec<ScheduledTask>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
-    crate::RateLimiters::ops_until_ready(state.clone(), crate::RatelimiterType::Tasks).await;
+    RateLimiters::task_ops(&state).await;
 
     Ok(rt_ctx
         .timer_store

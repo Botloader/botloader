@@ -16,8 +16,11 @@ use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 use vm::{vm::VmRole, AnyError, JsValue};
 
+use crate::limits::RateLimiters;
+
 pub mod extensions;
 pub mod jsmodules;
+pub mod limits;
 
 pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
     let mut http_client_builder = reqwest::ClientBuilder::new();
@@ -54,7 +57,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             });
             state.put(http_client.clone());
 
-            state.put(Rc::new(RateLimiters::new()));
+            state.put(Rc::new(RateLimiters::new(None)));
 
             Ok(())
         })
@@ -199,44 +202,6 @@ pub fn try_insert_resource_table<T: deno_core::Resource>(
     }
 
     Ok(table.add(v))
-}
-
-pub type RateLimiter = governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
-
-#[derive(Debug)]
-pub enum RatelimiterType {
-    UserHttp,
-    Tasks,
-}
-
-pub struct RateLimiters {
-    user_http: RateLimiter,
-    tasks: RateLimiter,
-}
-
-impl RateLimiters {
-    #[instrument(skip(op_state))]
-    async fn ops_until_ready(op_state: Rc<RefCell<OpState>>, typ: RatelimiterType) {
-        // is the block here needed? i honestly have no idea but better to be on the safe side i guess
-        let ratelimiters = { op_state.borrow().borrow::<Rc<RateLimiters>>().clone() };
-        ratelimiters.until_ready(typ).await
-    }
-}
-
-impl RateLimiters {
-    fn new() -> Self {
-        Self {
-            user_http: RateLimiter::direct(Quota::per_second(NonZeroU32::new(2).unwrap())),
-            tasks: RateLimiter::direct(Quota::per_second(NonZeroU32::new(2).unwrap())),
-        }
-    }
-
-    async fn until_ready(&self, typ: RatelimiterType) {
-        match typ {
-            RatelimiterType::UserHttp => self.user_http.until_ready().await,
-            RatelimiterType::Tasks => self.tasks.until_ready().await,
-        }
-    }
 }
 
 pub enum RuntimeEvent {

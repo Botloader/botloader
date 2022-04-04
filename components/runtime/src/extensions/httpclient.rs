@@ -17,6 +17,8 @@ use tracing::info;
 use url::Url;
 use vm::AnyError;
 
+use crate::limits::RateLimiters;
+
 pub fn extension() -> Extension {
     Extension::builder()
         .ops(vec![
@@ -43,7 +45,7 @@ pub async fn op_bl_http_request_send(
     state_rc: Rc<RefCell<OpState>>,
     args: ClientHttpRequest,
 ) -> Result<ClientHttpResponse, AnyError> {
-    crate::RateLimiters::ops_until_ready(state_rc.clone(), crate::RatelimiterType::UserHttp).await;
+    RateLimiters::user_http(&state_rc).await;
 
     // lookup the body stream resource
     let req_resource = if let Some(rid) = args.body_resource_id {
