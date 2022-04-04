@@ -122,8 +122,8 @@ impl GuildHandler {
     #[instrument(skip(self), fields(guild_id = self.guild_id.get()))]
     async fn run(mut self) {
         self.try_retry_load_scripts().await;
-        self.load_contribs().await;
         self.fetch_premium_tier().await;
+        self.load_contribs().await;
 
         while let Some(next) = self.next_event().await {
             match next {
@@ -189,6 +189,7 @@ impl GuildHandler {
                 .tx
                 .send(SchedulerMessage::UpdateRunState(
                     evt_id,
+                    self.premium_tier.option(),
                     UpdateRunStateRequest {
                         guild_id: self.guild_id,
                         guild_scripts: RunStateChangeReq::Start(self.scripts.clone()),
@@ -521,6 +522,7 @@ impl GuildHandler {
                         .tx
                         .send(SchedulerMessage::UpdateRunState(
                             self.gen_id(),
+                            self.premium_tier.option(),
                             UpdateRunStateRequest {
                                 guild_id: self.guild_id,
                                 guild_scripts: RunStateChangeReq::Start(self.scripts.clone()),

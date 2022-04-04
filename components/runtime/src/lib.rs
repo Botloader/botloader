@@ -9,7 +9,11 @@ use governor::{
 };
 use guild_logger::{GuildLogger, LogEntry};
 use runtime_models::internal::script::ScriptMeta;
-use stores::{bucketstore::BucketStore, config::ConfigStore, timers::TimerStore};
+use stores::{
+    bucketstore::BucketStore,
+    config::{ConfigStore, PremiumSlotTier},
+    timers::TimerStore,
+};
 use tokio::sync::mpsc;
 use tracing::{info, instrument};
 use twilight_model::id::marker::GuildMarker;
@@ -57,7 +61,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             });
             state.put(http_client.clone());
 
-            state.put(Rc::new(RateLimiters::new(None)));
+            state.put(Rc::new(RateLimiters::new(ctx.premium_tier)));
 
             Ok(())
         })
@@ -113,6 +117,7 @@ pub struct CreateRuntimeContext {
     pub guild_logger: GuildLogger,
     pub script_http_client_proxy: Option<String>,
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
+    pub premium_tier: Option<PremiumSlotTier>,
 
     pub bucket_store: Arc<dyn BucketStore>,
     pub config_store: Arc<dyn ConfigStore>,

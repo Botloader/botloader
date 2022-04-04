@@ -2,13 +2,13 @@ use std::collections::HashMap;
 
 use runtime_models::internal::script::ScriptMeta;
 use serde::{Deserialize, Serialize};
-use stores::config::Script;
+use stores::config::{PremiumSlotTier, Script};
 use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Deserialize, Serialize)]
 pub enum SchedulerMessage {
     Dispatch(VmDispatchEvent),
-    UpdateRunState(u64, UpdateRunStateRequest),
+    UpdateRunState(u64, Option<PremiumSlotTier>, UpdateRunStateRequest),
     Shutdown,
 }
 

@@ -7,7 +7,7 @@ use runtime::{CreateRuntimeContext, RuntimeEvent};
 use scheduler_worker_rpc::{
     RunStateChangeReq, SchedulerMessage, ShutdownReason, UpdateRunStateRequest, WorkerMessage,
 };
-use stores::postgres::Postgres;
+use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
@@ -212,8 +212,8 @@ impl Worker {
                 Ok(ContinueState::Continue)
             }
             SchedulerMessage::Shutdown => Ok(ContinueState::Stop),
-            SchedulerMessage::UpdateRunState(seq, req) => {
-                self.apply_change_req(seq, req).await?;
+            SchedulerMessage::UpdateRunState(seq, premium_tier, req) => {
+                self.apply_change_req(seq, premium_tier, req).await?;
                 Ok(ContinueState::Continue)
             }
         }
@@ -287,6 +287,7 @@ impl Worker {
     async fn apply_change_req(
         &mut self,
         seq: u64,
+        premium_tier: Option<PremiumSlotTier>,
         req: UpdateRunStateRequest,
     ) -> anyhow::Result<ContinueState> {
         if let Some(current) = &self.current_state {
@@ -318,6 +319,7 @@ impl Worker {
                     role: VmRole::Main,
                     guild_logger: self.guild_logger.clone(),
                     script_http_client_proxy: self.user_http_proxy.clone(),
+                    premium_tier,
 
                     bucket_store: self.stores.clone(),
                     config_store: self.stores.clone(),
