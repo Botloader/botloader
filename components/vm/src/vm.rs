@@ -121,9 +121,20 @@ impl Vm {
             wakeup_rx,
         };
 
+        rt.guild_logger.log(LogEntry::info(
+            rt.ctx.guild_id,
+            "starting fresh guild vm...".to_string(),
+        ));
+
         rt.emit_isolate_handle();
 
-        rt.restart(create_req.load_scripts).await;
+        for script in &create_req.load_scripts {
+            rt.compile_script(script.clone());
+        }
+
+        for script in create_req.load_scripts {
+            rt.run_script(script.id).await;
+        }
 
         rt.run().await;
     }
@@ -204,7 +215,7 @@ impl Vm {
         info!("running runtime");
         self.guild_logger.log(LogEntry::info(
             self.ctx.guild_id,
-            "starting guild vm".to_string(),
+            "guild vm started".to_string(),
         ));
 
         let mut completed = false;
