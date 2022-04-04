@@ -1,12 +1,7 @@
-use std::{cell::RefCell, num::NonZeroU32, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use common::DiscordConfig;
 use deno_core::{op, Extension, OpState, ResourceId, ResourceTable};
-use governor::{
-    clock::DefaultClock,
-    state::{InMemoryState, NotKeyed},
-    Quota,
-};
 use guild_logger::{GuildLogger, LogEntry};
 use runtime_models::internal::script::ScriptMeta;
 use stores::{
@@ -15,7 +10,7 @@ use stores::{
     timers::TimerStore,
 };
 use tokio::sync::mpsc;
-use tracing::{info, instrument};
+use tracing::info;
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 use vm::{vm::VmRole, AnyError, JsValue};
