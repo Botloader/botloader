@@ -1,14 +1,20 @@
 import { Storage } from "botloader";
 import { assertElapsed, sendScriptCompletion } from "lib"
 
-let store = script.createGuildStorageNumber("interval_2");
+let completed = script.createStorageVarNumber("interval_2_completed");
+let lastRun = script.createStorageVarNumber("interval_2_last");
 
 script.onInterval("test2", "* * * * *", async () => {
-    let lastRun = await store.get("last_run");
-    if (lastRun) {
-        assertElapsed(lastRun.value, 60000);
+    if (await completed.get()) {
+        return;
+    }
+
+    let lr = await lastRun.get()
+    if (lr) {
+        assertElapsed(lr.value, 60000);
+        await completed.set(1);
         sendScriptCompletion();
     } else {
-        await store.set("last_run", Date.now());
+        await lastRun.set(Date.now());
     }
 })
