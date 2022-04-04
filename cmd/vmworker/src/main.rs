@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use clap::Parser;
 use common::DiscordConfig;
 use guild_logger::GuildLogger;
 use runtime::{CreateRuntimeContext, RuntimeEvent};
 use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
-use stores::postgres::Postgres;
+use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
@@ -104,6 +104,7 @@ struct Worker {
     user_http_proxy: Option<String>,
     broker_client: dbrokerapi::state_client::Client,
 
+    premium_tier: Arc<RwLock<Option<PremiumSlotTier>>>,
     stores: Arc<Postgres>,
     current_state: Option<WorkerState>,
 }
@@ -131,6 +132,7 @@ impl Worker {
             user_http_proxy,
             broker_client,
             current_state: None,
+            premium_tier: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -289,6 +291,12 @@ impl Worker {
             }
         };
 
+        {
+            // update premium tier
+            let mut w = self.premium_tier.write().unwrap();
+            *w = req.premium_tier;
+        }
+
         if let Some(current) = &self.current_state {
             // we were already running a vm for this guild, issue a restart command with the new scripts instead
             let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
@@ -307,7 +315,7 @@ impl Worker {
             role: VmRole::Main,
             guild_logger: self.guild_logger.clone(),
             script_http_client_proxy: self.user_http_proxy.clone(),
-            premium_tier: req.premium_tier,
+            premium_tier: self.premium_tier.clone(),
 
             bucket_store: self.stores.clone(),
             config_store: self.stores.clone(),

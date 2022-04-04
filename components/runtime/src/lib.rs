@@ -1,4 +1,8 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 use common::DiscordConfig;
 use deno_core::{op, Extension, OpState, ResourceId, ResourceTable};
@@ -56,7 +60,9 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             });
             state.put(http_client.clone());
 
-            state.put(Rc::new(RateLimiters::new(ctx.premium_tier)));
+            state.put(Rc::new(RateLimiters::new(
+                *ctx.premium_tier.read().unwrap(),
+            )));
 
             Ok(())
         })
@@ -112,7 +118,7 @@ pub struct CreateRuntimeContext {
     pub guild_logger: GuildLogger,
     pub script_http_client_proxy: Option<String>,
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
-    pub premium_tier: Option<PremiumSlotTier>,
+    pub premium_tier: Arc<RwLock<Option<PremiumSlotTier>>>,
 
     pub bucket_store: Arc<dyn BucketStore>,
     pub config_store: Arc<dyn ConfigStore>,
