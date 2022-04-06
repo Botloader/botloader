@@ -2,11 +2,7 @@ use anyhow::anyhow;
 use deno_core::{error::custom_error, op, Extension, OpState};
 use futures::TryFutureExt;
 use runtime_models::{
-    discord::{
-        guild::Guild,
-        message::{MessageFlags, SendEmoji},
-        util::AuditLogExtras,
-    },
+    discord::{guild::Guild, message::SendEmoji, util::AuditLogExtras},
     internal::{
         interactions::InteractionCallback,
         member::{Ban, UpdateGuildMemberFields},
@@ -32,7 +28,6 @@ use twilight_http::{
     api_error::{ApiError, GeneralApiError},
     response::StatusCode,
 };
-use twilight_model::channel::message::MessageFlags as TwilightMessageFlags;
 use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
