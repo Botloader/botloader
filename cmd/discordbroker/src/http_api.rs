@@ -12,7 +12,7 @@ use axum::{
 use dbrokerapi::state_client::ConnectedGuildsResponse;
 use tracing::info;
 use twilight_cache_inmemory::{model::CachedGuild, InMemoryCache};
-use twilight_model::{channel::GuildChannel, guild::Role, id::Id};
+use twilight_model::{channel::Channel, guild::Role, id::Id};
 
 #[derive(Clone)]
 struct ReadyTracker {
@@ -69,13 +69,15 @@ async fn handle_get_guild(
 async fn handle_get_channel(
     Path((guild_id_u, channel_id_u)): Path<(u64, u64)>,
     Extension(discord_state): Extension<Arc<InMemoryCache>>,
-) -> Result<(StatusCode, Json<Option<GuildChannel>>), String> {
+) -> Result<(StatusCode, Json<Option<Channel>>), String> {
     let guild_id = Id::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
     let channel_id = Id::new_checked(channel_id_u).ok_or_else(|| String::from("bad channel_id"))?;
 
-    if let Some(c) = discord_state.guild_channel(channel_id) {
-        if c.guild_id() == guild_id {
-            return Ok((StatusCode::OK, Json(Some(c.value().resource().clone()))));
+    if let Some(c) = discord_state.channel(channel_id) {
+        if let Some(channel_guild_id) = c.guild_id {
+            if channel_guild_id == guild_id {
+                return Ok((StatusCode::OK, Json(Some(c.value().clone()))));
+            }
         }
     }
 
@@ -85,15 +87,14 @@ async fn handle_get_channel(
 async fn handle_get_channels(
     Path(guild_id_u): Path<u64>,
     Extension(discord_state): Extension<Arc<InMemoryCache>>,
-) -> Result<(StatusCode, Json<Option<Vec<GuildChannel>>>), String> {
+) -> Result<(StatusCode, Json<Option<Vec<Channel>>>), String> {
     let guild_id = Id::new_checked(guild_id_u).ok_or_else(|| String::from("bad guild_id"))?;
 
     if let Some(c) = discord_state.guild_channels(guild_id) {
-        let conv = c.value().iter().filter_map(|v| {
-            discord_state
-                .guild_channel(*v)
-                .map(|c| c.value().resource().clone())
-        });
+        let conv = c
+            .value()
+            .iter()
+            .filter_map(|v| discord_state.channel(*v).map(|c| c.value().clone()));
 
         return Ok((StatusCode::OK, Json(Some(conv.collect()))));
     }

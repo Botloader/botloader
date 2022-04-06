@@ -16,9 +16,9 @@ runtime-models = {path="../../components/runtime-models"}
 validation = {path="../../components/validation"}
 dbrokerapi = {path="../../components/dbrokerapi"}
 
-twilight-cache-inmemory = "0.9.1"
-twilight-http = {version = "0.9.1", features = ["tracing"]}
-twilight-model = "0.9.1"
+twilight-cache-inmemory = "0.10.1"
+twilight-http = {version = "0.10.1", features = ["tracing"]}
+twilight-model = "0.10.1"
 
 tracing = "0.1"
 

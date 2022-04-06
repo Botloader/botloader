@@ -9,6 +9,7 @@ pub enum ComponentType {
     ActionRow,
     Button,
     SelectMenu,
+    TextInput,
 }
 
 use twilight_model::application::component::ComponentType as TwilightComponentType;
@@ -18,6 +19,7 @@ impl From<TwilightComponentType> for ComponentType {
             TwilightComponentType::ActionRow => Self::ActionRow,
             TwilightComponentType::Button => Self::Button,
             TwilightComponentType::SelectMenu => Self::SelectMenu,
+            TwilightComponentType::TextInput => Self::TextInput,
         }
     }
 }
@@ -43,6 +45,7 @@ impl From<TwilightComponent> for Component {
             TwilightComponent::ActionRow(inner) => Self::ActionRow(inner.into()),
             TwilightComponent::Button(inner) => Self::Button(inner.into()),
             TwilightComponent::SelectMenu(inner) => Self::SelectMenu(inner.into()),
+            TwilightComponent::TextInput(_) => todo!(),
         }
     }
 }
@@ -247,4 +250,29 @@ impl From<ButtonStyle> for TwilightButtonStyle {
             ButtonStyle::Link => Self::Link,
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ITextInput",
+    export_to = "bindings/discord/ITextInput.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct TextInput {
+    pub custom_id: String,
+    pub label: String,
+    pub max_length: Option<u16>,
+    pub min_length: Option<u16>,
+    pub placeholder: Option<String>,
+    pub required: Option<bool>,
+    pub style: TextInputStyle,
+    pub value: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export, export_to = "bindings/discord/TextInputStyle.ts")]
+pub enum TextInputStyle {
+    Short,
+    Paragraph,
 }

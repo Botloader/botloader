@@ -89,18 +89,31 @@ pub enum InteractionResponse {
     // Autocomplete(Autocomplete),
 }
 
-impl From<InteractionResponse> for twilight_model::application::callback::InteractionResponse {
+impl From<InteractionResponse> for twilight_model::http::interaction::InteractionResponse {
     fn from(v: InteractionResponse) -> Self {
+        use twilight_model::http::interaction::InteractionResponseType as TwilightInteractionResponseType;
+
         match v {
-            InteractionResponse::Pong => Self::Pong,
-            InteractionResponse::ChannelMessageWithSource(src) => {
-                Self::ChannelMessageWithSource(src.into())
-            }
-            InteractionResponse::DeferredChannelMessageWithSource(src) => {
-                Self::DeferredChannelMessageWithSource(src.into())
-            }
-            InteractionResponse::DeferredUpdateMessage => Self::DeferredUpdateMessage,
-            InteractionResponse::UpdateMessage(src) => Self::UpdateMessage(src.into()),
+            InteractionResponse::Pong => Self {
+                kind: TwilightInteractionResponseType::Pong,
+                data: None,
+            },
+            InteractionResponse::ChannelMessageWithSource(src) => Self {
+                kind: TwilightInteractionResponseType::ChannelMessageWithSource,
+                data: Some(src.into()),
+            },
+            InteractionResponse::DeferredChannelMessageWithSource(src) => Self {
+                kind: TwilightInteractionResponseType::DeferredChannelMessageWithSource,
+                data: Some(src.into()),
+            },
+            InteractionResponse::DeferredUpdateMessage => Self {
+                kind: TwilightInteractionResponseType::DeferredUpdateMessage,
+                data: None,
+            },
+            InteractionResponse::UpdateMessage(src) => Self {
+                kind: TwilightInteractionResponseType::UpdateMessage,
+                data: Some(src.into()),
+            },
         }
     }
 }
@@ -114,7 +127,7 @@ pub struct InteractionCallbackData {
     pub flags: Option<MessageFlags>,
 }
 
-use twilight_model::application::callback::CallbackData as TwilightCallbackData;
+use twilight_model::http::interaction::InteractionResponseData as TwilightCallbackData;
 impl From<InteractionCallbackData> for TwilightCallbackData {
     fn from(v: InteractionCallbackData) -> Self {
         Self {
@@ -130,6 +143,11 @@ impl From<InteractionCallbackData> for TwilightCallbackData {
                 .map(|v| v.into_iter().map(Into::into).collect()),
             flags: v.flags.map(Into::into),
             tts: None,
+
+            attachments: None,
+            choices: None,
+            custom_id: None,
+            title: None,
         }
     }
 }

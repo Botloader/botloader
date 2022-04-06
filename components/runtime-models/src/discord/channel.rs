@@ -111,14 +111,7 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwrite>
 {
     fn from(v: twilight_model::channel::permission_overwrite::PermissionOverwrite) -> Self {
         Self {
-            id: match v.kind {
-                twilight_model::channel::permission_overwrite::PermissionOverwriteType::Member(
-                    id,
-                ) => id.to_string(),
-                twilight_model::channel::permission_overwrite::PermissionOverwriteType::Role(
-                    id,
-                ) => id.to_string(),
-            },
+            id: v.id.to_string(),
             allow_raw: v.allow.bits().to_string(),
             deny_raw: v.deny.bits().to_string(),
             kind: v.kind.into(),
@@ -139,10 +132,10 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwriteType
 {
     fn from(v: twilight_model::channel::permission_overwrite::PermissionOverwriteType) -> Self {
         match v {
-            twilight_model::channel::permission_overwrite::PermissionOverwriteType::Member(_) => {
+            twilight_model::channel::permission_overwrite::PermissionOverwriteType::Member => {
                 Self::Member
             }
-            twilight_model::channel::permission_overwrite::PermissionOverwriteType::Role(_) => {
+            twilight_model::channel::permission_overwrite::PermissionOverwriteType::Role => {
                 Self::Role
             }
         }

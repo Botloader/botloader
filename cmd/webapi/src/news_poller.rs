@@ -6,7 +6,7 @@ use std::{
 use serde::Serialize;
 use tracing::{error, info};
 use twilight_model::{
-    channel::GuildChannel,
+    channel::Channel,
     id::{
         marker::{ChannelMarker, GuildMarker, MessageMarker},
         Id,
@@ -16,7 +16,7 @@ use twilight_model::{
 pub struct NewsPoller {
     discord_http: Arc<twilight_http::Client>,
     follow_channels: Vec<Id<ChannelMarker>>,
-    guild_channels: Vec<GuildChannel>,
+    guild_channels: Vec<Channel>,
     items: Arc<RwLock<Arc<Vec<NewsItem>>>>,
 }
 
@@ -93,8 +93,8 @@ impl NewsPoller {
                 let channel = self
                     .guild_channels
                     .iter()
-                    .find(|cv| cv.id() == v.channel_id)
-                    .map(|cv| cv.name().to_owned())
+                    .find(|cv| cv.id == v.channel_id)
+                    .map(|cv| cv.name.as_deref().unwrap_or("").to_owned())
                     .unwrap_or_else(|| ToString::to_string(&v.channel_id));
 
                 NewsItem {

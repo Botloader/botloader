@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use deno_core::OpState;
 use twilight_model::{
-    channel::GuildChannel,
+    channel::Channel,
     id::{
         marker::{ChannelMarker, GenericMarker},
         Id,
@@ -25,7 +25,7 @@ pub(crate) async fn parse_get_guild_channel(
     state: &Rc<RefCell<OpState>>,
     rt_ctx: &RuntimeContext,
     channel_id_str: &str,
-) -> Result<GuildChannel, AnyError> {
+) -> Result<Channel, AnyError> {
     let channel_id = if let Some(channel_id) = Id::new_checked(channel_id_str.parse()?) {
         channel_id
     } else {
@@ -39,14 +39,14 @@ pub(crate) async fn get_guild_channel(
     state: &Rc<RefCell<OpState>>,
     rt_ctx: &RuntimeContext,
     channel_id: Id<ChannelMarker>,
-) -> Result<GuildChannel, AnyError> {
+) -> Result<Channel, AnyError> {
     match rt_ctx
         .bot_state
         .get_channel(rt_ctx.guild_id, channel_id)
         .await?
     {
         Some(c) => {
-            if c.guild_id() != Some(rt_ctx.guild_id) {
+            if !matches!(c.guild_id, Some(guild_id) if guild_id == rt_ctx.guild_id) {
                 Err(not_found_error(format!("channel `{channel_id} not found`")))
             } else {
                 Ok(c)
@@ -63,13 +63,8 @@ pub(crate) async fn get_guild_channel(
                 .model()
                 .await?;
 
-            let gc = match channel {
-                twilight_model::channel::Channel::Guild(gc) => gc,
-                _ => return Err(not_found_error(format!("channel `{channel_id} not found`"))),
-            };
-
-            if matches!(gc.guild_id(), Some(guild_id) if guild_id == rt_ctx.guild_id) {
-                Ok(gc)
+            if matches!(channel.guild_id, Some(guild_id) if guild_id == rt_ctx.guild_id) {
+                Ok(channel)
             } else {
                 Err(not_found_error(format!("channel `{channel_id} not found`")))
             }

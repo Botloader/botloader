@@ -32,6 +32,7 @@ use twilight_http::{
     api_error::{ApiError, GeneralApiError},
     response::StatusCode,
 };
+use twilight_model::channel::message::MessageFlags as TwilightMessageFlags;
 use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
@@ -219,7 +220,7 @@ pub async fn op_discord_get_message(
     Ok(rt_ctx
         .discord_config
         .client
-        .message(channel.id(), message_id)
+        .message(channel.id, message_id)
         .exec()
         .await
         .map_err(|err| handle_discord_error(&state, err))?
@@ -252,8 +253,8 @@ pub async fn op_discord_get_messages(
     let req = rt_ctx
         .discord_config
         .client
-        .channel_messages(channel.id())
-        .limit(limit as u64)?;
+        .channel_messages(channel.id)
+        .limit(limit as u16)?;
 
     let res = if let Some(before) = args.before {
         let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
@@ -311,7 +312,7 @@ pub async fn op_discord_create_message(
     let mut mc = rt_ctx
         .discord_config
         .client
-        .create_message(channel.id())
+        .create_message(channel.id)
         .embeds(&maybe_embeds)?
         .components(&components)?;
 
@@ -319,8 +320,9 @@ pub async fn op_discord_create_message(
         mc = mc.content(content)?
     }
 
-    if let Some(mentions) = args.fields.allowed_mentions {
-        mc = mc.allowed_mentions(mentions.into());
+    let mentions = args.fields.allowed_mentions.map(Into::into);
+    if mentions.is_some() {
+        mc = mc.allowed_mentions(mentions.as_ref());
     }
 
     Ok(mc
@@ -355,16 +357,17 @@ pub async fn op_discord_edit_message(
     let mut mc = rt_ctx
         .discord_config
         .client
-        .update_message(channel.id(), message_id.cast())
+        .update_message(channel.id, message_id.cast())
         .content(args.fields.content.as_deref())?
         .components(components.as_deref())?;
 
     if let Some(embeds) = &maybe_embeds {
-        mc = mc.embeds(embeds)?;
+        mc = mc.embeds(Some(embeds))?;
     }
 
-    if let Some(mentions) = args.fields.allowed_mentions {
-        mc = mc.allowed_mentions(mentions.into());
+    let mentions = args.fields.allowed_mentions.map(Into::into);
+    if mentions.is_some() {
+        mc = mc.allowed_mentions(mentions.as_ref());
     }
 
     Ok(mc
@@ -385,7 +388,7 @@ pub async fn op_discord_interaction_callback(
 
     let client = rt_ctx.discord_config.interaction_client();
     client
-        .interaction_callback(
+        .create_response(
             Id::from_str(&args.interaction_id)?,
             &args.ineraction_token,
             &args.data.into(),
@@ -406,7 +409,7 @@ pub async fn op_discord_interaction_get_original_response(
 
     let client = rt_ctx.discord_config.interaction_client();
     Ok(client
-        .get_interaction_original(&token)
+        .response(&token)
         .exec()
         .await
         .map_err(|err| handle_discord_error(&state, err))?
@@ -435,14 +438,15 @@ pub async fn op_discord_interaction_edit_original_response(
     let interaction_client = rt_ctx.discord_config.interaction_client();
 
     let mut mc = interaction_client
-        .update_interaction_original(&args.interaction_token)
+        .update_response(&args.interaction_token)
         .content(args.fields.content.as_deref())?
         .embeds(maybe_embeds.as_deref())?
         .components(components.as_deref())?
         .content(args.fields.content.as_deref())?;
 
-    if let Some(mentions) = args.fields.allowed_mentions {
-        mc = mc.allowed_mentions(mentions.into());
+    let mentions = args.fields.allowed_mentions.map(Into::into);
+    if mentions.is_some() {
+        mc = mc.allowed_mentions(mentions.as_ref());
     }
 
     Ok(mc
@@ -462,7 +466,7 @@ pub async fn op_discord_interaction_delete_original(
     let rt_ctx = get_rt_ctx(&state);
 
     let client = rt_ctx.discord_config.interaction_client();
-    client.delete_interaction_original(&token).exec().await?;
+    client.delete_response(&token).exec().await?;
     Ok(())
 }
 
@@ -476,7 +480,7 @@ pub async fn op_discord_interaction_get_followup_message(
 
     let client = rt_ctx.discord_config.interaction_client();
     Ok(client
-        .followup_message(&token, id)
+        .followup(&token, id)
         .exec()
         .await
         .map_err(|err| handle_discord_error(&state, err))?
@@ -511,18 +515,12 @@ pub async fn op_discord_interaction_followup_message(
     let interaction_client = rt_ctx.discord_config.interaction_client();
 
     let mut mc = interaction_client
-        .create_followup_message(&args.interaction_token)
+        .create_followup(&args.interaction_token)
         .embeds(&maybe_embeds)?
         .components(&components)?;
 
-    if matches!(
-        args.flags,
-        Some(MessageFlags {
-            ephemeral: Some(true),
-            ..
-        })
-    ) {
-        mc = mc.ephemeral(true);
+    if let Some(flags) = args.flags {
+        mc = mc.flags(flags.into());
     }
 
     if let Some(content) = &args.fields.content {
@@ -530,8 +528,8 @@ pub async fn op_discord_interaction_followup_message(
     }
 
     let mentions = args.fields.allowed_mentions.map(Into::into);
-    if let Some(mentions) = &mentions {
-        mc = mc.allowed_mentions(mentions);
+    if mentions.is_some() {
+        mc = mc.allowed_mentions(mentions.as_ref());
     }
 
     Ok(mc
@@ -564,14 +562,15 @@ pub async fn op_discord_interaction_edit_followup_message(
     let interaction_client = rt_ctx.discord_config.interaction_client();
 
     let mut mc = interaction_client
-        .update_followup_message(&args.interaction_token, message_id)
+        .update_followup(&args.interaction_token, message_id)
         .content(args.fields.content.as_deref())?
         .embeds(maybe_embeds.as_deref())?
         .components(components.as_deref())?
         .content(args.fields.content.as_deref())?;
 
-    if let Some(mentions) = args.fields.allowed_mentions {
-        mc = mc.allowed_mentions(mentions.into());
+    let mentions = args.fields.allowed_mentions.map(Into::into);
+    if mentions.is_some() {
+        mc = mc.allowed_mentions(mentions.as_ref());
     }
 
     mc.exec()
@@ -591,7 +590,7 @@ pub async fn op_discord_interaction_delete_followup_message(
 
     let client = rt_ctx.discord_config.interaction_client();
     client
-        .delete_followup_message(&token, id)
+        .delete_followup(&token, id)
         .exec()
         .await
         .map_err(|err| handle_discord_error(&state, err))?;
@@ -611,7 +610,7 @@ pub async fn op_discord_delete_message(
     rt_ctx
         .discord_config
         .client
-        .delete_message(channel.id(), message_id.cast())
+        .delete_message(channel.id, message_id.cast())
         .exec()
         .await
         .map_err(|err| handle_discord_error(&state, err))?;
@@ -637,7 +636,7 @@ pub async fn op_discord_bulk_delete_messages(
     rt_ctx
         .discord_config
         .client
-        .delete_messages(channel.id(), &message_ids)
+        .delete_messages(channel.id, &message_ids)
         .exec()
         .await
         .map_err(|err| handle_discord_error(&state, err))?;
@@ -757,7 +756,7 @@ pub async fn op_discord_get_reactions(
         req = req.after(parse_str_snowflake_id(after_str)?.cast())
     }
     if let Some(limit) = fields.limit {
-        req = req.limit(limit.into())?;
+        req = req.limit(limit as u16)?;
     }
 
     Ok(req
@@ -1055,7 +1054,7 @@ pub async fn op_discord_create_ban(
         .create_ban(rt_ctx.guild_id, user_id);
 
     if let Some(days) = extras.delete_message_days {
-        req = req.delete_message_days(days.into())?;
+        req = req.delete_message_days(days as u16)?;
     }
 
     if let Some(reason) = &extras.audit_log_reason {

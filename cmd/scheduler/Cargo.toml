@@ -29,5 +29,5 @@ anyhow = "1.0"
 cron = "0.9"
 metrics = "0.18"
 
-twilight-model = "0.9.1"
-twilight-http = {version = "0.9.1", features = ["tracing"]}
+twilight-model = "0.10.1"
+twilight-http = {version = "0.10.1", features = ["tracing"]}

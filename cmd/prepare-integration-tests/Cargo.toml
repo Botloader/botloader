@@ -9,7 +9,7 @@ edition = "2021"
 stores = {path="../../components/stores"}
 common = {path="../../components/common"}
 
-twilight-model = "0.9.1"
+twilight-model = "0.10.1"
 
 tracing = "0.1"
 tracing-log = "0.1"

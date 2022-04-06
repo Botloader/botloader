@@ -25,5 +25,5 @@ async-trait = "0.1"
 anyhow = "1.0"
 metrics = "0.18"
 
-twilight-model = "0.9.1"
-twilight-http = {version = "0.9.1", features = ["tracing"]}
+twilight-model = "0.10.1"
+twilight-http = {version = "0.10.1", features = ["tracing"]}

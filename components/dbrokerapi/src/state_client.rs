@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use twilight_model::id::marker::{ChannelMarker, GuildMarker, RoleMarker};
 use twilight_model::id::Id;
-use twilight_model::{channel::GuildChannel, guild::Role};
+use twilight_model::{channel::Channel, guild::Role};
 
 #[derive(Clone)]
 pub struct Client {
@@ -55,7 +55,7 @@ impl Client {
         &self,
         guild_id: Id<GuildMarker>,
         channel_id: Id<ChannelMarker>,
-    ) -> ApiResult<Option<GuildChannel>> {
+    ) -> ApiResult<Option<Channel>> {
         self.get(format!(
             "{}/guilds/{}/channels/{}",
             self.server_addr, guild_id, channel_id
@@ -63,7 +63,7 @@ impl Client {
         .await
     }
 
-    pub async fn get_channels(&self, guild_id: Id<GuildMarker>) -> ApiResult<Vec<GuildChannel>> {
+    pub async fn get_channels(&self, guild_id: Id<GuildMarker>) -> ApiResult<Vec<Channel>> {
         self.get(format!("{}/guilds/{}/channels", self.server_addr, guild_id))
             .await
             .map(|v| v.unwrap_or_default())

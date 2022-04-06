@@ -21,22 +21,29 @@ pub enum GuildChannel {
     Stage(VoiceChannel),
 }
 
-impl From<twilight_model::channel::GuildChannel> for GuildChannel {
-    fn from(v: twilight_model::channel::GuildChannel) -> Self {
-        match v {
-            twilight_model::channel::GuildChannel::Category(c) => Self::Category(c.into()),
-            twilight_model::channel::GuildChannel::NewsThread(ns) => {
-                Self::NewsThread(Box::new(ns.into()))
+impl From<twilight_model::channel::Channel> for GuildChannel {
+    fn from(v: twilight_model::channel::Channel) -> Self {
+        match v.kind {
+            twilight_model::channel::ChannelType::GuildCategory => Self::Category(v.into()),
+            twilight_model::channel::ChannelType::GuildNewsThread => {
+                Self::NewsThread(Box::new(v.into()))
             }
-            twilight_model::channel::GuildChannel::PrivateThread(c) => {
-                Self::PrivateThread(Box::new(c.into()))
+            twilight_model::channel::ChannelType::GuildPrivateThread => {
+                Self::PrivateThread(Box::new(v.into()))
             }
-            twilight_model::channel::GuildChannel::PublicThread(c) => {
-                Self::PublicThread(Box::new(c.into()))
+            twilight_model::channel::ChannelType::GuildPublicThread => {
+                Self::PublicThread(Box::new(v.into()))
             }
-            twilight_model::channel::GuildChannel::Text(c) => Self::Text(c.into()),
-            twilight_model::channel::GuildChannel::Voice(c) => Self::Voice(c.into()),
-            twilight_model::channel::GuildChannel::Stage(c) => Self::Stage(c.into()),
+
+            twilight_model::channel::ChannelType::GuildText
+            | twilight_model::channel::ChannelType::GuildNews
+            | twilight_model::channel::ChannelType::GuildStore => Self::Text(v.into()),
+
+            twilight_model::channel::ChannelType::GuildVoice => Self::Voice(v.into()),
+            twilight_model::channel::ChannelType::GuildStageVoice => Self::Stage(v.into()),
+
+            twilight_model::channel::ChannelType::Private => todo!(),
+            twilight_model::channel::ChannelType::Group => todo!(),
         }
     }
 }
@@ -59,20 +66,21 @@ pub struct VoiceChannel {
     pub video_quality_mode: Option<VideoQualityMode>,
 }
 
-impl From<twilight_model::channel::VoiceChannel> for VoiceChannel {
-    fn from(v: twilight_model::channel::VoiceChannel) -> Self {
+impl From<twilight_model::channel::Channel> for VoiceChannel {
+    fn from(v: twilight_model::channel::Channel) -> Self {
         Self {
-            bitrate: NotBigU64(v.bitrate),
+            bitrate: NotBigU64(v.bitrate.unwrap_or_default()),
             id: v.id.to_string(),
             kind: v.kind.into(),
-            name: v.name,
+            name: v.name.unwrap_or_default(),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             permission_overwrites: v
                 .permission_overwrites
+                .unwrap_or_default()
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            position: v.position,
+            position: v.position.unwrap_or_default(),
             rtc_region: v.rtc_region,
             user_limit: v.user_limit.map(NotBigU64),
             video_quality_mode: v.video_quality_mode.map(Into::into),
@@ -98,23 +106,24 @@ pub struct TextChannel {
     pub topic: Option<String>,
 }
 
-impl From<twilight_model::channel::TextChannel> for TextChannel {
-    fn from(v: twilight_model::channel::TextChannel) -> Self {
+impl From<twilight_model::channel::Channel> for TextChannel {
+    fn from(v: twilight_model::channel::Channel) -> Self {
         Self {
             id: v.id.to_string(),
             kind: v.kind.into(),
             last_pin_timestamp: v
                 .last_pin_timestamp
                 .map(|e| NotBigU64(e.as_micros() as u64 / 1000)),
-            name: v.name,
-            nsfw: v.nsfw,
+            name: v.name.unwrap_or_default(),
+            nsfw: v.nsfw.unwrap_or_default(),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             permission_overwrites: v
                 .permission_overwrites
+                .unwrap_or_default()
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            position: v.position,
+            position: v.position.unwrap_or_default(),
             rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
             topic: v.topic,
         }
@@ -140,8 +149,8 @@ pub struct PublicThread {
     pub thread_metadata: ThreadMetadata,
 }
 
-impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
-    fn from(v: twilight_model::channel::thread::PublicThread) -> Self {
+impl From<twilight_model::channel::Channel> for PublicThread {
+    fn from(v: twilight_model::channel::Channel) -> Self {
         Self {
             default_auto_archive_duration_minutes: v
                 .default_auto_archive_duration
@@ -149,13 +158,13 @@ impl From<twilight_model::channel::thread::PublicThread> for PublicThread {
             id: v.id.to_string(),
             kind: v.kind.into(),
             member: v.member.map(Into::into),
-            member_count: v.member_count,
-            message_count: v.message_count,
-            name: v.name,
+            member_count: v.member_count.unwrap_or_default(),
+            message_count: v.message_count.unwrap_or_default(),
+            name: v.name.unwrap_or_default(),
             owner_id: v.owner_id.as_ref().map(ToString::to_string),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
-            thread_metadata: v.thread_metadata.into(),
+            thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
         }
     }
 }
@@ -181,8 +190,8 @@ pub struct PrivateThread {
     pub thread_metadata: ThreadMetadata,
 }
 
-impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
-    fn from(v: twilight_model::channel::thread::PrivateThread) -> Self {
+impl From<twilight_model::channel::Channel> for PrivateThread {
+    fn from(v: twilight_model::channel::Channel) -> Self {
         Self {
             default_auto_archive_duration_minutes: v
                 .default_auto_archive_duration
@@ -190,15 +199,16 @@ impl From<twilight_model::channel::thread::PrivateThread> for PrivateThread {
             id: v.id.to_string(),
             kind: v.kind.into(),
             member: v.member.map(Into::into),
-            member_count: v.member_count,
-            message_count: v.message_count,
-            name: v.name,
+            member_count: v.member_count.unwrap_or_default(),
+            message_count: v.message_count.unwrap_or_default(),
+            name: v.name.unwrap_or_default(),
             owner_id: v.owner_id.as_ref().map(ToString::to_string),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
-            thread_metadata: v.thread_metadata.into(),
+            thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
             permission_overwrites: v
                 .permission_overwrites
+                .unwrap_or_default()
                 .into_iter()
                 .map(Into::into)
                 .collect(),
@@ -226,8 +236,8 @@ pub struct NewsThread {
     pub thread_metadata: ThreadMetadata,
 }
 
-impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
-    fn from(v: twilight_model::channel::thread::NewsThread) -> Self {
+impl From<twilight_model::channel::Channel> for NewsThread {
+    fn from(v: twilight_model::channel::Channel) -> Self {
         Self {
             default_auto_archive_duration_minutes: v
                 .default_auto_archive_duration
@@ -235,13 +245,13 @@ impl From<twilight_model::channel::thread::NewsThread> for NewsThread {
             id: v.id.to_string(),
             kind: v.kind.into(),
             member: v.member.map(Into::into),
-            member_count: v.member_count,
-            message_count: v.message_count,
-            name: v.name,
+            member_count: v.member_count.unwrap_or_default(),
+            message_count: v.message_count.unwrap_or_default(),
+            name: v.name.unwrap_or_default(),
             owner_id: v.owner_id.as_ref().map(ToString::to_string),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
-            thread_metadata: v.thread_metadata.into(),
+            thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
         }
     }
 }
@@ -308,18 +318,30 @@ pub struct CategoryChannel {
     pub position: i64,
 }
 
-impl From<twilight_model::channel::CategoryChannel> for CategoryChannel {
-    fn from(v: twilight_model::channel::CategoryChannel) -> Self {
+impl From<twilight_model::channel::Channel> for CategoryChannel {
+    fn from(v: twilight_model::channel::Channel) -> Self {
         Self {
             kind: v.kind.into(),
             id: v.id.to_string(),
-            name: v.name,
-            position: v.position,
+            name: v.name.unwrap_or_default(),
+            position: v.position.unwrap_or_default(),
             permission_overwrites: v
                 .permission_overwrites
+                .unwrap_or_default()
                 .into_iter()
                 .map(Into::into)
                 .collect(),
         }
+    }
+}
+
+fn empty_thread_meta() -> twilight_model::channel::thread::ThreadMetadata {
+    twilight_model::channel::thread::ThreadMetadata {
+        archived: false,
+        auto_archive_duration: 60u16.into(),
+        archive_timestamp: twilight_model::datetime::Timestamp::from_secs(0).unwrap(),
+        create_timestamp: None,
+        invitable: None,
+        locked: false,
     }
 }
