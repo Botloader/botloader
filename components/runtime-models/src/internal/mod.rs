@@ -8,6 +8,7 @@ pub mod interactions;
 pub mod member;
 pub mod messages;
 pub mod misc_op;
+pub mod modal_interaction;
 pub mod script;
 pub mod storage;
 pub mod tasks;
