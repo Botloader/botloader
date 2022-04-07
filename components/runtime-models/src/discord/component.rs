@@ -36,6 +36,7 @@ pub enum Component {
     ActionRow(ActionRow),
     Button(Button),
     SelectMenu(SelectMenu),
+    TextInput(TextInput),
 }
 
 use twilight_model::application::component::Component as TwilightComponent;
@@ -45,7 +46,7 @@ impl From<TwilightComponent> for Component {
             TwilightComponent::ActionRow(inner) => Self::ActionRow(inner.into()),
             TwilightComponent::Button(inner) => Self::Button(inner.into()),
             TwilightComponent::SelectMenu(inner) => Self::SelectMenu(inner.into()),
-            TwilightComponent::TextInput(_) => todo!(),
+            TwilightComponent::TextInput(inner) => Self::TextInput(inner.into()),
         }
     }
 }
@@ -55,6 +56,7 @@ impl From<Component> for TwilightComponent {
             Component::ActionRow(inner) => Self::ActionRow(inner.into()),
             Component::Button(inner) => Self::Button(inner.into()),
             Component::SelectMenu(inner) => Self::SelectMenu(inner.into()),
+            Component::TextInput(inner) => Self::TextInput(inner.into()),
         }
     }
 }
@@ -275,4 +277,54 @@ pub struct TextInput {
 pub enum TextInputStyle {
     Short,
     Paragraph,
+}
+
+use twilight_model::application::component::TextInput as TwilightTextInput;
+impl From<TwilightTextInput> for TextInput {
+    fn from(v: TwilightTextInput) -> Self {
+        Self {
+            custom_id: v.custom_id,
+            label: v.label,
+            max_length: v.max_length,
+            min_length: v.min_length,
+            placeholder: v.placeholder,
+            required: v.required,
+            style: v.style.into(),
+            value: v.value,
+        }
+    }
+}
+
+impl From<TextInput> for TwilightTextInput {
+    fn from(v: TextInput) -> Self {
+        Self {
+            custom_id: v.custom_id,
+            label: v.label,
+            max_length: v.max_length,
+            min_length: v.min_length,
+            placeholder: v.placeholder,
+            required: v.required,
+            style: v.style.into(),
+            value: v.value,
+        }
+    }
+}
+
+use twilight_model::application::component::text_input::TextInputStyle as TwilightTextInputStyle;
+impl From<TwilightTextInputStyle> for TextInputStyle {
+    fn from(v: TwilightTextInputStyle) -> Self {
+        match v {
+            TwilightTextInputStyle::Short => Self::Short,
+            TwilightTextInputStyle::Paragraph => Self::Paragraph,
+        }
+    }
+}
+
+impl From<TextInputStyle> for TwilightTextInputStyle {
+    fn from(v: TextInputStyle) -> Self {
+        match v {
+            TextInputStyle::Short => Self::Short,
+            TextInputStyle::Paragraph => Self::Paragraph,
+        }
+    }
 }
