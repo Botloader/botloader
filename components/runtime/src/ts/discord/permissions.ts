@@ -1,5 +1,9 @@
 export type PermissionResolvable = (string | number | bigint)[];
 
+/**
+ * A utility class for interacting with Discord server permissions.
+ * This is essentially a wrapper around BigInt.
+ */
 export class Permissions {
     static CreateInstantInvite      = 1n << 0n;
     static KickMembers              = 1n << 1n;
@@ -49,12 +53,18 @@ export class Permissions {
         this.value = Permissions.resolve(...data);
     }
 
+    /**
+     * @returns All the Discord permissions as a single bit.
+     */
     static get all(): bigint {
         return Object
             .entries(this)
             .reduce<bigint>((a, b) => a | b[1], 0n);
     }
 
+    /**
+     * @returns An object containing all Discord permissions.
+     */
     static entries(): { [key: string]: bigint } {
         return Object
             .entries<bigint>(this as any)
@@ -64,6 +74,11 @@ export class Permissions {
             }, {});
     }
 
+    /**
+     * A static method for resolving permissions from strings, numbers and bigints.
+     * @param data The data to resolve permissions from.
+     * @returns The resolved bits.
+     */
     static resolve(...data: PermissionResolvable): bigint {
         let result = 0n;
         const entries = this.entries();
@@ -77,6 +92,10 @@ export class Permissions {
         return result;
     }
 
+    /**
+     * @param other The other permissions to intersect.
+     * @returns An intersection of the permissions from both instances.
+     */
     intersect(other: Permissions | PermissionResolvable): { [key: string]: bigint } {
         const perms = other instanceof Permissions ? other : new Permissions(...other);
         return Object
@@ -88,6 +107,10 @@ export class Permissions {
             }, {});
     }
 
+    /**
+     * @param perms The permissions to check for.
+     * @returns True if the current value has any of the given permissions.
+     */
     hasAny(...perms: PermissionResolvable): boolean {
         for (let p of perms) {
             const result = Permissions.resolve(p);
@@ -96,6 +119,10 @@ export class Permissions {
         return false;
     }
 
+    /**
+     * @param perms The permissions to check for.
+     * @returns True if the current value has all of the given permissions.
+     */
     hasAll(...perms: PermissionResolvable): boolean {
         for (let p of perms) {
             const result = Permissions.resolve(p);
@@ -104,16 +131,29 @@ export class Permissions {
         return true;
     }
 
+    /**
+     * Adds the given permissions to the current value.
+     * @param perms The permissions to add.
+     * @returns The resulting permissions.
+     */
     add(...perms: PermissionResolvable): bigint {
         this.value |= Permissions.resolve(...perms);
         return this.value;
     }
 
+    /**
+     * Removes the given permissions from the current value.
+     * @param perms The permissions to remove.
+     * @returns The resulting permissions.
+     */
     remove(...perms: PermissionResolvable): bigint {
         this.value &= ~Permissions.resolve(...perms);
         return this.value;
     }
 
+    /**
+     * @returns An object containing all the permissions the current value has.
+     */
     serialize(): { [key: string]: bigint } {
         return Object
             .entries(Permissions.entries())
@@ -124,10 +164,16 @@ export class Permissions {
             }, {});
     }
 
+    /**
+     * @returns The current permissions value as an array of strings.
+     */
     toArray(): string[] {
         return Object.keys(this.serialize());
     }
 
+    /**
+     * @returns The string value of the permissions.
+     */
     toString(): string {
         return this.value.toString();
     }
