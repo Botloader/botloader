@@ -6,11 +6,21 @@ export interface SnowflakeData {
     increment:  bigint;
 }
 
+/**
+ * A utility class for constructing and deconstructing Discord IDs,
+ * also known as snowflakes.
+ */
 export class Snowflake {
     static readonly EPOCH = 1420070400000n;
 
     private constructor() {}
 
+    /**
+     * Constructs a unique Discord snowflake.
+     * @see {@link SnowflakeData}
+     * @param [options] Options to apply to the snowflake.
+     * @returns The constucted snowflake.
+     */
     static construct(options: Partial<SnowflakeData> = {}): bigint {
         const timestamp = BigInt(options?.timestamp ?? Date.now());
         const increment = options.increment
@@ -25,6 +35,12 @@ export class Snowflake {
             | increment;
     }
 
+    /**
+     * Deconstructs a snowflake into its components.
+     * @see {@link SnowflakeData}
+     * @param id The snowflake to deconstruct.
+     * @returns The deconstructed snowflake.
+     */
     static deconstruct(id: string | bigint): SnowflakeData {
         id = BigInt(id);
         return {
