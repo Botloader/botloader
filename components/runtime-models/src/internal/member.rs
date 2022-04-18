@@ -63,10 +63,8 @@ impl From<twilight_model::guild::Member> for Member {
                 .premium_since
                 .map(|v| NotBigU64(v.as_micros() as u64 / 1000)),
             roles: v.roles.iter().map(ToString::to_string).collect(),
-            communication_disabled_until: match v.communication_disabled_until {
-                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
-                None => None,
-            },
+            communication_disabled_until: v.communication_disabled_until
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             user: v.user.into(),
         }
     }
@@ -84,10 +82,8 @@ impl Member {
                 .premium_since()
                 .map(|v| NotBigU64(v.as_micros() as u64 / 1000)),
             roles: member.roles().iter().map(ToString::to_string).collect(),
-            communication_disabled_until: match member.communication_disabled_until() {
-                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
-                None => None,
-            },
+            communication_disabled_until: member.communication_disabled_until()
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             pending: false,
         }
     }
@@ -100,10 +96,8 @@ impl Member {
                 .premium_since
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             roles: partial.roles.iter().map(ToString::to_string).collect(),
-            communication_disabled_until: match partial.communication_disabled_until {
-                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
-                None => None,
-            },
+            communication_disabled_until: partial.communication_disabled_until
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             user: partial.user.unwrap().into(),
             deaf: partial.deaf,
             mute: partial.mute,
@@ -127,10 +121,8 @@ impl From<twilight_model::gateway::payload::incoming::MemberUpdate> for Member {
                 .premium_since
                 .map(|v| NotBigU64(v.as_micros() as u64 / 1000)),
             roles: v.roles.iter().map(ToString::to_string).collect(),
-            communication_disabled_until: match v.communication_disabled_until {
-                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
-                None => None,
-            },
+            communication_disabled_until: v.communication_disabled_until
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             user: v.user.into(),
         }
     }
