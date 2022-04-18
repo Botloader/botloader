@@ -8,5 +8,6 @@ export interface IMember {
   pending: boolean;
   premiumSince: number | null;
   roles: Array<string>;
+  communicationDisabledUntil: number | null;
   user: IUser;
 }

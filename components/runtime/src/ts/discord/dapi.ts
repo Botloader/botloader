@@ -251,10 +251,19 @@ export interface UpdateGuildMemberFields {
     nick?: string | null;
 
     roles?: string[];
+
+    /**
+     * Updates the member's timeout duration, set to null to remove it.
+     */
+    communicationDisabledUntil: Date | null;
 }
 
 export async function editMember(userId: string, fields: UpdateGuildMemberFields): Promise<Member> {
     return new Member(await OpWrappers.updateMember(userId, fields));
+}
+
+export async function setMemberTimeout(userId: string, time: Date | null): Promise<Member> {
+    return await editMember(userId, { communicationDisabledUntil: time });
 }
 
 export async function addMemberRole(userId: string, roleId: string): Promise<void> {
