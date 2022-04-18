@@ -29,6 +29,10 @@ pub struct UpdateGuildMemberFields {
     #[ts(optional)]
     #[ts(type = "string[]")]
     pub roles: Option<Vec<Id<RoleMarker>>>,
+
+    #[ts(optional)]
+    #[ts(type = "number|null")]
+    pub communication_disabled_until: Option<NotBigU64>,
 }
 
 #[derive(Clone, Debug, Serialize, TS)]
@@ -43,6 +47,7 @@ pub struct Member {
     pub pending: bool,
     pub premium_since: Option<NotBigU64>,
     pub roles: Vec<String>,
+    pub communication_disabled_until: Option<NotBigU64>,
     pub user: User,
 }
 
@@ -58,6 +63,10 @@ impl From<twilight_model::guild::Member> for Member {
                 .premium_since
                 .map(|v| NotBigU64(v.as_micros() as u64 / 1000)),
             roles: v.roles.iter().map(ToString::to_string).collect(),
+            communication_disabled_until: match v.communication_disabled_until {
+                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
+                None => None,
+            },
             user: v.user.into(),
         }
     }
@@ -75,6 +84,10 @@ impl Member {
                 .premium_since()
                 .map(|v| NotBigU64(v.as_micros() as u64 / 1000)),
             roles: member.roles().iter().map(ToString::to_string).collect(),
+            communication_disabled_until: match member.communication_disabled_until() {
+                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
+                None => None,
+            },
             pending: false,
         }
     }
@@ -87,6 +100,10 @@ impl Member {
                 .premium_since
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             roles: partial.roles.iter().map(ToString::to_string).collect(),
+            communication_disabled_until: match partial.communication_disabled_until {
+                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
+                None => None,
+            },
             user: partial.user.unwrap().into(),
             deaf: partial.deaf,
             mute: partial.mute,
