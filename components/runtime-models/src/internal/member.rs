@@ -127,6 +127,10 @@ impl From<twilight_model::gateway::payload::incoming::MemberUpdate> for Member {
                 .premium_since
                 .map(|v| NotBigU64(v.as_micros() as u64 / 1000)),
             roles: v.roles.iter().map(ToString::to_string).collect(),
+            communication_disabled_until: match v.communication_disabled_until {
+                Some(ts) => Some(NotBigU64(ts.as_micros() as u64 / 1000)),
+                None => None,
+            },
             user: v.user.into(),
         }
     }
