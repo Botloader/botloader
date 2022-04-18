@@ -1,5 +1,49 @@
 export type PermissionResolvable = (string | number | bigint)[];
 
+const Flags: [string, bigint][] = [
+    ['CreateInstantInvite',       1n << 0n],
+    ['KickMembers',               1n << 1n],
+    ['BanMembers',                1n << 2n],
+    ['Administrator',             1n << 3n],
+    ['ManageChannels',            1n << 4n],
+    ['ManageGuild',               1n << 5n],
+    ['AddReactions',              1n << 6n],
+    ['ViewAuditLog',              1n << 7n],
+    ['PrioritySpeaker',           1n << 8n],
+    ['Stream',                    1n << 9n],
+    ['ViewChannel',               1n << 10n],
+    ['SendMessages',              1n << 11n],
+    ['SendTtsMessages',           1n << 12n],
+    ['ManageMessages',            1n << 13n],
+    ['EmbedLinks',                1n << 14n],
+    ['AttachFiles',               1n << 15n],
+    ['ReadMessageHistory',        1n << 16n],
+    ['MentionEveryone',           1n << 17n],
+    ['UseExternalEmojis',         1n << 18n],
+    ['ViewGuildInsights',         1n << 19n],
+    ['Connect',                   1n << 20n],
+    ['Speak',                     1n << 21n],
+    ['MuteMembers',               1n << 22n],
+    ['DeafenMembers',             1n << 23n],
+    ['MoveMembers',               1n << 24n],
+    ['UseVAD',                    1n << 25n],
+    ['ChangeNickname',            1n << 26n],
+    ['ManageNicknames',           1n << 27n],
+    ['ManageRoles',               1n << 28n],
+    ['ManageWebhooks',            1n << 29n],
+    ['ManageEmojisAndStickers',   1n << 30n],
+    ['UseApplicationCommands',    1n << 31n],
+    ['RequestToSpeak',            1n << 32n],
+    ['ManageEvents',              1n << 33n],
+    ['ManageThreads',             1n << 34n],
+    ['CreatePublicThreads',       1n << 35n],
+    ['CreatePrivateThreads',      1n << 36n],
+    ['UseExternalStickers',       1n << 37n],
+    ['SendMessagesInThreads',     1n << 38n],
+    ['UseEmbeddedActivities',     1n << 39n],
+    ['ModerateMembers',           1n << 40n]
+]
+
 /**
  * A utility class for interacting with Discord server permissions.
  * This is essentially a wrapper around BigInt.
@@ -57,21 +101,17 @@ export class Permissions {
      * @returns All the Discord permissions as a single bit.
      */
     static get all(): bigint {
-        return Object
-            .entries(this)
-            .reduce<bigint>((a, b) => a | b[1], 0n);
+        return Flags.reduce((a, b) => a | b[1], 0n);
     }
 
     /**
      * @returns An object containing all Discord permissions.
      */
     static entries(): { [key: string]: bigint } {
-        return Object
-            .entries<bigint>(this as any)
-            .reduce<{ [key: string]: bigint }>((a, b) => {
-                a[b[0]] = b[1];
-                return a;
-            }, {});
+        return Flags.reduce<{ [key: string]: bigint }>((a, b) => {
+            a[b[0]] = b[1];
+            return a;
+        }, {});
     }
 
     /**
@@ -90,21 +130,6 @@ export class Permissions {
             }
         }
         return result;
-    }
-
-    /**
-     * @param other The other permissions to intersect.
-     * @returns An intersection of the permissions from both instances.
-     */
-    intersect(other: Permissions | PermissionResolvable): { [key: string]: bigint } {
-        const perms = other instanceof Permissions ? other : new Permissions(...other);
-        return Object
-            .entries(this.serialize())
-            .filter(([k,]) => perms.hasAny(k))
-            .reduce<{ [key: string]: bigint }>((a, b) => {
-                a[b[0]] = b[1];
-                return a;
-            }, {});
     }
 
     /**
@@ -155,8 +180,7 @@ export class Permissions {
      * @returns An object containing all the permissions the current value has.
      */
     serialize(): { [key: string]: bigint } {
-        return Object
-            .entries(Permissions.entries())
+        return Flags
             .filter(p => this.hasAny(p[1]))
             .reduce<{ [key: string]: bigint }>((a, b) => {
                 a[b[0]] = b[1];
@@ -168,7 +192,9 @@ export class Permissions {
      * @returns The current permissions value as an array of strings.
      */
     toArray(): string[] {
-        return Object.keys(this.serialize());
+        return Flags
+            .filter(f => this.hasAny(f[1]))
+            .map(f => f[0]);
     }
 
     /**
