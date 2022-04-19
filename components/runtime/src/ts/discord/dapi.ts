@@ -255,7 +255,7 @@ export interface UpdateGuildMemberFields {
     /**
      * Updates the member's timeout duration, set to null to remove it.
      */
-    communicationDisabledUntil: number | null;
+    communicationDisabledUntil?: number | null;
 }
 
 export async function editMember(userId: string, fields: UpdateGuildMemberFields): Promise<Member> {
