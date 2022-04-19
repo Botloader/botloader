@@ -32,7 +32,8 @@ pub struct UpdateGuildMemberFields {
 
     #[ts(optional)]
     #[ts(type = "number|null")]
-    pub communication_disabled_until: Option<NotBigU64>,
+    #[serde(deserialize_with = "crate::deserialize_optional_field")]
+    pub communication_disabled_until: Option<Option<NotBigU64>>,
 }
 
 #[derive(Clone, Debug, Serialize, TS)]
