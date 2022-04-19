@@ -132,6 +132,7 @@ export class Permissions {
                     } else {
                         throw new PermissionsError(`Unknown permission '${i}'`);
                     }
+                    break;
                 case 'number': result |= BigInt(i); break;
                 default: result |= i; break;
             }
