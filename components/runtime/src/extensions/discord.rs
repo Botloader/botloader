@@ -1025,6 +1025,10 @@ pub async fn op_discord_update_member(
         builder = builder.roles(roles);
     }
 
+    if let Some(ts) = &fields.communication_disabled_until {
+        builder = builder.communication_disabled_until(ts);
+    }
+
     let ret = builder
         .exec()
         .await
