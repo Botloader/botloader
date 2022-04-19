@@ -1,3 +1,5 @@
+import { PermissionsError } from './error';
+
 export type PermissionResolvable = (string | number | bigint)[];
 
 const Flags: [string, bigint][] = [
@@ -100,7 +102,7 @@ export class Permissions {
     /**
      * @returns All the Discord permissions as a single bit.
      */
-    static get all(): bigint {
+    static get rawAll(): bigint {
         return Flags.reduce((a, b) => a | b[1], 0n);
     }
 
@@ -124,7 +126,12 @@ export class Permissions {
         const entries = this.entries();
         for (let i of data) {
             switch (typeof i) {
-                case 'string': if (i in entries) result |= entries[i]; break;
+                case 'string':
+                    if (entries[i] !== undefined) {
+                        result |= entries[i];
+                    } else {
+                        throw new PermissionsError(`Unknown permission '${i}'`);
+                    }
                 case 'number': result |= BigInt(i); break;
                 default: result |= i; break;
             }
@@ -174,18 +181,6 @@ export class Permissions {
     remove(...perms: PermissionResolvable): bigint {
         this.value &= ~Permissions.resolve(...perms);
         return this.value;
-    }
-
-    /**
-     * @returns An object containing all the permissions the current value has.
-     */
-    serialize(): { [key: string]: bigint } {
-        return Flags
-            .filter(p => this.hasAny(p[1]))
-            .reduce<{ [key: string]: bigint }>((a, b) => {
-                a[b[0]] = b[1];
-                return a;
-            }, {});
     }
 
     /**
