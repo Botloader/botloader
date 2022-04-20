@@ -50,6 +50,7 @@ pub fn extension() -> Extension {
             op_discord_get_messages::decl(),
             op_discord_create_message::decl(),
             op_discord_edit_message::decl(),
+            op_discord_crosspost_message::decl(),
             op_discord_delete_message::decl(),
             op_discord_bulk_delete_messages::decl(),
             // Reactions
@@ -377,6 +378,23 @@ pub async fn op_discord_edit_message(
         .model()
         .await?
         .into())
+}
+
+#[op]
+pub async fn op_discord_crosspost_message(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+    message_id: Id<MessageMarker>,
+) -> Result<(), AnyError> {
+    get_rt_ctx(&state)
+        .discord_config
+        .client
+        .crosspost_message(channel_id, message_id)
+        .exec()
+        .await
+        .map_err(|err| handle_discord_error(&state, err));
+
+    Ok(());
 }
 
 #[op]
