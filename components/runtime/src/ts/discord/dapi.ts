@@ -148,6 +148,10 @@ export async function editMessage(channelId: string, messageId: string, fields: 
     }));
 }
 
+export async function crosspostMessage(channelId: string, messageId: string): Promise<void> {
+    return OpWrappers.crosspostChannelMessage(channelId, messageId);
+}
+
 export function deleteMessage(channelId: string, messageId: string): Promise<void> {
     return OpWrappers.deleteChannelMessage({
         channelId,

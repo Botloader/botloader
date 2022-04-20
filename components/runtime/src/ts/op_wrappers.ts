@@ -113,6 +113,14 @@ export namespace OpWrappers {
         );
     }
 
+    export async function crosspostChannelMessage(channelId: string, messageId: string): Promise<void> {
+        return await Deno.core.opAsync(
+            "op_discord_crosspost_message",
+            channelId,
+            messageId
+        );
+    }
+
     export async function editChannelMessage(args: Internal.OpEditChannelMessage): Promise<Internal.IMessage> {
         return await Deno.core.opAsync(
             "op_discord_edit_message",
