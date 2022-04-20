@@ -1026,7 +1026,10 @@ pub async fn op_discord_update_member(
     }
 
     if let Some(ts) = &fields.communication_disabled_until {
-        builder = builder.communication_disabled_until(ts);
+        builder = builder.communication_disabled_until(
+            ts.map(|v| twilight_model::datetime::Timestamp::from_micros(v.0 as i64 * 1000))
+                .transpose()?,
+        )?;
     }
 
     let ret = builder
