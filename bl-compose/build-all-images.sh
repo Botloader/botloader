@@ -8,3 +8,9 @@ echo "Building broker"
 
 echo "Building schedulerwithworker"
 ./build-image-schedulerwithworker.sh
+
+echo "Building webapi"
+./build-image-webapi.sh
+
+echo "Building frontend"
+./build-image-frontend.sh
