@@ -1,1 +1,1 @@
-export type ComponentType = "ActionRow" | "Button" | "SelectMenu";
+export type ComponentType = "ActionRow" | "Button" | "SelectMenu" | "TextInput";

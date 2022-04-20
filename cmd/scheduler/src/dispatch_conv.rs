@@ -107,6 +107,17 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
                     .unwrap(),
                 })
             }
+            twilight_model::application::interaction::Interaction::ModalSubmit(m) => {
+                let guild_id = m.guild_id;
+                Some(DiscordDispatchEvent {
+                    name: "BOTLOADER_MODAL_SUBMIT_INTERACTION_CREATE",
+                    guild_id: guild_id.unwrap(),
+                    data: serde_json::to_value(
+                        &runtime_models::internal::modal_interaction::ModalInteraction::from(*m),
+                    )
+                    .unwrap(),
+                })
+            }
             _ => None,
         },
         _ => None,
