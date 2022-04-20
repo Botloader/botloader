@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../components/stores/migrations/:/docker-entrypoint-initdb.d
+
+  broker:
+    depends_on:
+      - db
+    image: botloader/bl-broker:latest
+    env_file: .env
+    restart: always
+
+  schedulerwithworker:
+    depends_on:
+      - broker
+    image: botloader/bl-schedulerwithworker:latest
+    env_file: .env
+    restart: always
+
+  webapi:
+    restart: always
+    depends_on:
+      - schedulerwithworker
+    image: botloader/bl-webapi:latest
+    env_file: .env
+    ports:
+      - 7978:7447
+
+  frontend:
+    restart: always
+    depends_on:
+      - webapi
+    image: botloader/bl-frontend:latest
+    ports:
+      - 7979:80
+
+volumes:
+  db_data:
+    driver: local
