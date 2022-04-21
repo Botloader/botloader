@@ -1,0 +1,22 @@
+[package]
+name = "blcmd"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+stores = {path="../../components/stores"}
+common = {path="../../components/common"}
+
+twilight-model = "0.10.1"
+
+tracing = "0.1"
+tracing-log = "0.1"
+
+tokio = { version = "1", features = ["full"] }
+clap = {version = "3.0.14", features = ["derive", "env"]}
+regex = "1.5"
+serde = "1.0"
+serde_json = "1.0"
+anyhow = "1.0"
