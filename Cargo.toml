@@ -20,4 +20,5 @@ members = [
     "cmd/vmworker",
     "cmd/dbserver",
     "cmd/jobs",
+    "cmd/blcmd",
 ]
