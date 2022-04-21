@@ -26,6 +26,7 @@ pub async fn run_broker(
     ready: Arc<AtomicBool>,
 ) -> Result<BrokerHandle, Box<dyn std::error::Error>> {
     let intents = Intents::GUILD_MESSAGES
+        | Intents::MESSAGE_CONTENT
         | Intents::GUILDS
         | Intents::GUILD_MEMBERS
         | Intents::GUILD_BANS
