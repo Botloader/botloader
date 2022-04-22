@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -242,4 +244,14 @@ impl PremiumSlotTier {
             (PremiumSlotTier::Premium, PremiumSlotTier::Lite)
         )
     }
+}
+
+pub struct User {
+    pub discord_id: NonZeroU64,
+    pub username: String,
+    pub discriminator: u16,
+    pub avatar: String,
+
+    pub is_developer: bool,
+    pub is_subscriber: bool,
 }
