@@ -8,7 +8,8 @@ use std::{
 
 use crate::{
     command_manager,
-    guild_handler::{GuildCommand, GuildHandle, GuildHandler, GuildHandlerEvent},
+    guild_handler::{GuildCommand, GuildHandle, GuildHandler},
+    vm_session::VmSessionEvent,
 };
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::{GuildEvent, HelloData};
@@ -164,13 +165,13 @@ impl Scheduler {
         }
     }
 
-    fn handle_guild_handler_event(&mut self, guild_id: Id<GuildMarker>, event: GuildHandlerEvent) {
+    fn handle_guild_handler_event(&mut self, guild_id: Id<GuildMarker>, event: VmSessionEvent) {
         match event {
-            GuildHandlerEvent::ForciblyShutdown => {
+            VmSessionEvent::ForciblyShutdown => {
                 info!("guild {} forcibly shut down, blacklisting it", guild_id);
                 self.mark_guild_as_suspended(guild_id, SuspensionReason::ExcessCpu);
             }
-            GuildHandlerEvent::TooManyInvalidRequests => {
+            VmSessionEvent::TooManyInvalidRequests => {
                 info!(
                     "guild {} forcibly shut down from too many invalid requests, blacklisting it",
                     guild_id
@@ -340,7 +341,7 @@ impl Scheduler {
 
 enum SchedulerAction {
     Cmd(Option<SchedulerCommand>),
-    GuildHandler(Id<GuildMarker>, Option<GuildHandlerEvent>),
+    GuildHandler(Id<GuildMarker>, Option<VmSessionEvent>),
 }
 
 struct SchedulerNextActionFuture<'a> {
