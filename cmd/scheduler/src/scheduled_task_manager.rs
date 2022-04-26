@@ -30,22 +30,30 @@ impl Manager {
         }
     }
 
-    pub async fn next_action(&mut self) -> NextAction {
-        if self.next_task_time.is_none() {
-            // fetch
-            match self
-                .storage
-                .get_next_task_time(self.guild_id, &self.pending, &self.task_names)
-                .await
-            {
-                Ok(v) => {
-                    self.next_task_time = Some(v);
-                }
-                Err(err) => {
-                    error!(%err, "failed fetching next task time");
-                    return NextAction::Wait(Utc::now().add(chrono::Duration::seconds(10)));
-                }
+    pub async fn init_next_task_time(&mut self) {
+        if self.next_task_time.is_some() {
+            return;
+        }
+
+        // fetch
+        match self
+            .storage
+            .get_next_task_time(self.guild_id, &self.pending, &self.task_names)
+            .await
+        {
+            Ok(v) => {
+                self.next_task_time = Some(v);
             }
+            Err(err) => {
+                error!(%err, "failed fetching next task time");
+                self.next_task_time = Some(Some(Utc::now().add(chrono::Duration::seconds(10))));
+            }
+        }
+    }
+
+    pub fn next_action(&mut self) -> NextAction {
+        if self.next_task_time.is_none() {
+            panic!("next task time not initilized")
         };
 
         match self.next_task_time {
@@ -53,33 +61,32 @@ impl Manager {
             Some(None) => NextAction::None,
             Some(Some(t)) => {
                 if Utc::now() > t {
-                    // trigger some tasks
-                    match self
-                        .storage
-                        .get_triggered_tasks(
-                            self.guild_id,
-                            Utc::now(),
-                            &self.pending,
-                            &self.task_names,
-                        )
-                        .await
-                    {
-                        Ok(v) => {
-                            for task in &v {
-                                self.pending.push(task.id);
-                            }
-                            info!("pending tasks: {}", self.pending.len());
-                            self.clear_next();
-                            NextAction::Run(v)
-                        }
-                        Err(err) => {
-                            error!(%err, "failed fetching triggered tasks time");
-                            NextAction::Wait(Utc::now().add(chrono::Duration::seconds(10)))
-                        }
-                    }
+                    NextAction::Run
                 } else {
                     NextAction::Wait(t)
                 }
+            }
+        }
+    }
+
+    pub async fn start_triggered_tasks(&mut self) -> Vec<ScheduledTask> {
+        // trigger some tasks
+        match self
+            .storage
+            .get_triggered_tasks(self.guild_id, Utc::now(), &self.pending, &self.task_names)
+            .await
+        {
+            Ok(v) => {
+                for task in &v {
+                    self.pending.push(task.id);
+                }
+                info!("pending tasks: {}", self.pending.len());
+                self.clear_next();
+                v
+            }
+            Err(err) => {
+                error!(%err, "failed fetching triggered tasks time");
+                Vec::new()
             }
         }
     }
@@ -143,4 +150,4 @@ impl Manager {
     }
 }
 
-pub type NextAction = crate::guild_handler::NextTimerAction<Vec<ScheduledTask>>;
+pub type NextAction = crate::guild_handler::NextTimerAction;

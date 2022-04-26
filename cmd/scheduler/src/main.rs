@@ -20,6 +20,7 @@ mod interval_timer_manager;
 mod rpc_server;
 mod scheduled_task_manager;
 mod scheduler;
+mod vm_session;
 mod vmworkerpool;
 mod worker_listener;
 

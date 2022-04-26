@@ -33,7 +33,7 @@ impl Manager {
         }
     }
 
-    pub async fn next_action(&mut self) -> NextAction {
+    pub fn next_action(&mut self) -> NextAction {
         let next_time = if let Some(next) = self.next_event_time() {
             next
         } else {
@@ -43,15 +43,32 @@ impl Manager {
         let now = Utc::now();
         if now > next_time {
             // we need to trigger some timers
-            let triggered = self.get_triggered_timers(now);
-            for t in &triggered {
-                self.pending.push(t.inner.name.clone())
-            }
-            NextAction::Run(triggered.into_iter().map(|v| v.inner).collect())
+            NextAction::Run
         } else {
             NextAction::Wait(next_time)
         }
     }
+
+    pub async fn trigger_timers(&mut self) -> Vec<IntervalTimer> {
+        let next_time = if let Some(next) = self.next_event_time() {
+            next
+        } else {
+            return Vec::new();
+        };
+
+        let now = Utc::now();
+        if now > next_time {
+            // we need to trigger some timers
+            let triggered = self.get_triggered_timers(now);
+            for t in &triggered {
+                self.pending.push(t.inner.name.clone())
+            }
+            triggered.into_iter().map(|v| v.inner).collect()
+        } else {
+            Vec::new()
+        }
+    }
+
     pub async fn timer_ack(&mut self, timer: String) {
         if let Some(index) =
             self.pending
@@ -230,4 +247,4 @@ impl ParsedIntervalType {
     }
 }
 
-pub type NextAction = crate::guild_handler::NextTimerAction<Vec<IntervalTimer>>;
+pub type NextAction = crate::guild_handler::NextTimerAction;
