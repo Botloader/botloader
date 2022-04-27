@@ -271,7 +271,7 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
 }
 
 async function downloadTypeDecls(): Promise<File[]> {
-    let resp = await fetch("https://botloader-misc.us-east-1.linodeobjects.com/typings-master.tar");
+    let resp = await fetch("/typings.tar");
     let res = await untar(await resp.arrayBuffer());
     return res
 }
