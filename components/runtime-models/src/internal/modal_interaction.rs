@@ -40,13 +40,12 @@ impl From<TwilightModalInteraction> for ModalInteraction {
                 .data
                 .components
                 .into_iter()
-                .map(|row| {
+                .flat_map(|row| {
                     row.components
                         .into_iter()
                         .map(ModalInteractionDataComponent::from)
                         .collect::<Vec<_>>()
                 })
-                .flatten()
                 .collect::<Vec<_>>(),
         }
     }
