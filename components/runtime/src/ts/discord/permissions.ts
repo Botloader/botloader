@@ -1,6 +1,6 @@
 import { PermissionsError } from './error';
 
-export type PermissionResolvable = (string | number | bigint)[];
+export type PermissionResolvable = (string | number | bigint | Permissions)[];
 
 const Flags: [string, bigint][] = [
     ['CreateInstantInvite', 1n << 0n],
@@ -49,51 +49,54 @@ const Flags: [string, bigint][] = [
 /**
  * A utility class for interacting with Discord server permissions.
  * This is essentially a wrapper around BigInt.
+ * 
+ * Note: each instance is immutable and can't be changed, add/remove operations etc
+ * does not change the current instance but instead returns a new instance with the changes applied
  */
 export class Permissions {
-    static CreateInstantInvite = 1n << 0n;
-    static KickMembers = 1n << 1n;
-    static BanMembers = 1n << 2n;
-    static Administrator = 1n << 3n;
-    static ManageChannels = 1n << 4n;
-    static ManageGuild = 1n << 5n;
-    static AddReactions = 1n << 6n;
-    static ViewAuditLog = 1n << 7n;
-    static PrioritySpeaker = 1n << 8n;
-    static Stream = 1n << 9n;
-    static ViewChannel = 1n << 10n;
-    static SendMessages = 1n << 11n;
-    static SendTtsMessages = 1n << 12n;
-    static ManageMessages = 1n << 13n;
-    static EmbedLinks = 1n << 14n;
-    static AttachFiles = 1n << 15n;
-    static ReadMessageHistory = 1n << 16n;
-    static MentionEveryone = 1n << 17n;
-    static UseExternalEmojis = 1n << 18n;
-    static ViewGuildInsights = 1n << 19n;
-    static Connect = 1n << 20n;
-    static Speak = 1n << 21n;
-    static MuteMembers = 1n << 22n;
-    static DeafenMembers = 1n << 23n;
-    static MoveMembers = 1n << 24n;
-    static UseVAD = 1n << 25n;
-    static ChangeNickname = 1n << 26n;
-    static ManageNicknames = 1n << 27n;
-    static ManageRoles = 1n << 28n;
-    static ManageWebhooks = 1n << 29n;
-    static ManageEmojisAndStickers = 1n << 30n;
-    static UseApplicationCommands = 1n << 31n;
-    static RequestToSpeak = 1n << 32n;
-    static ManageEvents = 1n << 33n;
-    static ManageThreads = 1n << 34n;
-    static CreatePublicThreads = 1n << 35n;
-    static CreatePrivateThreads = 1n << 36n;
-    static UseExternalStickers = 1n << 37n;
-    static SendMessagesInThreads = 1n << 38n;
-    static UseEmbeddedActivities = 1n << 39n;
-    static ModerateMembers = 1n << 40n;
+    static readonly CreateInstantInvite = new Permissions(1n << 0n);
+    static readonly KickMembers = new Permissions(1n << 1n);
+    static readonly BanMembers = new Permissions(1n << 2n);
+    static readonly Administrator = new Permissions(1n << 3n);
+    static readonly ManageChannels = new Permissions(1n << 4n);
+    static readonly ManageGuild = new Permissions(1n << 5n);
+    static readonly AddReactions = new Permissions(1n << 6n);
+    static readonly ViewAuditLog = new Permissions(1n << 7n);
+    static readonly PrioritySpeaker = new Permissions(1n << 8n);
+    static readonly Stream = new Permissions(1n << 9n);
+    static readonly ViewChannel = new Permissions(1n << 10n);
+    static readonly SendMessages = new Permissions(1n << 11n);
+    static readonly SendTtsMessages = new Permissions(1n << 12n);
+    static readonly ManageMessages = new Permissions(1n << 13n);
+    static readonly EmbedLinks = new Permissions(1n << 14n);
+    static readonly AttachFiles = new Permissions(1n << 15n);
+    static readonly ReadMessageHistory = new Permissions(1n << 16n);
+    static readonly MentionEveryone = new Permissions(1n << 17n);
+    static readonly UseExternalEmojis = new Permissions(1n << 18n);
+    static readonly ViewGuildInsights = new Permissions(1n << 19n);
+    static readonly Connect = new Permissions(1n << 20n);
+    static readonly Speak = new Permissions(1n << 21n);
+    static readonly MuteMembers = new Permissions(1n << 22n);
+    static readonly DeafenMembers = new Permissions(1n << 23n);
+    static readonly MoveMembers = new Permissions(1n << 24n);
+    static readonly UseVAD = new Permissions(1n << 25n);
+    static readonly ChangeNickname = new Permissions(1n << 26n);
+    static readonly ManageNicknames = new Permissions(1n << 27n);
+    static readonly ManageRoles = new Permissions(1n << 28n);
+    static readonly ManageWebhooks = new Permissions(1n << 29n);
+    static readonly ManageEmojisAndStickers = new Permissions(1n << 30n);
+    static readonly UseApplicationCommands = new Permissions(1n << 31n);
+    static readonly RequestToSpeak = new Permissions(1n << 32n);
+    static readonly ManageEvents = new Permissions(1n << 33n);
+    static readonly ManageThreads = new Permissions(1n << 34n);
+    static readonly CreatePublicThreads = new Permissions(1n << 35n);
+    static readonly CreatePrivateThreads = new Permissions(1n << 36n);
+    static readonly UseExternalStickers = new Permissions(1n << 37n);
+    static readonly SendMessagesInThreads = new Permissions(1n << 38n);
+    static readonly UseEmbeddedActivities = new Permissions(1n << 39n);
+    static readonly ModerateMembers = new Permissions(1n << 40n);
 
-    value: bigint;
+    readonly value: bigint;
 
     constructor(...data: PermissionResolvable) {
         this.value = Permissions.resolve(...data);
@@ -124,7 +127,11 @@ export class Permissions {
     static resolve(...data: PermissionResolvable): bigint {
         let result = 0n;
         for (let v of data) {
-            result |= BigInt(v);
+            if (typeof v === "object") {
+                result |= v.value;
+            } else {
+                result |= BigInt(v);
+            }
         }
 
         return result;
@@ -155,23 +162,21 @@ export class Permissions {
     }
 
     /**
-     * Adds the given permissions to the current value.
+     * Returns a new set of permissions with the provided permissions added on to the current ones
      * @param perms The permissions to add.
      * @returns The resulting permissions.
      */
-    add(...perms: PermissionResolvable): bigint {
-        this.value |= Permissions.resolve(...perms);
-        return this.value;
+    add(...perms: PermissionResolvable): Permissions {
+        return new Permissions(this.value | Permissions.resolve(...perms));
     }
 
     /**
-     * Removes the given permissions from the current value.
+     * Returns a new set of permissions with the provided permissions removed
      * @param perms The permissions to remove.
      * @returns The resulting permissions.
      */
-    remove(...perms: PermissionResolvable): bigint {
-        this.value &= ~Permissions.resolve(...perms);
-        return this.value;
+    remove(...perms: PermissionResolvable): Permissions {
+        return new Permissions(this.value & ~Permissions.resolve(...perms));
     }
 
     /**
