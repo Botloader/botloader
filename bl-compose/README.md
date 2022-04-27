@@ -7,7 +7,7 @@ this, this is only for development purposes.
 1. Run the `build-all-images.sh` script, this will build all the docker images.
 2. Copy the `.env-sample` file as `.env` and fill in the required fields
 3. Update the bot application and add a new oauth2 redirect
-   `http://localhost:7979/confirm_login`
+   `http://localhost:3000/confirm_login`
 4. Run `docker compose up`
-5. It should now be running, navigate to `localhost:7979` in your browser to
+5. It should now be running, navigate to `localhost:3000` in your browser to
    view it.

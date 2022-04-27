@@ -31,7 +31,7 @@ services:
     image: botloader/bl-webapi:latest
     env_file: .env
     ports:
-      - 7978:7447
+      - 7447:7447
 
   frontend:
     restart: always
@@ -39,7 +39,7 @@ services:
       - webapi
     image: botloader/bl-frontend:latest
     ports:
-      - 7979:80
+      - 3000:80
 
 volumes:
   db_data:
