@@ -296,13 +296,10 @@ async function updateTypeDecls(context: vscode.ExtensionContext) {
 }
 
 async function downloadTypeDecls(context: vscode.ExtensionContext): Promise<void> {
-	// TODO: enable https
-	// This seems to be broken for this cert right now, see https://github.com/electron/electron/issues/31212
-	// The fix still hasn't landed in vs code
-	let resp = await fetch("http://botloader-misc.us-east-1.linodeobjects.com/typings-master.tar");
+	let resp = await fetch("https://botloader.io/typings.tar");
 
 	const outPath = vscode.Uri.joinPath(context.globalStorageUri, "/typings");
-	console.log("downloading types to: ", outPath.fsPath);
+	console.log("downloading types to: ", outPath.fsPath, resp.status);
 
 	let stream = tar.extract({
 		cwd: outPath.fsPath,
