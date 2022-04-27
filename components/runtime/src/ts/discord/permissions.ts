@@ -3,47 +3,47 @@ import { PermissionsError } from './error';
 export type PermissionResolvable = (string | number | bigint)[];
 
 const Flags: [string, bigint][] = [
-    ['CreateInstantInvite',       1n << 0n],
-    ['KickMembers',               1n << 1n],
-    ['BanMembers',                1n << 2n],
-    ['Administrator',             1n << 3n],
-    ['ManageChannels',            1n << 4n],
-    ['ManageGuild',               1n << 5n],
-    ['AddReactions',              1n << 6n],
-    ['ViewAuditLog',              1n << 7n],
-    ['PrioritySpeaker',           1n << 8n],
-    ['Stream',                    1n << 9n],
-    ['ViewChannel',               1n << 10n],
-    ['SendMessages',              1n << 11n],
-    ['SendTtsMessages',           1n << 12n],
-    ['ManageMessages',            1n << 13n],
-    ['EmbedLinks',                1n << 14n],
-    ['AttachFiles',               1n << 15n],
-    ['ReadMessageHistory',        1n << 16n],
-    ['MentionEveryone',           1n << 17n],
-    ['UseExternalEmojis',         1n << 18n],
-    ['ViewGuildInsights',         1n << 19n],
-    ['Connect',                   1n << 20n],
-    ['Speak',                     1n << 21n],
-    ['MuteMembers',               1n << 22n],
-    ['DeafenMembers',             1n << 23n],
-    ['MoveMembers',               1n << 24n],
-    ['UseVAD',                    1n << 25n],
-    ['ChangeNickname',            1n << 26n],
-    ['ManageNicknames',           1n << 27n],
-    ['ManageRoles',               1n << 28n],
-    ['ManageWebhooks',            1n << 29n],
-    ['ManageEmojisAndStickers',   1n << 30n],
-    ['UseApplicationCommands',    1n << 31n],
-    ['RequestToSpeak',            1n << 32n],
-    ['ManageEvents',              1n << 33n],
-    ['ManageThreads',             1n << 34n],
-    ['CreatePublicThreads',       1n << 35n],
-    ['CreatePrivateThreads',      1n << 36n],
-    ['UseExternalStickers',       1n << 37n],
-    ['SendMessagesInThreads',     1n << 38n],
-    ['UseEmbeddedActivities',     1n << 39n],
-    ['ModerateMembers',           1n << 40n]
+    ['CreateInstantInvite', 1n << 0n],
+    ['KickMembers', 1n << 1n],
+    ['BanMembers', 1n << 2n],
+    ['Administrator', 1n << 3n],
+    ['ManageChannels', 1n << 4n],
+    ['ManageGuild', 1n << 5n],
+    ['AddReactions', 1n << 6n],
+    ['ViewAuditLog', 1n << 7n],
+    ['PrioritySpeaker', 1n << 8n],
+    ['Stream', 1n << 9n],
+    ['ViewChannel', 1n << 10n],
+    ['SendMessages', 1n << 11n],
+    ['SendTtsMessages', 1n << 12n],
+    ['ManageMessages', 1n << 13n],
+    ['EmbedLinks', 1n << 14n],
+    ['AttachFiles', 1n << 15n],
+    ['ReadMessageHistory', 1n << 16n],
+    ['MentionEveryone', 1n << 17n],
+    ['UseExternalEmojis', 1n << 18n],
+    ['ViewGuildInsights', 1n << 19n],
+    ['Connect', 1n << 20n],
+    ['Speak', 1n << 21n],
+    ['MuteMembers', 1n << 22n],
+    ['DeafenMembers', 1n << 23n],
+    ['MoveMembers', 1n << 24n],
+    ['UseVAD', 1n << 25n],
+    ['ChangeNickname', 1n << 26n],
+    ['ManageNicknames', 1n << 27n],
+    ['ManageRoles', 1n << 28n],
+    ['ManageWebhooks', 1n << 29n],
+    ['ManageEmojisAndStickers', 1n << 30n],
+    ['UseApplicationCommands', 1n << 31n],
+    ['RequestToSpeak', 1n << 32n],
+    ['ManageEvents', 1n << 33n],
+    ['ManageThreads', 1n << 34n],
+    ['CreatePublicThreads', 1n << 35n],
+    ['CreatePrivateThreads', 1n << 36n],
+    ['UseExternalStickers', 1n << 37n],
+    ['SendMessagesInThreads', 1n << 38n],
+    ['UseEmbeddedActivities', 1n << 39n],
+    ['ModerateMembers', 1n << 40n]
 ]
 
 /**
@@ -51,47 +51,47 @@ const Flags: [string, bigint][] = [
  * This is essentially a wrapper around BigInt.
  */
 export class Permissions {
-    static CreateInstantInvite      = 1n << 0n;
-    static KickMembers              = 1n << 1n;
-    static BanMembers               = 1n << 2n;
-    static Administrator            = 1n << 3n;
-    static ManageChannels           = 1n << 4n;
-    static ManageGuild              = 1n << 5n;
-    static AddReactions             = 1n << 6n;
-    static ViewAuditLog             = 1n << 7n;
-    static PrioritySpeaker          = 1n << 8n;
-    static Stream                   = 1n << 9n;
-    static ViewChannel              = 1n << 10n;
-    static SendMessages             = 1n << 11n;
-    static SendTtsMessages          = 1n << 12n;
-    static ManageMessages           = 1n << 13n;
-    static EmbedLinks               = 1n << 14n;
-    static AttachFiles              = 1n << 15n;
-    static ReadMessageHistory       = 1n << 16n;
-    static MentionEveryone          = 1n << 17n;
-    static UseExternalEmojis        = 1n << 18n;
-    static ViewGuildInsights        = 1n << 19n;
-    static Connect                  = 1n << 20n;
-    static Speak                    = 1n << 21n;
-    static MuteMembers              = 1n << 22n;
-    static DeafenMembers            = 1n << 23n;
-    static MoveMembers              = 1n << 24n;
-    static UseVAD                   = 1n << 25n;
-    static ChangeNickname           = 1n << 26n;
-    static ManageNicknames          = 1n << 27n;
-    static ManageRoles              = 1n << 28n;
-    static ManageWebhooks           = 1n << 29n;
-    static ManageEmojisAndStickers  = 1n << 30n;
-    static UseApplicationCommands   = 1n << 31n;
-    static RequestToSpeak           = 1n << 32n;
-    static ManageEvents             = 1n << 33n;
-    static ManageThreads            = 1n << 34n;
-    static CreatePublicThreads      = 1n << 35n;
-    static CreatePrivateThreads     = 1n << 36n;
-    static UseExternalStickers      = 1n << 37n;
-    static SendMessagesInThreads    = 1n << 38n;
-    static UseEmbeddedActivities    = 1n << 39n;
-    static ModerateMembers          = 1n << 40n;
+    static CreateInstantInvite = 1n << 0n;
+    static KickMembers = 1n << 1n;
+    static BanMembers = 1n << 2n;
+    static Administrator = 1n << 3n;
+    static ManageChannels = 1n << 4n;
+    static ManageGuild = 1n << 5n;
+    static AddReactions = 1n << 6n;
+    static ViewAuditLog = 1n << 7n;
+    static PrioritySpeaker = 1n << 8n;
+    static Stream = 1n << 9n;
+    static ViewChannel = 1n << 10n;
+    static SendMessages = 1n << 11n;
+    static SendTtsMessages = 1n << 12n;
+    static ManageMessages = 1n << 13n;
+    static EmbedLinks = 1n << 14n;
+    static AttachFiles = 1n << 15n;
+    static ReadMessageHistory = 1n << 16n;
+    static MentionEveryone = 1n << 17n;
+    static UseExternalEmojis = 1n << 18n;
+    static ViewGuildInsights = 1n << 19n;
+    static Connect = 1n << 20n;
+    static Speak = 1n << 21n;
+    static MuteMembers = 1n << 22n;
+    static DeafenMembers = 1n << 23n;
+    static MoveMembers = 1n << 24n;
+    static UseVAD = 1n << 25n;
+    static ChangeNickname = 1n << 26n;
+    static ManageNicknames = 1n << 27n;
+    static ManageRoles = 1n << 28n;
+    static ManageWebhooks = 1n << 29n;
+    static ManageEmojisAndStickers = 1n << 30n;
+    static UseApplicationCommands = 1n << 31n;
+    static RequestToSpeak = 1n << 32n;
+    static ManageEvents = 1n << 33n;
+    static ManageThreads = 1n << 34n;
+    static CreatePublicThreads = 1n << 35n;
+    static CreatePrivateThreads = 1n << 36n;
+    static UseExternalStickers = 1n << 37n;
+    static SendMessagesInThreads = 1n << 38n;
+    static UseEmbeddedActivities = 1n << 39n;
+    static ModerateMembers = 1n << 40n;
 
     value: bigint;
 
@@ -123,20 +123,10 @@ export class Permissions {
      */
     static resolve(...data: PermissionResolvable): bigint {
         let result = 0n;
-        const entries = this.entries();
-        for (let i of data) {
-            switch (typeof i) {
-                case 'string':
-                    if (entries[i] !== undefined) {
-                        result |= entries[i];
-                    } else {
-                        throw new PermissionsError(`Unknown permission '${i}'`);
-                    }
-                    break;
-                case 'number': result |= BigInt(i); break;
-                default: result |= i; break;
-            }
+        for (let v of data) {
+            result |= BigInt(v);
         }
+
         return result;
     }
 
