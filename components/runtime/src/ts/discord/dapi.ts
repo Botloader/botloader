@@ -4,6 +4,7 @@ import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
 import { Ban, Member } from './member';
 import { Message } from './message';
+import { Permissions } from './permissions';
 import { User } from './user';
 
 /**
@@ -278,6 +279,75 @@ export async function removeMember(userId: string, extras?: AuditLogExtras): Pro
     return OpWrappers.removeMember(userId, extras ?? {});
 }
 
+
+export async function getMemberGuildPermissions(member: Member): Promise<Permissions>;
+export async function getMemberGuildPermissions(userId: string): Promise<Permissions>;
+
+/**
+ * Calculates the server permissions of a member
+ * 
+ * This function does not take channel overwrites into account, use {@see getMemberChannelPermissions} for that
+ */
+export async function getMemberGuildPermissions(memberOrUserId: Member | string): Promise<Permissions> {
+    let userId = "";
+    let memberRoles: string[] | null = null;
+    if (typeof memberOrUserId === "string") {
+        userId = memberOrUserId;
+    } else {
+        memberRoles = memberOrUserId.roles;
+        userId = memberOrUserId.user.id;
+    }
+
+    let [guildPerms, _] = await OpWrappers.getMemberPermissions(userId, memberRoles, null);
+    return new Permissions(guildPerms)
+}
+
+export interface CalculatedMemberPermissions {
+
+    /**
+     * Guild level permissions only
+     */
+    guild: Permissions,
+
+    /**
+     * Permissions in the channel
+     * 
+     * Note: only permissions relevant to channels are contained in this
+     */
+    channel: Permissions,
+
+    /**
+     * Channel id these perms were computed for
+     */
+    channelId: string,
+}
+
+export async function getMemberChannelPermissions(userId: string, channelId: string): Promise<CalculatedMemberPermissions>;
+export async function getMemberChannelPermissions(member: Member, channelId: string): Promise<CalculatedMemberPermissions>;
+
+/**
+ * Calculates the server and channel permissions of a member
+ * 
+ */
+export async function getMemberChannelPermissions(memberOrUserId: Member | string, channelId: string): Promise<CalculatedMemberPermissions> {
+    let userId = "";
+    let memberRoles: string[] | null = null;
+    if (typeof memberOrUserId === "string") {
+        userId = memberOrUserId;
+    } else {
+        memberRoles = memberOrUserId.roles;
+        userId = memberOrUserId.user.id;
+    }
+
+    console.log("CHANNEL ID: ", channelId);
+    let [guildPerms, channelPerms] = await OpWrappers.getMemberPermissions(userId, memberRoles, channelId);
+
+    return {
+        guild: new Permissions(guildPerms),
+        channel: new Permissions(channelPerms ?? 0),
+        channelId,
+    };
+}
 
 // Guild bans
 export interface CreateBanExtras extends AuditLogExtras {

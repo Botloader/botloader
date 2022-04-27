@@ -280,6 +280,10 @@ export namespace OpWrappers {
         return await Deno.core.opAsync("op_discord_remove_member", userId, extras);
     }
 
+    export async function getMemberPermissions(userId: string, roles: string[] | null, channelId: string | null): Promise<[string, string | null]> {
+        return await Deno.core.opAsync("op_discord_get_member_permissions", userId, [roles, channelId]);
+    }
+
     // Storage
     export async function bucketStorageSet(opts: Internal.OpStorageBucketSetValue): Promise<Internal.OpStorageBucketEntry> {
         return await Deno.core.opAsync("op_botloader_bucket_storage_set", opts);
