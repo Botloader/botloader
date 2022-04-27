@@ -165,13 +165,3 @@ workflows:
           filters:
             branches:
               only: master
-  runtime-types:
-    jobs:
-      - build-runtime-types
-      - deploy-runtime-types:
-          requires:
-            - build-runtime-types
-
-        # filters:
-        #   branches:
-        #     only: master
