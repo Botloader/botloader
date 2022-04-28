@@ -187,7 +187,7 @@ impl VmSession {
         }
     }
 
-    pub async fn next_action(&mut self) -> Option<NextAction> {
+    pub async fn next_action(&mut self) -> NextAction {
         let scheduled_task_sleep_check = match self.scheduled_tasks_man.next_action() {
             scheduled_task_manager::NextAction::None => {
                 tokio::time::sleep(Duration::from_secs(60 * 60))
@@ -199,7 +199,7 @@ impl VmSession {
                 tokio::time::sleep(sleep_dur)
             }
             scheduled_task_manager::NextAction::Run => {
-                return Some(NextAction::CheckScheduledTasks);
+                return NextAction::CheckScheduledTasks;
             }
         };
 
@@ -214,7 +214,7 @@ impl VmSession {
                 tokio::time::sleep(sleep_dur)
             }
             interval_timer_manager::NextAction::Run => {
-                return Some(NextAction::CheckIntervalTimers);
+                return NextAction::CheckIntervalTimers;
             }
         };
 
@@ -224,22 +224,22 @@ impl VmSession {
         if let Some(worker) = &mut self.current_worker {
             tokio::select! {
                 evt = worker.rx.recv() =>{
-                    Some(NextAction::WorkerMessage(evt))
+                    NextAction::WorkerMessage(evt)
                 },
                 _ = scheduled_task_sleep_check => {
-                    Some(NextAction::CheckScheduledTasks)
+                    NextAction::CheckScheduledTasks
                 },
                 _ = interval_timers_sleep_check => {
-                    Some(NextAction::CheckIntervalTimers)
+                    NextAction::CheckIntervalTimers
                 }
             }
         } else {
             tokio::select! {
                 _ = scheduled_task_sleep_check => {
-                    Some(NextAction::CheckScheduledTasks)
+                    NextAction::CheckScheduledTasks
                 },
                 _ = interval_timers_sleep_check => {
-                    Some(NextAction::CheckIntervalTimers)
+                    NextAction::CheckIntervalTimers
                 }
             }
         }
