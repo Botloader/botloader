@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     id bigint NOT NULL PRIMARY KEY,
     username text NOT NULL,
     discriminator smallint NOT NULL,
-    avatar: text NOT NULL,
+    avatar text NOT NULL,
     is_dev boolean NOT NULL,
     is_subscriber boolean NOT NULL
 );
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS plugin_versions (
     data jsonb NOT NULL,
     version_major smallint NOT NULL,
     version_minor smallint NOT NULL,
-    PRIMARY KEY (plugin_id, version_major, version_minor),
+    PRIMARY KEY (plugin_id, version_major, version_minor)
 );
 
 CREATE TABLE IF NOT EXISTS guild_plugin_subscriptions (
