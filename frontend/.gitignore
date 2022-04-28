@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 public/docs
+public/typings.tar
 
 # testing
 /coverage
