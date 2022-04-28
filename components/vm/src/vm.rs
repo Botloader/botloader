@@ -34,7 +34,6 @@ pub enum VmCommand {
     // we send a message when that has been accomplished
     UnloadScripts(Vec<Script>),
     UpdateScript(Script),
-    Terminate,
     Restart(Vec<Script>),
 }
 
@@ -188,7 +187,7 @@ impl Vm {
                     "near heap limit: current: {}, initial: {}",
                     current, initial
                 );
-                shutdown_handle.shutdown_vm(ShutdownReason::OutOfMemory);
+                shutdown_handle.shutdown_vm(ShutdownReason::OutOfMemory, true);
                 if current != initial {
                     current
                 } else {
@@ -290,7 +289,6 @@ impl Vm {
 
     async fn handle_cmd(&mut self, cmd: VmCommand) {
         match cmd {
-            VmCommand::Terminate => todo!(),
             VmCommand::Restart(new_scripts) => {
                 self.restart(new_scripts).await;
             }
@@ -812,13 +810,16 @@ pub struct VmShutdownHandle {
 }
 
 impl ShutdownHandle for VmShutdownHandle {
-    fn shutdown_vm(&self, reason: ShutdownReason) {
+    fn shutdown_vm(&self, reason: ShutdownReason, force: bool) {
         let mut inner = self.inner.write().unwrap();
         inner.shutdown_reason = Some(reason);
         if let Some(iso_handle) = &inner.isolate_handle {
             self.terminated
                 .store(true, std::sync::atomic::Ordering::SeqCst);
-            iso_handle.terminate_execution();
+
+            if force {
+                iso_handle.terminate_execution();
+            }
         } else {
             inner.shutdown_reason = None;
         }

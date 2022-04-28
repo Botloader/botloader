@@ -10,6 +10,7 @@ pub enum SchedulerMessage {
     Dispatch(VmDispatchEvent),
     /// stops the current vm and creates a new one to run the provided scripts
     CreateScriptsVm(CreateScriptsVmReq),
+    Complete,
     Shutdown,
 }
 

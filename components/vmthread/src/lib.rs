@@ -115,7 +115,7 @@ where
         for vm in &self.vms {
             vm.handle
                 .shutdown_handle
-                .shutdown_vm(ShutdownReason::ThreadTermination);
+                .shutdown_vm(ShutdownReason::ThreadTermination, false);
         }
     }
 
@@ -149,7 +149,9 @@ where
                             // if there's a bad actor
                             let maybe_handle = handle.running_vm.read().unwrap();
                             match &*maybe_handle {
-                                Some(h) => h.shutdown_handle.shutdown_vm(ShutdownReason::Runaway),
+                                Some(h) => {
+                                    h.shutdown_handle.shutdown_vm(ShutdownReason::Runaway, true)
+                                }
                                 None => {
                                     // This could be possible during very high load scenarios where the thread never gets
                                     // cpu time form something else on the system, so for now we just ignore this case
@@ -310,5 +312,5 @@ pub struct CreateVmSuccess<T, U, V> {
 
 pub trait ShutdownHandle {
     // shut down a runaway vm using the provided timeout handle
-    fn shutdown_vm(&self, reason: ShutdownReason);
+    fn shutdown_vm(&self, reason: ShutdownReason, force: bool);
 }
