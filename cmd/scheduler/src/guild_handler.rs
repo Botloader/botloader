@@ -165,11 +165,7 @@ impl GuildHandler {
 
         tokio::select! {
             next_scripts_evt = self.scripts_session.next_action() => {
-                if let Some(evt) = next_scripts_evt{
-                     Some(NextGuildAction::VmAction(evt))
-                }else{
-                    todo!();
-                }
+                Some(NextGuildAction::VmAction(next_scripts_evt))
             },
             next_guild_evt = self.guild_rx.recv() => {
                 next_guild_evt.map(NextGuildAction::GuildCommand)
