@@ -147,7 +147,7 @@ pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Er
                     "guild hit >30 invalid requests within 60s, suspending it"
                 );
                 let _ = rt_ctx.event_tx.send(RuntimeEvent::InvalidRequestsExceeded);
-                handle.shutdown_vm(vmthread::ShutdownReason::Unknown);
+                handle.shutdown_vm(vmthread::ShutdownReason::Unknown, false);
             }
         }
     }

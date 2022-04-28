@@ -133,8 +133,27 @@ impl VmSession {
     pub async fn shutdown(&mut self) {
         info!("shutting down vm session");
 
-        if let Some(worker) = self.current_worker.take() {
-            self.worker_pool.return_worker(worker, false);
+        // wait until the vm has finished it's work
+        if let Some(worker) = &mut self.current_worker {
+            if worker.tx.send(SchedulerMessage::Complete).is_err() {
+                self.broken_worker().await;
+            };
+        }
+
+        loop {
+            if self.current_worker.is_none() {
+                break;
+            }
+
+            match self.next_action().await {
+                NextAction::WorkerMessage(Some(msg)) => self.handle_worker_msg(msg).await,
+                NextAction::WorkerMessage(None) => {
+                    self.broken_worker().await;
+                    break;
+                }
+                NextAction::CheckScheduledTasks => {}
+                NextAction::CheckIntervalTimers => {}
+            }
         }
     }
 

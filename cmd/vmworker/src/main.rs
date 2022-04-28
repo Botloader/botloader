@@ -213,8 +213,19 @@ impl Worker {
             }
             SchedulerMessage::Shutdown => Ok(ContinueState::Stop),
             SchedulerMessage::CreateScriptsVm(data) => self.handle_create_scripts_vm(data).await,
+            SchedulerMessage::Complete => {
+                // complete the vm
+                if let Some(current) = &self.current_state {
+                    let _ = current
+                        .vm_thread
+                        .send_cmd
+                        .send(vmthread::VmThreadCommand::Shutdown);
+                }
+                Ok(ContinueState::Continue)
+            }
         }
     }
+
     async fn handle_runtime_evt(&mut self, evt: RuntimeEvent) -> anyhow::Result<ContinueState> {
         match evt {
             RuntimeEvent::ScriptStarted(sm) => {
