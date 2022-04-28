@@ -172,7 +172,7 @@ impl VmSession {
         }
     }
 
-    async fn try_retry_load_scripts(&mut self) {
+    async fn try_retry_load_guild_scripts(&mut self) {
         loop {
             match self.stores.list_scripts(self.guild_id).await {
                 Ok(scripts) => {
@@ -332,8 +332,8 @@ impl VmSession {
         }
     }
 
-    pub async fn handle_reload(&mut self) {
-        self.try_retry_load_scripts().await;
+    pub async fn reload_guild_scripts(&mut self) {
+        self.try_retry_load_guild_scripts().await;
         self.load_contribs().await;
     }
 
