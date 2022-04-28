@@ -187,7 +187,7 @@ impl GuildHandler {
             //         .await;
             // }
             GuildCommand::ReloadScripts => {
-                self.scripts_session.handle_reload().await;
+                self.scripts_session.reload_guild_scripts().await;
             }
             GuildCommand::Shutdown => {
                 panic!("shutdown should be handled by caller")
