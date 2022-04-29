@@ -1,3 +1,4 @@
+import type { IModalCallbackData } from "./IModalCallbackData";
 import type { InteractionCallbackData } from "./InteractionCallbackData";
 
 export type InteractionResponse =
@@ -5,4 +6,5 @@ export type InteractionResponse =
   | { kind: "ChannelMessageWithSource" } & InteractionCallbackData
   | { kind: "DeferredChannelMessageWithSource" } & InteractionCallbackData
   | { kind: "DeferredUpdateMessage" }
-  | { kind: "UpdateMessage" } & InteractionCallbackData;
+  | { kind: "UpdateMessage" } & InteractionCallbackData
+  | { kind: "Modal" } & IModalCallbackData;

@@ -1,7 +1,8 @@
 import * as Internal from "./generated/internal/index";
-import { ChannelType, Interaction, Message, Role } from "./discord/index";
+import { ChannelType, Interaction, Message, Role, IModalFields } from "./discord/index";
 import { User } from "./discord/user";
 import { Member } from "./discord/member";
+import { OpWrappers } from "./op_wrappers";
 
 /**
  * The commands namespace provides a command system that works with discord slash commands, as well as 
@@ -188,6 +189,26 @@ export namespace Commands {
             this.commandName = interaction.name;
             this.parentName = interaction.parentName ?? undefined;
             this.parentParentName = interaction.parentParentName ?? undefined;
+        }
+
+        /**
+         * Acknowledge this interaction and open up a modal for the user.
+         * 
+         * You have to acknowledge the interaction within 3 seconds, and it can only be done once. 
+         */
+        async ackWithModal(modal: IModalFields) {
+            this.setCallbackSent();
+
+            return OpWrappers.interactionCallback({
+                interactionId: this.interactionId,
+                ineractionToken: this.token,
+                data: {
+                    kind: "Modal",
+                    title: modal.title,
+                    customId: modal.customId,
+                    components: modal.components,
+                }
+            })
         }
     }
 

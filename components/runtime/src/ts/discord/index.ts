@@ -8,4 +8,6 @@ export * from './user';
 export * from './error';
 export * from './common';
 export * from './components';
+export * from './permissions';
+export * from './snowflake';
 export * from '../generated/discord/index';

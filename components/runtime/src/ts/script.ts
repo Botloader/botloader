@@ -8,7 +8,7 @@ import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
 import { Tasks } from "./scheduled_tasks";
-import { ComponentInteraction, SelectMenuInteraction } from "./discord/index";
+import { ComponentInteraction, SelectMenuInteraction, ModalSubmitInteraction } from "./discord/index";
 
 /**
  * The script class is the main way you interact with botloader and discord.
@@ -167,6 +167,9 @@ export class Script {
     }
     onInteractionSelectMenu<T>(name: string, cb: (interaction: SelectMenuInteraction, extraData: T) => any) {
         EventSystem.onInteractionSelectMenu(name, cb);
+    }
+    onInteractionModalSubmit<T>(name: string, cb: (interaction: ModalSubmitInteraction, customData: T) => any) {
+        EventSystem.onInteractionModalSubmit(name, cb);
     }
     // onInteractionModalSubmit<T>(name: string, cb: (ctx: InteractionContext, submittedValues: SubmittedComponentValue[], data: T) => any) { }
 

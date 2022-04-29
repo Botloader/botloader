@@ -15,6 +15,8 @@ target/
 # Local environment variables
 .env
 
+bl-compose/pgdata
+bl-compose/.env
 components/jack-runtime/src/ts/*.d.ts
 scripts/*.d.ts
 scripts/bot/*.d.ts

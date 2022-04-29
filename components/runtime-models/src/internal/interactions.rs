@@ -4,6 +4,7 @@ use ts_rs::TS;
 use crate::{
     discord::{
         channel::{ChannelType, ThreadMetadata},
+        component::Component,
         message::MessageFlags,
     },
     util::NotBigU64,
@@ -86,6 +87,7 @@ pub enum InteractionResponse {
     DeferredChannelMessageWithSource(InteractionCallbackData),
     DeferredUpdateMessage,
     UpdateMessage(InteractionCallbackData),
+    Modal(ModalCallbackData),
     // Autocomplete(Autocomplete),
 }
 
@@ -112,6 +114,10 @@ impl From<InteractionResponse> for twilight_model::http::interaction::Interactio
             },
             InteractionResponse::UpdateMessage(src) => Self {
                 kind: TwilightInteractionResponseType::UpdateMessage,
+                data: Some(src.into()),
+            },
+            InteractionResponse::Modal(src) => Self {
+                kind: TwilightInteractionResponseType::Modal,
                 data: Some(src.into()),
             },
         }
@@ -148,6 +154,30 @@ impl From<InteractionCallbackData> for TwilightCallbackData {
             choices: None,
             custom_id: None,
             title: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalCallbackData.ts",
+    rename = "IModalCallbackData"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalCallbackData {
+    title: String,
+    custom_id: String,
+    components: Vec<Component>,
+}
+
+impl From<ModalCallbackData> for TwilightCallbackData {
+    fn from(v: ModalCallbackData) -> Self {
+        Self {
+            title: Some(v.title),
+            custom_id: Some(v.custom_id),
+            components: Some(v.components.into_iter().map(Into::into).collect()),
+            ..Default::default()
         }
     }
 }

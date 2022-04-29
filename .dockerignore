@@ -15,3 +15,6 @@ frontend-common/node_modules
 
 components/runtime/docgen/node_modules
 components/runtime/docgen/docs
+
+bl-compose/pgdata
+bl-compose/.env

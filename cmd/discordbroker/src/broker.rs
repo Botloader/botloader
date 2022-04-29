@@ -26,6 +26,7 @@ pub async fn run_broker(
     ready: Arc<AtomicBool>,
 ) -> Result<BrokerHandle, Box<dyn std::error::Error>> {
     let intents = Intents::GUILD_MESSAGES
+        | Intents::MESSAGE_CONTENT
         | Intents::GUILDS
         | Intents::GUILD_MEMBERS
         | Intents::GUILD_BANS
@@ -209,6 +210,14 @@ impl Broker {
             }
 
             Event::InteractionCreate(i) => {
+                if matches!(
+                    i.0,
+                    twilight_model::application::interaction::Interaction::ModalSubmit(_)
+                ) {
+                    info!("threw away modal interaction");
+                    return;
+                }
+
                 if let Some(guild_id) = i.guild_id() {
                     guild_id
                 } else {
