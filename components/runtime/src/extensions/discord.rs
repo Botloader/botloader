@@ -28,9 +28,12 @@ use twilight_http::{
     api_error::{ApiError, GeneralApiError},
     response::StatusCode,
 };
-use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::marker::{MessageMarker, RoleMarker};
 use twilight_model::id::Id;
+use twilight_model::{
+    guild::Permissions,
+    id::marker::{ChannelMarker, UserMarker},
+};
 use vm::AnyError;
 use vmthread::ShutdownHandle;
 
@@ -88,6 +91,8 @@ pub fn extension() -> Extension {
             op_discord_get_ban::decl(),
             op_discord_get_bans::decl(),
             op_discord_delete_ban::decl(),
+            // misc
+            op_discord_get_member_permissions::decl(),
         ])
         .state(move |state| {
             state.put(DiscordOpsState {
@@ -1049,6 +1054,13 @@ pub async fn op_discord_update_member(
         builder = builder.roles(roles);
     }
 
+    if let Some(ts) = &fields.communication_disabled_until {
+        builder = builder.communication_disabled_until(
+            ts.map(|v| twilight_model::datetime::Timestamp::from_micros(v.0 as i64 * 1000))
+                .transpose()?,
+        )?;
+    }
+
     let ret = builder
         .exec()
         .await
@@ -1171,4 +1183,100 @@ pub async fn op_discord_remove_member(
         .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
+}
+
+#[op]
+pub async fn op_discord_get_member_permissions(
+    state: Rc<RefCell<OpState>>,
+    user_id: Id<UserMarker>,
+    (roles, channel_id): (Option<Vec<Id<RoleMarker>>>, Option<Id<ChannelMarker>>),
+) -> Result<(String, Option<String>), AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    let member_roles = if let Some(roles) = roles {
+        roles
+    } else {
+        let member = rt_ctx
+            .discord_config
+            .client
+            .guild_member(rt_ctx.guild_id, user_id)
+            .exec()
+            .await?
+            .model()
+            .await?;
+
+        member.roles
+    };
+
+    let guild_roles = rt_ctx.bot_state.get_roles(rt_ctx.guild_id).await?;
+    let guild = if let Some(guild) = rt_ctx.bot_state.get_guild(rt_ctx.guild_id).await? {
+        guild
+    } else {
+        return Err(anyhow!("guild not in state"));
+    };
+
+    let role_perms_pair = member_roles
+        .iter()
+        .filter_map(|rid| {
+            guild_roles
+                .iter()
+                .find(|r| r.id == *rid)
+                .map(|r| (*rid, r.permissions))
+        })
+        .collect::<Vec<_>>();
+
+    let everyone_role = guild_roles
+        .iter()
+        .find(|v| v.id == rt_ctx.guild_id.cast::<RoleMarker>())
+        .map(|v| v.permissions)
+        .unwrap_or(Permissions::empty());
+
+    let calc = twilight_util::permission_calculator::PermissionCalculator::new(
+        rt_ctx.guild_id,
+        user_id,
+        everyone_role,
+        role_perms_pair.as_slice(),
+    )
+    .owner_id(guild.owner_id);
+
+    let guild_perms = calc.root();
+    let channel_perms = if let Some(channel_id) = channel_id {
+        let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
+        // match channel.
+        match channel.kind {
+            twilight_model::channel::ChannelType::GuildNewsThread
+            | twilight_model::channel::ChannelType::GuildPublicThread
+            | twilight_model::channel::ChannelType::GuildPrivateThread => {
+                let real_channel = get_guild_channel(
+                    &state,
+                    &rt_ctx,
+                    channel
+                        .parent_id
+                        .ok_or_else(|| anyhow!("thread has no parent??"))?,
+                )
+                .await?;
+
+                Some(
+                    calc.in_channel(
+                        real_channel.kind,
+                        real_channel
+                            .permission_overwrites
+                            .as_deref()
+                            .unwrap_or_default(),
+                    ),
+                )
+            }
+            _ => Some(calc.in_channel(
+                channel.kind,
+                channel.permission_overwrites.as_deref().unwrap_or_default(),
+            )),
+        }
+    } else {
+        None
+    };
+
+    Ok((
+        guild_perms.bits().to_string(),
+        channel_perms.map(|v| v.bits().to_string()),
+    ))
 }

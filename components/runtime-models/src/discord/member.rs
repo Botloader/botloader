@@ -13,6 +13,7 @@ pub struct PartialMember {
     pub nick: Option<String>,
     pub premium_since: Option<NotBigU64>,
     pub roles: Vec<String>,
+    pub communication_disabled_until: Option<NotBigU64>,
 }
 
 impl From<twilight_model::guild::PartialMember> for PartialMember {
@@ -26,6 +27,8 @@ impl From<twilight_model::guild::PartialMember> for PartialMember {
                 .premium_since
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             roles: v.roles.iter().map(ToString::to_string).collect(),
+            communication_disabled_until: v.communication_disabled_until
+                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
         }
     }
 }

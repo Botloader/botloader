@@ -5,4 +5,5 @@ export interface PartialMember {
   nick: string | null;
   premiumSince: number | null;
   roles: Array<string>;
+  communicationDisabledUntil: number | null;
 }

@@ -76,7 +76,7 @@ where
 
             let guild_path = Path::<GuildPath>::from_request(&mut req_parts).await;
             let session: Option<&LoggedInSession<ST>> =
-                req_parts.extensions().map(|e| e.get()).flatten();
+                req_parts.extensions().and_then(|e| e.get());
 
             let mut span = None;
 

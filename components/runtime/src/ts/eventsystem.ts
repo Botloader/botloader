@@ -1,11 +1,12 @@
 import { Commands } from './commands';
-import { ComponentInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, EventMessageReactionRemove, EventMessageReactionRemoveAll, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, Interaction, Member, Message, SelectMenuInteraction } from './discord/index';
+import { ComponentInteraction, ModalSubmitInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, EventMessageReactionRemove, EventMessageReactionRemoveAll, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, Interaction, Member, Message, SelectMenuInteraction, parseInteractionCustomId } from './discord/index';
 import * as Internal from './generated/internal/index';
 
 export namespace EventSystem {
 
     const buttonComponentListeners: { name: string, cb: (data: ComponentInteraction, extra: any) => any }[] = [];
     const selectMenuListeners: { name: string, cb: (data: SelectMenuInteraction, extra: any) => any }[] = [];
+    const modalSubmitListeners: { name: string, cb: (data: ModalSubmitInteraction, extra: any) => any }[] = [];
 
     /**
      * @internal
@@ -33,7 +34,9 @@ export namespace EventSystem {
         if (evt.name === "BOTLOADER_COMPONENT_INTERACTION_CREATE") {
             handleComponentInteraction(data);
         } else if (evt.name === "BOTLOADER_COMMAND_INTERACTION_CREATE") {
-            commandSystem.handleInteractionCreate(data)
+            commandSystem.handleInteractionCreate(data);
+        } else if (evt.name == "BOTLOADER_MODAL_SUBMIT_INTERACTION_CREATE") {
+            handleModalSubmitInteraction(data);
         } else {
             for (let muxer of eventMuxers) {
                 muxer.handleEvent(evt.name, data);
@@ -55,6 +58,11 @@ export namespace EventSystem {
         * @internal
         */
         BOTLOADER_COMPONENT_INTERACTION_CREATE: Internal.MessageComponentInteraction,
+
+        /**
+        * @internal
+        */
+        BOTLOADER_MODAL_SUBMIT_INTERACTION_CREATE: Internal.IModalInteraction,
 
 
         /**
@@ -139,23 +147,19 @@ export namespace EventSystem {
         selectMenuListeners.push({ name: name, cb: cb })
     }
 
+    /**
+     * @internal
+     */
+    export function onInteractionModalSubmit<T>(name: string, cb: (interaction: ModalSubmitInteraction, customData: T) => any) {
+        modalSubmitListeners.push({ name: name, cb: cb })
+    }
+
     async function handleComponentInteraction(interaction: Internal.MessageComponentInteraction) {
         if (!interaction.customId.startsWith("0:")) {
             return;
         }
 
-        let customId = interaction.customId.slice(2);
-        let nameEnd = customId.indexOf(":");
-        let name = "";
-        let extras: unknown = null;
-
-        if (nameEnd > -1) {
-            name = customId.slice(0, nameEnd)
-            let extrasStr = customId.slice(nameEnd + 1);
-            if (extrasStr) {
-                extras = JSON.parse(extrasStr);
-            }
-        }
+        let [name, extras] = parseInteractionCustomId(interaction.customId);
 
         if (interaction.componentType === "Button") {
             let listener = buttonComponentListeners.find((elem) => elem.name === name);
@@ -173,6 +177,22 @@ export namespace EventSystem {
                     await listener!.cb(convInteraction, extras);
                 })
             }
+        }
+    }
+
+    async function handleModalSubmitInteraction(interaction: Internal.IModalInteraction) {
+        if (!interaction.customId.startsWith("0:")) {
+            return;
+        }
+
+        let [name, extras] = parseInteractionCustomId(interaction.customId);
+
+        let listener = modalSubmitListeners.find((elem) => elem.name === name);
+        if (listener) {
+            let convInteraction = new ModalSubmitInteraction(interaction);
+            handleInteractionCallback(convInteraction, async () => {
+                await listener!.cb(convInteraction, extras);
+            })
         }
     }
 

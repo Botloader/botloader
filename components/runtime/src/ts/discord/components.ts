@@ -1,8 +1,9 @@
-import { ButtonStyle } from '../generated/discord/ButtonStyle';
+import type { ButtonStyle } from '../generated/discord/ButtonStyle';
+import type { TextInputStyle } from '../generated/discord/TextInputStyle';
 import type { ComponentType } from '../generated/discord/ComponentType';
-import { ISelectMenuOption } from '../generated/discord/ISelectMenuOption';
+import type { ISelectMenuOption } from '../generated/discord/ISelectMenuOption';
 import { ReactionType } from '../generated/discord/ReactionType';
-import { IActionRow, IButton, ISelectMenu, SendEmoji } from './index';
+import { IActionRow, IButton, ISelectMenu, ITextInput, SendEmoji } from './index';
 import { encodeInteractionCustomId } from './interaction';
 
 export type AnyComponent = ActionRow | Button | SelectMenu;
@@ -162,4 +163,61 @@ export class SelectMenuOption implements ISelectMenuOption {
         this.description = description;
         return this;
     }
-} 
+}
+
+
+export abstract class TextInput extends BaseComponent implements ITextInput {
+    kind: "TextInput" = "TextInput";
+
+    customId: string;
+    label: string;
+    maxLength: number | null = null;
+    minLength: number | null = null;
+    placeholder: string | null = null;
+    required: boolean | null = null;
+    style: TextInputStyle;
+    value: string | null = null;
+
+    constructor(label: string, style: TextInputStyle, name: string, data?: any) {
+        super("TextInput");
+
+        this.label = label;
+        this.style = style;
+        this.customId = encodeInteractionCustomId(name, data ?? null);
+    };
+
+    setMaxLength(length: number) {
+        this.maxLength = length;
+        return this;
+    }
+    setMinLength(length: number) {
+        this.minLength = length;
+        return this;
+    }
+
+    setPlaceHolder(placeholder: string) {
+        this.placeholder = placeholder;
+        return this;
+    }
+
+    setValue(value: string) {
+        this.value = value;
+        return this;
+    }
+}
+
+export class ShortTextInput extends TextInput implements ITextInput {
+    kind: "TextInput" = "TextInput";
+
+    constructor(label: string, name: string, data?: any) {
+        super(label, "Short", name, data);
+    };
+}
+
+export class ParagraphTextInput extends TextInput implements ITextInput {
+    kind: "TextInput" = "TextInput";
+
+    constructor(label: string, name: string, data?: any) {
+        super(label, "Paragraph", name, data);
+    };
+}

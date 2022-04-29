@@ -10,6 +10,7 @@ export class Member {
     pending: boolean;
     premiumSince: number | null;
     roles: Array<string>;
+    communicationDisabledUntil: number | null;
     user: User;
 
     /**
@@ -23,6 +24,7 @@ export class Member {
         this.pending = json.pending;
         this.premiumSince = json.premiumSince;
         this.roles = json.roles;
+        this.communicationDisabledUntil = json.communicationDisabledUntil;
         this.user = new User(json.user);
     }
 

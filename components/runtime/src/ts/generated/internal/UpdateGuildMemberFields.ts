@@ -4,4 +4,5 @@ export interface UpdateGuildMemberFields {
   mute?: boolean;
   nick?: string | null;
   roles?: string[];
+  communicationDisabledUntil?: number | null;
 }

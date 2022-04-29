@@ -39,13 +39,11 @@ impl crate::bucketstore::BucketStore for Postgres {
         value: StoreValue,
         ttl: Option<Duration>,
     ) -> StoreResult<Entry> {
-        let expires_at = ttl
-            .map(|ttl| {
-                chrono::Duration::from_std(ttl)
-                    .map(|dur| Utc::now() + dur)
-                    .ok()
-            })
-            .flatten();
+        let expires_at = ttl.and_then(|ttl| {
+            chrono::Duration::from_std(ttl)
+                .map(|dur| Utc::now() + dur)
+                .ok()
+        });
 
         let (val_num, val_json) = match value {
             StoreValue::Json(json) => (None, Some(json)),
@@ -93,13 +91,11 @@ impl crate::bucketstore::BucketStore for Postgres {
         ttl: Option<Duration>,
         cond: SetCondition,
     ) -> StoreResult<Option<Entry>> {
-        let expires_at = ttl
-            .map(|ttl| {
-                chrono::Duration::from_std(ttl)
-                    .map(|dur| Utc::now() + dur)
-                    .ok()
-            })
-            .flatten();
+        let expires_at = ttl.and_then(|ttl| {
+            chrono::Duration::from_std(ttl)
+                .map(|dur| Utc::now() + dur)
+                .ok()
+        });
 
         let (val_num, val_json) = match value {
             StoreValue::Json(json) => (None, Some(json)),

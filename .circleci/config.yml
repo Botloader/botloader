@@ -146,40 +146,6 @@ jobs:
             docker push "botloader/bl-frontend:latest"
             docker tag botloader/bl-frontend:latest "botloader/bl-frontend:$CIRCLE_BUILD_NUM"
             docker push "botloader/bl-frontend:$CIRCLE_BUILD_NUM"
-  build-runtime-types:
-    resource_class: medium
-    docker:
-      - image: cimg/node:17.2.0
-    steps:
-      - checkout
-      - run:
-          name: Create declerations
-          working_directory: components/runtime/src/ts
-          command: |
-            npm install typescript
-            node node_modules/typescript/bin/tsc --version
-            node node_modules/typescript/bin/tsc --build tsconfig.json
-
-            cp -r globals typings
-
-            tar -cf typings.tar typings/
-      - persist_to_workspace:
-          root: components/runtime/src/ts
-          paths:
-            - typings.tar
-  deploy-runtime-types:
-    resource_class: medium
-    docker:
-      - image: d3fk/s3cmd:latest
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Push typings
-          working_directory: /tmp/workspace
-          command: |
-            s3cmd --access_key="$LINODE_OBJ_STORAGE_ACCESS_KEY" --secret_key="$LINODE_OBJ_STORAGE_ACCESS_SECRET" --host "$LINODE_OBJ_STORAGE_CLUSTER" --host-bucket "%(bucket)s.$LINODE_OBJ_STORAGE_CLUSTER" --acl-public put typings.tar "s3://botloader-misc/typings-$CIRCLE_BRANCH.tar"
-
 workflows:
   build-n-publish-frontend:
     jobs:
@@ -199,13 +165,3 @@ workflows:
           filters:
             branches:
               only: master
-  runtime-types:
-    jobs:
-      - build-runtime-types
-      - deploy-runtime-types:
-          requires:
-            - build-runtime-types
-
-        # filters:
-        #   branches:
-        #     only: master

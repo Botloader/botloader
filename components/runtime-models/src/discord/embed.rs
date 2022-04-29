@@ -67,8 +67,7 @@ impl From<Embed> for twilight_model::channel::embed::Embed {
             thumbnail: v.thumbnail.map(From::from),
             timestamp: v
                 .timestamp
-                .map(|v| Timestamp::from_micros(v.0 as i64 * 1000).ok())
-                .flatten(),
+                .and_then(|v| Timestamp::from_micros(v.0 as i64 * 1000).ok()),
             title: v.title,
             url: v.url,
             video: v.video.map(From::from),

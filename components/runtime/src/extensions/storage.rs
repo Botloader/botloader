@@ -198,7 +198,7 @@ pub async fn op_botloader_bucket_storage_list(
             rt_ctx.guild_id,
             args.bucket_name,
             args.key_pattern.unwrap_or_else(|| "%".to_string()),
-            args.after.unwrap_or_else(String::new),
+            args.after.unwrap_or_default(),
             limit,
         )
         .await?;
