@@ -400,7 +400,7 @@ pub async fn op_discord_crosspost_message(
         .await
         .map_err(|err| handle_discord_error(&state, err));
 
-    Ok(());
+    Ok(())
 }
 
 #[op]
