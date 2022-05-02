@@ -389,13 +389,12 @@ pub async fn op_discord_crosspost_message(
     let ctx = get_rt_ctx(&state);
     get_guild_channel(&state, &ctx, channel_id).await?;
 
-    ctx
-        .discord_config
+    ctx.discord_config
         .client
         .crosspost_message(channel_id, message_id)
         .exec()
         .await
-        .map_err(|err| handle_discord_error(&state, err));
+        .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
 }
