@@ -1,6 +1,7 @@
 use std::{collections::HashMap, num::NonZeroU64};
 
 use chrono::{DateTime, Utc};
+use twilight_model::id::{marker::GuildMarker, Id};
 
 pub struct Plugin {
     pub id: u64,
@@ -37,3 +38,15 @@ pub struct VersionNumber {
 }
 
 pub struct VersionMeta {}
+
+pub struct GuildPluginSubscription {
+    pub guild_id: Id<GuildMarker>,
+    pub plugin_id: u64,
+    pub version: VersionSelector,
+}
+
+pub enum VersionSelector {
+    LatestStable,
+    LatestDevel,
+    Pinned(VersionNumber),
+}
