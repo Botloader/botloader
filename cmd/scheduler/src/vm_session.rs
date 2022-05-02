@@ -87,6 +87,7 @@ impl VmSession {
     }
 
     pub async fn start(&mut self) {
+        self.try_retry_load_guild_scripts().await;
         self.load_contribs().await;
     }
 
