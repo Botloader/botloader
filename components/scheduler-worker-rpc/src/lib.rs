@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use runtime_models::internal::script::ScriptMeta;
 use serde::{Deserialize, Serialize};
-use stores::config::{PremiumSlotTier, Script};
+use stores::{
+    config::{PremiumSlotTier, Script},
+    plugins::{self, Plugin},
+};
 use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Deserialize, Serialize)]
@@ -10,6 +13,7 @@ pub enum SchedulerMessage {
     Dispatch(VmDispatchEvent),
     /// stops the current vm and creates a new one to run the provided scripts
     CreateScriptsVm(CreateScriptsVmReq),
+    CreatePluginVm(CreatePluginVmReq),
     Complete,
     Shutdown,
 }
@@ -20,6 +24,16 @@ pub struct CreateScriptsVmReq {
     pub premium_tier: Option<PremiumSlotTier>,
     pub guild_id: Id<GuildMarker>,
     pub scripts: Vec<Script>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct CreatePluginVmReq {
+    pub seq: u64,
+    pub premium_tier: Option<PremiumSlotTier>,
+    pub guild_id: Id<GuildMarker>,
+    pub scripts: HashMap<String, String>,
+    pub plugin: Plugin,
+    pub version: plugins::Version,
 }
 
 #[derive(Deserialize, Serialize)]

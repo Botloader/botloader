@@ -16,7 +16,8 @@ use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::{GuildLogger, LogEntry};
 use runtime_models::internal::script::ScriptMeta;
 use scheduler_worker_rpc::{
-    CreateScriptsVmReq, MetricEvent, SchedulerMessage, VmDispatchEvent, WorkerMessage,
+    CreatePluginVmReq, CreateScriptsVmReq, MetricEvent, SchedulerMessage, VmDispatchEvent,
+    WorkerMessage,
 };
 use stores::{
     config::{IntervalTimerContrib, Script, ScriptContributes},
@@ -437,15 +438,24 @@ impl VmSession {
     }
 
     fn make_create_scripts_req(&self, seq: u64) -> SchedulerMessage {
-        SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
-            seq,
-            guild_id: self.guild_id,
-            premium_tier: self.get_premium_tier().option(),
-            scripts: match &self.vm_type {
-                SessionType::GuildScripts(data) => data.scripts.clone(),
-                SessionType::Plugin(_) => todo!(),
-            },
-        })
+        match &self.vm_type {
+            SessionType::GuildScripts(gd) => {
+                SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
+                    seq,
+                    guild_id: self.guild_id,
+                    premium_tier: self.get_premium_tier().option(),
+                    scripts: gd.scripts.clone(),
+                })
+            }
+            SessionType::Plugin(pd) => SchedulerMessage::CreatePluginVm(CreatePluginVmReq {
+                seq,
+                guild_id: self.guild_id,
+                premium_tier: self.get_premium_tier().option(),
+                scripts: pd.loaded_version.data.sources.clone(),
+                plugin: pd.plugin.clone(),
+                version: pd.loaded_version.clone(),
+            }),
+        }
     }
 
     async fn broken_worker(&mut self) {

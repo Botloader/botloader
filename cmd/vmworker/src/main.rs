@@ -4,7 +4,9 @@ use clap::Parser;
 use common::DiscordConfig;
 use guild_logger::GuildLogger;
 use runtime::{CreateRuntimeContext, RuntimeEvent};
-use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
+use scheduler_worker_rpc::{
+    CreatePluginVmReq, CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage,
+};
 use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
 use tracing::{error, info};
@@ -213,6 +215,7 @@ impl Worker {
             }
             SchedulerMessage::Shutdown => Ok(ContinueState::Stop),
             SchedulerMessage::CreateScriptsVm(data) => self.handle_create_scripts_vm(data).await,
+            SchedulerMessage::CreatePluginVm(data) => self.handle_create_plugin_vm(data).await,
             SchedulerMessage::Complete => {
                 // complete the vm
                 if let Some(current) = &self.current_state {
@@ -370,6 +373,13 @@ impl Worker {
 
         self.write_message(WorkerMessage::Ack(req.seq)).await?;
         Ok(ContinueState::Continue)
+    }
+
+    async fn handle_create_plugin_vm(
+        &mut self,
+        _req: CreatePluginVmReq,
+    ) -> anyhow::Result<ContinueState> {
+        todo!();
     }
 
     async fn write_message(&mut self, v: WorkerMessage) -> anyhow::Result<()> {
