@@ -6,7 +6,7 @@ use std::{
 use crate::{
     command_manager,
     scheduler::Store,
-    vm_session::{VmSession, VmSessionEvent},
+    vm_session::{CreateSessionType, VmSession, VmSessionEvent},
 };
 use chrono::{DateTime, Utc};
 use common::DiscordConfig;
@@ -57,7 +57,7 @@ pub struct GuildHandler {
 
     id_gen: u64,
 
-    scripts_session: VmSession,
+    scripts_session: Option<VmSession>,
 }
 
 impl GuildHandler {
@@ -93,15 +93,7 @@ impl GuildHandler {
             premium_tier: premium_tier.clone(),
 
             cmd_manager_handle: cmd_manager_handle.clone(),
-            scripts_session: VmSession::new(
-                stores,
-                guild_id,
-                logger,
-                worker_pool,
-                cmd_manager_handle,
-                discord_config,
-                premium_tier,
-            ),
+            scripts_session: None,
         };
 
         tokio::spawn(worker.run());
@@ -109,10 +101,36 @@ impl GuildHandler {
         handle
     }
 
+    async fn ensure_scripts_session(&mut self) {
+        let scripts_session = match VmSession::new(
+            CreateSessionType::GuildScripts,
+            self.stores.clone(),
+            self.guild_id,
+            self.logger.clone(),
+            self.worker_pool.clone(),
+            self.cmd_manager_handle.clone(),
+            self.discord_config.clone(),
+            self.premium_tier.clone(),
+        )
+        .await
+        {
+            Ok(mut v) => {
+                v.start().await;
+                Some(v)
+            }
+            Err(err) => {
+                error!(%err, "failed creating guild scripts session");
+                None
+            }
+        };
+
+        self.scripts_session = scripts_session;
+    }
+
     #[instrument(skip(self), fields(guild_id = self.guild_id.get()))]
     async fn run(mut self) {
         self.fetch_premium_tier().await;
-        self.scripts_session.start().await;
+        self.ensure_scripts_session().await;
 
         while let Some(next) = self.next_event().await {
             match next {
@@ -124,15 +142,17 @@ impl GuildHandler {
                     self.handle_guild_command(cmd).await;
                 }
                 NextGuildAction::VmAction(action) => {
-                    if let Some(evt) = self.scripts_session.handle_action(action).await {
-                        match evt {
-                            crate::vm_session::VmSessionEvent::TooManyInvalidRequests => {
-                                let _ = self.scheduler_tx.send(evt);
-                                break;
-                            }
-                            crate::vm_session::VmSessionEvent::ForciblyShutdown => {
-                                let _ = self.scheduler_tx.send(evt);
-                                break;
+                    if let Some(session) = &mut self.scripts_session {
+                        if let Some(evt) = session.handle_action(action).await {
+                            match evt {
+                                crate::vm_session::VmSessionEvent::TooManyInvalidRequests => {
+                                    let _ = self.scheduler_tx.send(evt);
+                                    break;
+                                }
+                                crate::vm_session::VmSessionEvent::ForciblyShutdown => {
+                                    let _ = self.scheduler_tx.send(evt);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -141,19 +161,27 @@ impl GuildHandler {
         }
 
         info!("shutting down guild handler");
-        self.scripts_session.shutdown().await;
+        if let Some(session) = &mut self.scripts_session {
+            session.shutdown().await;
+        }
     }
 
     async fn next_event(&mut self) -> Option<NextGuildAction> {
-        self.scripts_session.init_timers().await;
-
-        tokio::select! {
-            next_scripts_evt = self.scripts_session.next_action() => {
-                Some(NextGuildAction::VmAction(next_scripts_evt))
-            },
-            next_guild_evt = self.guild_rx.recv() => {
-                next_guild_evt.map(NextGuildAction::GuildCommand)
+        if let Some(session) = &mut self.scripts_session {
+            session.init_timers().await;
+            tokio::select! {
+                next_scripts_evt = session.next_action() => {
+                    Some(NextGuildAction::VmAction(next_scripts_evt))
+                },
+                next_guild_evt = self.guild_rx.recv() => {
+                    next_guild_evt.map(NextGuildAction::GuildCommand)
+                }
             }
+        } else {
+            self.guild_rx
+                .recv()
+                .await
+                .map(NextGuildAction::GuildCommand)
         }
     }
 
@@ -167,7 +195,9 @@ impl GuildHandler {
             //         .await;
             // }
             GuildCommand::ReloadScripts => {
-                self.scripts_session.reload_guild_scripts().await;
+                if let Some(session) = &mut self.scripts_session {
+                    session.reload_scripts().await;
+                }
             }
             GuildCommand::Shutdown => {
                 panic!("shutdown should be handled by caller")
@@ -210,7 +240,9 @@ impl GuildHandler {
                 unreachable!("this event should not be forwarded to the guild worker");
             }
             _ => {
-                self.scripts_session.send_discord_guild_event(evt).await;
+                if let Some(session) = &mut self.scripts_session {
+                    session.send_discord_guild_event(evt).await;
+                }
             }
         }
     }

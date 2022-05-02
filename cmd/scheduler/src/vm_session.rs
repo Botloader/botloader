@@ -20,6 +20,7 @@ use scheduler_worker_rpc::{
 };
 use stores::{
     config::{IntervalTimerContrib, Script, ScriptContributes},
+    plugins::{GuildPluginSubscription, Plugin, Version},
     timers::{IntervalTimer, ScheduledTask},
 };
 use tokio::sync::oneshot;
@@ -39,15 +40,17 @@ pub struct VmSession {
 
     premium_tier: Arc<RwLock<PremiumTierState>>,
 
+    vm_type: SessionType,
+
     pending_acks: HashMap<u64, PendingAck>,
     current_worker: Option<WorkerHandle>,
     force_load_scripts_next: bool,
-    scripts: Vec<Script>,
     id_gen: u64,
 }
 
 impl VmSession {
-    pub fn new(
+    pub async fn new(
+        kind: CreateSessionType,
         stores: Arc<dyn Store>,
         guild_id: Id<GuildMarker>,
         logger: GuildLogger,
@@ -55,39 +58,35 @@ impl VmSession {
         cmd_manager_handle: crate::command_manager::Handle,
         discord_config: Arc<DiscordConfig>,
         premium_tier: Arc<RwLock<PremiumTierState>>,
-    ) -> VmSession {
+    ) -> Result<VmSession, anyhow::Error> {
+        let loaded_conf = kind.load(guild_id, &stores).await?;
+
         let interval_timer_man =
             crate::interval_timer_manager::Manager::new(guild_id, stores.clone());
 
         let tasks_man = scheduled_task_manager::Manager::new(guild_id, stores.clone());
 
-        VmSession {
+        Ok(VmSession {
             stores,
             guild_id,
             logger,
             worker_pool,
             discord_config,
             premium_tier,
+            vm_type: loaded_conf,
 
             id_gen: 1,
             pending_acks: HashMap::new(),
             current_worker: None,
-            scripts: Vec::new(),
             force_load_scripts_next: false,
 
             interval_timers_man: interval_timer_man,
             cmd_manager_handle,
             scheduled_tasks_man: tasks_man,
-        }
-    }
-
-    pub fn set_guild_scripts(&mut self, scripts: Vec<Script>) {
-        self.scripts = scripts;
-        self.force_load_scripts_next = true;
+        })
     }
 
     pub async fn start(&mut self) {
-        self.try_retry_load_guild_scripts().await;
         self.load_contribs().await;
     }
 
@@ -172,42 +171,19 @@ impl VmSession {
 
         let evt_id = self.gen_id();
         if let Some(worker) = &self.current_worker {
-            if worker
-                .tx
-                .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
-                    seq: evt_id,
-                    guild_id: self.guild_id,
-                    premium_tier: self.get_premium_tier().option(),
-                    scripts: self.scripts.clone(),
-                }))
-                .is_err()
-            {
+            let req = self.make_create_scripts_req(evt_id);
+            if worker.tx.send(req).is_err() {
                 self.broken_worker().await;
             }
         } else {
             self.reset_contribs();
 
-            if self.scripts.is_empty() {
+            if self.vm_type.is_scripts_empty() {
                 return;
             }
 
             self.force_load_scripts_next = true;
             self.ensure_claim_worker().await;
-        }
-    }
-
-    async fn try_retry_load_guild_scripts(&mut self) {
-        loop {
-            match self.stores.list_scripts(self.guild_id).await {
-                Ok(scripts) => {
-                    self.scripts = scripts.into_iter().filter(|v| v.enabled).collect();
-                    return;
-                }
-                Err(err) => {
-                    error!(%err, "failed loading guild scripts, retrying in 10 secs");
-                    tokio::time::sleep(Duration::from_secs(10)).await;
-                }
-            }
         }
     }
 
@@ -356,9 +332,14 @@ impl VmSession {
         }
     }
 
-    pub async fn reload_guild_scripts(&mut self) {
-        self.try_retry_load_guild_scripts().await;
-        self.load_contribs().await;
+    pub async fn reload_scripts(&mut self) {
+        match self.vm_type.load(self.guild_id, &self.stores).await {
+            Ok(new_conf) => {
+                self.vm_type = new_conf;
+                self.load_contribs().await;
+            }
+            Err(err) => error!(%err, "failed reloading vm session config"),
+        }
     }
 
     async fn dispatch_scheduled_task(&mut self, task: ScheduledTask) {
@@ -397,7 +378,7 @@ impl VmSession {
     }
 
     async fn dispatch_worker_evt(&mut self, t: String, data: serde_json::Value, ack: PendingAck) {
-        if self.scripts.is_empty() {
+        if self.vm_type.is_scripts_empty() {
             return;
         }
 
@@ -439,16 +420,8 @@ impl VmSession {
                     self.pending_acks.clear();
                     self.reset_contribs();
 
-                    if worker
-                        .tx
-                        .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
-                            seq: self.gen_id(),
-                            guild_id: self.guild_id,
-                            premium_tier: self.get_premium_tier().option(),
-                            scripts: self.scripts.clone(),
-                        }))
-                        .is_err()
-                    {
+                    let seq = self.gen_id();
+                    if worker.tx.send(self.make_create_scripts_req(seq)).is_err() {
                         // broken worker, get a new one
                         self.worker_pool.return_worker(worker, true);
                         continue;
@@ -461,6 +434,18 @@ impl VmSession {
                 break;
             }
         }
+    }
+
+    fn make_create_scripts_req(&self, seq: u64) -> SchedulerMessage {
+        SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
+            seq,
+            guild_id: self.guild_id,
+            premium_tier: self.get_premium_tier().option(),
+            scripts: match &self.vm_type {
+                SessionType::GuildScripts(data) => data.scripts.clone(),
+                SessionType::Plugin(_) => todo!(),
+            },
+        })
     }
 
     async fn broken_worker(&mut self) {
@@ -572,4 +557,85 @@ pub enum PendingAck {
     Dispatch(Option<oneshot::Sender<()>>),
     ScheduledTask(u64),
     IntervalTimer(String),
+}
+
+pub enum CreateSessionType {
+    GuildScripts,
+    Plugin(u64),
+}
+
+impl CreateSessionType {
+    async fn load(
+        &self,
+        guild_id: Id<GuildMarker>,
+        stores: &Arc<dyn Store>,
+    ) -> Result<SessionType, anyhow::Error> {
+        match self {
+            Self::GuildScripts => {
+                Ok(SessionType::try_retry_load_guild_scripts(guild_id, stores).await)
+            }
+            Self::Plugin(id) => SessionType::load_plugin(guild_id, *id, stores).await,
+        }
+    }
+}
+
+pub enum SessionType {
+    GuildScripts(GuildScriptsSession),
+    Plugin(PluginSession),
+}
+
+pub struct GuildScriptsSession {
+    scripts: Vec<Script>,
+}
+
+pub struct PluginSession {
+    plugin: Plugin,
+    subscription: GuildPluginSubscription,
+    loaded_version: Version,
+}
+
+impl SessionType {
+    async fn try_retry_load_guild_scripts(
+        guild_id: Id<GuildMarker>,
+        stores: &Arc<dyn Store>,
+    ) -> SessionType {
+        loop {
+            match stores.list_scripts(guild_id).await {
+                Ok(scripts) => {
+                    let scripts = scripts.into_iter().filter(|v| v.enabled).collect();
+                    return Self::GuildScripts(GuildScriptsSession { scripts });
+                }
+                Err(err) => {
+                    error!(%err, "failed loading guild scripts, retrying in 10 secs");
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                }
+            }
+        }
+    }
+
+    async fn load_plugin(
+        guild_id: Id<GuildMarker>,
+        plugin_id: u64,
+        stores: &Arc<dyn Store>,
+    ) -> Result<SessionType, anyhow::Error> {
+        todo!();
+    }
+
+    async fn load(
+        &self,
+        guild_id: Id<GuildMarker>,
+        stores: &Arc<dyn Store>,
+    ) -> Result<Self, anyhow::Error> {
+        match self {
+            Self::GuildScripts(_) => Ok(Self::try_retry_load_guild_scripts(guild_id, stores).await),
+            Self::Plugin(plugin) => Self::load_plugin(guild_id, plugin.plugin.id, stores).await,
+        }
+    }
+
+    fn is_scripts_empty(&self) -> bool {
+        match self {
+            Self::GuildScripts(data) => data.scripts.is_empty(),
+            Self::Plugin(data) => data.loaded_version.data.sources.is_empty(),
+        }
+    }
 }
