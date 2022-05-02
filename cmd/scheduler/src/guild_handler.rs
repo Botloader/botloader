@@ -111,7 +111,6 @@ impl GuildHandler {
 
     #[instrument(skip(self), fields(guild_id = self.guild_id.get()))]
     async fn run(mut self) {
-        self.try_retry_load_scripts().await;
         self.fetch_premium_tier().await;
         self.scripts_session.start().await;
 
@@ -143,21 +142,6 @@ impl GuildHandler {
 
         info!("shutting down guild handler");
         self.scripts_session.shutdown().await;
-    }
-
-    async fn try_retry_load_scripts(&mut self) {
-        loop {
-            match self.stores.list_scripts(self.guild_id).await {
-                Ok(scripts) => {
-                    self.scripts_session.set_guild_scripts(scripts);
-                    return;
-                }
-                Err(err) => {
-                    error!(%err, "failed loading guild scripts, retrying in 10 secs");
-                    tokio::time::sleep(Duration::from_secs(10)).await;
-                }
-            }
-        }
     }
 
     async fn next_event(&mut self) -> Option<NextGuildAction> {
