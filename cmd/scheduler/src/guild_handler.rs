@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, RwLock},
-    time::Duration,
-};
+use std::sync::{Arc, RwLock};
 
 use crate::{
     command_manager,
@@ -55,8 +52,6 @@ pub struct GuildHandler {
 
     premium_tier: Arc<RwLock<PremiumTierState>>,
 
-    id_gen: u64,
-
     scripts_session: Option<VmSession>,
 }
 
@@ -83,16 +78,15 @@ impl GuildHandler {
         let worker = GuildHandler {
             stores: stores.clone(),
             guild_id,
-            logger: logger.clone(),
-            worker_pool: worker_pool.clone(),
-            discord_config: discord_config.clone(),
+            logger,
+            worker_pool,
+            discord_config,
 
             guild_rx: cmd_rx,
             scheduler_tx: evt_tx,
-            id_gen: 1,
-            premium_tier: premium_tier.clone(),
+            premium_tier,
 
-            cmd_manager_handle: cmd_manager_handle.clone(),
+            cmd_manager_handle,
             scripts_session: None,
         };
 
