@@ -29,21 +29,22 @@ impl ModuleManager {
         &self,
         module_specifier: &deno_core::ModuleSpecifier,
     ) -> Option<ModuleSource> {
-        if !module_specifier.path().starts_with("/guild_scripts/") {
-            return None;
-        }
-
         let name = module_specifier
             .path()
-            .strip_prefix("/guild_scripts/")?
+            .strip_prefix('/')
+            .unwrap_or_default()
             .strip_suffix(".js")?;
 
         let mut store = self.guild_scripts.borrow_mut();
-        if let Some(script) = store.scripts.iter_mut().find(|v| v.script.name == name) {
+        if let Some(script) = store.scripts.iter_mut().find(|v| v.script.name() == name) {
             script.state = ScriptLoadState::Loaded;
 
-            let source =
-                prepend_script_source_header(&script.compiled.output, Some(&script.script));
+            let source = match &script.script {
+                crate::VmScript::GuildScript(gs) => {
+                    prepend_script_source_header(&script.compiled.output, Some(gs.id))
+                }
+                crate::VmScript::PackScript(_) => script.compiled.output.clone(),
+            };
 
             return Some(ModuleSource {
                 code: source,
@@ -72,7 +73,7 @@ impl ModuleLoader for ModuleManager {
 
         // TODO: remove this hardcoded overload
         if specifier == "botloader" {
-            specifier = "/index";
+            specifier = "/_sdk/index";
         }
 
         let parsed_referrer = Url::parse(referrer).map_err(|e| {

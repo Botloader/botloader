@@ -2,7 +2,7 @@ use crate::error::create_error_fn;
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
     prepend_script_source_header, AnyError, ScriptLoadState, ScriptState, ScriptsStateStore,
-    ScriptsStateStoreHandle,
+    ScriptsStateStoreHandle, VmScript,
 };
 use deno_core::{Extension, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
@@ -34,7 +34,7 @@ pub enum VmCommand {
     // we send a message when that has been accomplished
     UnloadScripts(Vec<Script>),
     UpdateScript(Script),
-    Restart(Vec<Script>),
+    Restart(Vec<VmScript>),
 }
 
 #[derive(Debug)]
@@ -132,7 +132,7 @@ impl Vm {
         }
 
         for script in create_req.load_scripts {
-            rt.run_script(script.id).await;
+            rt.run_script(script.name()).await;
         }
 
         rt.run().await;
@@ -294,8 +294,8 @@ impl Vm {
             }
             VmCommand::DispatchEvent(name, evt, evt_id) => self.dispatch_event(&name, &evt, evt_id),
             VmCommand::LoadScript(script) => {
-                if let Some(script) = self.compile_script(script) {
-                    self.run_script(script.script.id).await
+                if let Some(script) = self.compile_script(VmScript::GuildScript(script)) {
+                    self.run_script(script.script.name()).await
                 }
             }
             VmCommand::UpdateScript(script) => {
@@ -309,8 +309,8 @@ impl Vm {
 
                 let mut need_reset = false;
                 for old in &mut cloned_scripts {
-                    if old.id == script.id {
-                        *old = script.clone();
+                    if old.name() == script.name {
+                        *old = VmScript::GuildScript(script.clone());
                         need_reset = true;
                     }
                 }
@@ -326,7 +326,7 @@ impl Vm {
                     .scripts
                     .iter()
                     .filter_map(|sc| {
-                        if !scripts.iter().any(|isc| isc.id == sc.script.id) {
+                        if !scripts.iter().any(|isc| isc.name == sc.script.name()) {
                             Some(sc.script.clone())
                         } else {
                             None
@@ -341,10 +341,10 @@ impl Vm {
     }
 
     #[instrument(skip(self, script))]
-    fn compile_script(&self, script: Script) -> Option<ScriptState> {
+    fn compile_script(&self, script: VmScript) -> Option<ScriptState> {
         let mut script_store = self.script_store.borrow_mut();
 
-        let name = script.name.clone();
+        let name = script.name().to_owned();
         match script_store.compile_add_script(script) {
             Ok(compiled) => Some(compiled),
             Err(e) => {
@@ -358,15 +358,15 @@ impl Vm {
     }
 
     #[instrument(skip(self))]
-    async fn run_script(&mut self, script_id: u64) {
+    async fn run_script(&mut self, name: &str) {
         let script = {
             let borrow = self.script_store.borrow();
-            if matches!(borrow.is_failed_or_loaded(script_id), Some(true)) {
+            if matches!(borrow.is_failed_or_loaded(name), Some(true)) {
                 info!("script: was already loaded or failed, skipping");
                 return;
             }
 
-            if let Some(script) = borrow.get_script(script_id) {
+            if let Some(script) = borrow.get_script(name) {
                 script.clone()
             } else {
                 error!("tried to load non-existant script");
@@ -377,22 +377,22 @@ impl Vm {
         {
             self.script_store
                 .borrow_mut()
-                .set_state(script_id, ScriptLoadState::Loaded);
+                .set_state(name, ScriptLoadState::Loaded);
         }
 
         let eval_res = {
             let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
 
-            let parsed_uri =
-                Url::parse(format!("file:///guild_scripts/{}.js", script.script.name).as_str())
-                    .unwrap();
+            let parsed_uri = Url::parse(format!("file:///{}.js", name).as_str()).unwrap();
 
             let fut = rt.load_side_module(
                 &parsed_uri,
-                Some(prepend_script_source_header(
-                    &script.compiled.output,
-                    Some(&script.script),
-                )),
+                Some(match script.script {
+                    VmScript::GuildScript(gs) => {
+                        prepend_script_source_header(&script.compiled.output, Some(gs.id))
+                    }
+                    VmScript::PackScript(ps) => ps.original_source,
+                }),
             );
 
             // Yes this is very hacky, we should have a proper solution for this at some point.
@@ -421,7 +421,7 @@ impl Vm {
                 self.log_guild_err(e);
                 self.script_store
                     .borrow_mut()
-                    .set_state(script_id, ScriptLoadState::Failed);
+                    .set_state(name, ScriptLoadState::Failed);
             }
             Ok(rcv) => {
                 self.complete_module_eval(rcv).await;
@@ -578,7 +578,7 @@ impl Vm {
         ));
     }
 
-    async fn restart(&mut self, new_scripts: Vec<Script>) {
+    async fn restart(&mut self, new_scripts: Vec<VmScript>) {
         self.guild_logger.log(LogEntry::info(
             self.ctx.guild_id,
             "restarting guild vm...".to_string(),
@@ -607,7 +607,7 @@ impl Vm {
         self.emit_isolate_handle();
 
         for script in new_scripts {
-            self.run_script(script.id).await;
+            self.run_script(script.name()).await;
         }
 
         self.guild_logger.log(LogEntry::info(
@@ -839,7 +839,7 @@ pub struct CreateRt {
     pub rx: UnboundedReceiver<VmCommand>,
     pub tx: UnboundedSender<GuildVmEvent>,
     pub ctx: VmContext,
-    pub load_scripts: Vec<Script>,
+    pub load_scripts: Vec<VmScript>,
     pub extension_factory: ExtensionFactory,
     pub extension_modules: Vec<ModuleEntry>,
 }

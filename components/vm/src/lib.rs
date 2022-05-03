@@ -19,7 +19,7 @@ pub type AnyError = deno_core::error::AnyError;
 pub static BOTLOADER_CORE_SNAPSHOT: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/BOTLOADER_SNAPSHOT.bin"));
 
-pub fn prepend_script_source_header(source: &str, script: Option<&Script>) -> String {
+pub fn prepend_script_source_header(source: &str, script: Option<u64>) -> String {
     let mut result = gen_script_source_header(script);
     result.push_str(source);
     result.push_str("\nscript.run();");
@@ -35,20 +35,20 @@ fn hmm() {
     assert!(res.lines().count() == 4);
 }
 
-fn gen_script_source_header(script: Option<&Script>) -> String {
-    match script {
+fn gen_script_source_header(script_id: Option<u64>) -> String {
+    match script_id {
         None => r#"
-        import {Script} from "/script";
+        import {Script} from "/_sdk/script";
         const script = new Script(0);
         "#
         .to_string(),
         Some(h) => {
             format!(
                 r#"
-                import {{Script}} from "/script";
+                import {{Script}} from "/_sdk/script";
                 const script = new Script({});
                 "#,
-                h.id
+                h
             )
         }
     }
@@ -80,9 +80,37 @@ pub fn init_v8_flags(v8_flags: &[String]) {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct PackScript {
+    pub name: String,
+    pub original_source: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum VmScript {
+    GuildScript(Script),
+    PackScript(PackScript),
+}
+
+impl VmScript {
+    pub fn name(&self) -> &str {
+        match self {
+            VmScript::GuildScript(gs) => &gs.name,
+            VmScript::PackScript(ps) => &ps.name,
+        }
+    }
+
+    pub fn original_source(&self) -> &str {
+        match self {
+            VmScript::GuildScript(gs) => &gs.original_source,
+            VmScript::PackScript(ps) => &ps.original_source,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct ScriptState {
-    pub script: Script,
+    pub script: VmScript,
     pub state: ScriptLoadState,
     pub compiled: CompiledItem,
 }
@@ -135,11 +163,11 @@ impl ScriptsStateStore {
             if let Some(script_load) = self
                 .scripts
                 .iter()
-                .find(|v| v.script.name == guild_script_name)
+                .find(|v| v.script.name() == guild_script_name)
                 .cloned()
             {
                 if let Some((line, col)) = script_load.get_original_line_col(line, col) {
-                    return Some((format!("guild_scripts/{}.ts", guild_script_name), line, col));
+                    return Some((format!("{}.ts", guild_script_name), line, col));
                 }
             }
         }
@@ -148,7 +176,7 @@ impl ScriptsStateStore {
     }
 
     pub fn get_guild_script_name(res: &str) -> Option<&str> {
-        if let Some(stripped) = res.strip_prefix("file:///guild_scripts/") {
+        if let Some(stripped) = res.strip_prefix("file:///") {
             if let Some(end_trimmed) = stripped.strip_suffix(".js") {
                 return Some(end_trimmed);
             }
@@ -157,8 +185,8 @@ impl ScriptsStateStore {
         None
     }
 
-    pub fn compile_add_script(&mut self, script: Script) -> Result<ScriptState, String> {
-        match tscompiler::compile_typescript(&script.original_source) {
+    pub fn compile_add_script(&mut self, script: VmScript) -> Result<ScriptState, String> {
+        match tscompiler::compile_typescript(&script.original_source()) {
             Ok(compiled) => {
                 let item = ScriptState {
                     compiled,
@@ -174,25 +202,25 @@ impl ScriptsStateStore {
         }
     }
 
-    pub fn is_failed_or_loaded(&self, script_id: u64) -> Option<bool> {
+    pub fn is_failed_or_loaded(&self, name: &str) -> Option<bool> {
         Some(matches!(
-            self.get_script(script_id)?.state,
+            self.get_script(name)?.state,
             ScriptLoadState::Failed | ScriptLoadState::Loaded
         ))
     }
 
-    pub fn set_state(&mut self, script_id: u64, new_state: ScriptLoadState) {
-        if let Some(current) = self.get_script_mut(script_id) {
+    pub fn set_state(&mut self, name: &str, new_state: ScriptLoadState) {
+        if let Some(current) = self.get_script_mut(name) {
             current.state = new_state;
         }
     }
 
-    pub fn get_script(&self, script_id: u64) -> Option<&ScriptState> {
-        self.scripts.iter().find(|v| v.script.id == script_id)
+    pub fn get_script(&self, name: &str) -> Option<&ScriptState> {
+        self.scripts.iter().find(|v| v.script.name() == name)
     }
 
-    pub fn get_script_mut(&mut self, script_id: u64) -> Option<&mut ScriptState> {
-        self.scripts.iter_mut().find(|v| v.script.id == script_id)
+    pub fn get_script_mut(&mut self, name: &str) -> Option<&mut ScriptState> {
+        self.scripts.iter_mut().find(|v| v.script.name() == name)
     }
 }
 
@@ -201,3 +229,44 @@ impl Default for ScriptsStateStore {
         Self::new()
     }
 }
+
+// pub enum CompiledScript {
+//     GuildScript(CompiledGuildScript),
+//     PackScript(CompiledPackScript),
+// }
+
+// pub struct CompiledGuildScript {
+//     pub id: u64,
+//     pub name: String,
+//     pub original_source: String,
+//     pub compiled: CompiledItem,
+// }
+
+// pub struct CompiledPackScript {
+//     pub name: String,
+//     pub original_source: String,
+//     pub compiled: CompiledItem,
+// }
+
+// impl CompiledScript {
+//     pub fn name(&self) -> &str {
+//         match self {
+//             Self::GuildScript(gs) => &gs.name,
+//             Self::PackScript(ps) => &ps.name,
+//         }
+//     }
+
+//     pub fn compiled(&self) -> &CompiledItem {
+//         match self {
+//             Self::GuildScript(gs) => &gs.compiled,
+//             Self::PackScript(ps) => &ps.compiled,
+//         }
+//     }
+
+//     pub fn original_source(&self) -> &str {
+//         match self {
+//             Self::GuildScript(gs) => &gs.original_source,
+//             Self::PackScript(ps) => &ps.original_source,
+//         }
+//     }
+// }

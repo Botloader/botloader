@@ -11,7 +11,10 @@ use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
-use vm::vm::{CreateRt, GuildVmEvent, Vm, VmCommand, VmContext, VmEvent, VmRole};
+use vm::{
+    vm::{CreateRt, GuildVmEvent, Vm, VmCommand, VmContext, VmEvent, VmRole},
+    VmScript,
+};
 use vmthread::{VmThreadCommand, VmThreadFuture, VmThreadHandle};
 
 mod metrics_forwarder;
@@ -320,7 +323,12 @@ impl Worker {
 
         if let Some(current) = &self.current_state {
             // we were already running a vm for this guild, issue a restart command with the new scripts instead
-            let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
+            let _ = current.scripts_vm.send(VmCommand::Restart(
+                req.scripts
+                    .into_iter()
+                    .map(|v| VmScript::GuildScript(v))
+                    .collect(),
+            ));
             self.write_message(WorkerMessage::Ack(req.seq)).await?;
             return Ok(ContinueState::Continue);
         }
@@ -351,7 +359,11 @@ impl Worker {
                 guild_logger: self.guild_logger.clone(),
                 rx: vm_cmd_rx,
                 tx: vm_evt_tx,
-                load_scripts: req.scripts,
+                load_scripts: req
+                    .scripts
+                    .into_iter()
+                    .map(|v| VmScript::GuildScript(v))
+                    .collect(),
 
                 ctx: VmContext {
                     // bot_state: self.inner.shared_state.bot_context.state.clone(),

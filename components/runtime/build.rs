@@ -20,7 +20,7 @@ fn main() {
         r#"
     ::lazy_static::lazy_static! {{
         pub static ref MODULE_MAP: [(::url::Url, &'static str);{}] = [
-            (::url::Url::parse("file:///script_globals.js").unwrap(), "export {{}}"),
+            (::url::Url::parse("file:///_sdk/script_globals.js").unwrap(), "export {{}}"),
             "#,
         compiled_files.len() + 1
     );
@@ -31,7 +31,7 @@ fn main() {
 
     for (i, f) in compiled_files.iter().enumerate() {
         body.push_str(&format!(
-            r#"(::url::Url::parse("file:///{}.js").unwrap(), include_js!("{}.js"))"#,
+            r#"(::url::Url::parse("file:///_sdk/{}.js").unwrap(), include_js!("{}.js"))"#,
             f, f
         ));
         if i != compiled_files.len() - 1 {
