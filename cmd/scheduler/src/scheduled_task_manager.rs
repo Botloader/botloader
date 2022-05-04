@@ -52,12 +52,8 @@ impl Manager {
     }
 
     pub fn next_action(&mut self) -> NextAction {
-        if self.next_task_time.is_none() {
-            panic!("next task time not initilized")
-        };
-
         match self.next_task_time {
-            None => unreachable!(),
+            None => NextAction::None,
             Some(None) => NextAction::None,
             Some(Some(t)) => {
                 if Utc::now() > t {
