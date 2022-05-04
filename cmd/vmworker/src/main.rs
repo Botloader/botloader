@@ -263,7 +263,12 @@ impl Worker {
         match evt {
             VmEvent::Shutdown(reason) => {
                 info!("vm shut down: {:?}", reason);
-                self.current_state = None;
+                // shut down the vm thread
+                self.wait_shutdown_current_vm().await;
+
+                while let Ok(evt) = self.runtime_evt_rx.try_recv() {
+                    self.handle_runtime_evt(evt).await?;
+                }
 
                 match reason {
                     vmthread::ShutdownReason::OutOfMemory => {
@@ -280,6 +285,8 @@ impl Worker {
                             .await?
                     }
                 }
+
+                self.write_message(WorkerMessage::NonePending).await?
             }
             VmEvent::DispatchedEvent(id) => self.write_message(WorkerMessage::Ack(id)).await?,
             VmEvent::VmFinished => {
