@@ -99,6 +99,10 @@ impl VmSession {
                     self.guild_id,
                     format!("vm was forcibly shut down, reason: {:?}", reason),
                 ));
+
+                self.reset_contribs();
+                self.pending_acks.clear();
+
                 match reason {
                     scheduler_worker_rpc::ShutdownReason::TooManyInvalidRequests => {
                         return Some(VmSessionEvent::TooManyInvalidRequests);
