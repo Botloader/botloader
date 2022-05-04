@@ -1,8 +1,29 @@
 use std::{collections::HashMap, num::NonZeroU64};
 
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use twilight_model::id::{marker::GuildMarker, Id};
+
+#[async_trait]
+pub trait PluginStore: Send + Sync {
+    async fn list_published_plugins(&self);
+
+    async fn get_plugin(&self);
+    async fn create_plugin(&self);
+    async fn update_plugin(&self);
+    async fn delete_plugin(&self);
+
+    async fn get_plugin_version(&self);
+    async fn list_plugin_versions(&self);
+    async fn create_plugin_version(&self);
+    async fn delete_plugin_version(&self);
+    async fn get_latest_plugin_version(&self, selector: VersionSelector);
+
+    async fn create_update_guild_plugin_subscription(&self);
+    async fn list_guild_plugin_subscriptions(&self);
+    async fn delete_guild_plugin_subscription(&self);
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Plugin {
