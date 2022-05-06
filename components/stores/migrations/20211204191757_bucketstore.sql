@@ -12,6 +12,6 @@ CREATE TABLE IF NOT EXISTS bucket_store (
     PRIMARY KEY (guild_id, bucket, key)
 );
 
-CREATE INDEX bucket_store_float_idx ON bucket_store (guild_id, bucket, value_float)
+CREATE INDEX IF NOT EXISTS bucket_store_float_idx ON bucket_store (guild_id, bucket, value_float)
 WHERE (value_float IS NOT NULL);
 

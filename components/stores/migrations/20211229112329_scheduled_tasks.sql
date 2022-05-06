@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS scheduled_tasks (
     exec_at timestamp with time zone NOT NULL
 );
 
-CREATE INDEX scheduled_tasks_guild_id_exec_at_idx ON scheduled_tasks (guild_id, exec_at);
+CREATE INDEX IF NOT EXISTS scheduled_tasks_guild_id_exec_at_idx ON scheduled_tasks (guild_id, exec_at);
 
-CREATE UNIQUE INDEX scheduled_tasks_unique_key_idx ON scheduled_tasks (guild_id, name, unique_key)
+CREATE UNIQUE INDEX IF NOT EXISTS scheduled_tasks_unique_key_idx ON scheduled_tasks (guild_id, name, unique_key)
 WHERE (unique_key IS NOT NULL);
 
