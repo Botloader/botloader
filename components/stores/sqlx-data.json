@@ -492,6 +492,107 @@
       "nullable": []
     }
   },
+  "1ee469c23651b9a824b778b713d3aee57265a5684f8e53a475ece6bae6b7027d": {
+    "query": "SELECT plugin_id,created_at,kind,data,version_major,version_minor FROM plugin_versions WHERE plugin_id = $1 AND (kind=0 OR kind=1 OR kind=2) ORDER BY version_major DESC, version_minor DESC limit 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "kind",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "data",
+          "type_info": "Jsonb"
+        },
+        {
+          "ordinal": 4,
+          "name": "version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 5,
+          "name": "version_minor",
+          "type_info": "Int2"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "21e14b1f8f1102c97f9ceabf32b2282e7915655498febc78a5288b6b14a05ca4": {
+    "query": "DELETE FROM guild_plugin_subscriptions WHERE guild_id=$1 AND plugin_id=$2 \n             RETURNING guild_id,plugin_id,pinned_version_major,pinned_version_minor,use_latest_stable,use_devel",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "pinned_version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "pinned_version_minor",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "use_latest_stable",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 5,
+          "name": "use_devel",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
+      ]
+    }
+  },
   "22478f0665fc8d1bfe289311323ab57b2a4915510c2cc8b1f968efa2a07ed84c": {
     "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE user_id = $1;",
     "describe": {
@@ -705,6 +806,68 @@
       ]
     }
   },
+  "327c8452462b1f532c2daac7596d084cd714b075d4aa93e0529a5352aead1591": {
+    "query": "DELETE FROM plugins WHERE id=$1 RETURNING id,created_at,author_id,name,short_description,long_description,is_published,is_official",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "author_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "short_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "long_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "is_published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 7,
+          "name": "is_official",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "37c7c96d21db55b2bb8a79810dea6b0403c80b91a399b57fdc74bbd715a70781": {
     "query": "SELECT token, kind, user_id, discriminator, username, avatar, created_at FROM web_sessions WHERE user_id = $1",
     "describe": {
@@ -880,6 +1043,124 @@
       ]
     }
   },
+  "43edb1b7b009a9dda719a78410df5b8b5414c73a749bacfe1a69c3a9ee2a2d89": {
+    "query": "UPDATE plugins SET\n             author_id = COALESCE($2, plugins.author_id),\n             name = COALESCE($3, plugins.name),\n             short_description = COALESCE($4, plugins.short_description),\n             long_description = COALESCE($5, plugins.long_description),\n             is_published = COALESCE($6, plugins.is_published),\n             is_official = COALESCE($7, plugins.is_official) \n             WHERE id=$1\n             RETURNING id,created_at,author_id,name,short_description,long_description,is_published,is_official",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "author_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "short_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "long_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "is_published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 7,
+          "name": "is_official",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Text",
+          "Text",
+          "Text",
+          "Bool",
+          "Bool"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "472a1c32adae7168712301094d9cda2a4647b28c7165076e0fb6cdf9d4b6b9c2": {
+    "query": "SELECT plugin_id,created_at,kind,data,version_major,version_minor FROM plugin_versions WHERE plugin_id = $1 AND kind=0 ORDER BY version_major DESC, version_minor DESC limit 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "kind",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "data",
+          "type_info": "Jsonb"
+        },
+        {
+          "ordinal": 4,
+          "name": "version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 5,
+          "name": "version_minor",
+          "type_info": "Int2"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "49a6466f558a6f6fd9c3c5fd330502113fabbf0276a0470b6c04ae0fffd551de": {
     "query": "SELECT COUNT(*) FROM scheduled_tasks WHERE guild_id = $1;",
     "describe": {
@@ -1043,6 +1324,58 @@
       ]
     }
   },
+  "4ccf4c3d70edfda829bd14369b5ae57ff1d0df69d4d84c6f3d09f3165e90d0f6": {
+    "query": "SELECT plugin_id,created_at,kind,data,version_major,version_minor FROM plugin_versions WHERE plugin_id=$1 AND version_major=$2 AND version_minor=$3",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "kind",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "data",
+          "type_info": "Jsonb"
+        },
+        {
+          "ordinal": 4,
+          "name": "version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 5,
+          "name": "version_minor",
+          "type_info": "Int2"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int2",
+          "Int2"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "54bb94fe6ee54521736c16389c46c921c61da253122f7c510ca7c0376c988bb3": {
     "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float ASC, updated_at ASC LIMIT $3 OFFSET $4;",
     "describe": {
@@ -1197,6 +1530,58 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "7be6b126cf66ab97f0f7333d4965d9d9af74d1512b95ca7103481c3656a09076": {
+    "query": "DELETE FROM plugin_versions WHERE plugin_id=$1 AND version_major=$2 AND version_minor=$3 \n             RETURNING plugin_id,created_at,kind,data,version_major,version_minor",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "kind",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "data",
+          "type_info": "Jsonb"
+        },
+        {
+          "ordinal": 4,
+          "name": "version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 5,
+          "name": "version_minor",
+          "type_info": "Int2"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int2",
+          "Int2"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
     }
   },
   "7d64e191ab05b594bf2b195fe4c488d994915ce424bbe7c368a9f29de6eb2839": {
@@ -1517,6 +1902,50 @@
       "nullable": []
     }
   },
+  "9422faa83d7d14133a767b1b2e8ea7f55a21f1c4575ced160f12cb195118ed37": {
+    "query": "SELECT plugin_id,created_at,kind,version_major,version_minor FROM plugin_versions WHERE plugin_id=$1 ORDER BY version_major DESC, version_minor DESC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "kind",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "version_minor",
+          "type_info": "Int2"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "958fe1fbab976cc0568657a67df83dd587ab8d81553c7d279030d3d8fe002138": {
     "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND exec_at < $2 AND name = ANY($3::TEXT[]) AND (NOT id = ANY ($4::BIGINT[]))",
     "describe": {
@@ -1777,6 +2206,68 @@
         ]
       },
       "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "a5bf7905907493babac9c2725421886a82d16b3febdfd5ed3136b1a5063a0444": {
+    "query": "SELECT id,created_at,author_id,name,short_description,long_description,is_published,is_official FROM plugins WHERE name ILIKE $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "author_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "short_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "long_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "is_published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 7,
+          "name": "is_official",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
         false,
         false,
         false,
@@ -2179,6 +2670,68 @@
       ]
     }
   },
+  "ce9346bd451381bd2009980f265659538683e09d406da1d4f4ef3a23d7fd8bf1": {
+    "query": "SELECT id,created_at,author_id,name,short_description,long_description,is_published,is_official FROM plugins WHERE id=$1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "author_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "short_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "long_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "is_published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 7,
+          "name": "is_official",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "d0942dc5ef880f05027e995ad1ef360e2260cea50ba8ba81cc57652f4c36d3b1": {
     "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL) AND id > $3 ORDER BY ID ASC LIMIT $4",
     "describe": {
@@ -2258,6 +2811,120 @@
       "nullable": []
     }
   },
+  "d5cc86c141948591fe84dfaf77a224477c0ce3d6f2a5f7cb7afa71694b547adc": {
+    "query": "INSERT INTO plugin_versions (plugin_id,created_at,kind,data,version_major,version_minor)\n             VALUES ($1, now(), $2, $3, $4, $5)\n             RETURNING plugin_id,created_at,kind,data,version_major,version_minor",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "kind",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "data",
+          "type_info": "Jsonb"
+        },
+        {
+          "ordinal": 4,
+          "name": "version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 5,
+          "name": "version_minor",
+          "type_info": "Int2"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int2",
+          "Jsonb",
+          "Int2",
+          "Int2"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "d60f6cafdc20ede8f1a3462dcb8cdda0dd37d7efcf7e47dab785888696011db1": {
+    "query": "SELECT id,created_at,author_id,name,short_description,long_description,is_published,is_official FROM plugins WHERE is_published",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "author_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "short_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "long_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "is_published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 7,
+          "name": "is_official",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "d62c42a65e39b7e77f32c39a80317e1628663f2436e1581d74744786b21461f1": {
     "query": "DELETE FROM web_sessions WHERE token= $1",
     "describe": {
@@ -2268,6 +2935,73 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "df408e98e36dfaed6c6208437118942a889f06158b4a00ff0cce0ecb5a3fd4bd": {
+    "query": "INSERT INTO plugins (created_at,author_id,name,short_description,long_description,is_published,is_official)VALUES (now(), $1, $2, $3, $4, $5, $6) \n             RETURNING id,created_at,author_id,name,short_description,long_description,is_published,is_official",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "author_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "short_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "long_description",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "is_published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 7,
+          "name": "is_official",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text",
+          "Text",
+          "Bool",
+          "Bool"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
     }
   },
   "dffe4939ea31c98c187d18d61743102ae3c9f8b0f4ffe34580a78c29b32fec7e": {
@@ -2287,6 +3021,61 @@
       },
       "nullable": [
         null
+      ]
+    }
+  },
+  "e357119d2b2c7945f35562f7dfdf9ed6ab965e672a35f50fef24e4153250a738": {
+    "query": "INSERT INTO guild_plugin_subscriptions (guild_id,plugin_id,pinned_version_major,pinned_version_minor,use_latest_stable,use_devel)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            ON CONFLICT (guild_id, plugin_id) DO UPDATE SET\n            pinned_version_major = $3,\n            pinned_version_minor = $4,\n            use_latest_stable = $5,\n            use_devel = $6\n            RETURNING guild_id,plugin_id,pinned_version_major,pinned_version_minor,use_latest_stable,use_devel",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "pinned_version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "pinned_version_minor",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "use_latest_stable",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 5,
+          "name": "use_devel",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int2",
+          "Int2",
+          "Bool",
+          "Bool"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
       ]
     }
   },
@@ -2533,6 +3322,56 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "fde4f9f480ec27a06bcff80464205a48a1eaf00693b74f7800260daed19cb970": {
+    "query": "SELECT guild_id,plugin_id,pinned_version_major,pinned_version_minor,use_latest_stable,use_devel\n                FROM guild_plugin_subscriptions WHERE guild_id=$1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "plugin_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "pinned_version_major",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "pinned_version_minor",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "use_latest_stable",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 5,
+          "name": "use_devel",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
+      ]
     }
   }
 }
