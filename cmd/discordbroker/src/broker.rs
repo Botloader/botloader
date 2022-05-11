@@ -210,14 +210,6 @@ impl Broker {
             }
 
             Event::InteractionCreate(i) => {
-                if matches!(
-                    i.0,
-                    twilight_model::application::interaction::Interaction::ModalSubmit(_)
-                ) {
-                    info!("threw away modal interaction");
-                    return;
-                }
-
                 if let Some(guild_id) = i.guild_id() {
                     guild_id
                 } else {

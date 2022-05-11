@@ -6,7 +6,7 @@ import { ReactionType } from '../generated/discord/ReactionType';
 import { IActionRow, IButton, ISelectMenu, ITextInput, SendEmoji } from './index';
 import { encodeInteractionCustomId } from './interaction';
 
-export type AnyComponent = ActionRow | Button | SelectMenu;
+export type AnyComponent = ActionRow | Button | SelectMenu | ShortTextInput | ParagraphTextInput;
 
 export abstract class BaseComponent {
     kind: ComponentType;
