@@ -16,7 +16,7 @@ prost = "0.9"
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"
 
-twilight-model = "0.10.1"
+twilight-model = {git = "https://github.com/twilight-rs/twilight"}
 
 
 [build-dependencies]

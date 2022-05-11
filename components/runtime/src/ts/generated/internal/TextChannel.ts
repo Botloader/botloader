@@ -2,7 +2,7 @@ import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
 
 export interface ITextChannel {
   id: string;
-  kind: "Text" | "News" | "Store";
+  kind: "Text" | "News" | "Store" | "Forum" | "GuildDirectory";
   lastPinTimestamp: number | null;
   name: string;
   nsfw: boolean;

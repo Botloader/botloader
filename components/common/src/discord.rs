@@ -35,8 +35,15 @@ pub async fn fetch_discord_config(
 
     let owners = match &application.team {
         Some(t) => t.members.iter().map(|e| e.user.clone()).collect(),
-        None => vec![application.owner.clone()],
+        None => {
+            if let Some(owner) = &application.owner {
+                vec![owner.clone()]
+            } else {
+                Vec::new()
+            }
+        }
     };
+
     info!(
         "discord application owners: {:?}",
         owners.iter().map(|o| o.id).collect::<Vec<_>>()

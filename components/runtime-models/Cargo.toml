@@ -13,6 +13,6 @@ serde_json = "1.0"
 ts-rs = {version = "6.1", features=["format"]}
 serde = { version = "1.0", features = ["derive"] }
 
-twilight-model = "0.10.1"
-twilight-cache-inmemory = "0.10.1"
-twilight-http = {version = "0.10.1", features = ["tracing"]}
+twilight-model = {git = "https://github.com/twilight-rs/twilight"}
+twilight-cache-inmemory = {git = "https://github.com/twilight-rs/twilight"}
+twilight-http = {git = "https://github.com/twilight-rs/twilight", features = ["tracing"]}

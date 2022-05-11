@@ -7,4 +7,6 @@ export type ChannelType =
   | "StageVoice"
   | "NewsThread"
   | "PublicThread"
-  | "PrivateThread";
+  | "PrivateThread"
+  | "GuildDirectory"
+  | "Forum";

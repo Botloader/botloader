@@ -12,4 +12,6 @@ export type InternalGuildChannel =
   | IPublicThread
   | ITextChannel
   | IVoiceChannel
-  | IVoiceChannel;
+  | IVoiceChannel
+  | ITextChannel
+  | ITextChannel;

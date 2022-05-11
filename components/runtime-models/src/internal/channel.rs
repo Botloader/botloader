@@ -19,6 +19,8 @@ pub enum GuildChannel {
     Text(TextChannel),
     Voice(VoiceChannel),
     Stage(VoiceChannel),
+    GuildDirectory(TextChannel),
+    Forum(TextChannel),
 }
 
 impl From<twilight_model::channel::Channel> for GuildChannel {
@@ -42,8 +44,14 @@ impl From<twilight_model::channel::Channel> for GuildChannel {
             twilight_model::channel::ChannelType::GuildVoice => Self::Voice(v.into()),
             twilight_model::channel::ChannelType::GuildStageVoice => Self::Stage(v.into()),
 
-            twilight_model::channel::ChannelType::Private => todo!(),
-            twilight_model::channel::ChannelType::Group => todo!(),
+            twilight_model::channel::ChannelType::Private => {
+                panic!("Bot does not support private channels, we should never reach this path")
+            }
+            twilight_model::channel::ChannelType::Group => {
+                panic!("Bot does not support private channels, we should never reach this path")
+            }
+            twilight_model::channel::ChannelType::GuildDirectory => Self::GuildDirectory(v.into()),
+            twilight_model::channel::ChannelType::GuildForum => Self::Forum(v.into()),
         }
     }
 }
@@ -94,7 +102,7 @@ impl From<twilight_model::channel::Channel> for VoiceChannel {
 #[serde(rename_all = "camelCase")]
 pub struct TextChannel {
     pub id: String,
-    #[ts(type = "'Text'|'News'|'Store'")]
+    #[ts(type = "'Text'|'News'|'Store'|'Forum'|'GuildDirectory'")]
     pub kind: ChannelType,
     pub last_pin_timestamp: Option<NotBigU64>,
     pub name: String,
