@@ -379,8 +379,8 @@ export function encodeInteractionCustomId(name: string, data: any) {
     // The string iterator that is used here iterates over characters,
     // not mere code units
     let length = [...res].length;
-    if (res.length >= 80) {
-        throw new Error("name + JSON.stringify(data) exceeds 80 characters")
+    if (res.length >= 95) {
+        throw new Error("name + JSON.stringify(data) exceeds 95 characters")
     }
 
     return "0:" + res
