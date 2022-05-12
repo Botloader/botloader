@@ -4,6 +4,7 @@ use futures::TryFutureExt;
 use runtime_models::{
     discord::{guild::Guild, message::SendEmoji, util::AuditLogExtras},
     internal::{
+        channel::EditChannel,
         interactions::InteractionCallback,
         member::{Ban, UpdateGuildMemberFields},
         messages::{
@@ -66,6 +67,7 @@ pub fn extension() -> Extension {
             // channels
             op_discord_get_channel::decl(),
             op_discord_get_channels::decl(),
+            op_discord_edit_channel::decl(),
             // pins
             op_discord_get_channel_pins::decl(),
             op_discord_create_pin::decl(),
@@ -851,6 +853,29 @@ pub async fn op_discord_get_channels(
 
     let channels = rt_ctx.bot_state.get_channels(rt_ctx.guild_id).await?;
     Ok(channels.into_iter().map(Into::into).collect())
+}
+
+#[op]
+pub async fn op_discord_edit_channel(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+    params: EditChannel,
+) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // ensure the channel exists on the guild
+    get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    let mut overwrites = Vec::new();
+    let edit = rt_ctx.discord_config.client.update_channel(channel_id);
+
+    Ok(params
+        .apply(&mut overwrites, edit)?
+        .exec()
+        .await?
+        .model()
+        .await?
+        .into())
 }
 
 // Pins

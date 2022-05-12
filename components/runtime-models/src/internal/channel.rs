@@ -1,5 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use twilight_model::id::Id;
+use twilight_validate::channel::ChannelValidationError;
 
 use crate::{
     discord::channel::{ChannelType, PermissionOverwrite, ThreadMetadata, VideoQualityMode},
@@ -351,5 +353,121 @@ fn empty_thread_meta() -> twilight_model::channel::thread::ThreadMetadata {
         create_timestamp: None,
         invitable: None,
         locked: false,
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "IEditChannel",
+    export_to = "bindings/internal/EditChannel.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct EditChannel {
+    #[ts(optional)]
+    #[serde(default)]
+    bitrate: Option<u32>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    name: Option<String>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    nsfw: Option<bool>,
+
+    #[ts(optional)]
+    #[serde(deserialize_with = "crate::deserialize_undefined_null_optional_field")]
+    parent_id: Option<Option<String>>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    permission_overwrites: Option<Vec<PermissionOverwrite>>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    position: Option<NotBigU64>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    rate_limit_per_user: Option<u16>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    topic: Option<String>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    user_limit: Option<u16>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    video_quality_mode: Option<VideoQualityMode>,
+}
+
+impl EditChannel {
+    pub fn apply<'a, 'b, 'c>(
+        &'a self,
+        perms_buf: &'b mut Vec<twilight_model::channel::permission_overwrite::PermissionOverwrite>,
+        mut req: twilight_http::request::channel::UpdateChannel<'c>,
+    ) -> Result<twilight_http::request::channel::UpdateChannel<'c>, ChannelValidationError>
+    where
+        'a: 'c,
+        'b: 'c,
+    {
+        if let Some(bitrate) = &self.bitrate {
+            req = req.bitrate(*bitrate);
+        }
+
+        if let Some(name) = &self.name {
+            req = req.name(name)?;
+        }
+
+        if let Some(nsfw) = &self.nsfw {
+            req = req.nsfw(*nsfw);
+        }
+
+        if let Some(parent_id) = &self.parent_id {
+            // TODO: Should we error on invalid ID's?
+            let parent_id = parent_id
+                .as_ref()
+                .and_then(|s| Id::new_checked(s.parse().ok()?));
+
+            req = req.parent_id(parent_id);
+        }
+
+        if let Some(permission_overwrites) = &self.permission_overwrites {
+            // TODO: should we error on bad overwrites instead of throwing them away?
+            perms_buf.extend(
+                permission_overwrites
+                    .clone()
+                    .into_iter()
+                    .filter_map(|v| v.try_into().ok()),
+            );
+
+            req = req.permission_overwrites(perms_buf);
+        }
+
+        if let Some(position) = &self.position {
+            req = req.position(position.0);
+        }
+
+        if let Some(rate_limit_per_user) = &self.rate_limit_per_user {
+            req = req.rate_limit_per_user(*rate_limit_per_user)?;
+        }
+
+        if let Some(topic) = &self.topic {
+            req = req.topic(topic)?;
+        }
+
+        if let Some(user_limit) = &self.user_limit {
+            req = req.user_limit(*user_limit);
+        }
+
+        if let Some(video_quality_mode) = &self.video_quality_mode {
+            req = req.video_quality_mode((*video_quality_mode).into());
+        }
+
+        Ok(req)
     }
 }

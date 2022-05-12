@@ -1,4 +1,4 @@
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji } from '../generated/discord/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, PermissionOverwrite, VideoQualityMode } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
@@ -188,8 +188,30 @@ export async function getChannels(): Promise<GuildChannel[]> {
     return (await OpWrappers.getChannels()).map(v => guildChannelFromInternal(v));
 }
 
+// import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
+// import type { VideoQualityMode } from "../discord/VideoQualityMode";
+
+/**
+ * All fields are optional, fields you don't set will not be changed.
+ */
+export interface IEditChannel {
+    bitrate?: number;
+    name?: string;
+    nsfw?: boolean;
+    parentId?: string | null;
+    permissionOverwrites?: PermissionOverwrite[];
+    position?: number;
+    rateLimitPerUser?: number;
+    topic?: string;
+    userLimit?: number;
+    videoQualityMode?: VideoQualityMode;
+}
+
+export async function editChannel(channelId: string, fields: IEditChannel): Promise<GuildChannel> {
+    return guildChannelFromInternal(await OpWrappers.editChannel(channelId, fields));
+}
+
 async function createChannel() { }
-async function editChannel() { }
 async function deleteChannel() { }
 
 // Pins 

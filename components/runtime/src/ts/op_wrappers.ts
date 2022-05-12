@@ -230,6 +230,14 @@ export namespace OpWrappers {
         );
     }
 
+    export async function editChannel(channelId: string, fields: Internal.IEditChannel): Promise<Internal.InternalGuildChannel> {
+        return await Deno.core.opAsync(
+            "op_discord_edit_channel",
+            channelId,
+            fields,
+        );
+    }
+
     // Pins
     export async function op_discord_get_channel_pins(channelId: string): Promise<Internal.IMessage[]> {
         return await Deno.core.opAsync(
