@@ -2736,6 +2736,7 @@ dependencies = [
  "twilight-cache-inmemory",
  "twilight-http",
  "twilight-model",
+ "twilight-validate",
 ]
 
 [[package]]

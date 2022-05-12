@@ -4,7 +4,7 @@ pub mod discord;
 pub mod internal;
 pub mod util;
 
-pub(crate) fn deserialize_optional_field<'de, T, D>(
+pub(crate) fn deserialize_undefined_null_optional_field<'de, T, D>(
     deserializer: D,
 ) -> Result<Option<Option<T>>, D::Error>
 where

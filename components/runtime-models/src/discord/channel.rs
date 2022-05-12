@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use twilight_model::{guild::Permissions, id::Id};
 
 use crate::util::NotBigU64;
 
-#[derive(Clone, Debug, Serialize, TS)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/VideoQualityMode.ts")]
 pub enum VideoQualityMode {
@@ -16,6 +17,15 @@ impl From<twilight_model::channel::VideoQualityMode> for VideoQualityMode {
         match v {
             twilight_model::channel::VideoQualityMode::Auto => Self::Auto,
             twilight_model::channel::VideoQualityMode::Full => Self::Full,
+        }
+    }
+}
+
+impl From<VideoQualityMode> for twilight_model::channel::VideoQualityMode {
+    fn from(v: VideoQualityMode) -> Self {
+        match v {
+            VideoQualityMode::Auto => Self::Auto,
+            VideoQualityMode::Full => Self::Full,
         }
     }
 }
@@ -101,7 +111,7 @@ impl From<ChannelType> for twilight_model::channel::ChannelType {
     }
 }
 
-#[derive(Clone, Debug, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PermissionOverwrite.ts")]
 #[serde(rename_all = "camelCase")]
@@ -125,7 +135,22 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwrite>
     }
 }
 
-#[derive(Clone, Debug, Serialize, TS)]
+impl TryFrom<PermissionOverwrite>
+    for twilight_model::channel::permission_overwrite::PermissionOverwrite
+{
+    type Error = ();
+
+    fn try_from(v: PermissionOverwrite) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: Id::new_checked(v.id.parse().map_err(|_| ())?).ok_or(())?,
+            allow: Permissions::from_bits_truncate(v.allow_raw.parse().unwrap_or(0)),
+            deny: Permissions::from_bits_truncate(v.deny_raw.parse().unwrap_or(0)),
+            kind: v.kind.into(),
+        })
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PermissionOverwriteType.ts")]
 pub enum PermissionOverwriteType {
@@ -144,6 +169,17 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwriteType
             twilight_model::channel::permission_overwrite::PermissionOverwriteType::Role => {
                 Self::Role
             }
+        }
+    }
+}
+
+impl From<PermissionOverwriteType>
+    for twilight_model::channel::permission_overwrite::PermissionOverwriteType
+{
+    fn from(v: PermissionOverwriteType) -> Self {
+        match v {
+            PermissionOverwriteType::Member => Self::Member,
+            PermissionOverwriteType::Role => Self::Role,
         }
     }
 }
