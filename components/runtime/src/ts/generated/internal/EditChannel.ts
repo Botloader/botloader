@@ -1,4 +1,4 @@
-import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
+import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 import type { VideoQualityMode } from "../discord/VideoQualityMode";
 
 export interface IEditChannel {
@@ -6,7 +6,7 @@ export interface IEditChannel {
   name?: string;
   nsfw?: boolean;
   parentId?: string | null;
-  permissionOverwrites?: Array<PermissionOverwrite>;
+  permissionOverwrites?: Array<IPermissionOverwrite>;
   position?: number;
   rateLimitPerUser?: number;
   topic?: string;

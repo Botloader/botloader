@@ -1,4 +1,6 @@
 import { PermissionsError } from './error';
+import { IPermissionOverwrite, PermissionOverwriteType } from '../generated/discord/index';
+import { getCurrentGuildId } from './dapi';
 
 export type PermissionResolvable = string | number | bigint | Permissions;
 
@@ -193,5 +195,45 @@ export class Permissions {
      */
     toString(): string {
         return this.value.toString();
+    }
+}
+
+/**
+ * This is a helper class to make creating permission overwrites easier.
+ * 
+ * @example ```ts
+ * // create a member overwrite that targets a single member
+ * let member_overwrite = PermissionOverwrite.member("123", new Permissions(Permissions.CreateInstantInvite, Permissions.SendMessages), new Permissions())
+ * 
+ * // create a role overwrite that targets a role
+ * let role_overwrite = PermissionOverwrite.role("123", new Permissions(Permissions.CreateInstantInvite, Permissions.SendMessages), new Permissions())
+ *
+ * // create a role overwrite for the everyone role that targets everyone
+ * let everyone_overwrite = PermissionOverwrite.everyone(new Permissions(Permissions.CreateInstantInvite, Permissions.SendMessages), new Permissions())
+ *  ```
+ */
+export class PermissionOverwrite implements IPermissionOverwrite {
+    allowRaw: string;
+    denyRaw: string;
+    kind: PermissionOverwriteType;
+    id: string;
+
+    constructor(kind: PermissionOverwriteType, id: string, allow: PermissionResolvable, deny: PermissionResolvable) {
+        this.kind = kind;
+        this.id = id;
+        this.allowRaw = Permissions.resolve(allow).toString();
+        this.denyRaw = Permissions.resolve(deny).toString();
+    }
+
+    static member(id: string, allow: PermissionResolvable, deny: PermissionResolvable) {
+        return new PermissionOverwrite("Member", id, allow, deny);
+    }
+
+    static role(id: string, allow: PermissionResolvable, deny: PermissionResolvable) {
+        return new PermissionOverwrite("Role", id, allow, deny);
+    }
+
+    static everyone(allow: PermissionResolvable, deny: PermissionResolvable) {
+        return PermissionOverwrite.role(getCurrentGuildId(), allow, deny);
     }
 }

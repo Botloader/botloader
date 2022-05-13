@@ -1,6 +1,6 @@
 import { Member } from "./member";
 
-import type { PermissionOverwrite } from "../generated/discord/PermissionOverwrite";
+import type { IPermissionOverwrite } from "../generated/discord/IPermissionOverwrite";
 import type { ThreadMetadata } from "../generated/discord/ThreadMetadata";
 import type { VideoQualityMode } from "../generated/discord/VideoQualityMode";
 import type { ChannelType } from "../generated/discord/ChannelType";
@@ -102,7 +102,7 @@ export class PrivateThread extends BaseChannel {
     messageCount: number;
     ownerId: string | null;
     parentId: string | null;
-    permissionOverwrites: PermissionOverwrite[];
+    permissionOverwrites: IPermissionOverwrite[];
     rateLimitPerUser: number | null;
     threadMetadata: ThreadMetadata;
 
@@ -155,7 +155,7 @@ export class PublicThread extends BaseChannel {
 
 export class CategoryChannel extends BaseChannel {
     kind: "Category" = "Category";
-    permissionOverwrites: PermissionOverwrite[];
+    permissionOverwrites: IPermissionOverwrite[];
     position: bigint;
 
     /**
@@ -174,7 +174,7 @@ export class TextChannel extends BaseChannel {
     lastPinTimestamp: number | null;
     nsfw: boolean;
     parentId: string | null;
-    permissionOverwrites: PermissionOverwrite[];
+    permissionOverwrites: IPermissionOverwrite[];
     position: bigint;
     rateLimitPerUser: number | null;
     topic: string | null;
@@ -229,7 +229,7 @@ export class VoiceChannel extends BaseChannel {
     bitrate: number;
     kind: "Voice" | "StageVoice";
     parentId: string | null;
-    permissionOverwrites: PermissionOverwrite[];
+    permissionOverwrites: IPermissionOverwrite[];
     position: bigint;
     rtcRegion: string | null;
     userLimit: number | null;

@@ -1,9 +1,9 @@
-import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
+import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 
 export interface ICategoryChannel {
   id: string;
   kind: "Category";
   name: string;
-  permissionOverwrites: Array<PermissionOverwrite>;
+  permissionOverwrites: Array<IPermissionOverwrite>;
   position: bigint;
 }
