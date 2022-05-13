@@ -264,7 +264,7 @@ export namespace OpWrappers {
         return await Deno.core.opAsync(
             "op_discord_delete_channel_permission",
             channelId,
-            [channelId, id],
+            [kind, id],
         );
     }
 
