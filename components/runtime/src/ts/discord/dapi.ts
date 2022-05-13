@@ -243,7 +243,9 @@ export async function editChannel(channelId: string, fields: IEditChannel): Prom
     return guildChannelFromInternal(await OpWrappers.editChannel(channelId, fields));
 }
 
-async function deleteChannel() { }
+export async function deleteChannel(channelId: string): Promise<GuildChannel> {
+    return guildChannelFromInternal(await OpWrappers.deleteChannel(channelId));
+}
 
 // Pins 
 export async function getPins(channelId: string): Promise<Message[]> {
