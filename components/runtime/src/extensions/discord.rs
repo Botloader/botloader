@@ -69,6 +69,7 @@ pub fn extension() -> Extension {
             op_discord_get_channels::decl(),
             op_discord_create_channel::decl(),
             op_discord_edit_channel::decl(),
+            op_discord_delete_channel::decl(),
             // pins
             op_discord_get_channel_pins::decl(),
             op_discord_create_pin::decl(),
@@ -894,6 +895,27 @@ pub async fn op_discord_create_channel(
 
     Ok(params
         .apply(&mut overwrites, edit)?
+        .exec()
+        .await?
+        .model()
+        .await?
+        .into())
+}
+
+#[op]
+pub async fn op_discord_delete_channel(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // ensure the channel exists on the guild
+    get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    Ok(rt_ctx
+        .discord_config
+        .client
+        .delete_channel(channel_id)
         .exec()
         .await?
         .model()
