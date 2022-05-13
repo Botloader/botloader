@@ -1,5 +1,5 @@
+import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 import type { ISelfThreadMember } from "./ISelfThreadMember";
-import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
 import type { ThreadMetadata } from "../discord/ThreadMetadata";
 
 export interface IPrivateThread {
@@ -13,7 +13,7 @@ export interface IPrivateThread {
   name: string;
   ownerId: string | null;
   parentId: string | null;
-  permissionOverwrites: Array<PermissionOverwrite>;
+  permissionOverwrites: Array<IPermissionOverwrite>;
   rateLimitPerUser: number | null;
   threadMetadata: ThreadMetadata;
 }

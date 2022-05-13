@@ -113,7 +113,10 @@ impl From<ChannelType> for twilight_model::channel::ChannelType {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/discord/PermissionOverwrite.ts")]
+#[ts(
+    export_to = "bindings/discord/IPermissionOverwrite.ts",
+    rename = "IPermissionOverwrite"
+)]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionOverwrite {
     pub allow_raw: String,

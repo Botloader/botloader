@@ -1,4 +1,4 @@
-import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
+import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 import type { VideoQualityMode } from "../discord/VideoQualityMode";
 
 export interface IVoiceChannel {
@@ -7,7 +7,7 @@ export interface IVoiceChannel {
   kind: "Voice" | "StageVoice";
   name: string;
   parentId: string | null;
-  permissionOverwrites: Array<PermissionOverwrite>;
+  permissionOverwrites: Array<IPermissionOverwrite>;
   position: bigint;
   rtcRegion: string | null;
   userLimit: number | null;

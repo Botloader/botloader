@@ -1,4 +1,4 @@
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, PermissionOverwrite, VideoQualityMode } from '../generated/discord/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
@@ -199,7 +199,16 @@ export interface IEditChannel {
     name?: string;
     nsfw?: boolean;
     parentId?: string | null;
-    permissionOverwrites?: PermissionOverwrite[];
+
+    /**
+     * You can use the {@see PermissionOverwrite} class here. 
+     * @example ```ts
+     * {
+     *      permissionOverwrites: [Discord.PermissionOverwrite.member("213", new Permissions(Permissions.CreateInstantInvite, Permissions.SendMessages), new Permissions()]
+     * }
+     *  ```
+     */
+    permissionOverwrites?: IPermissionOverwrite[];
     position?: number;
     rateLimitPerUser?: number;
     topic?: string;

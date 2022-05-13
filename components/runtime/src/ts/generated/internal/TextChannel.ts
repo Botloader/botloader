@@ -1,4 +1,4 @@
-import type { PermissionOverwrite } from "../discord/PermissionOverwrite";
+import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 
 export interface ITextChannel {
   id: string;
@@ -7,7 +7,7 @@ export interface ITextChannel {
   name: string;
   nsfw: boolean;
   parentId: string | null;
-  permissionOverwrites: Array<PermissionOverwrite>;
+  permissionOverwrites: Array<IPermissionOverwrite>;
   position: bigint;
   rateLimitPerUser: number | null;
   topic: string | null;
