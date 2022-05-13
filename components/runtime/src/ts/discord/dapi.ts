@@ -1,4 +1,4 @@
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType } from '../generated/discord/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
@@ -245,6 +245,14 @@ export async function editChannel(channelId: string, fields: IEditChannel): Prom
 
 export async function deleteChannel(channelId: string): Promise<GuildChannel> {
     return guildChannelFromInternal(await OpWrappers.deleteChannel(channelId));
+}
+
+export async function editChannelPermission(channelId: string, overwrite: IPermissionOverwrite): Promise<void> {
+    return OpWrappers.updateChannelPermission(channelId, overwrite);
+}
+
+export async function deleteChannelPermission(channelId: string, kind: PermissionOverwriteType, id: string): Promise<void> {
+    return OpWrappers.deleteChannelPermission(channelId, kind, id);
 }
 
 // Pins 

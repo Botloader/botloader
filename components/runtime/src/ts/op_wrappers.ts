@@ -249,7 +249,22 @@ export namespace OpWrappers {
         return await Deno.core.opAsync(
             "op_discord_delete_channel",
             channelId,
+        );
+    }
+
+    export async function updateChannelPermission(channelId: string, overwrite: Discord.IPermissionOverwrite): Promise<void> {
+        return await Deno.core.opAsync(
+            "op_discord_update_channel_permission",
             channelId,
+            overwrite,
+        );
+    }
+
+    export async function deleteChannelPermission(channelId: string, kind: Discord.PermissionOverwriteType, id: string): Promise<void> {
+        return await Deno.core.opAsync(
+            "op_discord_delete_channel_permission",
+            channelId,
+            [channelId, id],
         );
     }
 

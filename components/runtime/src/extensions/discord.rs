@@ -2,7 +2,12 @@ use anyhow::anyhow;
 use deno_core::{error::custom_error, op, Extension, OpState};
 use futures::TryFutureExt;
 use runtime_models::{
-    discord::{guild::Guild, message::SendEmoji, util::AuditLogExtras},
+    discord::{
+        channel::{PermissionOverwrite, PermissionOverwriteType},
+        guild::Guild,
+        message::SendEmoji,
+        util::AuditLogExtras,
+    },
     internal::{
         channel::{CreateChannel, EditChannel},
         interactions::InteractionCallback,
@@ -29,7 +34,7 @@ use twilight_http::{
     api_error::{ApiError, GeneralApiError},
     response::StatusCode,
 };
-use twilight_model::id::marker::{MessageMarker, RoleMarker};
+use twilight_model::id::marker::{GenericMarker, MessageMarker, RoleMarker};
 use twilight_model::id::Id;
 use twilight_model::{
     guild::Permissions,
@@ -70,6 +75,8 @@ pub fn extension() -> Extension {
             op_discord_create_channel::decl(),
             op_discord_edit_channel::decl(),
             op_discord_delete_channel::decl(),
+            op_discord_update_channel_permission::decl(),
+            op_discord_delete_channel_permission::decl(),
             // pins
             op_discord_get_channel_pins::decl(),
             op_discord_create_pin::decl(),
@@ -921,6 +928,55 @@ pub async fn op_discord_delete_channel(
         .model()
         .await?
         .into())
+}
+
+#[op]
+pub async fn op_discord_update_channel_permission(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+    permission_overwrite: PermissionOverwrite,
+) -> Result<(), AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // ensure the channel exists on the guild
+    get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    let conv = permission_overwrite
+        .try_into()
+        .map_err(|_| anyhow!("invalid id"))?;
+
+    rt_ctx
+        .discord_config
+        .client
+        .update_channel_permission(channel_id, &conv)
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+#[op]
+pub async fn op_discord_delete_channel_permission(
+    state: Rc<RefCell<OpState>>,
+    channel_id: Id<ChannelMarker>,
+    (kind, overwrite_id): (PermissionOverwriteType, Id<GenericMarker>),
+) -> Result<(), AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // ensure the channel exists on the guild
+    get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    let req = rt_ctx
+        .discord_config
+        .client
+        .delete_channel_permission(channel_id);
+
+    match kind {
+        PermissionOverwriteType::Member => req.member(overwrite_id.cast()).exec().await?,
+        PermissionOverwriteType::Role => req.role(overwrite_id.cast()).exec().await?,
+    };
+
+    Ok(())
 }
 
 // Pins
