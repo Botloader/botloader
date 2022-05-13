@@ -1,6 +1,6 @@
 import { PermissionsError } from './error';
 
-export type PermissionResolvable = (string | number | bigint | Permissions)[];
+export type PermissionResolvable = string | number | bigint | Permissions;
 
 const Flags: [string, bigint][] = [
     ['CreateInstantInvite', 1n << 0n],
@@ -98,7 +98,7 @@ export class Permissions {
 
     readonly value: bigint;
 
-    constructor(...data: PermissionResolvable) {
+    constructor(...data: PermissionResolvable[]) {
         this.value = Permissions.resolve(...data);
     }
 
@@ -124,7 +124,7 @@ export class Permissions {
      * @param data The data to resolve permissions from.
      * @returns The resolved bits.
      */
-    static resolve(...data: PermissionResolvable): bigint {
+    static resolve(...data: PermissionResolvable[]): bigint {
         let result = 0n;
         for (let v of data) {
             if (typeof v === "object") {
@@ -141,7 +141,7 @@ export class Permissions {
      * @param perms The permissions to check for.
      * @returns True if the current value has any of the given permissions.
      */
-    hasAny(...perms: PermissionResolvable): boolean {
+    hasAny(...perms: PermissionResolvable[]): boolean {
         for (let p of perms) {
             const result = Permissions.resolve(p);
             if ((this.value & result) === result) return true;
@@ -153,7 +153,7 @@ export class Permissions {
      * @param perms The permissions to check for.
      * @returns True if the current value has all of the given permissions.
      */
-    hasAll(...perms: PermissionResolvable): boolean {
+    hasAll(...perms: PermissionResolvable[]): boolean {
         for (let p of perms) {
             const result = Permissions.resolve(p);
             if ((this.value & result) !== result) return false;
@@ -166,7 +166,7 @@ export class Permissions {
      * @param perms The permissions to add.
      * @returns The resulting permissions.
      */
-    add(...perms: PermissionResolvable): Permissions {
+    add(...perms: PermissionResolvable[]): Permissions {
         return new Permissions(this.value | Permissions.resolve(...perms));
     }
 
@@ -175,7 +175,7 @@ export class Permissions {
      * @param perms The permissions to remove.
      * @returns The resulting permissions.
      */
-    remove(...perms: PermissionResolvable): Permissions {
+    remove(...perms: PermissionResolvable[]): Permissions {
         return new Permissions(this.value & ~Permissions.resolve(...perms));
     }
 
