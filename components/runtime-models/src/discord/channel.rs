@@ -153,6 +153,25 @@ impl TryFrom<PermissionOverwrite>
     }
 }
 
+impl TryFrom<PermissionOverwrite>
+    for twilight_model::http::permission_overwrite::PermissionOverwrite
+{
+    type Error = ();
+
+    fn try_from(v: PermissionOverwrite) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: Id::new_checked(v.id.parse().map_err(|_| ())?).ok_or(())?,
+            allow: Some(Permissions::from_bits_truncate(
+                v.allow_raw.parse().unwrap_or(0),
+            )),
+            deny: Some(Permissions::from_bits_truncate(
+                v.deny_raw.parse().unwrap_or(0),
+            )),
+            kind: v.kind.into(),
+        })
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/PermissionOverwriteType.ts")]
@@ -178,6 +197,17 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwriteType
 
 impl From<PermissionOverwriteType>
     for twilight_model::channel::permission_overwrite::PermissionOverwriteType
+{
+    fn from(v: PermissionOverwriteType) -> Self {
+        match v {
+            PermissionOverwriteType::Member => Self::Member,
+            PermissionOverwriteType::Role => Self::Role,
+        }
+    }
+}
+
+impl From<PermissionOverwriteType>
+    for twilight_model::http::permission_overwrite::PermissionOverwriteType
 {
     fn from(v: PermissionOverwriteType) -> Self {
         match v {
