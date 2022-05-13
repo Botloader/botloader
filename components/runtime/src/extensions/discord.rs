@@ -4,7 +4,7 @@ use futures::TryFutureExt;
 use runtime_models::{
     discord::{guild::Guild, message::SendEmoji, util::AuditLogExtras},
     internal::{
-        channel::EditChannel,
+        channel::{CreateChannel, EditChannel},
         interactions::InteractionCallback,
         member::{Ban, UpdateGuildMemberFields},
         messages::{
@@ -67,6 +67,7 @@ pub fn extension() -> Extension {
             // channels
             op_discord_get_channel::decl(),
             op_discord_get_channels::decl(),
+            op_discord_create_channel::decl(),
             op_discord_edit_channel::decl(),
             // pins
             op_discord_get_channel_pins::decl(),
@@ -868,6 +869,28 @@ pub async fn op_discord_edit_channel(
 
     let mut overwrites = Vec::new();
     let edit = rt_ctx.discord_config.client.update_channel(channel_id);
+
+    Ok(params
+        .apply(&mut overwrites, edit)?
+        .exec()
+        .await?
+        .model()
+        .await?
+        .into())
+}
+
+#[op]
+pub async fn op_discord_create_channel(
+    state: Rc<RefCell<OpState>>,
+    params: CreateChannel,
+) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    let mut overwrites = Vec::new();
+    let edit = rt_ctx
+        .discord_config
+        .client
+        .create_guild_channel(rt_ctx.guild_id, &params.name)?;
 
     Ok(params
         .apply(&mut overwrites, edit)?
