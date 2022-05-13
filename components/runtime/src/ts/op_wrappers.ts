@@ -238,6 +238,14 @@ export namespace OpWrappers {
         );
     }
 
+    export async function createChannel(fields: Internal.ICreateChannel): Promise<Internal.InternalGuildChannel> {
+        return await Deno.core.opAsync(
+            "op_discord_create_channel",
+            fields,
+        );
+    }
+
+
     // Pins
     export async function op_discord_get_channel_pins(channelId: string): Promise<Internal.IMessage[]> {
         return await Deno.core.opAsync(

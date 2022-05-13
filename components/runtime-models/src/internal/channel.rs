@@ -471,3 +471,109 @@ impl EditChannel {
         Ok(req)
     }
 }
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "ICreateChannel",
+    export_to = "bindings/internal/ICreateChannel.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateChannel {
+    pub name: String,
+
+    #[ts(optional)]
+    #[serde(default)]
+    pub kind: Option<ChannelType>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    bitrate: Option<u32>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    nsfw: Option<bool>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    parent_id: Option<String>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    permission_overwrites: Option<Vec<PermissionOverwrite>>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    position: Option<NotBigU64>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    rate_limit_per_user: Option<u16>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    topic: Option<String>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    user_limit: Option<u16>,
+}
+
+impl CreateChannel {
+    pub fn apply<'a, 'b, 'c>(
+        &'a self,
+        perms_buf: &'b mut Vec<twilight_model::channel::permission_overwrite::PermissionOverwrite>,
+        mut req: twilight_http::request::guild::CreateGuildChannel<'c>,
+    ) -> Result<twilight_http::request::guild::CreateGuildChannel<'c>, ChannelValidationError>
+    where
+        'a: 'c,
+        'b: 'c,
+    {
+        if let Some(bitrate) = &self.bitrate {
+            req = req.bitrate(*bitrate);
+        }
+
+        if let Some(nsfw) = &self.nsfw {
+            req = req.nsfw(*nsfw);
+        }
+
+        if let Some(parent_id) = &self.parent_id {
+            // TODO: Should we error on invalid ID's?
+            if let Ok(parsed) = parent_id.parse() {
+                if let Some(id) = Id::new_checked(parsed) {
+                    req = req.parent_id(id);
+                }
+            }
+        }
+
+        if let Some(permission_overwrites) = &self.permission_overwrites {
+            // TODO: should we error on bad overwrites instead of throwing them away?
+            perms_buf.extend(
+                permission_overwrites
+                    .clone()
+                    .into_iter()
+                    .filter_map(|v| v.try_into().ok()),
+            );
+
+            req = req.permission_overwrites(perms_buf);
+        }
+
+        if let Some(position) = &self.position {
+            req = req.position(position.0);
+        }
+
+        if let Some(rate_limit_per_user) = &self.rate_limit_per_user {
+            req = req.rate_limit_per_user(*rate_limit_per_user)?;
+        }
+
+        if let Some(topic) = &self.topic {
+            req = req.topic(topic)?;
+        }
+
+        if let Some(user_limit) = &self.user_limit {
+            req = req.user_limit(*user_limit);
+        }
+
+        Ok(req)
+    }
+}
