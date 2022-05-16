@@ -29,5 +29,5 @@ anyhow = "1.0"
 cron = "0.9"
 metrics = "0.18"
 
-twilight-model = {git = "https://github.com/twilight-rs/twilight"}
-twilight-http = {git = "https://github.com/twilight-rs/twilight"}
+twilight-model = {version = "0.11"}
+twilight-http = {version = "0.11"}
