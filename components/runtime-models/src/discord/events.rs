@@ -3,6 +3,8 @@ use ts_rs::TS;
 
 use crate::discord::message::ReactionType;
 
+use super::channel::ChannelType;
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/EventMessageDelete.ts")]
@@ -83,6 +85,31 @@ impl From<twilight_model::gateway::payload::incoming::ReactionRemoveEmoji>
             channel_id: v.channel_id.to_string(),
             message_id: v.message_id.to_string(),
             emoji: v.emoji.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/discord/IEventThreadDelete.ts",
+    rename = "IEventThreadDelete"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct EventThreadDelete {
+    pub guild_id: String,
+    pub id: String,
+    pub kind: ChannelType,
+    pub parent_id: String,
+}
+
+impl From<twilight_model::gateway::payload::incoming::ThreadDelete> for EventThreadDelete {
+    fn from(td: twilight_model::gateway::payload::incoming::ThreadDelete) -> Self {
+        Self {
+            id: td.id.to_string(),
+            guild_id: td.guild_id.to_string(),
+            kind: Into::into(td.kind),
+            parent_id: td.parent_id.to_string(),
         }
     }
 }

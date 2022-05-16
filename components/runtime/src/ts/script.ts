@@ -216,6 +216,12 @@ export class Script {
     on(eventType: "MESSAGE_REACTION_REMOVE", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE"]) => void): void;
     on(eventType: "MESSAGE_REACTION_REMOVE_ALL", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE_ALL"]) => void): void;
     on(eventType: "MESSAGE_REACTION_REMOVE_ALL_EMOJI", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE_ALL_EMOJI"]) => void): void;
+    on(eventType: "CHANNEL_CREATE", cb: (evt: EventSystem.EventTypes["CHANNEL_CREATE"]) => void): void;
+    on(eventType: "CHANNEL_UPDATE", cb: (evt: EventSystem.EventTypes["CHANNEL_UPDATE"]) => void): void;
+    on(eventType: "CHANNEL_DELETE", cb: (evt: EventSystem.EventTypes["CHANNEL_DELETE"]) => void): void;
+    on(eventType: "THREAD_CREATE", cb: (evt: EventSystem.EventTypes["THREAD_CREATE"]) => void): void;
+    on(eventType: "THREAD_UPDATE", cb: (evt: EventSystem.EventTypes["THREAD_UPDATE"]) => void): void;
+    on(eventType: "THREAD_DELETE", cb: (evt: EventSystem.EventTypes["THREAD_DELETE"]) => void): void;
 
     /**
      * Register a general event handler such as for arbitrary discord events like when a new message is sent in the server (MESSAGE_CREATE)

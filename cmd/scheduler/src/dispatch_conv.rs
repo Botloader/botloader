@@ -79,6 +79,50 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
             )
             .unwrap(),
         }),
+        DispatchEvent::ChannelCreate(cc) => Some(DiscordDispatchEvent {
+            name: "CHANNEL_CREATE",
+            guild_id: cc.guild_id.unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(
+                cc.0,
+            ))
+            .unwrap(),
+        }),
+        DispatchEvent::ChannelUpdate(cu) => Some(DiscordDispatchEvent {
+            name: "CHANNEL_UPDATE",
+            guild_id: cu.guild_id.unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(
+                cu.0,
+            ))
+            .unwrap(),
+        }),
+        DispatchEvent::ChannelDelete(cd) => Some(DiscordDispatchEvent {
+            name: "CHANNEL_DELETE",
+            guild_id: cd.guild_id.unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(
+                cd.0,
+            ))
+            .unwrap(),
+        }),
+        DispatchEvent::ThreadCreate(r) => Some(DiscordDispatchEvent {
+            name: "THREAD_CREATE",
+            guild_id: r.guild_id.unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(r.0))
+                .unwrap(),
+        }),
+        DispatchEvent::ThreadUpdate(r) => Some(DiscordDispatchEvent {
+            name: "THREAD_UPDATE",
+            guild_id: r.guild_id.unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(r.0))
+                .unwrap(),
+        }),
+        DispatchEvent::ThreadDelete(r) => Some(DiscordDispatchEvent {
+            name: "THREAD_DELETE",
+            guild_id: r.guild_id,
+            data: serde_json::to_value(&runtime_models::discord::events::EventThreadDelete::from(
+                r,
+            ))
+            .unwrap(),
+        }),
         DispatchEvent::InteractionCreate(interaction) => match interaction.0 {
             twilight_model::application::interaction::Interaction::Ping(_) => None,
             twilight_model::application::interaction::Interaction::MessageComponent(comp) => {

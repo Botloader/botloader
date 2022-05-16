@@ -1,5 +1,5 @@
 import { Commands } from './commands';
-import { ComponentInteraction, ModalSubmitInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, EventMessageReactionRemove, EventMessageReactionRemoveAll, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, Interaction, Member, Message, SelectMenuInteraction, parseInteractionCustomId } from './discord/index';
+import { ComponentInteraction, ModalSubmitInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, guildChannelFromInternal, EventMessageReactionRemove, EventMessageReactionRemoveAll, IEventThreadDelete, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, Interaction, Member, Message, GuildChannel, SelectMenuInteraction, parseInteractionCustomId, ChannelType } from './discord/index';
 import * as Internal from './generated/internal/index';
 
 export namespace EventSystem {
@@ -86,6 +86,13 @@ export namespace EventSystem {
         MESSAGE_REACTION_REMOVE: EventMessageReactionRemove,
         MESSAGE_REACTION_REMOVE_ALL: EventMessageReactionRemoveAll,
         MESSAGE_REACTION_REMOVE_ALL_EMOJI: EventMessageReactionRemoveAllEmoji,
+
+        CHANNEL_CREATE: GuildChannel,
+        CHANNEL_UPDATE: GuildChannel,
+        CHANNEL_DELETE: GuildChannel,
+        THREAD_CREATE: GuildChannel,
+        THREAD_UPDATE: GuildChannel,
+        THREAD_DELETE: IEventThreadDelete,
     }
 
 
@@ -221,5 +228,10 @@ export namespace EventSystem {
 
     const converters = {
         MESSAGE_CREATE: (v: Internal.IMessage) => new Message(v),
+        CHANNEL_CREATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
+        CHANNEL_UPDATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
+        CHANNEL_DELETE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
+        THREAD_CREATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
+        THREAD_UPDATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
     }
 }

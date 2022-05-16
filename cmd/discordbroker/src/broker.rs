@@ -216,6 +216,42 @@ impl Broker {
                     return;
                 }
             }
+            Event::ChannelCreate(v) => {
+                if let Some(guild_id) = v.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ChannelUpdate(v) => {
+                if let Some(guild_id) = v.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ChannelDelete(v) => {
+                if let Some(guild_id) = v.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ThreadCreate(v) => {
+                if let Some(guild_id) = v.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ThreadUpdate(v) => {
+                if let Some(guild_id) = v.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
+            Event::ThreadDelete(v) => v.guild_id,
             _ => return,
         };
 
