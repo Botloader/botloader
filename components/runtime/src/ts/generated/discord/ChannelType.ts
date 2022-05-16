@@ -3,7 +3,6 @@ export type ChannelType =
   | "Voice"
   | "Category"
   | "News"
-  | "Store"
   | "StageVoice"
   | "NewsThread"
   | "PublicThread"

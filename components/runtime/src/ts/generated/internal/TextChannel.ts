@@ -2,7 +2,7 @@ import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 
 export interface ITextChannel {
   id: string;
-  kind: "Text" | "News" | "Store" | "Forum" | "GuildDirectory";
+  kind: "Text" | "News" | "Forum" | "GuildDirectory";
   lastPinTimestamp: number | null;
   name: string;
   nsfw: boolean;

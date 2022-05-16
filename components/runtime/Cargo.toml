@@ -17,7 +17,7 @@ validation = {path="../../components/validation"}
 dbrokerapi = {path="../../components/dbrokerapi"}
 
 twilight-cache-inmemory = {git = "https://github.com/twilight-rs/twilight"}
-twilight-http = {git = "https://github.com/twilight-rs/twilight", features = ["tracing"]}
+twilight-http = {git = "https://github.com/twilight-rs/twilight"}
 twilight-model = {git = "https://github.com/twilight-rs/twilight"}
 twilight-util = {git = "https://github.com/twilight-rs/twilight", features = ["permission-calculator"]}
 

@@ -82,6 +82,8 @@ impl From<Command> for twilight_model::application::command::CommandOption {
                 name: cmd.name,
                 description: cmd.description,
                 options: cmd.options.into_iter().map(Into::into).collect(),
+                description_localizations: Default::default(),
+                name_localizations: Default::default(),
             },
         )
     }
@@ -204,11 +206,15 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 name: v.name,
                 description: v.description,
                 required: v.required,
+                description_localizations: Default::default(),
+                name_localizations: Default::default(),
             }),
             CommandOptionType::User => Self::User(BaseCommandOptionData {
                 name: v.name,
                 description: v.description,
                 required: v.required,
+                description_localizations: Default::default(),
+                name_localizations: Default::default(),
             }),
             CommandOptionType::Channel => Self::Channel(ChannelCommandOptionData {
                 name: v.name,
@@ -221,16 +227,22 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                     .into_iter()
                     .map(Into::into)
                     .collect(),
+                description_localizations: Default::default(),
+                name_localizations: Default::default(),
             }),
             CommandOptionType::Role => Self::Role(BaseCommandOptionData {
                 name: v.name,
                 description: v.description,
                 required: v.required,
+                description_localizations: Default::default(),
+                name_localizations: Default::default(),
             }),
             CommandOptionType::Mentionable => Self::Mentionable(BaseCommandOptionData {
                 name: v.name,
                 description: v.description,
                 required: v.required,
+                description_localizations: Default::default(),
+                name_localizations: Default::default(),
             }),
             CommandOptionType::Number => Self::Number(NumberCommandOptionData {
                 name: v.name,

@@ -40,8 +40,7 @@ impl From<twilight_model::channel::Channel> for GuildChannel {
             }
 
             twilight_model::channel::ChannelType::GuildText
-            | twilight_model::channel::ChannelType::GuildNews
-            | twilight_model::channel::ChannelType::GuildStore => Self::Text(v.into()),
+            | twilight_model::channel::ChannelType::GuildNews => Self::Text(v.into()),
 
             twilight_model::channel::ChannelType::GuildVoice => Self::Voice(v.into()),
             twilight_model::channel::ChannelType::GuildStageVoice => Self::Stage(v.into()),
@@ -104,7 +103,7 @@ impl From<twilight_model::channel::Channel> for VoiceChannel {
 #[serde(rename_all = "camelCase")]
 pub struct TextChannel {
     pub id: String,
-    #[ts(type = "'Text'|'News'|'Store'|'Forum'|'GuildDirectory'")]
+    #[ts(type = "'Text'|'News'|'Forum'|'GuildDirectory'")]
     pub kind: ChannelType,
     pub last_pin_timestamp: Option<NotBigU64>,
     pub name: String,
@@ -349,7 +348,7 @@ fn empty_thread_meta() -> twilight_model::channel::thread::ThreadMetadata {
     twilight_model::channel::thread::ThreadMetadata {
         archived: false,
         auto_archive_duration: 60u16.into(),
-        archive_timestamp: twilight_model::datetime::Timestamp::from_secs(0).unwrap(),
+        archive_timestamp: twilight_model::util::Timestamp::from_secs(0).unwrap(),
         create_timestamp: None,
         invitable: None,
         locked: false,

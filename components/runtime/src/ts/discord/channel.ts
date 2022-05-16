@@ -31,7 +31,7 @@ export type GuildChannel =
 export function guildChannelFromInternal(json: InternalGuildChannel): GuildChannel {
     if (json.kind === "Voice" || json.kind === "StageVoice") {
         return new VoiceChannel(json);
-    } else if (json.kind === "Text" || json.kind === "News" || json.kind === "Store" || json.kind === "Forum" || json.kind === "GuildDirectory") {
+    } else if (json.kind === "Text" || json.kind === "News" || json.kind === "Forum" || json.kind === "GuildDirectory") {
         return new TextChannel(json);
     } else if (json.kind === "Category") {
         return new CategoryChannel(json);
@@ -170,7 +170,7 @@ export class CategoryChannel extends BaseChannel {
 }
 
 export class TextChannel extends BaseChannel {
-    kind: "Text" | "News" | "Store" | "Forum" | "GuildDirectory";
+    kind: "Text" | "News" | "Forum" | "GuildDirectory";
     lastPinTimestamp: number | null;
     nsfw: boolean;
     parentId: string | null;

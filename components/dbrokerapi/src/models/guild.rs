@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use twilight_model::{
-    datetime::Timestamp,
     guild::{
         DefaultMessageNotificationLevel, ExplicitContentFilter, MfaLevel, NSFWLevel, Permissions,
         PremiumTier, SystemChannelFlags, VerificationLevel,
@@ -9,6 +8,7 @@ use twilight_model::{
         marker::{ApplicationMarker, ChannelMarker, GuildMarker, UserMarker},
         Id,
     },
+    util::Timestamp,
 };
 
 /// Represents a cached [`Guild`].

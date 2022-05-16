@@ -26,4 +26,4 @@ anyhow = "1.0"
 metrics = "0.18"
 
 twilight-model = {git = "https://github.com/twilight-rs/twilight"}
-twilight-http = {git = "https://github.com/twilight-rs/twilight", features = ["tracing"]}
+twilight-http = {git = "https://github.com/twilight-rs/twilight"}

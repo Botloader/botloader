@@ -220,10 +220,13 @@ pub fn to_twilight_commands(
             application_id: None,
             options: cmd.options.iter().map(|opt| opt.clone().into()).collect(),
             guild_id: None,
-            default_permission: None,
             id: None,
             kind: cmd.kind.into(),
             version: Id::new(1),
+            dm_permission: None,
+            default_member_permissions: None,
+            description_localizations: Default::default(),
+            name_localizations: Default::default(),
         })
         .collect::<Vec<_>>();
 
@@ -270,6 +273,8 @@ pub fn to_twilight_commands(
                                 name: cmd_sub_group.clone(),
                                 description: GROUP_DESC_PLACEHOLDER.to_string(),
                                 options: vec![cmd.clone().into()],
+                                description_localizations: Default::default(),
+                                name_localizations: Default::default(),
                             },
                         ));
                     }
@@ -288,7 +293,6 @@ pub fn to_twilight_commands(
 fn make_unknown_group(guild_id: Id<GuildMarker>, name: String) -> TwilightCommand {
     TwilightCommand {
         application_id: None,
-        default_permission: None,
         description: GROUP_DESC_PLACEHOLDER.to_string(),
         guild_id: Some(guild_id),
         id: None,
@@ -296,6 +300,10 @@ fn make_unknown_group(guild_id: Id<GuildMarker>, name: String) -> TwilightComman
         options: Vec::new(),
         name,
         version: Id::new(1),
+        default_member_permissions: None,
+        dm_permission: None,
+        description_localizations: Default::default(),
+        name_localizations: Default::default(),
     }
 }
 
@@ -312,6 +320,8 @@ pub fn group_to_twilight_command(
                 name: sg.name.clone(),
                 description: sg.description.clone(),
                 options: Vec::new(),
+                description_localizations: Default::default(),
+                name_localizations: Default::default(),
             })
         })
         .collect::<Vec<_>>();
@@ -319,13 +329,16 @@ pub fn group_to_twilight_command(
     TwilightCommand {
         application_id: None,
         guild_id: Some(guild_id),
-        default_permission: None,
         description: group.description.clone(),
         id: None,
         kind: TwilightCommandType::ChatInput,
         name: group.name.clone(),
         options: opts,
         version: Id::new(1),
+        default_member_permissions: None,
+        dm_permission: None,
+        description_localizations: Default::default(),
+        name_localizations: Default::default(),
     }
 }
 

@@ -787,13 +787,13 @@ dependencies = [
 
 [[package]]
 name = "dashmap"
-version = "5.2.0"
+version = "5.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c8858831f7781322e539ea39e72449c46b059638250c14344fec8d0aa6e539c"
+checksum = "391b56fbd302e585b7a9494fb70e40949567b1cf9003a8e4a6041a1687c26573"
 dependencies = [
  "cfg-if 1.0.0",
- "num_cpus",
- "parking_lot 0.12.0",
+ "hashbrown 0.12.1",
+ "lock_api",
 ]
 
 [[package]]
@@ -1343,7 +1343,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio",
- "tokio-util 0.7.1",
+ "tokio-util 0.7.2",
  "tracing",
 ]
 
@@ -1365,6 +1365,12 @@ checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
  "ahash 0.7.6",
 ]
+
+[[package]]
+name = "hashbrown"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"
 
 [[package]]
 name = "hashlink"
@@ -1498,7 +1504,7 @@ checksum = "d87c48c02e0dc5e3b849a2041db3029fd066650f8f717c07bf8ed78ccb895cac"
 dependencies = [
  "http",
  "hyper",
- "rustls 0.20.4",
+ "rustls 0.20.5",
  "rustls-native-certs",
  "tokio",
  "tokio-rustls",
@@ -1624,9 +1630,9 @@ dependencies = [
 
 [[package]]
 name = "itoa"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aab8fc367588b89dcee83ab0fd66b72b50b72fa1904d7095045ace2b0c81c35"
+checksum = "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d"
 
 [[package]]
 name = "jobs"
@@ -2088,9 +2094,9 @@ dependencies = [
 
 [[package]]
 name = "os_str_bytes"
-version = "6.0.0"
+version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e22443d1643a904602595ba1cd8f7d896afe56d26712531c5ff73a15b2fbf64"
+checksum = "029d8d0b2f198229de29dca79676f2738ff952edf3fde542eb8bf94d8c21b435"
 
 [[package]]
 name = "owning_ref"
@@ -2656,7 +2662,7 @@ dependencies = [
  "native-tls",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.20.4",
+ "rustls 0.20.5",
  "rustls-pemfile 0.3.0",
  "serde",
  "serde_json",
@@ -2664,7 +2670,7 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
- "tokio-util 0.6.9",
+ "tokio-util 0.6.10",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2710,7 +2716,7 @@ dependencies = [
  "stores",
  "tokio",
  "tokio-stream",
- "tokio-util 0.6.9",
+ "tokio-util 0.6.10",
  "tracing",
  "tscompiler",
  "twilight-cache-inmemory",
@@ -2769,9 +2775,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.20.4"
+version = "0.20.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fbfeb8d0ddb84706bc597a5574ab8912817c52a397f819e5b614e2265206921"
+checksum = "a024a432ae760ab3bff924ad91ce1cfa52cb57ed16e1ef32d0d249cfee1a6c13"
 dependencies = [
  "log",
  "ring",
@@ -2811,9 +2817,9 @@ dependencies = [
 
 [[package]]
 name = "ryu"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73b4b750c782965c211b42f022f59af1fbceabdd026623714f104152f1ec149f"
+checksum = "f3f6f92acf49d1b98f7a81226834412ada05458b7364277387724a237f062695"
 
 [[package]]
 name = "schannel"
@@ -3285,7 +3291,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "chrono",
- "dashmap 5.2.0",
+ "dashmap 5.3.3",
  "oauth2",
  "rand 0.8.5",
  "serde",
@@ -3795,9 +3801,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.93"
+version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04066589568b72ec65f42d65a1a52436e954b168773148893c020269563decf2"
+checksum = "a07e33e919ebcd69113d5be0e4d70c5707004ff45188910106854f38b960df4a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3960,7 +3966,7 @@ version = "0.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
 dependencies = [
- "rustls 0.20.4",
+ "rustls 0.20.5",
  "tokio",
  "webpki 0.22.0",
 ]
@@ -3996,7 +4002,7 @@ checksum = "06cda1232a49558c46f8a504d5b93101d42c0bf7f911f12a105ba48168f821ae"
 dependencies = [
  "futures-util",
  "log",
- "rustls 0.20.4",
+ "rustls 0.20.5",
  "rustls-native-certs",
  "tokio",
  "tokio-rustls",
@@ -4006,9 +4012,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.6.9"
+version = "0.6.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e99e1983e5d376cd8eb4b66604d2e99e79f5bd988c3055891dcd8c9e2604cc0"
+checksum = "36943ee01a6d67977dd3f84a5a1d2efeb4ada3a1ae771cadfaa535d9d9fc6507"
 dependencies = [
  "bytes",
  "futures-core",
@@ -4020,9 +4026,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0edfdeb067411dba2044da6d1cb2df793dd35add7888d73c16e3381ded401764"
+checksum = "f988a1a1adc2fb21f9c12aa96441da33a1728193ae0b95d2be22dbd17fcb4e5c"
 dependencies = [
  "bytes",
  "futures-core",
@@ -4064,7 +4070,7 @@ dependencies = [
  "prost-derive 0.9.0",
  "tokio",
  "tokio-stream",
- "tokio-util 0.6.9",
+ "tokio-util 0.6.10",
  "tower",
  "tower-layer",
  "tower-service",
@@ -4098,7 +4104,7 @@ dependencies = [
  "rand 0.8.5",
  "slab",
  "tokio",
- "tokio-util 0.7.1",
+ "tokio-util 0.7.2",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -4280,7 +4286,7 @@ dependencies = [
  "httparse",
  "log",
  "rand 0.8.5",
- "rustls 0.20.4",
+ "rustls 0.20.5",
  "sha-1 0.10.0",
  "thiserror",
  "url",
@@ -4290,25 +4296,25 @@ dependencies = [
 
 [[package]]
 name = "twilight-cache-inmemory"
-version = "0.10.2"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "bitflags",
- "dashmap 5.2.0",
+ "dashmap 5.3.3",
  "serde",
  "twilight-model",
 ]
 
 [[package]]
 name = "twilight-gateway"
-version = "0.10.1"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "bitflags",
  "flate2",
  "futures-util",
  "leaky-bucket-lite",
- "rustls 0.20.4",
+ "rustls 0.20.5",
  "rustls-native-certs",
  "serde",
  "serde_json",
@@ -4323,17 +4329,18 @@ dependencies = [
 
 [[package]]
 name = "twilight-gateway-queue"
-version = "0.10.1"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "tokio",
+ "tracing",
  "twilight-http",
 ]
 
 [[package]]
 name = "twilight-http"
-version = "0.10.2"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "brotli",
  "hyper",
@@ -4351,18 +4358,19 @@ dependencies = [
 
 [[package]]
 name = "twilight-http-ratelimiting"
-version = "0.10.1"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "futures-util",
  "http",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
 name = "twilight-model"
-version = "0.10.2"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "bitflags",
  "serde",
@@ -4374,16 +4382,16 @@ dependencies = [
 
 [[package]]
 name = "twilight-util"
-version = "0.10.1"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "twilight-model",
 ]
 
 [[package]]
 name = "twilight-validate"
-version = "0.10.2"
-source = "git+https://github.com/twilight-rs/twilight#a718e066f56af444b5f843b00738aeffe3b22665"
+version = "0.11.0"
+source = "git+https://github.com/twilight-rs/twilight#26f23c39b5d08502f7e5051806c294398bf3fe3a"
 dependencies = [
  "twilight-model",
 ]

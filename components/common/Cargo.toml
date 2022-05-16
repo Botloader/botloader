@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-twilight-http = {git = "https://github.com/twilight-rs/twilight", features = ["tracing"]}
+twilight-http = {git = "https://github.com/twilight-rs/twilight"}
 twilight-model = {git = "https://github.com/twilight-rs/twilight"}
  
 tracing = "0.1"

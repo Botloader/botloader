@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use twilight_model::datetime::Timestamp;
+use twilight_model::util::Timestamp;
 
 use crate::util::NotBigU64;
 

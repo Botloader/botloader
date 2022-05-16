@@ -62,6 +62,8 @@ pub enum ChannelType {
     Voice,
     Category,
     News,
+    // Store channels are no longer used
+    #[ts(skip)]
     Store,
     StageVoice,
     NewsThread,
@@ -78,7 +80,6 @@ impl From<twilight_model::channel::ChannelType> for ChannelType {
             twilight_model::channel::ChannelType::GuildVoice => Self::Voice,
             twilight_model::channel::ChannelType::GuildCategory => Self::Category,
             twilight_model::channel::ChannelType::GuildNews => Self::News,
-            twilight_model::channel::ChannelType::GuildStore => Self::Store,
             twilight_model::channel::ChannelType::GuildStageVoice => Self::StageVoice,
             twilight_model::channel::ChannelType::GuildNewsThread => Self::NewsThread,
             twilight_model::channel::ChannelType::GuildPublicThread => Self::PublicThread,
@@ -100,13 +101,13 @@ impl From<ChannelType> for twilight_model::channel::ChannelType {
             ChannelType::Voice => Self::GuildVoice,
             ChannelType::Category => Self::GuildCategory,
             ChannelType::News => Self::GuildNews,
-            ChannelType::Store => Self::GuildStore,
             ChannelType::StageVoice => Self::GuildStageVoice,
             ChannelType::NewsThread => Self::GuildNewsThread,
             ChannelType::PublicThread => Self::GuildPublicThread,
             ChannelType::PrivateThread => Self::GuildPrivateThread,
             ChannelType::GuildDirectory => Self::GuildDirectory,
             ChannelType::Forum => Self::GuildForum,
+            ChannelType::Store => Self::GuildText,
         }
     }
 }

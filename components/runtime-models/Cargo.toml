@@ -15,5 +15,5 @@ serde = { version = "1.0", features = ["derive"] }
 
 twilight-model = {git = "https://github.com/twilight-rs/twilight"}
 twilight-cache-inmemory = {git = "https://github.com/twilight-rs/twilight"}
-twilight-http = {git = "https://github.com/twilight-rs/twilight", features = ["tracing"]}
+twilight-http = {git = "https://github.com/twilight-rs/twilight"}
 twilight-validate = {git = "https://github.com/twilight-rs/twilight"}

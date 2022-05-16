@@ -1,10 +1,10 @@
 use serde::Deserialize;
 use twilight_model::{
-    datetime::Timestamp,
     id::{
         marker::{GuildMarker, RoleMarker, UserMarker},
         Id,
     },
+    util::Timestamp,
 };
 
 #[derive(Clone, Debug, Deserialize)]
