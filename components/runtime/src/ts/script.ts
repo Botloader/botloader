@@ -305,26 +305,49 @@ export class Script {
             }
         });
 
+        // collect all the groups
         const groups: Internal.CommandGroup[] = [];
 
         OUTER:
         for (let cmd of this.commands) {
             if (cmd.group) {
-                if (groups.some(g => g.name === cmd.group?.name)) {
-                    continue OUTER;
-                }
-
-                // new group
-                groups.push({
-                    name: cmd.group.name,
-                    description: cmd.group.description,
-                    subGroups: cmd.group.subGroups.map(sg => {
-                        return {
-                            name: sg.name,
-                            description: sg.description
+                if (cmd.group.parent) {
+                    // this is a subgroup
+                    let parent = groups.find(g => g.name === cmd.group?.parent?.name);
+                    if (!parent) {
+                        // parent did not exist
+                        parent = {
+                            name: cmd.group.parent.name,
+                            description: cmd.group.description,
+                            subGroups: [],
                         }
+                        groups.push(parent);
+                    }
+
+                    if (parent.subGroups.some(sg => sg.name === cmd.group?.name)) {
+                        // subgroup already added
+                        continue OUTER;
+                    }
+
+                    parent.subGroups.push({
+                        name: cmd.group.name,
+                        description: cmd.group.description,
+                    });
+                } else {
+                    // Top level group
+                    if (groups.some(g => g.name === cmd.group?.name)) {
+                        // Group already added
+                        continue OUTER;
+                    }
+
+                    // new group
+                    groups.push({
+                        name: cmd.group.name,
+                        description: cmd.group.description,
+                        // we cannot have both commands and subgroups, unless im mistaken?
+                        subGroups: [],
                     })
-                })
+                }
             }
         }
 
