@@ -253,12 +253,11 @@ pub fn to_twilight_commands(
 
             // check if this belongs to a subgroup
             if let Some(cmd_sub_group) = &cmd.sub_group {
-                match group.options.iter_mut().find(|sg| match sg {
-                    TwilightCommandOption::SubCommandGroup(OptionsCommandOptionData {
+                match group.options.iter_mut().find(|sg| {
+                    matches!(sg, TwilightCommandOption::SubCommandGroup(OptionsCommandOptionData {
                         name,
                         ..
-                    }) if name == cmd_sub_group => todo!(),
-                    _ => false,
+                    }) if name == cmd_sub_group)
                 }) {
                     Some(g) => {
                         // add the cmd to the existing sub group
