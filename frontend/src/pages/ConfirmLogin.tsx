@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Redirect, useLocation } from "react-router";
+import { useLocation } from "react-router";
 import { ApiClient, isErrorResponse, ApiError } from "botloader-common";
 import { BuildConfig } from "../BuildConfig";
 import { CreateFetcher } from "../Util";
