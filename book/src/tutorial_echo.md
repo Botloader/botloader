@@ -4,11 +4,11 @@ This is a short tutorial on how to make a simple `echo` command that echoes back
 
 ## Setup
 
-First step is to create a script, if you're using the web editor go to your server settings -> scripts in the sidebar, and create a new script with the name `echo`. (or whatever else name you wanna give it) and now you should be editing this script! Note that this script is not yet enabled, there's a button to enable it in the sidebar.
+First step is to create a script, if you're using the web editor go to your server settings -> scripts in the sidebar, and create a new script with the name `echo`. (Or whatever else you want to call it.) and now you should be editing this script! Note that this script is not yet enabled, there's a button to enable it in the sidebar.
 
 ## Creating the command
 
-First we want to import the `Commands` namespace, all botloader API's are exported under `botloader` so you can import the commands namespace like so:
+First, we want to import the `Commands` namespace, all botloader API's are exported under `botloader` so you can import the commands namespace like so:
 
 ```ts
 import { Commands } from 'botloader';
@@ -16,13 +16,13 @@ import { Commands } from 'botloader';
 
 Then it's creating the command itself, all scripts in botloader have a `script` variable that you use to set up various things such as event listeners, storage buckets and so on, including commands.
 
-So through the `script` we create a new command:
+So, through the `script` we create a new command:
 
 ```ts
 script.createCommand(/* TODO: what do we pass it? */);
 ```
 
-This createCommand function takes in a command object that can be created from either the slash command, user command or message command builders, in this tutorial we'll be using the slash command builder. The user and message commands shows up when you right click on users and messages, while slash commands shows up when you type a `/` in the chat input area on discord.
+This createCommand function takes in a command object that can be created from either the slash command, user command or message command builders, in this tutorial we'll be using the slash command builder. The user and message commands show up when you right click on users and messages, while slash commands shows up when you type a `/` in the chat input area on discord.
 
 `Commands.slashCommand` takes a name and description. Note that the name requirements are quite strict, it can't contain spaces or special characters besides `-`
 
@@ -30,7 +30,7 @@ This createCommand function takes in a command object that can be created from e
 script.createCommand(Commands.slashCommand("echo", "echoes back your input"))
 ```
 
-Were not done yet! This command takes in some input from the user to echo back, we need to define this input, and this is called `options` when dealing with commands. To add a `option` use one of the `addOption` methods, were gonna use `addOptionString` and this takes in a name and a description, as well as some additional optional options (such as making this option optional/required) that were not gonna go into here.
+Were not done yet! This command takes in some input from the user to echo back, we need to define this input, and this is called `options` when dealing with commands. To add a `option` use one of the `addOption` methods, were going to use `addOptionString` and this takes in a name and a description, as well as some additional optional options (such as making this option optional/required) that were not gonna go into here.
 
 This is how it looks then:
 
@@ -43,7 +43,7 @@ script.createCommand(
 
 I've gone ahead and formatted it a bit nicer to make it more readable.
 
-Were still not done yet! This will still show an error and that's because we have to build our command and give it a function to run when someone uses the command, you do that using the `build` method:
+Were still not done yet! This will still show an error and that's because we must build our command and give it a function to run when someone uses the command, you do that using the `build` method:
 
 ```ts
 script.createCommand(
@@ -67,7 +67,7 @@ Then to get the user input we use the second argument given to the callback, in 
 {what: "whatever the user typed in"}
 ```
 
-So using those 2 pieces we can send back the user input as a response.
+So, using those 2 pieces we can send back the user input as a response.
 
 In the end the full script should look like this:
 

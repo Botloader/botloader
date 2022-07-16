@@ -1,3 +1,3 @@
 # Script management
 
-Managing your scripts can be done either through the web browser or through the visual studio code extension.
+Scripts are managed either through the Web-Based Code Editor or through Visual Studio Code. 
