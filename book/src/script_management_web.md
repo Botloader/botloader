@@ -2,7 +2,7 @@
 
 Note: the web editor does not support mobile.
 
-To manage your servers scripts you log onto the website, click select server in the top right and click on your server.
+To manage your servers scripts, you log onto the website, click select server in the top right and select your server.
 
 After that you will have a sidebar on the left, click on the "scripts" entry to manage your server scripts.
 
