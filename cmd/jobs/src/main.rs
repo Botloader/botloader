@@ -92,7 +92,7 @@ async fn scan_for_left_guilds(
                     body: _,
                     error: _,
                     status,
-                } if status.raw() == 403 => {
+                } if status.get() == 403 => {
                     info!("marking guild as left: {}", guild.id);
                     db.set_guild_left_status(guild.id, true).await?;
                 }

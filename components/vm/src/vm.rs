@@ -1,4 +1,3 @@
-use crate::error::create_error_fn;
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
     prepend_script_source_header, AnyError, ScriptLoadState, ScriptState, ScriptsStateStore,

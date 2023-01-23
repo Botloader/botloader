@@ -76,7 +76,7 @@ fn compile_folder(path: &Path) -> Vec<String> {
 
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
     let target_dir = out_dir.join(Path::new("js").join(relative_path));
-    let _ = fs::create_dir_all(&target_dir).unwrap();
+    fs::create_dir_all(&target_dir).unwrap();
 
     for (name, file) in loaded_files {
         let output = compile_typescript(&file).unwrap();

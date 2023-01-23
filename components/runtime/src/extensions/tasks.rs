@@ -32,7 +32,9 @@ async fn op_bl_schedule_task(
 
     let seconds = (opts.execute_at.0 as f64 / 1000f64).floor() as i64;
     let millis = opts.execute_at.0 as i64 - (seconds * 1000);
-    let t = chrono::Utc.timestamp(seconds, millis as u32 * 1_000_000);
+    let t = chrono::Utc
+        .timestamp_opt(seconds, millis as u32 * 1_000_000)
+        .unwrap();
 
     let data_serialized = serde_json::to_string(&opts.data)?;
     let limit_data_len = crate::limits::tasks_data_size(&state);

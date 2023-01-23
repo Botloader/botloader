@@ -143,7 +143,7 @@ pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Er
         // check if this guild has run into a lot of "invalid" requests
         //
         // this is needed because discord will ban our IP if we exceed 10_000 invalid req/10min as of writing
-        let raw = status.raw();
+        let raw = status.get();
         if raw == 401 || raw == 403 || raw == 429 {
             let mut rc = state.borrow_mut();
             let dstate = rc.borrow_mut::<DiscordOpsState>();
@@ -175,7 +175,7 @@ pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Er
 }
 
 pub fn error_from_code(resp_code: StatusCode, code: u64, message: &str) -> AnyError {
-    match resp_code.raw() {
+    match resp_code.get() {
         404 => not_found_error(format!("{code}: {message}")),
         403 => custom_error("DiscordPermissionsError", format!("{code}: {message}")),
         400..=499 => match code {
@@ -251,13 +251,7 @@ pub async fn op_discord_get_messages(
     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
 
     let limit = if let Some(limit) = args.limit {
-        if limit > 100 {
-            100
-        } else if limit < 1 {
-            1
-        } else {
-            limit
-        }
+        limit.clamp(1, 100)
     } else {
         50
     };

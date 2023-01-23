@@ -3,14 +3,14 @@ use std::sync::Arc;
 use tracing::info;
 
 use twilight_model::{
-    oauth::CurrentApplicationInfo,
+    oauth::Application,
     user::{CurrentUser, User},
 };
 
 #[derive(Debug)]
 pub struct DiscordConfig {
     pub bot_user: CurrentUser,
-    pub application: CurrentApplicationInfo,
+    pub application: Application,
     pub owners: Vec<User>,
     pub client: twilight_http::Client,
 }

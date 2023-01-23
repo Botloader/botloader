@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, RwLock},
-    time::Duration,
-};
+use std::sync::{Arc, RwLock};
 
 use crate::{
     command_manager,
@@ -14,7 +11,7 @@ use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::GuildLogger;
 use stores::config::PremiumSlotTier;
 use tokio::sync::mpsc;
-use tracing::{error, info, instrument};
+use tracing::{info, instrument};
 use twilight_model::{
     gateway::event::DispatchEvent,
     id::{marker::GuildMarker, Id},
