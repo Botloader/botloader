@@ -15,17 +15,17 @@ simpleproto = {path="../../components/simpleproto"}
 dbrokerapi = {path="../../components/dbrokerapi"}
 botrpc = {path="../../components/botrpc"}
 
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 tonic = "0.6"
-tracing = "0.1"
+tracing = {workspace = true}
 futures = "0.3"
 async-stream = "0.3"
-serde = "1.0"
-serde_json = "1.0"
+serde = {workspace = true}
+serde_json = {workspace = true}
 clap = {version = "3.0.14", features = ["derive", "env"]}
-async-trait = "0.1"
+async-trait = {workspace = true}
 chrono = "0.4"
-anyhow = "1.0"
+anyhow = {workspace = true}
 cron = "0.9"
 metrics = "0.18"
 

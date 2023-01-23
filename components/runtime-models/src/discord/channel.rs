@@ -17,6 +17,7 @@ impl From<twilight_model::channel::VideoQualityMode> for VideoQualityMode {
         match v {
             twilight_model::channel::VideoQualityMode::Auto => Self::Auto,
             twilight_model::channel::VideoQualityMode::Full => Self::Full,
+            _ => todo!(),
         }
     }
 }
@@ -90,6 +91,7 @@ impl From<twilight_model::channel::ChannelType> for ChannelType {
             }
             twilight_model::channel::ChannelType::GuildDirectory => Self::GuildDirectory,
             twilight_model::channel::ChannelType::GuildForum => Self::Forum,
+            _ => todo!(),
         }
     }
 }
@@ -192,6 +194,7 @@ impl From<twilight_model::channel::permission_overwrite::PermissionOverwriteType
             twilight_model::channel::permission_overwrite::PermissionOverwriteType::Role => {
                 Self::Role
             }
+            _ => todo!(),
         }
     }
 }

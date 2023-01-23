@@ -47,7 +47,7 @@ use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
 use crate::{get_rt_ctx, RuntimeContext, RuntimeEvent};
 
 pub fn extension() -> Extension {
-    Extension::builder()
+    Extension::builder("bl_discord")
         .ops(vec![
             // guild
             op_discord_get_guild::decl(),

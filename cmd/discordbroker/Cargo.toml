@@ -13,12 +13,12 @@ axum-metrics-layer = {path="../../components/axum-metrics-layer"}
 stores = {path="../../components/stores"}
  
 axum = {version = "0.4.5"}
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 clap = {version = "3.0.14", features = ["derive", "env"]}
-tracing = "0.1"
+tracing = {workspace = true}
 futures-util = "0.3"
-serde = "1.0"
-serde_json = "1.0"
+serde = {workspace = true}
+serde_json = {workspace = true}
 metrics = "0.18"
 
 twilight-model = {version = "0.11"}

@@ -4,8 +4,8 @@ use std::{
 };
 
 use deno_core::{
-    op, AsyncRefCell, AsyncResult, CancelFuture, CancelHandle, CancelTryFuture, Extension, OpState,
-    RcRef, Resource, ResourceId, ZeroCopyBuf,
+    op, AsyncRefCell, AsyncResult, BufView, CancelFuture, CancelHandle, CancelTryFuture, Extension,
+    OpState, RcRef, Resource, ResourceId, WriteOutcome,
 };
 use futures::Stream;
 use reqwest::Body;
@@ -20,7 +20,7 @@ use vm::AnyError;
 use crate::limits::RateLimiters;
 
 pub fn extension() -> Extension {
-    Extension::builder()
+    Extension::builder("bl_http")
         .ops(vec![
             op_bl_http_client_stream::decl(),
             op_bl_http_request_send::decl(),
@@ -137,7 +137,8 @@ impl Resource for RequestBodyResource {
         "requestBodyResource".into()
     }
 
-    fn write(self: Rc<Self>, buf: ZeroCopyBuf) -> AsyncResult<usize> {
+    // TODO: proper implementation with partial write handling
+    fn write(self: Rc<Self>, buf: BufView) -> AsyncResult<WriteOutcome> {
         Box::pin(async move {
             let data = buf.to_vec();
             let len = data.len();
@@ -149,7 +150,7 @@ impl Resource for RequestBodyResource {
                 .await?
                 .map_err(|_| anyhow::anyhow!("body is closed"))?;
 
-            Ok(len)
+            Ok(WriteOutcome::Full { nwritten: len })
         })
     }
 
@@ -170,12 +171,31 @@ impl Resource for RequestReponseBodyResource {
         "requestReponseBodyResource".into()
     }
 
-    fn read(self: Rc<Self>, mut buf: ZeroCopyBuf) -> AsyncResult<usize> {
+    fn read(self: Rc<Self>, limit: usize) -> AsyncResult<BufView> {
         Box::pin(async move {
             let mut reader = RcRef::map(&self, |r| &r.body).borrow_mut().await;
+
+            let cancel = RcRef::map(self, |r| &r.cancel);
+
+            let buf_size = if limit < 1024 { limit } else { 1024 };
+            let mut buf = vec![0; buf_size];
+            let read = reader.read(&mut buf).try_or_cancel(cancel).await?;
+            buf.truncate(read);
+
+            Ok(buf.into())
+        })
+    }
+
+    fn read_byob(
+        self: Rc<Self>,
+        mut buf: deno_core::BufMutView,
+    ) -> AsyncResult<(usize, deno_core::BufMutView)> {
+        Box::pin(async move {
+            let mut reader = RcRef::map(&self, |r| &r.body).borrow_mut().await;
+
             let cancel = RcRef::map(self, |r| &r.cancel);
             let read = reader.read(&mut buf).try_or_cancel(cancel).await?;
-            Ok(read)
+            Ok((read, buf))
         })
     }
 

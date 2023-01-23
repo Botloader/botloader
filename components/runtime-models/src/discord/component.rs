@@ -20,6 +20,7 @@ impl From<TwilightComponentType> for ComponentType {
             TwilightComponentType::Button => Self::Button,
             TwilightComponentType::SelectMenu => Self::SelectMenu,
             TwilightComponentType::TextInput => Self::TextInput,
+            _ => todo!(),
         }
     }
 }
@@ -239,6 +240,7 @@ impl From<TwilightButtonStyle> for ButtonStyle {
             TwilightButtonStyle::Success => Self::Success,
             TwilightButtonStyle::Danger => Self::Danger,
             TwilightButtonStyle::Link => Self::Link,
+            _ => todo!(),
         }
     }
 }
@@ -316,6 +318,7 @@ impl From<TwilightTextInputStyle> for TextInputStyle {
         match v {
             TwilightTextInputStyle::Short => Self::Short,
             TwilightTextInputStyle::Paragraph => Self::Paragraph,
+            _ => todo!(),
         }
     }
 }

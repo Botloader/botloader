@@ -5,7 +5,7 @@ use vm::ScriptsStateStoreHandle;
 
 use crate::RuntimeContext;
 pub fn extension() -> Extension {
-    Extension::builder()
+    Extension::builder("bl_console")
         .ops(vec![op_botloader_log::decl()])
         .build()
 }

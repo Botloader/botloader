@@ -13,7 +13,7 @@ use vm::AnyError;
 use crate::RuntimeContext;
 
 pub fn extension() -> Extension {
-    Extension::builder()
+    Extension::builder("bl_storage")
         .ops(vec![
             // botloader stuff
             op_botloader_bucket_storage_set::decl(),

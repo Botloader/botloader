@@ -8,10 +8,10 @@ edition = "2021"
 [dependencies]
 stores = {path="../../components/stores"}
 
-async-trait = "0.1"
+async-trait = {workspace = true}
 oauth2 = "4.1"
-tokio = { version = "1", features = ["full"] }
-anyhow = "1.0"
+tokio = {workspace = true}
+anyhow = {workspace = true}
 lru = "0.7"
 
 twilight-model = {version = "0.11"}

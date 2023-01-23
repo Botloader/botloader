@@ -9,11 +9,11 @@ edition = "2021"
 stores = {path="../../components/stores"}
 guild-logger = {path="../../components/guild-logger"}
 
-async-trait = "0.1"
-tracing = "0.1"
+async-trait = {workspace = true}
+tracing = {workspace = true}
 tonic = "0.6"
 prost = "0.9"
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 futures = "0.3"
 
 twilight-model = {version = "0.11"}

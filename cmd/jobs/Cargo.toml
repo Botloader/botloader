@@ -10,7 +10,7 @@ common = {path="../../components/common"}
 stores = {path="../../components/stores"}
 dbrokerapi = {path="../../components/dbrokerapi"}
 
-tracing = "0.1"
+tracing = {workspace = true}
 clap = {version = "3.0.14", features = ["derive", "env"]}
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 twilight-http = {version = "0.11"}

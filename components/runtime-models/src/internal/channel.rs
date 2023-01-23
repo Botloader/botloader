@@ -53,6 +53,7 @@ impl From<twilight_model::channel::Channel> for GuildChannel {
             }
             twilight_model::channel::ChannelType::GuildDirectory => Self::GuildDirectory(v.into()),
             twilight_model::channel::ChannelType::GuildForum => Self::Forum(v.into()),
+            _ => todo!(),
         }
     }
 }
@@ -150,7 +151,7 @@ pub struct PublicThread {
     pub kind: ChannelType,
     pub member: Option<SelfThreadMember>,
     pub member_count: u8,
-    pub message_count: u8,
+    pub message_count: u32,
     pub name: String,
     pub owner_id: Option<String>,
     pub parent_id: Option<String>,
@@ -190,7 +191,7 @@ pub struct PrivateThread {
     pub kind: ChannelType,
     pub member: Option<SelfThreadMember>,
     pub member_count: u8,
-    pub message_count: u8,
+    pub message_count: u32,
     pub name: String,
     pub owner_id: Option<String>,
     pub parent_id: Option<String>,
@@ -237,7 +238,7 @@ pub struct NewsThread {
     pub kind: ChannelType,
     pub member: Option<SelfThreadMember>,
     pub member_count: u8,
-    pub message_count: u8,
+    pub message_count: u32,
     pub name: String,
     pub owner_id: Option<String>,
     pub parent_id: Option<String>,

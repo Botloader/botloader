@@ -17,12 +17,12 @@ stores = {path="../../components/stores"}
 simpleproto = {path="../../components/simpleproto"}
 dbrokerapi = {path="../../components/dbrokerapi"}
 
-tokio = { version = "1", features = ["full"] }
-tracing = "0.1"
+tokio = {workspace = true}
+tracing = {workspace = true}
 clap = {version = "3.0.14", features = ["derive", "env"]}
-serde = "1.0"
-async-trait = "0.1"
-anyhow = "1.0"
+serde = {workspace = true}
+async-trait = {workspace = true}
+anyhow = {workspace = true}
 metrics = "0.18"
 
 twilight-model = {version = "0.11"}

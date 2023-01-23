@@ -40,6 +40,7 @@ impl From<twilight_model::channel::message::MessageActivityType> for MessageActi
             twilight_model::channel::message::MessageActivityType::Spectate => Self::Spectate,
             twilight_model::channel::message::MessageActivityType::Listen => Self::Listen,
             twilight_model::channel::message::MessageActivityType::JoinRequest => Self::JoinRequest,
+            _ => todo!(),
         }
     }
 }
@@ -159,6 +160,8 @@ impl From<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::ThreadStarterMessage => Self::ThreadStarterMessage,
             TwilightMessageType::ContextMenuCommand => Self::ContextMenuCommand,
             TwilightMessageType::ChatInputCommand => Self::ChatInputCommand,
+            TwilightMessageType::AutoModerationAction => todo!(),
+            _ => todo!(),
         }
     }
 }

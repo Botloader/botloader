@@ -14,22 +14,22 @@ validation = {path="../../components/validation"}
 common = {path="../../components/common"}
 
 oauth2 = "4.1"
-anyhow = "1.0"
+anyhow = {workspace = true}
 thiserror = "1.0"
-serde = "1.0"
-serde_json = "1.0"
+serde = {workspace = true}
+serde_json = {workspace = true}
 clap = {version = "3.0.14", features = ["derive", "env"]}
-async-trait = "0.1"
+async-trait = {workspace = true}
 futures= "0.3"
 chrono = "0.4"
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 tower-http = { version = "0.2.0", features = ["trace", "set-header"] }
 tower = "0.4"
 axum = {version = "0.4.5", features=["ws"]}
 http-body = "0.4"
 tonic = "0.6"
 
-tracing = "0.1"
+tracing = {workspace = true}
 tracing-log = "0.1"
 
 twilight-http = {version = "0.11"}

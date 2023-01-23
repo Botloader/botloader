@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 isolatecell = {path="../../components/isolatecell"}
-tokio = { version = "1", features = ["full"] }
-tracing = "0.1"
+tokio = {workspace = true}
+tracing = {workspace = true}
 metrics = "0.18"

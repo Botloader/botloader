@@ -8,7 +8,7 @@ use vm::AnyError;
 use crate::{get_rt_ctx, limits::RateLimiters, RuntimeEvent};
 
 pub fn extension() -> Extension {
-    Extension::builder()
+    Extension::builder("bl_tasks")
         .ops(vec![
             // botloader stuff
             op_bl_schedule_task::decl(),

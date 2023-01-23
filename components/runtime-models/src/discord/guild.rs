@@ -148,6 +148,7 @@ impl From<TwilightDefaultMessageNotificationLevel> for DefaultMessageNotificatio
         match v {
             TwilightDefaultMessageNotificationLevel::All => Self::All,
             TwilightDefaultMessageNotificationLevel::Mentions => Self::Mentions,
+            _ => todo!(),
         }
     }
 }
@@ -167,6 +168,7 @@ impl From<TwilightExplicitContentFilter> for ExplicitContentFilter {
             TwilightExplicitContentFilter::None => Self::None,
             TwilightExplicitContentFilter::MembersWithoutRole => Self::MembersWithoutRole,
             TwilightExplicitContentFilter::AllMembers => Self::AllMembers,
+            _ => todo!(),
         }
     }
 }
@@ -184,6 +186,7 @@ impl From<TwilightMfaLevel> for MfaLevel {
         match v {
             TwilightMfaLevel::None => Self::None,
             TwilightMfaLevel::Elevated => Self::Elevated,
+            _ => todo!(),
         }
     }
 }
@@ -205,6 +208,7 @@ impl From<TwilightNSFWLevel> for NsfwLevel {
             TwilightNSFWLevel::Explicit => Self::Explicit,
             TwilightNSFWLevel::Safe => Self::Safe,
             TwilightNSFWLevel::AgeRestricted => Self::AgeRestricted,
+            _ => todo!(),
         }
     }
 }
@@ -226,6 +230,7 @@ impl From<TwilightPremiumTier> for PremiumTier {
             TwilightPremiumTier::Tier1 => Self::Tier1,
             TwilightPremiumTier::Tier2 => Self::Tier2,
             TwilightPremiumTier::Tier3 => Self::Tier3,
+            _ => todo!(),
         }
     }
 }
@@ -249,6 +254,7 @@ impl From<TwilightVerificationLevel> for VerificationLevel {
             TwilightVerificationLevel::Medium => Self::Medium,
             TwilightVerificationLevel::High => Self::High,
             TwilightVerificationLevel::VeryHigh => Self::VeryHigh,
+            _ => todo!(),
         }
     }
 }

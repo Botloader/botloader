@@ -144,15 +144,15 @@ impl Vm {
         script_load_states: ScriptsStateStoreHandle,
         shutdown_handle: VmShutdownHandle,
     ) -> ManagedIsolate {
-        let create_err_fn = create_error_fn(script_load_states.clone());
+        // let create_err_fn = create_error_fn(script_load_states.clone());
 
         let mut extensions = extension_factory();
         extensions.insert(
             0,
-            Extension::builder()
+            Extension::builder("bl_core_rt")
                 .js(deno_core::include_js_files!(
                   prefix "bl:core",
-                  "src/botloader-core.js",
+                  "botloader-core.js",
                 ))
                 .state(move |op| {
                     op.put(script_load_states.clone());
@@ -175,7 +175,7 @@ impl Vm {
                     .allow_atomics_wait(false),
             ),
             startup_snapshot: Some(Snapshot::Static(crate::BOTLOADER_CORE_SNAPSHOT)),
-            js_error_create_fn: Some(create_err_fn),
+            // js_error_create_fn: Some(create_err_fn),
             ..Default::default()
         };
 

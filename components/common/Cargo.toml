@@ -9,11 +9,11 @@ edition = "2021"
 twilight-http = {version = "0.11"}
 twilight-model = {version = "0.11"}
  
-tracing = "0.1"
+tracing = {workspace = true}
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
 tracing-log = "0.1"
 
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 dotenv = "0.15"
 clap = {version = "3.0.14", features = ["derive", "env"]}
 oauth2 = "4.1"

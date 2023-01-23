@@ -22,3 +22,18 @@ members = [
     "cmd/jobs",
     "cmd/blcmd",
 ]
+
+[workspace.dependencies]
+serde = {version = "1.0", features=["derive"]}
+serde_json = "1.0"
+lazy_static = "1.4.0"
+tracing = "0.1"
+tracing-futures = { version = "0.2.5" }
+async-trait = "0.1"
+reqwest = {version = "0.11.11", features = ["json", "stream"]}
+tokio = { version = "1", features = ["full"] }
+thiserror = "1.0"
+clap = {version = "3.0.14", features = ["derive", "env"]}
+anyhow = "1.0"
+deno_core = "0.167"
+v8 = "0.60.1"

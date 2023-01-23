@@ -221,6 +221,7 @@ impl From<twilight_model::application::command::CommandType> for CommandType {
             twilight_model::application::command::CommandType::ChatInput => Self::Chat,
             twilight_model::application::command::CommandType::User => Self::User,
             twilight_model::application::command::CommandType::Message => Self::Message,
+            _ => todo!(),
         }
     }
 }
