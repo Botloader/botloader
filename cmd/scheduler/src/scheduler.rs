@@ -128,7 +128,7 @@ impl Scheduler {
             .pending_starts
             .iter()
             .enumerate()
-            .find_map(|(i, v)| (*v == guild_id).then(|| i))
+            .find_map(|(i, v)| (*v == guild_id).then_some(i))
         {
             self.pending_starts.remove(index);
             self.get_or_start_guild(guild_id);
@@ -193,7 +193,7 @@ impl Scheduler {
         let new_pending_starts = self
             .pending_starts
             .iter()
-            .filter_map(|v| (*v != guild_id).then(|| *v))
+            .filter_map(|v| (*v != guild_id).then_some(*v))
             .collect::<Vec<_>>();
         self.pending_starts = new_pending_starts;
 

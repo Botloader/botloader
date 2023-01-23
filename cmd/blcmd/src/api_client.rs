@@ -1,4 +1,3 @@
-use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
 use twilight_model::user::CurrentUser;
 

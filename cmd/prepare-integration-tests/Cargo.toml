@@ -11,9 +11,9 @@ common = {path="../../components/common"}
 
 twilight-model = {version = "0.11"}
 
-tracing = "0.1"
+tracing = {workspace = true}
 tracing-log = "0.1"
 
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 clap = {version = "3.0.14", features = ["derive", "env"]}
 regex = "1.5"

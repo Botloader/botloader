@@ -341,6 +341,7 @@ export namespace Commands {
 
             let group = new Group(name, description);
             group.isSubGroup = true;
+            group.parent = this;
             this.subGroups.push(group);
             return group;
         }

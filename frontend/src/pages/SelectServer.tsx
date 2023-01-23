@@ -30,7 +30,7 @@ export function SelectServerPage() {
     return <div className="guild-select-page">
         <Panel>
             <h2>Beta version</h2>
-            <p>Botloader is currently in a beta state, everything you're seeing is work in progress and will likely change a lot, however the scripting api is relatively stable.</p>
+            <p>Botloader is currently in a beta state, everything you are seeing is work in progress and will likely change a lot, however the scripting API is relatively stable.</p>
             <p><a href="/docs/">Scripting API Documentation</a></p>
         </Panel>
         <Panel>

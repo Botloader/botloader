@@ -34,9 +34,7 @@ pub async fn message_writer<T: Serialize>(
     mut rx: mpsc::UnboundedReceiver<T>,
 ) -> std::io::Result<()> {
     while let Some(next) = rx.recv().await {
-        if let Err(err) = write_message(&next, dst).await {
-            return Err(err);
-        }
+        write_message(&next, dst).await?
     }
 
     Ok(())

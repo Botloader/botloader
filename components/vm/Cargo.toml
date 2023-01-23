@@ -14,22 +14,22 @@ tscompiler = {path="../../components/tscompiler"}
 
 twilight-model = {version = "0.11"}
 
-deno_core = "0.124"
-v8 = "0.41.0"
-serde_v8 = "0.35"
+deno_core = {workspace = true}
+v8 = {workspace = true}
+serde_v8 = "0.78"
 
-tracing = "0.1"
+tracing = {workspace = true}
 tracing-futures = { version = "0.2.5" }
 
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 futures = "0.3"
-anyhow = "1.0"
+anyhow = {workspace = true}
 url = "2.2"
-serde_json = "1.0"
-async-trait = "0.1"
-lazy_static = "1.4"
+serde_json = {workspace = true}
+async-trait = {workspace = true}
+lazy_static = {workspace = true}
 regex = "1.5"
 
 [build-dependencies]
-deno_core = "0.124"
+deno_core = {workspace = true}

@@ -37,7 +37,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
     }
     let http_client = http_client_builder.build().expect("valid http client");
 
-    let core_extension = Extension::builder()
+    let core_extension = Extension::builder("bl_script_core")
         .ops(vec![
             // botloader stuff
             op_botloader_script_start::decl(),

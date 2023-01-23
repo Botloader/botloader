@@ -1,108 +1,160 @@
 use std::sync::{Arc, Mutex};
 
+use swc::{
+    config::{JscConfig, JscOutputConfig, SourceMapsConfig},
+    Compiler,
+};
+
 use swc_common::{
     self, chain,
     errors::{Diagnostic, Emitter, Handler},
     sync::Lrc,
     FileName, Globals, Mark, SourceMap,
 };
+use swc_ecma_ast::EsVersion;
+use swc_ecma_parser::{Syntax, TsConfig};
 // use swc_ecmascript::ast::Module;
-use swc_ecmascript::{
-    ast::EsVersion,
-    codegen::{text_writer::JsWriter, Emitter as CodeEmitter},
-    parser::TsConfig,
-    transforms::{fixer, helpers, hygiene, resolver_with_mark, typescript::strip},
-};
-use swc_ecmascript::{
-    codegen::Config as CodeGenConfig,
-    parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax},
-    visit::FoldWith,
-};
+// use swc_ecmascript::{
+//     ast::EsVersion,
+//     codegen::{text_writer::JsWriter, Emitter as CodeEmitter},
+//     parser::TsConfig,
+//     transforms::{fixer, helpers, hygiene, resolver_with_mark, typescript::strip},
+// };
+// use swc_ecmascript::{
+//     codegen::Config as CodeGenConfig,
+//     parser::{lexer::Lexer, Capturing, Parser, StringInput, Syntax},
+//     visit::FoldWith,
+// };
 
 pub fn compile_typescript(input: &str) -> Result<CompiledItem, String> {
     compile_typescript_inner(input)
 }
 
 fn compile_typescript_inner(input: &str) -> Result<CompiledItem, String> {
-    let mut result_buf = Vec::new();
+    // let mut result_buf = Vec::new();
 
-    swc_common::GLOBALS.set(&Globals::new(), || {
-        helpers::HELPERS.set(&helpers::Helpers::default(), || {
-            let global_mark = Mark::fresh(Mark::root());
+    swc_common::GLOBALS.set(&Default::default(), || {
+        //     helpers::HELPERS.set(&helpers::Helpers::default(), || {
+        // let global_mark = Mark::fresh(Mark::root());
 
-            let cm: Lrc<SourceMap> = Default::default();
+        let cm: Arc<SourceMap> = Arc::new(SourceMap::default());
 
-            let buf = Arc::new(Mutex::new(Vec::new()));
-            let handler = Handler::with_emitter_writer(
-                Box::new(VecLocked { buf: buf.clone() }),
-                Some(cm.clone()),
-            );
+        let c = Compiler::new(cm.clone());
+        let fm = cm.new_source_file(FileName::Custom("script.ts".into()), input.into());
 
-            let fm = cm.new_source_file(FileName::Custom("script.ts".into()), input.into());
+        let buf = Arc::new(Mutex::new(Vec::new()));
+        let handler = Handler::with_emitter_writer(
+            Box::new(VecLocked { buf: buf.clone() }),
+            Some(cm.clone()),
+        );
 
-            let lexer = Lexer::new(
-                Syntax::Typescript(TsConfig {
-                    ..Default::default()
-                }),
-                EsVersion::Es2020,
-                StringInput::from(&*fm),
-                None,
-            );
+        println!("Doing the thing");
 
-            let capturing = Capturing::new(lexer);
-
-            let mut parser = Parser::new_from(capturing);
-
-            for e in parser.take_errors() {
-                e.into_diagnostic(&handler).emit();
-            }
-
-            let mut module = match parser.parse_module() {
-                Ok(m) => m,
-                Err(e) => {
-                    e.into_diagnostic(&handler).emit();
-                    let errs = buf.lock().unwrap();
-                    return Err(String::from_utf8(errs.clone()).unwrap());
-                }
-            };
-
-            let mut pass = chain!(
-                resolver_with_mark(global_mark),
-                strip(global_mark),
-                hygiene(),
-                // compat::es2021::es2021(),
-                // export_namespace_from(),
-                // compat::reserved_words::reserved_words(),
-                fixer(None),
-            );
-
-            module = module.fold_with(&mut pass);
-            let mut src_map = Vec::new();
-
-            {
-                let writer = JsWriter::new(cm.clone(), "\n", &mut result_buf, Some(&mut src_map));
-
-                let mut emitter = CodeEmitter {
-                    cfg: CodeGenConfig {
+        match swc::try_with_handler(
+            cm.clone(),
+            swc::HandlerOpts {
+                color: swc_common::errors::ColorConfig::Never,
+                skip_filename: false,
+            },
+            |handler| {
+                c.process_js_file(
+                    fm,
+                    handler,
+                    &swc::config::Options {
+                        config: swc::config::Config {
+                            jsc: JscConfig {
+                                syntax: Some(Syntax::Typescript(TsConfig {
+                                    ..Default::default()
+                                })),
+                                target: Some(EsVersion::Es2022),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        },
+                        source_maps: Some(SourceMapsConfig::Bool(true)),
                         ..Default::default()
                     },
-                    cm: cm.clone(),
-                    comments: None,
-                    wr: Box::new(writer),
-                };
+                )
+            },
+        ) {
+            Ok(output) => {
+                let map_raw = output.map.unwrap();
+                let map_parsed = sourcemap::SourceMap::from_slice(map_raw.as_bytes()).unwrap();
 
-                // TODO: handle the io error? how would there be a io error since its a in mem buffer though?
-                emitter.emit_module(&module).unwrap();
+                // println!("{}\n{:?}", output.code, output.map);
+                Ok(CompiledItem {
+                    output: output.code,
+                    source_map: map_parsed,
+                })
+
+                // todo!();
             }
+            Err(err) => Err(err.to_string()),
+        }
 
-            let proper_source_map = cm.build_source_map(&mut src_map);
+        // let lexer = Lexer::new(
+        //     Syntax::Typescript(TsConfig {
+        //         ..Default::default()
+        //     }),
+        //     EsVersion::Es2020,
+        //     StringInput::from(&*fm),
+        //     None,
+        // );
 
-            // i really hope this dosen't produce any invalid utf8 stuff :eyes:
-            Ok(CompiledItem {
-                output: String::from_utf8(result_buf).unwrap(),
-                source_map: proper_source_map,
-            })
-        })
+        // let capturing = Capturing::new(lexer);
+
+        // let mut parser = Parser::new_from(capturing);
+
+        // for e in parser.take_errors() {
+        //     e.into_diagnostic(&handler).emit();
+        // }
+
+        // let mut module = match parser.parse_module() {
+        //     Ok(m) => m,
+        //     Err(e) => {
+        //         e.into_diagnostic(&handler).emit();
+        //         let errs = buf.lock().unwrap();
+        //         return Err(String::from_utf8(errs.clone()).unwrap());
+        //     }
+        // };
+
+        // let mut pass = chain!(
+        //     resolver_with_mark(global_mark),
+        //     strip(global_mark),
+        //     hygiene(),
+        //     // compat::es2021::es2021(),
+        //     // export_namespace_from(),
+        //     // compat::reserved_words::reserved_words(),
+        //     fixer(None),
+        // );
+
+        // module = module.fold_with(&mut pass);
+        // let mut src_map = Vec::new();
+
+        // {
+        //     let writer = JsWriter::new(cm.clone(), "\n", &mut result_buf, Some(&mut src_map));
+
+        //     let mut emitter = CodeEmitter {
+        //         cfg: CodeGenConfig {
+        //             ..Default::default()
+        //         },
+        //         cm: cm.clone(),
+        //         comments: None,
+        //         wr: Box::new(writer),
+        //     };
+
+        //     // TODO: handle the io error? how would there be a io error since its a in mem buffer though?
+        //     emitter.emit_module(&module).unwrap();
+        // }
+
+        // let proper_source_map = cm.build_source_map(&mut src_map);
+
+        // // i really hope this dosen't produce any invalid utf8 stuff :eyes:
+        // Ok(CompiledItem {
+        //     output: String::from_utf8(result_buf).unwrap(),
+        //     let map_pared = sourcemap::SourceMap::from_slice(&map_raw).unwrap();: proper_source_map,
+        // })
+        // })
     })
 }
 
@@ -145,4 +197,19 @@ impl std::io::Write for VecLocked {
 pub struct CompiledItem {
     pub output: String,
     pub source_map: sourcemap::SourceMap,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::compile_typescript;
+
+    fn compile(input: &str, expected_output: &str) {
+        let output = compile_typescript(input).unwrap();
+        assert_eq!(output.output, expected_output);
+    }
+
+    #[test]
+    fn tst_simple() {
+        compile("let a: string = 'asd'", "let a = 'asd';\n");
+    }
 }

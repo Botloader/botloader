@@ -155,7 +155,7 @@ export class SelectMenuOption implements ISelectMenuOption {
     }
 
     setDefault(isDefault: boolean) {
-        this.default = this.default;
+        this.default = isDefault;
         return this;
     }
 

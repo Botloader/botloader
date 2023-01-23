@@ -9,8 +9,9 @@ edition = "2021"
 stores = {path="../../components/stores"} 
 dbrokerapi = {path="../../components/dbrokerapi"} 
 
-serde_json = "1.0"
-ts-rs = {version = "6.1", features=["format"]}
+serde_json = {workspace = true}
+# ts-rs = {version = "6.2.1", features=["format"]}
+ts-rs = {version = "6.2.1", features=[]}
 serde = { version = "1.0", features = ["derive"] }
 
 twilight-model = {version = "0.11"}

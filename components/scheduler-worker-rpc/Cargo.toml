@@ -11,7 +11,7 @@ stores = {path="../../components/stores"}
 guild-logger = {path="../../components/guild-logger"}
 simpleproto = {path="../../components/simpleproto"}
 
-serde = "1.0"
-serde_json = "1.0"
-tokio = { version = "1", features = ["full"] }
+serde = {workspace = true}
+serde_json = {workspace = true}
+tokio = {workspace = true}
 twilight-model = {version = "0.11"}

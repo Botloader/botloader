@@ -68,10 +68,7 @@ impl<CT: CsrfStore, ST: SessionStore> AuthHandlers<CT, ST> {
             .url();
 
         let mut headers = HeaderMap::new();
-        headers.insert(
-            LOCATION,
-            HeaderValue::from_str(&auth_url.to_string()).unwrap(),
-        );
+        headers.insert(LOCATION, HeaderValue::from_str(auth_url.as_ref()).unwrap());
         Ok((StatusCode::SEE_OTHER, headers))
     }
 

@@ -1,4 +1,4 @@
-use deno_core::{ModuleLoader, ModuleSource, ModuleType};
+use deno_core::{ModuleLoader, ModuleSource, ModuleType, ResolutionKind};
 use futures::future::ready;
 use url::Url;
 
@@ -18,7 +18,7 @@ impl ModuleManager {
             .iter()
             .find(|e| e.specifier == *module_specifier)
             .map(|e| ModuleSource {
-                code: e.source.to_string(),
+                code: e.source.as_bytes().into(),
                 module_url_found: module_specifier.to_string(),
                 module_url_specified: module_specifier.to_string(),
                 module_type: ModuleType::JavaScript,
@@ -46,7 +46,7 @@ impl ModuleManager {
                 prepend_script_source_header(&script.compiled.output, Some(&script.script));
 
             return Some(ModuleSource {
-                code: source,
+                code: source.as_bytes().into(),
                 module_url_found: module_specifier.to_string(),
                 module_url_specified: module_specifier.to_string(),
                 module_type: ModuleType::JavaScript,
@@ -63,7 +63,7 @@ impl ModuleLoader for ModuleManager {
         &self,
         mut specifier: &str,
         referrer: &str,
-        _is_main: bool,
+        _kind: ResolutionKind,
     ) -> Result<deno_core::ModuleSpecifier, deno_core::error::AnyError> {
         // info!("resolving module: {} - {}", specifier, referrer);
         if let Ok(u) = Url::parse(specifier) {

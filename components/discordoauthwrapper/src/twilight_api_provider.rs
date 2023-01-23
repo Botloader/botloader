@@ -103,7 +103,7 @@ impl From<twilight_http::Error> for ApiProviderError<twilight_http::Error> {
                 //         ..
                 //     }),
                 ..
-            } if status.raw() == 401 => Self::InvalidToken,
+            } if status.get() == 401 => Self::InvalidToken,
             twilight_http::error::ErrorType::Response {
                 error: ApiError::Ratelimited(RatelimitedApiError { retry_after, .. }),
                 ..

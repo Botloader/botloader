@@ -10,5 +10,5 @@ stores = {path="../../components/stores"}
 runtime-models = {path="../../components/runtime-models"}
 
 regex = "1.5"
-lazy_static = "1.4"
-serde = "1.0"
+lazy_static = {workspace = true}
+serde = {workspace = true}

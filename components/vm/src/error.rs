@@ -75,17 +75,19 @@ fn parse_transform_stack_line(scripts: &ScriptsStateStore, line: &str) -> Option
 }
 
 fn parse_transform_err_source(err: &mut JsError, scripts: &ScriptsStateStore) -> Option<()> {
-    let res = err.script_resource_name.clone()?;
-    let line = err.line_number?;
-    let col = err.start_column?;
+    // let res = err.script_resource_name.clone()?;
+    // let line = err.line_number?;
+    // let col = err.start_column?;
 
-    let (new_file, src_line, src_col) =
-        scripts.get_original_line_col(&res, line as u32, col as u32)?;
+    // let (new_file, src_line, src_col) =
+    //     scripts.get_original_line_col(&res, line as u32, col as u32)?;
 
-    err.script_resource_name = Some(new_file);
-    err.line_number = Some(src_line as i64);
-    err.start_column = Some(src_col as i64);
-    err.end_column = Some(src_col as i64);
+    // err.script_resource_name = Some(new_file);
+    // err.line_number = Some(src_line as i64);
+    // err.start_column = Some(src_col as i64);
+    // err.end_column = Some(src_col as i64);
+
+    todo!();
 
     Some(())
 }

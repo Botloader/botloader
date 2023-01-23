@@ -1,3 +1,3 @@
 # Interactions
 
-This section is not done yet, instead you can check out the examples found in the support server.
+This section has not been finished yet. You can find examples in the [support server](https://discord.gg/QyJeSf9rsR)
