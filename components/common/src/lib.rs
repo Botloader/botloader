@@ -37,7 +37,7 @@ pub fn common_init(metrics_listen_addr: Option<&str>) {
 pub fn init_tracing() {
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_target(true)
-        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE);
+        .with_span_events(FmtSpan::NONE);
     let env_filter = EnvFilter::from_default_env();
 
     tracing_subscriber::registry()
