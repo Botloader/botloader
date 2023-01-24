@@ -10,15 +10,13 @@ export namespace OpWrappers {
 
     export namespace utils {
         export function encodeText(s: string): Uint8Array {
-            return Deno.core.opSync(
-                "op_bl_encode_text",
+            return Deno.core.ops.op_bl_encode_text(
                 s
             );
         }
 
         export function decodeText(u: Uint8Array): string {
-            return Deno.core.opSync(
-                "op_bl_decode_text",
+            return Deno.core.ops.op_bl_decode_text(
                 u
             );
         }
@@ -26,7 +24,7 @@ export namespace OpWrappers {
 
     export namespace http {
         export function createRequestStream(): number {
-            return Deno.core.opSync("op_bl_http_client_stream")
+            return Deno.core.ops.op_bl_http_client_stream()
         }
 
         export function requestSend(args: Internal.ClientHttpRequest): Promise<Internal.ClientHttpResponse> {
@@ -65,15 +63,13 @@ export namespace OpWrappers {
     }
 
     export function scriptStarted(meta: Internal.ScriptMeta) {
-        Deno.core.opSync(
-            "op_botloader_script_start",
+        Deno.core.ops.op_botloader_script_start(
             meta
         );
     }
 
     export function consoleLog(args: Internal.ConsoleLogMessage) {
-        Deno.core.opSync(
-            "op_botloader_log",
+        Deno.core.ops.op_botloader_log(
             args
         );
     }
@@ -83,11 +79,11 @@ export namespace OpWrappers {
     }
 
     export function getCurrentUser(): Internal.IUser {
-        return Deno.core.opSync("op_get_current_bot_user");
+        return Deno.core.ops.op_get_current_bot_user();
     }
 
     export function getCurrentGuildId(): string {
-        return Deno.core.opSync("op_get_current_guild_id");
+        return Deno.core.ops.op_get_current_guild_id();
     }
 
     // Messages
