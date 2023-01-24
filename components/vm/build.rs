@@ -17,7 +17,7 @@ fn main() {
     let snapshot_path = o.join("BOTLOADER_SNAPSHOT.bin");
     let options = RuntimeOptions {
         will_snapshot: true,
-        extensions: vec![core_extension],
+        extensions_with_js: vec![core_extension],
         ..Default::default()
     };
     let isolate = JsRuntime::new(options);
