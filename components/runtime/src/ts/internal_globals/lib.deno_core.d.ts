@@ -72,6 +72,7 @@ declare namespace Deno {
 
         /** Encode a string to its Uint8Array representation. */
         function encode(input: string): Uint8Array;
+        function decode(input: Uint8Array): string;
 
         /**
          * Set a callback that will be called when the WebAssembly streaming APIs
