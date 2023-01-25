@@ -12,7 +12,7 @@ pub fn create_module_map() -> Vec<ModuleEntry> {
     MODULE_MAP
         .iter()
         .map(|(name, source)| ModuleEntry {
-            source: *source,
+            source,
             specifier: name.clone(),
         })
         .collect()
