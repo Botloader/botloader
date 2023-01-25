@@ -185,5 +185,7 @@ declare namespace Deno {
             after_hook?: (promise: Promise<unknown>) => void,
             resolve_hook?: (promise: Promise<unknown>) => void,
         ): void;
+
+        function registerErrorClass(name: string, t: any): void;
     }
 }
