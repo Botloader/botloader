@@ -1,7 +1,8 @@
+use crate::error::handle_js_error;
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
-    prepend_script_source_header, AnyError, ScriptLoadState, ScriptState, ScriptsStateStore,
-    ScriptsStateStoreHandle,
+    prepend_script_source_header, AnyError, ScriptLoadState, ScriptState, ScriptStateStoreWrapper,
+    ScriptsStateStore, ScriptsStateStoreHandle,
 };
 use deno_core::{Extension, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
@@ -146,6 +147,7 @@ impl Vm {
         // let create_err_fn = create_error_fn(script_load_states.clone());
 
         let mut extensions = extension_factory();
+        let cloned_load_states = script_load_states.clone();
         extensions.insert(
             0,
             Extension::builder("bl_core_rt")
@@ -154,7 +156,7 @@ impl Vm {
                   "botloader-core.js",
                 ))
                 .state(move |op| {
-                    op.put(script_load_states.clone());
+                    op.put(cloned_load_states.clone());
                     Ok(())
                 })
                 .build(),
@@ -175,6 +177,7 @@ impl Vm {
             ),
             startup_snapshot: Some(Snapshot::Static(crate::BOTLOADER_CORE_SNAPSHOT)),
             // js_error_create_fn: Some(create_err_fn),
+            source_map_getter: Some(Box::new(ScriptStateStoreWrapper(script_load_states))),
             ..Default::default()
         };
 
@@ -239,7 +242,7 @@ impl Vm {
                 TickResult::VmError(e) => {
                     self.guild_logger.log(LogEntry::error(
                         self.ctx.guild_id,
-                        format!("Script error occured: {}", e),
+                        format!("Script error occurred: {}", handle_js_error(e)),
                     ));
                 }
                 TickResult::Completed => {
@@ -573,7 +576,7 @@ impl Vm {
     fn log_guild_err(&self, err: AnyError) {
         self.guild_logger.log(LogEntry::error(
             self.ctx.guild_id,
-            format!("Script error occured: {}", err),
+            format!("Script error occurred: {}", handle_js_error(err)),
         ));
     }
 

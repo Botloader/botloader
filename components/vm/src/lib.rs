@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use deno_core::v8_set_flags;
+use deno_core::{v8_set_flags, SourceMapGetter};
 use stores::config::Script;
 use tscompiler::CompiledItem;
 
@@ -199,5 +199,29 @@ impl ScriptsStateStore {
 impl Default for ScriptsStateStore {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub(crate) struct ScriptStateStoreWrapper(pub(crate) ScriptsStateStoreHandle);
+
+impl SourceMapGetter for ScriptStateStoreWrapper {
+    fn get_source_map(&self, file_name: &str) -> Option<Vec<u8>> {
+        let state = self.0.borrow();
+        if let Some(guild_script_name) = ScriptsStateStore::get_guild_script_name(file_name) {
+            if let Some(script_load) = state
+                .scripts
+                .iter()
+                .find(|v| v.script.name == guild_script_name)
+                .cloned()
+            {
+                return Some(script_load.compiled.source_map_raw.as_bytes().into());
+            }
+        }
+
+        None
+    }
+
+    fn get_source_line(&self, file_name: &str, line_number: usize) -> Option<String> {
+        Some(format!("{}:{}", file_name, line_number))
     }
 }
