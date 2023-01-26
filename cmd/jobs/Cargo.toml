@@ -11,6 +11,6 @@ stores = {path="../../components/stores"}
 dbrokerapi = {path="../../components/dbrokerapi"}
 
 tracing = {workspace = true}
-clap = {version = "3.0.14", features = ["derive", "env"]}
+clap = {workspace = true}
 tokio = {workspace = true}
 twilight-http = {version = "0.11"}

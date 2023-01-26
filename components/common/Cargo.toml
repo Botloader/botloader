@@ -15,7 +15,7 @@ tracing-log = "0.1"
 
 tokio = {workspace = true}
 dotenv = "0.15"
-clap = {version = "3.0.14", features = ["derive", "env"]}
+clap = {workspace = true}
 oauth2 = "4.1"
 
 metrics = "0.18"

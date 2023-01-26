@@ -22,7 +22,7 @@ futures = "0.3"
 async-stream = "0.3"
 serde = {workspace = true}
 serde_json = {workspace = true}
-clap = {version = "3.0.14", features = ["derive", "env"]}
+clap = {workspace = true}
 async-trait = {workspace = true}
 chrono = "0.4"
 anyhow = {workspace = true}

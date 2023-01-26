@@ -19,7 +19,7 @@ dbrokerapi = {path="../../components/dbrokerapi"}
 
 tokio = {workspace = true}
 tracing = {workspace = true}
-clap = {version = "3.0.14", features = ["derive", "env"]}
+clap = {workspace = true}
 serde = {workspace = true}
 async-trait = {workspace = true}
 anyhow = {workspace = true}

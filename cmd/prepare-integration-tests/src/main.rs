@@ -60,7 +60,7 @@ pub struct RunConfig {
     #[clap(long, env = "DATABASE_URL")]
     database_url: String,
 
-    #[clap(long, parse(from_os_str))]
+    #[clap(long)]
     scripts_path: PathBuf,
 
     #[clap(long)]

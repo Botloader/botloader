@@ -15,5 +15,5 @@ tracing = {workspace = true}
 tracing-log = "0.1"
 
 tokio = {workspace = true}
-clap = {version = "3.0.14", features = ["derive", "env"]}
+clap = {workspace = true}
 regex = "1.5"
