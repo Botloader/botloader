@@ -14,7 +14,7 @@ serde_json = {workspace = true}
 async-trait = {workspace = true}
 sqlx = {version = "0.6.2", features = ["runtime-async-std-rustls", "postgres", "chrono", "macros", "offline", "json"]}
 oauth2 = "4.1"
-dashmap = "5.1.0"
+dashmap = "5.4.0"
 rand = "0.8"
 base64 = "0.13"
 chrono = {workspace = true}
