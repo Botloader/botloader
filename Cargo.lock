@@ -927,14 +927,11 @@ dependencies = [
 name = "dbrokerapi"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "futures",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
- "twilight-cache-inmemory",
  "twilight-model",
 ]
 
