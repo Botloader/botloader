@@ -12,7 +12,7 @@ dbrokerapi = {path="../../components/dbrokerapi"}
 axum-metrics-layer = {path="../../components/axum-metrics-layer"}
 stores = {path="../../components/stores"}
  
-axum = {version = "0.4.5"}
+axum = {workspace = true}
 tokio = {workspace = true}
 clap = {version = "3.0.14", features = ["derive", "env"]}
 tracing = {workspace = true}
