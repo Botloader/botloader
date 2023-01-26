@@ -1,4 +1,4 @@
-use crate::error::handle_js_error;
+use crate::error::source_map_error;
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
     prepend_script_source_header, AnyError, ScriptLoadState, ScriptState, ScriptStateStoreWrapper,
@@ -242,7 +242,10 @@ impl Vm {
                 TickResult::VmError(e) => {
                     self.guild_logger.log(LogEntry::error(
                         self.ctx.guild_id,
-                        format!("Script error occurred: {}", handle_js_error(e)),
+                        format!(
+                            "Script error occurred: {}",
+                            source_map_error(&self.script_store, e)
+                        ),
                     ));
                 }
                 TickResult::Completed => {
@@ -576,7 +579,10 @@ impl Vm {
     fn log_guild_err(&self, err: AnyError) {
         self.guild_logger.log(LogEntry::error(
             self.ctx.guild_id,
-            format!("Script error occurred: {}", handle_js_error(err)),
+            format!(
+                "Script error occurred: {}",
+                source_map_error(&self.script_store, err)
+            ),
         ));
     }
 
