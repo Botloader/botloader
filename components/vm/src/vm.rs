@@ -153,7 +153,7 @@ impl Vm {
             Extension::builder("bl_core_rt")
                 .js(deno_core::include_js_files!(
                   prefix "bl:core",
-                  "botloader-core.js",
+                  "botloader-core-rt.js",
                 ))
                 .state(move |op| {
                     op.put(cloned_load_states.clone());
@@ -163,7 +163,7 @@ impl Vm {
         );
 
         let options = RuntimeOptions {
-            extensions,
+            extensions_with_js: extensions,
             module_loader: Some(module_manager),
             get_error_class_fn: Some(&|err| {
                 deno_core::error::get_custom_error_class(err).unwrap_or("Error")
