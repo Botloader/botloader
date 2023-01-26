@@ -27,7 +27,7 @@ tower-http = { version = "0.2.0", features = ["trace", "set-header"] }
 tower = "0.4"
 axum = {workspace = true}
 http-body = "0.4"
-tonic = "0.6"
+tonic = {workspace = true}
 
 tracing = {workspace = true}
 tracing-log = "0.1"

@@ -6,7 +6,7 @@ impl From<guild_logger::LogEntry> for GuildLogItem {
     fn from(entry: guild_logger::LogEntry) -> Self {
         Self {
             guild_id: entry.guild_id.get(),
-            level: LogLevel::from(entry.level).into(),
+            level: LogLevel::from(entry.level) as i32,
             message: entry.message,
             script_context: entry.script_context.map(Into::into),
         }

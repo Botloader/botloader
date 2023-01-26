@@ -16,7 +16,7 @@ dbrokerapi = {path="../../components/dbrokerapi"}
 botrpc = {path="../../components/botrpc"}
 
 tokio = {workspace = true}
-tonic = "0.6"
+tonic = {workspace = true}
 tracing = {workspace = true}
 futures = "0.3"
 async-stream = "0.3"

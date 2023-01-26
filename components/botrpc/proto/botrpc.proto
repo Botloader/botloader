@@ -2,50 +2,48 @@ syntax = "proto3";
 package botrpc;
 
 service BotService {
-    rpc ReloadVm(GuildScriptSpecifier) returns (Empty);
-    rpc PurgeGuildCache(GuildScriptSpecifier) returns (Empty);
-    rpc StreamGuildLogs(GuildSpecifier) returns (stream GuildLogItem);
+  rpc ReloadVm(GuildScriptSpecifier) returns (Empty);
+  rpc PurgeGuildCache(GuildScriptSpecifier) returns (Empty);
+  rpc StreamGuildLogs(GuildSpecifier) returns (stream GuildLogItem);
 }
 
-message Empty{}
+message Empty {}
 
-message GuildSpecifier{
-    fixed64 guild_id = 1;
+message GuildSpecifier { fixed64 guild_id = 1; }
+
+message VmSpecifier {
+  oneof specifier {
+    Empty guild = 1;
+    uint64 pack = 2;
+  }
 }
 
-message VmSpecifier{
-    oneof specifier {
-        Empty guild = 1;
-        uint64 pack = 2;
-    }
+message GuildScriptSpecifier {
+  fixed64 guild_id = 1;
+  VmSpecifier script = 2;
 }
 
-message GuildScriptSpecifier{
-    fixed64 guild_id = 1;
-    VmSpecifier script = 2;
+message GuildLogItem {
+  fixed64 guild_id = 1;
+  LogLevel level = 2;
+  string message = 3;
+  ScriptContext script_context = 4;
 }
 
-message GuildLogItem{
-    fixed64 guild_id = 1;
-    LogLevel level = 2;
-    string message = 3;
-    ScriptContext script_context = 4;
+message ScriptContext {
+  string filename = 1;
+  LineCol line_col = 2;
 }
 
-message ScriptContext{
-    string filename = 1;
-    LineCol line_col = 2; 
+message LineCol {
+  uint32 line = 1;
+  uint32 column = 2;
 }
 
-message LineCol{
-    uint32 line = 1;
-    uint32 column = 2;
-}
-
-enum LogLevel{
-    CRITICAL = 0;
-    ERROR = 1;
-    WARN = 2;
-    INFO = 3;
-    CONSOLE_LOG = 4;
+enum LogLevel {
+  CRITICAL = 0;
+  ERROR = 1;
+  WARN = 2;
+  INFO = 3;
+  CONSOLE_LOG = 4;
 }
