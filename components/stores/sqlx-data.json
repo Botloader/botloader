@@ -1,58 +1,60 @@
 {
   "db": "PostgreSQL",
   "020ff8ad3794c6bd8072019d166f18606cb7f75cfbabe6407da24a3134d01a82": {
-    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE NOT id = ANY ($1) AND left_at IS NULL",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "name",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "icon",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "owner_id",
+          "ordinal": 3,
           "type_info": "Int8"
         },
         {
-          "ordinal": 4,
           "name": "left_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8Array"
-        ]
-      },
       "nullable": [
         false,
         false,
         false,
         false,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8Array"
+        ]
+      }
+    },
+    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE NOT id = ANY ($1) AND left_at IS NULL"
   },
   "0a2a8cbd6594d3624e972813d114f25a386090a4b4eb82e26c8b6adee94ecf68": {
-    "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = ANY($2::TEXT[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "exec_at",
+          "ordinal": 0,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false
       ],
       "parameters": {
         "Left": [
@@ -60,21 +62,21 @@
           "TextArray",
           "Int8Array"
         ]
-      },
-      "nullable": [
-        false
-      ]
-    }
+      }
+    },
+    "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = ANY($2::TEXT[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1"
   },
   "0a60828093ea930e50146b188343c5688499b4bf7470181f2929f73791dc21f4": {
-    "query": "SELECT count(*) FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND (expires_at IS NULL OR expires_at > now());",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "count",
+          "ordinal": 0,
           "type_info": "Int8"
         }
+      ],
+      "nullable": [
+        null
       ],
       "parameters": {
         "Left": [
@@ -82,64 +84,54 @@
           "Text",
           "Text"
         ]
-      },
-      "nullable": [
-        null
-      ]
-    }
+      }
+    },
+    "query": "SELECT count(*) FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND (expires_at IS NULL OR expires_at > now());"
   },
   "0b53c6ad030a9a0353c25d88165bce7c455f35a5903595111bb425291e73dfef": {
-    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now());",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Text"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -149,50 +141,51 @@
         true,
         true,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now());"
   },
   "0cabf9cf6d7af05b932467a8f271cd68f6f9ec4640bfbfd47d66871287817ab6": {
-    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND id = $2",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "guild_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "unique_key",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "value",
+          "ordinal": 4,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 5,
           "name": "exec_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -200,55 +193,69 @@
         true,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND id = $2"
   },
   "0d1be72462bf9559ba071f3b07b3d49006abff6585be3aa14b1d8ff1c2dde493": {
-    "query": "DELETE FROM joined_guilds WHERE id = $1;",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM joined_guilds WHERE id = $1;"
   },
   "0fb83131d557439fd5c1f683a6d135c43a9be1efd845080b98d7e44036c2701f": {
-    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = $2 AND unique_key = $3",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "guild_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "unique_key",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "value",
+          "ordinal": 4,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 5,
           "name": "exec_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -256,145 +263,130 @@
           "Text",
           "Text"
         ]
-      },
+      }
+    },
+    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = $2 AND unique_key = $3"
+  },
+  "1132ee84807180e968694967becabbe27a8a2bf738275b93ac7e8c0915e235fc": {
+    "describe": {
+      "columns": [
+        {
+          "name": "token",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "kind",
+          "ordinal": 1,
+          "type_info": "Int2"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "discriminator",
+          "ordinal": 3,
+          "type_info": "Int2"
+        },
+        {
+          "name": "username",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "avatar",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        }
+      ],
       "nullable": [
         false,
         false,
         false,
-        true,
+        false,
+        false,
         false,
         false
-      ]
-    }
-  },
-  "1132ee84807180e968694967becabbe27a8a2bf738275b93ac7e8c0915e235fc": {
-    "query": "SELECT token, kind, user_id, discriminator, username, avatar, created_at FROM web_sessions WHERE token = $1;",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "token",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 1,
-          "name": "kind",
-          "type_info": "Int2"
-        },
-        {
-          "ordinal": 2,
-          "name": "user_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 3,
-          "name": "discriminator",
-          "type_info": "Int2"
-        },
-        {
-          "ordinal": 4,
-          "name": "username",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 5,
-          "name": "avatar",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
       ],
       "parameters": {
         "Left": [
           "Text"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "SELECT token, kind, user_id, discriminator, username, avatar, created_at FROM web_sessions WHERE token = $1;"
   },
   "13a15115e1bfa6f1be2596d672a161a9999a049a06f219270bb4cc961c55796e": {
-    "query": "SELECT sum(pg_column_size(t)) FROM bucket_store t WHERE guild_id=$1 AND (expires_at IS NULL OR expires_at > now())",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "sum",
+          "ordinal": 0,
           "type_info": "Int8"
         }
+      ],
+      "nullable": [
+        null
       ],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": [
-        null
-      ]
-    }
+      }
+    },
+    "query": "SELECT sum(pg_column_size(t)) FROM bucket_store t WHERE guild_id=$1 AND (expires_at IS NULL OR expires_at > now())"
   },
   "14bec92d44510808303ebece4eb897a05aaa455ac880f6ea39c63c0801e9c0f4": {
-    "query": "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now()) RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Text"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -404,60 +396,76 @@
         true,
         true,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now()) RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;"
   },
   "15ceb47518db60042e48a5ce5b07d958cb05343655742628c3720ad730ee4171": {
-    "query": "DELETE FROM interval_timers WHERE guild_id = $1;",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM interval_timers WHERE guild_id = $1;"
   },
   "17300153acd4a935735f26142bd65687b493344206b6096f911e94f6cba8cd2f": {
-    "query": "\n                INSERT INTO guild_scripts (guild_id, name, original_source, enabled) \n                VALUES ($1, $2, $3, $4)\n                RETURNING id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers;\n            ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "guild_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "original_source",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "enabled",
+          "ordinal": 4,
           "type_info": "Bool"
         },
         {
-          "ordinal": 5,
           "name": "contributes_commands",
+          "ordinal": 5,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 6,
           "name": "contributes_interval_timers",
+          "ordinal": 6,
           "type_info": "Jsonb"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -466,107 +474,93 @@
           "Text",
           "Bool"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n                INSERT INTO guild_scripts (guild_id, name, original_source, enabled) \n                VALUES ($1, $2, $3, $4)\n                RETURNING id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers;\n            "
   },
   "1de1a34b2bf081a6b04c8d61337fbb1156e303d6056be2cf4939a9fe685fc220": {
-    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND name = $2 AND unique_key = $3",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8",
           "Text",
           "Text"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND name = $2 AND unique_key = $3"
   },
   "22478f0665fc8d1bfe289311323ab57b2a4915510c2cc8b1f968efa2a07ed84c": {
-    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE user_id = $1;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "title",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "user_id",
+          "ordinal": 2,
           "type_info": "Int8"
         },
         {
-          "ordinal": 3,
           "name": "message",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "source",
+          "ordinal": 4,
           "type_info": "Text"
         },
         {
-          "ordinal": 5,
           "name": "source_id",
+          "ordinal": 5,
           "type_info": "Text"
         },
         {
-          "ordinal": 6,
           "name": "tier",
+          "ordinal": 6,
           "type_info": "Int4"
         },
         {
-          "ordinal": 7,
           "name": "state",
+          "ordinal": 7,
           "type_info": "Int4"
         },
         {
-          "ordinal": 8,
           "name": "created_at",
+          "ordinal": 8,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 9,
           "name": "updated_at",
+          "ordinal": 9,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 10,
           "name": "expires_at",
+          "ordinal": 10,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 11,
           "name": "manage_url",
+          "ordinal": 11,
           "type_info": "Text"
         },
         {
-          "ordinal": 12,
           "name": "attached_guild_id",
+          "ordinal": 12,
           "type_info": "Int8"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -581,99 +575,119 @@
         false,
         false,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE user_id = $1;"
   },
   "28ba8c9f00ead06d759107bb246a004852ce954301f57e7a54cf54f3d01610ba": {
-    "query": "SELECT count(*) FROM web_sessions WHERE user_id = $1 AND kind = $2;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "count",
+          "ordinal": 0,
           "type_info": "Int8"
         }
+      ],
+      "nullable": [
+        null
       ],
       "parameters": {
         "Left": [
           "Int8",
           "Int2"
         ]
-      },
-      "nullable": [
-        null
-      ]
-    }
+      }
+    },
+    "query": "SELECT count(*) FROM web_sessions WHERE user_id = $1 AND kind = $2;"
   },
   "2af7820bad837340a79a4008d4a5de9eca35dfe4928c68e65c59262c1767cde4": {
-    "query": "\nINSERT INTO premium_slots \n       (title, user_id, message, source, source_id, tier, state, created_at, updated_at,\n          expires_at, manage_url, attached_guild_id) \nVALUES ($1,       $2,      $3,     $4,       $5,     $6,    $7,     now(),      now(),\n            $8,          $9,           null        )\nON CONFLICT (source, source_id) DO UPDATE SET\n    title = $1,\n    user_id = $2,\n    message = $3,\n    source = $4,\n    source_id = $5,\n    tier = $6,\n    state = $7,\n    updated_at = now(),\n    expires_at = $8,\n    manage_url = $9\nRETURNING id, title, user_id, message, source, source_id, tier, state, created_at, \n            updated_at, expires_at, manage_url, attached_guild_id;\n             ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "title",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "user_id",
+          "ordinal": 2,
           "type_info": "Int8"
         },
         {
-          "ordinal": 3,
           "name": "message",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "source",
+          "ordinal": 4,
           "type_info": "Text"
         },
         {
-          "ordinal": 5,
           "name": "source_id",
+          "ordinal": 5,
           "type_info": "Text"
         },
         {
-          "ordinal": 6,
           "name": "tier",
+          "ordinal": 6,
           "type_info": "Int4"
         },
         {
-          "ordinal": 7,
           "name": "state",
+          "ordinal": 7,
           "type_info": "Int4"
         },
         {
-          "ordinal": 8,
           "name": "created_at",
+          "ordinal": 8,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 9,
           "name": "updated_at",
+          "ordinal": 9,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 10,
           "name": "expires_at",
+          "ordinal": 10,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 11,
           "name": "manage_url",
+          "ordinal": 11,
           "type_info": "Text"
         },
         {
-          "ordinal": 12,
           "name": "attached_guild_id",
+          "ordinal": 12,
           "type_info": "Int8"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
       ],
       "parameters": {
         "Left": [
@@ -687,69 +701,49 @@
           "Timestamptz",
           "Text"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ]
-    }
+      }
+    },
+    "query": "\nINSERT INTO premium_slots \n       (title, user_id, message, source, source_id, tier, state, created_at, updated_at,\n          expires_at, manage_url, attached_guild_id) \nVALUES ($1,       $2,      $3,     $4,       $5,     $6,    $7,     now(),      now(),\n            $8,          $9,           null        )\nON CONFLICT (source, source_id) DO UPDATE SET\n    title = $1,\n    user_id = $2,\n    message = $3,\n    source = $4,\n    source_id = $5,\n    tier = $6,\n    state = $7,\n    updated_at = now(),\n    expires_at = $8,\n    manage_url = $9\nRETURNING id, title, user_id, message, source, source_id, tier, state, created_at, \n            updated_at, expires_at, manage_url, attached_guild_id;\n             "
   },
   "37c7c96d21db55b2bb8a79810dea6b0403c80b91a399b57fdc74bbd715a70781": {
-    "query": "SELECT token, kind, user_id, discriminator, username, avatar, created_at FROM web_sessions WHERE user_id = $1",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "token",
+          "ordinal": 0,
           "type_info": "Text"
         },
         {
-          "ordinal": 1,
           "name": "kind",
+          "ordinal": 1,
           "type_info": "Int2"
         },
         {
-          "ordinal": 2,
           "name": "user_id",
+          "ordinal": 2,
           "type_info": "Int8"
         },
         {
-          "ordinal": 3,
           "name": "discriminator",
+          "ordinal": 3,
           "type_info": "Int2"
         },
         {
-          "ordinal": 4,
           "name": "username",
+          "ordinal": 4,
           "type_info": "Text"
         },
         {
-          "ordinal": 5,
           "name": "avatar",
+          "ordinal": 5,
           "type_info": "Text"
         },
         {
-          "ordinal": 6,
           "name": "created_at",
+          "ordinal": 6,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -758,43 +752,56 @@
         false,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT token, kind, user_id, discriminator, username, avatar, created_at FROM web_sessions WHERE user_id = $1"
   },
   "390e176645318b2481f472ae3b7858151a2aa0db03af2bb644620846fac1992c": {
-    "query": "INSERT INTO scheduled_tasks (guild_id, name, unique_key, value, exec_at) VALUES($1, $2, $3, $4, $5)\n            ON CONFLICT (guild_id, name, unique_key) WHERE unique_key IS NOT NULL DO UPDATE SET\n            value = excluded.value,\n            exec_at = excluded.exec_at\n            RETURNING id, guild_id, name, unique_key, value, exec_at",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "guild_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "unique_key",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "value",
+          "ordinal": 4,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 5,
           "name": "exec_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -804,70 +811,54 @@
           "Jsonb",
           "Timestamptz"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "INSERT INTO scheduled_tasks (guild_id, name, unique_key, value, exec_at) VALUES($1, $2, $3, $4, $5)\n            ON CONFLICT (guild_id, name, unique_key) WHERE unique_key IS NOT NULL DO UPDATE SET\n            value = excluded.value,\n            exec_at = excluded.exec_at\n            RETURNING id, guild_id, name, unique_key, value, exec_at"
   },
   "3b7099c16285ad10ad866ce7b6e09242a0c3f052805ba8db3f96673a64983f14": {
-    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float DESC, updated_at DESC LIMIT $3 OFFSET $4;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Int8",
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -877,75 +868,77 @@
         true,
         true,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float DESC, updated_at DESC LIMIT $3 OFFSET $4;"
   },
   "49a6466f558a6f6fd9c3c5fd330502113fabbf0276a0470b6c04ae0fffd551de": {
-    "query": "SELECT COUNT(*) FROM scheduled_tasks WHERE guild_id = $1;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "count",
+          "ordinal": 0,
           "type_info": "Int8"
         }
+      ],
+      "nullable": [
+        null
       ],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": [
-        null
-      ]
-    }
+      }
+    },
+    "query": "SELECT COUNT(*) FROM scheduled_tasks WHERE guild_id = $1;"
   },
   "4aa8d7e43818d716689af1616f156a583f4392a6af95ecf2a35b524d10046d74": {
-    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "guild_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "original_source",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "name",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "enabled",
+          "ordinal": 4,
           "type_info": "Bool"
         },
         {
-          "ordinal": 5,
           "name": "contributes_commands",
+          "ordinal": 5,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 6,
           "name": "contributes_interval_timers",
+          "ordinal": 6,
           "type_info": "Jsonb"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -954,48 +947,63 @@
         false,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers FROM guild_scripts WHERE guild_id = $1 AND name = $2;"
   },
   "4b2dcf64481afaee690d624a2c565c450d3ae37a86d66aba106bb4046bcabd18": {
-    "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands)\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers;\n                ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "name",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "original_source",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "guild_id",
+          "ordinal": 3,
           "type_info": "Int8"
         },
         {
-          "ordinal": 4,
           "name": "enabled",
+          "ordinal": 4,
           "type_info": "Bool"
         },
         {
-          "ordinal": 5,
           "name": "contributes_commands",
+          "ordinal": 5,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 6,
           "name": "contributes_interval_timers",
+          "ordinal": 6,
           "type_info": "Jsonb"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -1005,97 +1013,80 @@
           "Bool",
           "Jsonb"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands)\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers;\n                "
   },
   "4b3a008457563f1277ee8c141216a1c30402348dcddce46c79d51db243b38c20": {
-    "query": "SELECT guild_id, error_channel_id FROM guild_meta_configs\n        WHERE guild_id = $1;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "error_channel_id",
+          "ordinal": 1,
           "type_info": "Int8"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT guild_id, error_channel_id FROM guild_meta_configs\n        WHERE guild_id = $1;"
   },
   "54bb94fe6ee54521736c16389c46c921c61da253122f7c510ca7c0376c988bb3": {
-    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float ASC, updated_at ASC LIMIT $3 OFFSET $4;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Int8",
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -1105,38 +1096,53 @@
         true,
         true,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float ASC, updated_at ASC LIMIT $3 OFFSET $4;"
   },
   "56c8f5afadce3129b07621c6dd478a18f091bf2b3416032e01b0b9765ab81244": {
-    "query": "INSERT INTO joined_guilds (id, name, icon, owner_id, left_at) VALUES ($1, $2, $3, $4, null)\n            ON CONFLICT (id) DO UPDATE SET \n            name = $2, icon = $3, owner_id = $4, left_at = null\n            RETURNING id, name, icon, owner_id, left_at;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "name",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "icon",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "owner_id",
+          "ordinal": 3,
           "type_info": "Int8"
         },
         {
-          "ordinal": 4,
           "name": "left_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true
       ],
       "parameters": {
         "Left": [
@@ -1145,104 +1151,107 @@
           "Text",
           "Int8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true
-      ]
-    }
+      }
+    },
+    "query": "INSERT INTO joined_guilds (id, name, icon, owner_id, left_at) VALUES ($1, $2, $3, $4, null)\n            ON CONFLICT (id) DO UPDATE SET \n            name = $2, icon = $3, owner_id = $4, left_at = null\n            RETURNING id, name, icon, owner_id, left_at;"
   },
   "6834107f343e172f08ced4bc64e7099b7e27bd3e9a5ae96f77761fe12be375ff": {
-    "query": "DELETE FROM discord_oauth_tokens WHERE user_id= $1",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM discord_oauth_tokens WHERE user_id= $1"
   },
   "72efcd2b9598423b2ac32fc51232e3da3bf281ae995f49993e09d6a8c519b382": {
-    "query": "SELECT count(*) FROM guild_scripts WHERE guild_id = $1;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "count",
+          "ordinal": 0,
           "type_info": "Int8"
         }
+      ],
+      "nullable": [
+        null
       ],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": [
-        null
-      ]
-    }
+      }
+    },
+    "query": "SELECT count(*) FROM guild_scripts WHERE guild_id = $1;"
   },
   "748ac769d3e4dfc3df429382f457413f3406f1fcb883171d1d0a2d24751631aa": {
-    "query": "DELETE FROM bucket_store WHERE guild_id = $1",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM bucket_store WHERE guild_id = $1"
   },
   "7d64e191ab05b594bf2b195fe4c488d994915ce424bbe7c368a9f29de6eb2839": {
-    "query": "INSERT INTO bucket_store \n         (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n         VALUES \n         ($1,         $2,    $3,   now(),      now(),      null,         null,         $4) \n         ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n         created_at = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n            THEN now()\n            ELSE bucket_store.created_at\n            END,\n         updated_at = now(),\n         expires_at = excluded.expires_at,\n         value_json = excluded.value_json,\n         value_float = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n            THEN excluded.value_float\n            ELSE excluded.value_float + bucket_store.value_float\n            END\n         RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
       ],
       "parameters": {
         "Left": [
@@ -1251,69 +1260,54 @@
           "Text",
           "Float8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true
-      ]
-    }
+      }
+    },
+    "query": "INSERT INTO bucket_store \n         (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n         VALUES \n         ($1,         $2,    $3,   now(),      now(),      null,         null,         $4) \n         ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n         created_at = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n            THEN now()\n            ELSE bucket_store.created_at\n            END,\n         updated_at = now(),\n         expires_at = excluded.expires_at,\n         value_json = excluded.value_json,\n         value_float = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n            THEN excluded.value_float\n            ELSE excluded.value_float + bucket_store.value_float\n            END\n         RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;"
   },
   "805a6ca5f730cd917cb58890ecd9a22acf0a694f86a0c563b0e22dd70c4a976e": {
-    "query": "SELECT guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at\n            FROM interval_timers WHERE guild_id=$1;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "script_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "timer_name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "interval_minutes",
+          "ordinal": 3,
           "type_info": "Int4"
         },
         {
-          "ordinal": 4,
           "name": "interval_cron",
+          "ordinal": 4,
           "type_info": "Text"
         },
         {
-          "ordinal": 5,
           "name": "last_run_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "created_at",
+          "ordinal": 6,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 7,
           "name": "updated_at",
+          "ordinal": 7,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -1323,53 +1317,68 @@
         false,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at\n            FROM interval_timers WHERE guild_id=$1;"
   },
   "864ba8b588f98715d33c9d76a95c3af7b3df12f9318103dbad8842ce466e50f6": {
-    "query": "\n            INSERT INTO interval_timers (guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at)\n            VALUES ($1, $2, $3, $4, $5, $6, now(), now())\n            ON CONFLICT (guild_id, script_id, timer_name)\n            DO UPDATE SET\n            interval_minutes = $4,\n            interval_cron = $5,\n            last_run_at = $6,\n            updated_at = now()\n            RETURNING guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at;\n             ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "script_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "timer_name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "interval_minutes",
+          "ordinal": 3,
           "type_info": "Int4"
         },
         {
-          "ordinal": 4,
           "name": "interval_cron",
+          "ordinal": 4,
           "type_info": "Text"
         },
         {
-          "ordinal": 5,
           "name": "last_run_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "created_at",
+          "ordinal": 6,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 7,
           "name": "updated_at",
+          "ordinal": 7,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -1380,63 +1389,63 @@
           "Text",
           "Timestamptz"
         ]
-      },
+      }
+    },
+    "query": "\n            INSERT INTO interval_timers (guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at)\n            VALUES ($1, $2, $3, $4, $5, $6, now(), now())\n            ON CONFLICT (guild_id, script_id, timer_name)\n            DO UPDATE SET\n            interval_minutes = $4,\n            interval_cron = $5,\n            last_run_at = $6,\n            updated_at = now()\n            RETURNING guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at;\n             "
+  },
+  "865034d73956fd61931b091353901073fc0b39a8bdaf50a5463485d28ae5ce99": {
+    "describe": {
+      "columns": [
+        {
+          "name": "guild_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "bucket",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "key",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "expires_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "value_json",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "value_float",
+          "ordinal": 7,
+          "type_info": "Float8"
+        }
+      ],
       "nullable": [
         false,
         false,
         false,
-        true,
-        true,
         false,
         false,
-        false
-      ]
-    }
-  },
-  "865034d73956fd61931b091353901073fc0b39a8bdaf50a5463485d28ae5ce99": {
-    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND key > $4 AND (expires_at IS NULL OR expires_at > now()) ORDER BY (guild_id, bucket, key) LIMIT $5;",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "guild_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "bucket",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "key",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 4,
-          "name": "updated_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 5,
-          "name": "expires_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 6,
-          "name": "value_json",
-          "type_info": "Jsonb"
-        },
-        {
-          "ordinal": 7,
-          "name": "value_float",
-          "type_info": "Float8"
-        }
+        true,
+        true,
+        true
       ],
       "parameters": {
         "Left": [
@@ -1446,111 +1455,109 @@
           "Text",
           "Int8"
         ]
-      },
+      }
+    },
+    "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND key > $4 AND (expires_at IS NULL OR expires_at > now()) ORDER BY (guild_id, bucket, key) LIMIT $5;"
+  },
+  "88dfd802c80088d5cfc801c71fa5afb970f17bad1b7e2afe17ec285de45d6f97": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "icon",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "owner_id",
+          "ordinal": 3,
+          "type_info": "Int8"
+        },
+        {
+          "name": "left_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
       "nullable": [
         false,
         false,
         false,
         false,
-        false,
-        true,
-        true,
         true
-      ]
-    }
-  },
-  "88dfd802c80088d5cfc801c71fa5afb970f17bad1b7e2afe17ec285de45d6f97": {
-    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE left_at IS NOT NULL AND left_at < (now() - $1::interval);",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "icon",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "owner_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 4,
-          "name": "left_at",
-          "type_info": "Timestamptz"
-        }
       ],
       "parameters": {
         "Left": [
           "Interval"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true
-      ]
-    }
+      }
+    },
+    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE left_at IS NOT NULL AND left_at < (now() - $1::interval);"
   },
   "8a1c9aa541e47f656327718210e3e200c21f2852457fc51ff163fb1e99a75863": {
-    "query": "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND (expires_at IS NULL OR expires_at > now());",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8",
           "Text",
           "Text"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND (expires_at IS NULL OR expires_at > now());"
   },
   "958fe1fbab976cc0568657a67df83dd587ab8d81553c7d279030d3d8fe002138": {
-    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND exec_at < $2 AND name = ANY($3::TEXT[]) AND (NOT id = ANY ($4::BIGINT[]))",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "guild_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "unique_key",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "value",
+          "ordinal": 4,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 5,
           "name": "exec_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -1559,157 +1566,158 @@
           "TextArray",
           "Int8Array"
         ]
-      },
+      }
+    },
+    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND exec_at < $2 AND name = ANY($3::TEXT[]) AND (NOT id = ANY ($4::BIGINT[]))"
+  },
+  "968159211acda10d09029282f375e22ed1fdb28e3695efd75bd2b2e64e208f82": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "original_source",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "name",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "enabled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contributes_commands",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "contributes_interval_timers",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        }
+      ],
       "nullable": [
         false,
         false,
         false,
-        true,
+        false,
+        false,
         false,
         false
-      ]
-    }
-  },
-  "968159211acda10d09029282f375e22ed1fdb28e3695efd75bd2b2e64e208f82": {
-    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers FROM guild_scripts WHERE guild_id = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "guild_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "original_source",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "enabled",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 5,
-          "name": "contributes_commands",
-          "type_info": "Jsonb"
-        },
-        {
-          "ordinal": 6,
-          "name": "contributes_interval_timers",
-          "type_info": "Jsonb"
-        }
       ],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers FROM guild_scripts WHERE guild_id = $1"
   },
   "9715f62dbaae02fd4f9ce3a7652adfa89268f3fbd546d9508adfe52a823686e2": {
-    "query": "UPDATE joined_guilds SET left_at = CASE \n                WHEN left_at IS NULL AND $2 = true THEN now()\n                WHEN $2 = false THEN null\n                ELSE left_at\n                END\n            WHERE id = $1 RETURNING id, name, icon, owner_id, left_at;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "name",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "icon",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "owner_id",
+          "ordinal": 3,
           "type_info": "Int8"
         },
         {
-          "ordinal": 4,
           "name": "left_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Bool"
-        ]
-      },
       "nullable": [
         false,
         false,
         false,
         false,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool"
+        ]
+      }
+    },
+    "query": "UPDATE joined_guilds SET left_at = CASE \n                WHEN left_at IS NULL AND $2 = true THEN now()\n                WHEN $2 = false THEN null\n                ELSE left_at\n                END\n            WHERE id = $1 RETURNING id, name, icon, owner_id, left_at;"
   },
   "9dde6113723b0828aad906db9e3f81b7e95e0b9a704e91602a5eddf5cbd1e971": {
-    "query": "\n                    UPDATE guild_scripts SET\n                    contributes_commands = $3,\n                    contributes_interval_timers = $4\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers;\n                ",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "name",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "original_source",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "guild_id",
+          "ordinal": 3,
           "type_info": "Int8"
         },
         {
-          "ordinal": 4,
           "name": "enabled",
+          "ordinal": 4,
           "type_info": "Bool"
         },
         {
-          "ordinal": 5,
           "name": "contributes_commands",
+          "ordinal": 5,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 6,
           "name": "contributes_interval_timers",
+          "ordinal": 6,
           "type_info": "Jsonb"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -1718,7 +1726,49 @@
           "Jsonb",
           "Jsonb"
         ]
-      },
+      }
+    },
+    "query": "\n                    UPDATE guild_scripts SET\n                    contributes_commands = $3,\n                    contributes_interval_timers = $4\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers;\n                "
+  },
+  "a3d1a3290f10f8ed0fd5372c4bb316d8f3f874bbbb123806da6d1d42ef9f5ee1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "original_source",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "enabled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contributes_commands",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "contributes_interval_timers",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        }
+      ],
       "nullable": [
         false,
         false,
@@ -1727,252 +1777,194 @@
         false,
         false,
         false
-      ]
-    }
-  },
-  "a3d1a3290f10f8ed0fd5372c4bb316d8f3f874bbbb123806da6d1d42ef9f5ee1": {
-    "query": "SELECT id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers FROM guild_scripts WHERE guild_id = $1 AND id = $2;",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "guild_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "original_source",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "enabled",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 5,
-          "name": "contributes_commands",
-          "type_info": "Jsonb"
-        },
-        {
-          "ordinal": 6,
-          "name": "contributes_interval_timers",
-          "type_info": "Jsonb"
-        }
       ],
       "parameters": {
         "Left": [
           "Int8",
           "Int8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "SELECT id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers FROM guild_scripts WHERE guild_id = $1 AND id = $2;"
   },
   "a6b42b45300551f880dc21a0ce2a8b406ef191ccfe7c3991835bd17fcc59e485": {
-    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1) AND left_at IS NULL",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "name",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "icon",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "owner_id",
+          "ordinal": 3,
           "type_info": "Int8"
         },
         {
-          "ordinal": 4,
           "name": "left_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8Array"
-        ]
-      },
       "nullable": [
         false,
         false,
         false,
         false,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8Array"
+        ]
+      }
+    },
+    "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1) AND left_at IS NULL"
   },
   "abb47ada0a375bab61b6af5397237afa44143194976edbaeac14cae05038a493": {
-    "query": "SELECT user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at\n            FROM discord_oauth_tokens WHERE user_id = $1",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "user_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "discord_bearer_token",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "discord_refresh_token",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "discord_token_expires_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at\n            FROM discord_oauth_tokens WHERE user_id = $1"
   },
   "b26c05bfe195cf541bdc671d8e40d4f482b14e33b6cb619cf42d4acccb65f1f7": {
-    "query": "INSERT INTO guild_meta_configs (guild_id, error_channel_id) VALUES ($1, $2)\n            ON CONFLICT (guild_id) DO UPDATE SET\n            error_channel_id = $2\n            RETURNING guild_id, error_channel_id;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "error_channel_id",
+          "ordinal": 1,
           "type_info": "Int8"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      },
       "nullable": [
         false,
         false
-      ]
-    }
-  },
-  "ba654f9767141e1d557bda5a9159b42007cf169328e6e0c41078868adf575647": {
-    "query": "\nUPDATE premium_slots SET attached_guild_id = $3\nWHERE id = $1 AND user_id = $2\nRETURNING id, title, user_id, message, source, source_id, tier, state, created_at, \n            updated_at, expires_at, manage_url, attached_guild_id;\n             ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "title",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "user_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 3,
-          "name": "message",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "source",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 5,
-          "name": "source_id",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "tier",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 7,
-          "name": "state",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 8,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 9,
-          "name": "updated_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 10,
-          "name": "expires_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 11,
-          "name": "manage_url",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 12,
-          "name": "attached_guild_id",
-          "type_info": "Int8"
-        }
       ],
       "parameters": {
         "Left": [
           "Int8",
-          "Int8",
           "Int8"
         ]
-      },
+      }
+    },
+    "query": "INSERT INTO guild_meta_configs (guild_id, error_channel_id) VALUES ($1, $2)\n            ON CONFLICT (guild_id) DO UPDATE SET\n            error_channel_id = $2\n            RETURNING guild_id, error_channel_id;"
+  },
+  "ba654f9767141e1d557bda5a9159b42007cf169328e6e0c41078868adf575647": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "message",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "source",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "source_id",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "tier",
+          "ordinal": 6,
+          "type_info": "Int4"
+        },
+        {
+          "name": "state",
+          "ordinal": 7,
+          "type_info": "Int4"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 8,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 9,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "expires_at",
+          "ordinal": 10,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "manage_url",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "attached_guild_id",
+          "ordinal": 12,
+          "type_info": "Int8"
+        }
+      ],
       "nullable": [
         false,
         false,
@@ -1987,33 +1979,46 @@
         false,
         false,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\nUPDATE premium_slots SET attached_guild_id = $3\nWHERE id = $1 AND user_id = $2\nRETURNING id, title, user_id, message, source, source_id, tier, state, created_at, \n            updated_at, expires_at, manage_url, attached_guild_id;\n             "
   },
   "bb50f239b607ff236b11a843a3724fc36ffc4c67e0d3fa58d43f763e08e15486": {
-    "query": "INSERT INTO discord_oauth_tokens (user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (user_id) DO UPDATE SET \n            discord_bearer_token = $2,\n            discord_refresh_token = $3,\n            discord_token_expires_at = $4\n            RETURNING user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "user_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "discord_bearer_token",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "discord_refresh_token",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "discord_token_expires_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -2022,73 +2027,77 @@
           "Text",
           "Timestamptz"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "INSERT INTO discord_oauth_tokens (user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (user_id) DO UPDATE SET \n            discord_bearer_token = $2,\n            discord_refresh_token = $3,\n            discord_token_expires_at = $4\n            RETURNING user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at;"
   },
   "c11f85f6ff6d6cdd9067a4ef90c6f1ddda734cab189c8276f4551f5e959b71ee": {
-    "query": "DELETE FROM interval_timers WHERE guild_id=$1 AND script_id=$2 AND timer_name=$3",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8",
           "Int8",
           "Text"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM interval_timers WHERE guild_id=$1 AND script_id=$2 AND timer_name=$3"
   },
   "c3743e3a057dd41bfbdee46fed16f6655c7d73873c1e340b6bc159a13925ef9d": {
-    "query": "INSERT INTO bucket_store \n                     (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n                     VALUES \n                     ($1,         $2,    $3,   now(),      now(),      $4,         $5,         $6) \n                     ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n                     created_at = CASE\n                        WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n                        THEN now()\n                        ELSE bucket_store.created_at\n                        END,\n                     updated_at = now(),\n                     expires_at = excluded.expires_at,\n                     value_json = excluded.value_json,\n                     value_float = excluded.value_float\n                     RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
       ],
       "parameters": {
         "Left": [
@@ -2099,63 +2108,63 @@
           "Jsonb",
           "Float8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true
-      ]
-    }
+      }
+    },
+    "query": "INSERT INTO bucket_store \n                     (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n                     VALUES \n                     ($1,         $2,    $3,   now(),      now(),      $4,         $5,         $6) \n                     ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n                     created_at = CASE\n                        WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n                        THEN now()\n                        ELSE bucket_store.created_at\n                        END,\n                     updated_at = now(),\n                     expires_at = excluded.expires_at,\n                     value_json = excluded.value_json,\n                     value_float = excluded.value_float\n                     RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;"
   },
   "c96d002a2ece9be6cb4191eb01a85a74c718c85e63876c495696cbe083b8d26c": {
-    "query": "UPDATE bucket_store SET\n                     updated_at = now(),\n                     expires_at = $4,\n                     value_json = $5,\n                     value_float = $6\n                     WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND\n                     (expires_at IS NULL OR expires_at > now())\n                     RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
       ],
       "parameters": {
         "Left": [
@@ -2166,53 +2175,51 @@
           "Jsonb",
           "Float8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true
-      ]
-    }
+      }
+    },
+    "query": "UPDATE bucket_store SET\n                     updated_at = now(),\n                     expires_at = $4,\n                     value_json = $5,\n                     value_float = $6\n                     WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND\n                     (expires_at IS NULL OR expires_at > now())\n                     RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;"
   },
   "d0942dc5ef880f05027e995ad1ef360e2260cea50ba8ba81cc57652f4c36d3b1": {
-    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL) AND id > $3 ORDER BY ID ASC LIMIT $4",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "guild_id",
+          "ordinal": 1,
           "type_info": "Int8"
         },
         {
-          "ordinal": 2,
           "name": "name",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "unique_key",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "ordinal": 4,
           "name": "value",
+          "ordinal": 4,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 5,
           "name": "exec_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
       ],
       "parameters": {
         "Left": [
@@ -2221,119 +2228,121 @@
           "Int8",
           "Int8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL) AND id > $3 ORDER BY ID ASC LIMIT $4"
   },
   "d4fe2cd3775466c31c83778962f2552702146c547e2fa1bd8065754298068715": {
-    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL )",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8",
           "Text"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL )"
   },
   "d5283a2a6d9b921a4cfac71ce1c5f1b27be3db5e2daa474610eede82bdcbb78f": {
-    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND id = $2",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8",
           "Int8"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND id = $2"
   },
   "d62c42a65e39b7e77f32c39a80317e1628663f2436e1581d74744786b21461f1": {
-    "query": "DELETE FROM web_sessions WHERE token= $1",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Text"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM web_sessions WHERE token= $1"
   },
   "dffe4939ea31c98c187d18d61743102ae3c9f8b0f4ffe34580a78c29b32fec7e": {
-    "query": "SELECT count(*) FROM guild_whitelist WHERE guild_id = $1;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "count",
+          "ordinal": 0,
           "type_info": "Int8"
         }
+      ],
+      "nullable": [
+        null
       ],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": [
-        null
-      ]
-    }
+      }
+    },
+    "query": "SELECT count(*) FROM guild_whitelist WHERE guild_id = $1;"
   },
   "e3de659d11af36c9b0caf7a4a78e5c4a69d124dc276e6a6a97c2dc8f13b83e9e": {
-    "query": "INSERT INTO bucket_store \n                    (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n                    VALUES \n                    ($1,         $2,    $3,   now(),      now(),      $4,         $5,         $6) \n                    ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n                    created_at = now(),\n                    updated_at = now(),\n                    expires_at = excluded.expires_at,\n                    value_json = excluded.value_json,\n                    value_float = excluded.value_float WHERE \n                    (bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now())\n                    RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "guild_id",
+          "ordinal": 0,
           "type_info": "Int8"
         },
         {
-          "ordinal": 1,
           "name": "bucket",
+          "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "ordinal": 2,
           "name": "key",
+          "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "ordinal": 3,
           "name": "created_at",
+          "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
           "name": "updated_at",
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 5,
           "name": "expires_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 6,
           "name": "value_json",
+          "ordinal": 6,
           "type_info": "Jsonb"
         },
         {
-          "ordinal": 7,
           "name": "value_float",
+          "ordinal": 7,
           "type_info": "Float8"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
       ],
       "parameters": {
         "Left": [
@@ -2344,81 +2353,61 @@
           "Jsonb",
           "Float8"
         ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true
-      ]
-    }
+      }
+    },
+    "query": "INSERT INTO bucket_store \n                    (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n                    VALUES \n                    ($1,         $2,    $3,   now(),      now(),      $4,         $5,         $6) \n                    ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n                    created_at = now(),\n                    updated_at = now(),\n                    expires_at = excluded.expires_at,\n                    value_json = excluded.value_json,\n                    value_float = excluded.value_float WHERE \n                    (bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now())\n                    RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;"
   },
   "e79c15d9c1c9d4ad7413273d111170121bf1321ec30a2dd6469de54f4ef6c9aa": {
-    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1;",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1;"
   },
   "efcef792696e6d74041f87034d00c9b7a59b6aea8b6f78a5fb9ae8466a826a9b": {
-    "query": "INSERT INTO web_sessions (token, kind, user_id, discriminator, username, avatar, created_at) VALUES ($1, $2, $3, $4, $5, $6, now())\n            RETURNING token, kind, user_id, discriminator, username, avatar, created_at;",
     "describe": {
       "columns": [
         {
-          "ordinal": 0,
           "name": "token",
+          "ordinal": 0,
           "type_info": "Text"
         },
         {
-          "ordinal": 1,
           "name": "kind",
+          "ordinal": 1,
           "type_info": "Int2"
         },
         {
-          "ordinal": 2,
           "name": "user_id",
+          "ordinal": 2,
           "type_info": "Int8"
         },
         {
-          "ordinal": 3,
           "name": "discriminator",
+          "ordinal": 3,
           "type_info": "Int2"
         },
         {
-          "ordinal": 4,
           "name": "username",
+          "ordinal": 4,
           "type_info": "Text"
         },
         {
-          "ordinal": 5,
           "name": "avatar",
+          "ordinal": 5,
           "type_info": "Text"
         },
         {
-          "ordinal": 6,
           "name": "created_at",
+          "ordinal": 6,
           "type_info": "Timestamptz"
         }
       ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Int2",
-          "Int8",
-          "Int2",
-          "Text",
-          "Text"
-        ]
-      },
       "nullable": [
         false,
         false,
@@ -2427,84 +2416,89 @@
         false,
         false,
         false
-      ]
-    }
-  },
-  "f58b0775234707bb5aa58e6dba98ed007dad8af946041a762d445267f89e4703": {
-    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE attached_guild_id = $1;",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "title",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "user_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 3,
-          "name": "message",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "source",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 5,
-          "name": "source_id",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "tier",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 7,
-          "name": "state",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 8,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 9,
-          "name": "updated_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 10,
-          "name": "expires_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 11,
-          "name": "manage_url",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 12,
-          "name": "attached_guild_id",
-          "type_info": "Int8"
-        }
       ],
       "parameters": {
         "Left": [
-          "Int8"
+          "Text",
+          "Int2",
+          "Int8",
+          "Int2",
+          "Text",
+          "Text"
         ]
-      },
+      }
+    },
+    "query": "INSERT INTO web_sessions (token, kind, user_id, discriminator, username, avatar, created_at) VALUES ($1, $2, $3, $4, $5, $6, now())\n            RETURNING token, kind, user_id, discriminator, username, avatar, created_at;"
+  },
+  "f58b0775234707bb5aa58e6dba98ed007dad8af946041a762d445267f89e4703": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "message",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "source",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "source_id",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "tier",
+          "ordinal": 6,
+          "type_info": "Int4"
+        },
+        {
+          "name": "state",
+          "ordinal": 7,
+          "type_info": "Int4"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 8,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 9,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "expires_at",
+          "ordinal": 10,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "manage_url",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "attached_guild_id",
+          "ordinal": 12,
+          "type_info": "Int8"
+        }
+      ],
       "nullable": [
         false,
         false,
@@ -2519,20 +2513,26 @@
         false,
         false,
         true
-      ]
-    }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE attached_guild_id = $1;"
   },
   "faf28d6116d9dadf33e57b5dc3b7b56e57b7323fd9fb5e4596865bdfc4b0bc75": {
-    "query": "DELETE FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Int8",
           "Text"
         ]
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM guild_scripts WHERE guild_id = $1 AND name = $2;"
   }
 }
