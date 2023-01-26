@@ -17,8 +17,14 @@ pub enum ApiErrorResponse {
     #[error("validation failed")]
     ValidationFailed(Vec<ValidationError>),
 
-    #[error("Internal server error")]
+    #[error("internal server error")]
     InternalError,
+
+    #[error("no active guild")]
+    NoActiveGuild,
+
+    #[error("not guild admin")]
+    NotGuildAdmin,
 }
 
 impl ApiErrorResponse {
@@ -32,6 +38,8 @@ impl ApiErrorResponse {
                 4,
                 serde_json::to_string(verr).unwrap_or_default(),
             ),
+            Self::NoActiveGuild => (StatusCode::BAD_REQUEST, 5, self.to_string()),
+            Self::NotGuildAdmin => (StatusCode::FORBIDDEN, 6, self.to_string()),
         }
     }
 }

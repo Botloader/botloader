@@ -22,10 +22,10 @@ mod news_poller;
 mod routes;
 mod util;
 
-use crate::errors::ApiErrorResponse;
 use crate::middlewares::{
-    CorsLayer, CurrentGuildLayer, NoSession, RequireCurrentGuildAuthLayer, SessionLayer,
+    require_current_guild_admin_middleware, CorsLayer, NoSession, SessionLayer,
 };
+use crate::{errors::ApiErrorResponse, middlewares::current_guild_injector_middleware};
 
 #[derive(Clone)]
 pub struct ConfigData {
@@ -101,11 +101,17 @@ async fn main() {
         });
 
     let auth_guild_mw_stack = ServiceBuilder::new()
-        .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
-        .layer(CurrentGuildLayer {
-            session_store: session_store.clone(),
-        })
-        .layer(RequireCurrentGuildAuthLayer);
+        // .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
+        // .layer(CurrentGuildLayer {
+        //     session_store: session_store.clone(),
+        // })
+        // .layer_fn(f)
+        .layer(axum::middleware::from_fn(
+            current_guild_injector_middleware::<_, CurrentSessionStore>,
+        ))
+        .layer(axum::middleware::from_fn(
+            require_current_guild_admin_middleware,
+        ));
 
     let authorized_api_guild_routes = Router::new()
         .route(

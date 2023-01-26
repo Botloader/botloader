@@ -37,4 +37,4 @@ clap = {version = "3.0.14", features = ["derive", "env"]}
 anyhow = "1.0"
 deno_core = "0.167"
 v8 = "0.60.1"
-axum = {version = "0.4.5", features=["ws"]}
+axum = {version = "0.6.4", features=["ws"]}
