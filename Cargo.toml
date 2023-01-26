@@ -39,3 +39,4 @@ deno_core = "0.167"
 v8 = "0.60.1"
 axum = {version = "0.6.4", features=["ws"]}
 tonic = "0.8.3"
+chrono = {version = "0.4", features=["serde"]}

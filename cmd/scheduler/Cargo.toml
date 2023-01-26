@@ -24,7 +24,7 @@ serde = {workspace = true}
 serde_json = {workspace = true}
 clap = {workspace = true}
 async-trait = {workspace = true}
-chrono = "0.4"
+chrono = {workspace = true}
 anyhow = {workspace = true}
 cron = "0.9"
 metrics = "0.18"

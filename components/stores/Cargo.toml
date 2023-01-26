@@ -17,5 +17,5 @@ oauth2 = "4.1"
 dashmap = "5.1.0"
 rand = "0.8"
 base64 = "0.13"
-chrono = "0.4"
+chrono = {workspace = true}
 tracing = {workspace = true}
