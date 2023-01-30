@@ -323,14 +323,8 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 description: v.description,
                 required: Some(v.required),
                 kind: twilight_model::application::command::CommandOptionType::Number,
-                min_value: v
-                    .extra_options
-                    .min_value
-                    .map(|v| CommandOptionValue::Number(v)),
-                max_value: v
-                    .extra_options
-                    .max_value
-                    .map(|v| CommandOptionValue::Number(v)),
+                min_value: v.extra_options.min_value.map(CommandOptionValue::Number),
+                max_value: v.extra_options.max_value.map(CommandOptionValue::Number),
                 autocomplete: None,
                 channel_types: None,
                 choices: None,

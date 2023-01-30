@@ -29,7 +29,7 @@ pub async fn run_broker(
         | Intents::MESSAGE_CONTENT
         | Intents::GUILDS
         | Intents::GUILD_MEMBERS
-        | Intents::GUILD_BANS
+        | Intents::GUILD_MODERATION
         | Intents::GUILD_INVITES
         | Intents::GUILD_VOICE_STATES
         | Intents::GUILD_MESSAGES

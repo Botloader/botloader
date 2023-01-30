@@ -44,7 +44,7 @@ impl ValidationContext {
 
         self.errs.push(ValidationError {
             field: field.to_string(),
-            msg: format!("{}{}", prefix, msg),
+            msg: format!("{prefix}{msg}"),
         });
     }
 

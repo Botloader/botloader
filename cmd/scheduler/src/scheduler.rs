@@ -390,7 +390,7 @@ impl SuspensionReason {
 }
 
 struct GuildSuspension {
-    guild_id: Id<GuildMarker>,
+    _guild_id: Id<GuildMarker>,
     reason: SuspensionReason,
     suspended_at: Instant,
 }
@@ -398,7 +398,7 @@ struct GuildSuspension {
 impl GuildSuspension {
     fn new(guild_id: Id<GuildMarker>, reason: SuspensionReason) -> Self {
         Self {
-            guild_id,
+            _guild_id: guild_id,
             reason,
             suspended_at: Instant::now(),
         }

@@ -109,7 +109,8 @@ impl From<twilight_model::user::UserFlags> for UserFlags {
             bug_hunter_level_2: uf.contains(twilight_model::user::UserFlags::BUG_HUNTER_LEVEL_2),
             verified_bot: uf.contains(twilight_model::user::UserFlags::VERIFIED_BOT),
             verified_developer: uf.contains(twilight_model::user::UserFlags::VERIFIED_DEVELOPER),
-            certified_moderator: uf.contains(twilight_model::user::UserFlags::CERTIFIED_MODERATOR),
+            certified_moderator: uf
+                .contains(twilight_model::user::UserFlags::MODERATOR_PROGRAMS_ALUMNI),
             bot_http_interactions: uf
                 .contains(twilight_model::user::UserFlags::BOT_HTTP_INTERACTIONS),
         }

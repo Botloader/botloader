@@ -70,6 +70,6 @@ fn parse_transform_stack_line(scripts: &ScriptsStateStore, line: &str) -> Option
         output.push(' ');
     }
 
-    output.push_str(&format!("({}:{}:{})", new_file, src_line, src_col));
+    output.push_str(&format!("({new_file}:{src_line}:{src_col})"));
     Some(output)
 }

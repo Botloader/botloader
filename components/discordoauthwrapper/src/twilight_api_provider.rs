@@ -42,14 +42,7 @@ impl crate::DiscordOauthApiProvider for TwilightApiProvider {
             }
         }
 
-        let resp = inner
-            .client
-            .current_user()
-            .exec()
-            .await?
-            .model()
-            .await
-            .unwrap();
+        let resp = inner.client.current_user().await?.model().await.unwrap();
 
         inner.cached_user = Some((Instant::now(), resp.clone()));
 
@@ -71,7 +64,6 @@ impl crate::DiscordOauthApiProvider for TwilightApiProvider {
         let resp = inner
             .client
             .current_user_guilds()
-            .exec()
             .await?
             .model()
             .await
@@ -83,7 +75,7 @@ impl crate::DiscordOauthApiProvider for TwilightApiProvider {
     }
 
     async fn update_token(&self, access_token: String) {
-        let new_client = twilight_http::Client::new(format!("Bearer {}", access_token));
+        let new_client = twilight_http::Client::new(format!("Bearer {access_token}"));
         let mut inner = self.inner.write().await;
         inner.client = new_client;
     }

@@ -106,7 +106,6 @@ impl<CT: CsrfStore, ST: SessionStore> AuthHandlers<CT, ST> {
         let client = twilight_http::Client::new(format!("Bearer {}", access_token.secret()));
         let user = client
             .current_user()
-            .exec()
             .await
             .map_err(|err| {
                 error!(%err, "discord api request failed, failed getting current user");

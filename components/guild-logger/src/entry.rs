@@ -105,7 +105,7 @@ impl Display for ScriptContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.filename)?;
         if let Some((line, col)) = self.line_col {
-            write!(f, ":{}:{}", line, col)?;
+            write!(f, ":{line}:{col}")?;
         }
 
         Ok(())

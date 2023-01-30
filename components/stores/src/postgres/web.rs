@@ -296,7 +296,7 @@ impl From<i16> for SessionType {
         match st {
             1 => SessionType::User,
             2 => SessionType::ApiKey,
-            _ => panic!("unknown variant of sessiontype: {}", st),
+            _ => panic!("unknown variant of sessiontype: {st}"),
         }
     }
 }

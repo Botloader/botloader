@@ -28,7 +28,6 @@ impl NewsPoller {
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let channels = discord_http
             .guild_channels(guild_id)
-            .exec()
             .await?
             .models()
             .await?;
@@ -77,7 +76,6 @@ impl NewsPoller {
                 .channel_messages(*channel)
                 .limit(100)
                 .unwrap()
-                .exec()
                 .await?
                 .models()
                 .await?;

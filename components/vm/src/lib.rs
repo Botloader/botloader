@@ -71,7 +71,7 @@ pub fn init_v8_flags(v8_flags: &[String]) {
 
     if !unrecognized_v8_flags.is_empty() {
         for f in unrecognized_v8_flags {
-            eprintln!("error: V8 did not recognize flag '{}'", f);
+            eprintln!("error: V8 did not recognize flag '{f}'");
         }
         std::process::exit(1);
     }
@@ -139,7 +139,7 @@ impl ScriptsStateStore {
                 .cloned()
             {
                 if let Some((line, col)) = script_load.get_original_line_col(line, col) {
-                    return Some((format!("guild_scripts/{}.ts", guild_script_name), line, col));
+                    return Some((format!("guild_scripts/{guild_script_name}.ts"), line, col));
                 }
             }
         }
@@ -222,6 +222,6 @@ impl SourceMapGetter for ScriptStateStoreWrapper {
     }
 
     fn get_source_line(&self, file_name: &str, line_number: usize) -> Option<String> {
-        Some(format!("{}:{}", file_name, line_number))
+        Some(format!("{file_name}:{line_number}"))
     }
 }

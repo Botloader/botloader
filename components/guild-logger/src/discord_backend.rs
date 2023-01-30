@@ -47,7 +47,7 @@ impl crate::GuildLoggerBackend for DiscordLogger {
                 .create_message(channel_id)
                 .content(&message)
             {
-                next.exec().await.ok();
+                next.await.ok();
             }
         }
     }

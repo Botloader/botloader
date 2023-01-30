@@ -100,7 +100,7 @@ impl Manager {
                 item.items.push(evt);
             }
         } else {
-            // creata a new guild queue
+            // create a new guild queue
             self.pending_checks.push(PendingCheckGroup {
                 guild_id: evt.guild_id,
                 items: vec![evt],
@@ -170,7 +170,6 @@ impl Manager {
 
         if let Err(err) = interaction_client
             .set_guild_commands(guild_id, &merged)
-            .exec()
             .await
         {
             error!(%err, "failed updating guild commands");
@@ -180,7 +179,7 @@ impl Manager {
                 "failed updating guild commands".to_string(),
             ));
             // TODO: for now this returns an ok, in the future once we have
-            // more validation we could reutrn an err here and have it retry
+            // more validation we could return an err here and have it retry
             // (but not for client errors)
         }
 

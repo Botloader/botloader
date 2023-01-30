@@ -42,17 +42,17 @@ impl PremiumTierState {
 pub struct GuildHandler {
     guild_id: Id<GuildMarker>,
 
-    discord_config: Arc<DiscordConfig>,
+    _discord_config: Arc<DiscordConfig>,
     stores: Arc<dyn Store>,
-    logger: GuildLogger,
-    worker_pool: crate::vmworkerpool::VmWorkerPool,
+    _logger: GuildLogger,
+    _worker_pool: crate::vmworkerpool::VmWorkerPool,
     scheduler_tx: mpsc::UnboundedSender<VmSessionEvent>,
     guild_rx: mpsc::UnboundedReceiver<GuildCommand>,
-    cmd_manager_handle: command_manager::Handle,
+    _cmd_manager_handle: command_manager::Handle,
 
     premium_tier: Arc<RwLock<PremiumTierState>>,
 
-    id_gen: u64,
+    _id_gen: u64,
 
     scripts_session: VmSession,
 }
@@ -80,16 +80,16 @@ impl GuildHandler {
         let worker = GuildHandler {
             stores: stores.clone(),
             guild_id,
-            logger: logger.clone(),
-            worker_pool: worker_pool.clone(),
-            discord_config: discord_config.clone(),
+            _logger: logger.clone(),
+            _worker_pool: worker_pool.clone(),
+            _discord_config: discord_config.clone(),
 
             guild_rx: cmd_rx,
             scheduler_tx: evt_tx,
-            id_gen: 1,
+            _id_gen: 1,
             premium_tier: premium_tier.clone(),
 
-            cmd_manager_handle: cmd_manager_handle.clone(),
+            _cmd_manager_handle: cmd_manager_handle.clone(),
             scripts_session: VmSession::new(
                 stores,
                 guild_id,

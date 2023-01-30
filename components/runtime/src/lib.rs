@@ -154,10 +154,10 @@ pub fn op_botloader_script_start(state: &mut OpState, args: JsValue) -> Result<(
     let ctx = state.borrow::<RuntimeContext>();
 
     if let Err(err) = validate_script_meta(&des) {
-        // error!(%err, "script meta valication failed");
+        // error!(%err, "script meta validation failed");
         ctx.guild_logger.log(LogEntry::script_error(
             ctx.guild_id,
-            format!("script meta validation failed: {}", err),
+            format!("script meta validation failed: {err}"),
             format!("{}", des.script_id),
             None,
         ));

@@ -29,7 +29,7 @@ use twilight_model::id::{marker::GuildMarker, Id};
 pub struct VmSession {
     guild_id: Id<GuildMarker>,
 
-    discord_config: Arc<DiscordConfig>,
+    _discord_config: Arc<DiscordConfig>,
     stores: Arc<dyn Store>,
     logger: GuildLogger,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
@@ -66,7 +66,7 @@ impl VmSession {
             guild_id,
             logger,
             worker_pool,
-            discord_config,
+            _discord_config: discord_config,
             premium_tier,
 
             id_gen: 1,
@@ -81,7 +81,7 @@ impl VmSession {
         }
     }
 
-    pub fn set_guild_scripts(&mut self, scripts: Vec<Script>) {
+    pub fn _set_guild_scripts(&mut self, scripts: Vec<Script>) {
         self.scripts = scripts;
         self.force_load_scripts_next = true;
     }
@@ -97,7 +97,7 @@ impl VmSession {
             NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(reason))) => {
                 self.logger.log(LogEntry::critical(
                     self.guild_id,
-                    format!("vm was forcibly shut down, reason: {:?}", reason),
+                    format!("vm was forcibly shut down, reason: {reason:?}"),
                 ));
 
                 self.reset_contribs();

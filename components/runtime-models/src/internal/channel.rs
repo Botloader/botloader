@@ -107,7 +107,7 @@ impl From<twilight_model::channel::Channel> for VoiceChannel {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            position: v.position.unwrap_or_default().into(),
+            position: v.position.unwrap_or_default(),
             rtc_region: v.rtc_region,
             user_limit: v.user_limit,
             video_quality_mode: v.video_quality_mode.map(Into::into),
@@ -150,7 +150,7 @@ impl From<twilight_model::channel::Channel> for TextChannel {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            position: v.position.unwrap_or_default().into(),
+            position: v.position.unwrap_or_default(),
             rate_limit_per_user: v.rate_limit_per_user,
             topic: v.topic,
         }
@@ -351,7 +351,7 @@ impl From<twilight_model::channel::Channel> for CategoryChannel {
             kind: v.kind.into(),
             id: v.id.to_string(),
             name: v.name.unwrap_or_default(),
-            position: v.position.unwrap_or_default().into(),
+            position: v.position.unwrap_or_default(),
             permission_overwrites: v
                 .permission_overwrites
                 .unwrap_or_default()

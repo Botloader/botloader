@@ -17,7 +17,7 @@ pub fn common_init(metrics_listen_addr: Option<&str>) {
     match dotenv::dotenv() {
         Ok(_) => {}
         Err(dotenv::Error::Io(_)) => {} // ignore io errors
-        Err(e) => panic!("failed loading dotenv file: {}", e),
+        Err(e) => panic!("failed loading dotenv file: {e}"),
     }
     init_tracing();
 

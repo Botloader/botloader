@@ -55,8 +55,7 @@ where
         Self {
             inner: Arc::new(ApiClientInner {
                 api_provider: TwilightApiProvider::new(twilight_http::Client::new(format!(
-                    "Bearer {}",
-                    bearer_token
+                    "Bearer {bearer_token}",
                 ))),
                 user_id,
                 token_refresher,
@@ -186,8 +185,8 @@ impl<T: std::fmt::Debug + Display> Display for ApiProviderError<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidToken => f.write_str("invalid token"),
-            Self::Ratelimit(dur) => f.write_fmt(format_args!("ratelimited: {:?}", dur)),
-            Self::Other(inner) => f.write_fmt(format_args!("{}", inner)),
+            Self::Ratelimit(dur) => f.write_fmt(format_args!("ratelimited: {dur:?}")),
+            Self::Other(inner) => f.write_fmt(format_args!("{inner}")),
         }
     }
 }

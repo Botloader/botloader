@@ -355,7 +355,7 @@ impl Vm {
             Err(e) => {
                 self.guild_logger.log(LogEntry::error(
                     self.ctx.guild_id,
-                    format!("Script compilation failed for {}.ts: {}", name, e),
+                    format!("Script compilation failed for {name}.ts: {e}"),
                 ));
                 None
             }

@@ -21,12 +21,11 @@ pub async fn fetch_discord_config(
     let client = twilight_http::Client::new(token);
 
     // println!("fetching bot and application details from discord...");
-    let bot_user = client.current_user().exec().await?.model().await.unwrap();
+    let bot_user = client.current_user().await?.model().await.unwrap();
     info!("discord logged in as: {:?}", bot_user);
 
     let application = client
         .current_user_application()
-        .exec()
         .await?
         .model()
         .await

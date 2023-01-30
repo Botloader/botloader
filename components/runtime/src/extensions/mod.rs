@@ -57,7 +57,6 @@ pub(crate) async fn get_guild_channel(
                 .discord_config
                 .client
                 .channel(channel_id)
-                .exec()
                 .await
                 .map_err(|err| handle_discord_error(state, err))?
                 .model()

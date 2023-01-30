@@ -57,7 +57,7 @@ impl ModuleManager {
     }
 }
 
-// TODO: make a formal spec for this behaviour
+// TODO: make a formal spec for this behavior
 impl ModuleLoader for ModuleManager {
     fn resolve(
         &self,
@@ -85,7 +85,7 @@ impl ModuleLoader for ModuleManager {
         })?;
 
         let resolved = parsed_referrer
-            .join(format!("{}.js", specifier).as_str())
+            .join(format!("{specifier}.js").as_str())
             .unwrap();
 
         Ok(resolved)

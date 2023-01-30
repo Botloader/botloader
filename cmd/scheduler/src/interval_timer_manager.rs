@@ -208,7 +208,7 @@ fn wrap_timer(timer: IntervalTimer) -> Result<WrappedIntervalTimer, Error> {
         IntervalType::Minutes(mins) => ParsedIntervalType::Minutes(*mins),
         IntervalType::Cron(c) => {
             let parsed =
-                cron::Schedule::from_str(format!("0 {}", c).as_str()).map_err(Error::Cron)?;
+                cron::Schedule::from_str(format!("0 {c}").as_str()).map_err(Error::Cron)?;
             ParsedIntervalType::Cron(c.clone(), Box::new(parsed))
         }
     };

@@ -81,7 +81,7 @@ async fn scan_for_left_guilds(
     info!("left guilds: {}, {:?}", left_guilds.len(), left_guilds);
 
     for guild in left_guilds {
-        match discord_config.client.guild(guild.id).exec().await {
+        match discord_config.client.guild(guild.id).await {
             Ok(_) => {
                 // still connected
                 info!("still connected to {}, skipping", guild.id);

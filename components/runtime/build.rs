@@ -31,8 +31,7 @@ fn main() {
 
     for (i, f) in compiled_files.iter().enumerate() {
         body.push_str(&format!(
-            r#"(::url::Url::parse("file:///{}.js").unwrap(), include_js!("{}.js"))"#,
-            f, f
+            r#"(::url::Url::parse("file:///{f}.js").unwrap(), include_js!("{f}.js"))"#
         ));
         if i != compiled_files.len() - 1 {
             body.push(',');
@@ -40,7 +39,7 @@ fn main() {
         body.push('\n');
     }
 
-    let full = format!("{}{}{}", header, body, footer);
+    let full = format!("{header}{body}{footer}");
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
     fs::write(out_dir.join("module_map.rs"), full).unwrap();
 }
@@ -80,7 +79,7 @@ fn compile_folder(path: &Path) -> Vec<String> {
 
     for (name, file) in loaded_files {
         let output = compile_typescript(&file).unwrap();
-        fs::write(target_dir.join(format!("{}.js", name)), output.output).unwrap();
+        fs::write(target_dir.join(format!("{name}.js")), output.output).unwrap();
         result.push(relative_path.join(name).to_string_lossy().into_owned());
     }
 

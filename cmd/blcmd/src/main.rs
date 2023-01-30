@@ -12,7 +12,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = confy::load(APP_NAME)?;
 
     let ctx = Context {
-        full_args: args.clone(),
+        _full_args: args.clone(),
         config,
     };
 
@@ -89,7 +89,7 @@ impl Default for Config {
 
 struct Context {
     config: Config,
-    full_args: Args,
+    _full_args: Args,
 }
 
 async fn login(ctx: Context) -> anyhow::Result<()> {
