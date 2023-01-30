@@ -56,6 +56,7 @@ pub enum PremiumType {
     None,
     NitroClassic,
     Nitro,
+    NitroBasic,
 }
 
 impl From<twilight_model::user::PremiumType> for PremiumType {
@@ -64,6 +65,7 @@ impl From<twilight_model::user::PremiumType> for PremiumType {
             twilight_model::user::PremiumType::Nitro => Self::Nitro,
             twilight_model::user::PremiumType::NitroClassic => Self::NitroClassic,
             twilight_model::user::PremiumType::None => Self::None,
+            twilight_model::user::PremiumType::NitroBasic => Self::NitroBasic,
             _ => todo!(),
         }
     }

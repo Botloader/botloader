@@ -72,7 +72,6 @@ pub enum ChannelType {
     PrivateThread,
     GuildDirectory,
     Forum,
-    Unknown,
 }
 
 impl From<twilight_model::channel::ChannelType> for ChannelType {
@@ -111,7 +110,6 @@ impl From<ChannelType> for twilight_model::channel::ChannelType {
             ChannelType::GuildDirectory => Self::GuildDirectory,
             ChannelType::Forum => Self::GuildForum,
             ChannelType::Store => Self::GuildText,
-            ChannelType::Unknown => todo!(),
         }
     }
 }

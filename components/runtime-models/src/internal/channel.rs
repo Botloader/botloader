@@ -54,7 +54,6 @@ impl From<twilight_model::channel::Channel> for GuildChannel {
             }
             twilight_model::channel::ChannelType::GuildDirectory => Self::GuildDirectory(v.into()),
             twilight_model::channel::ChannelType::GuildForum => Self::Forum(v.into()),
-            twilight_model::channel::ChannelType::Unknown(_) => todo!(),
             _ => Self::Unknown(UnknownChannel {
                 id: v.id.to_string(),
                 kind: v.kind.into(),

@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use crate::{discord::channel::ChannelType, util::NotBigU64};
 use serde::{Deserialize, Serialize};
-use tracing::warn;
 use ts_rs::TS;
 use twilight_model::id::Id;
 
@@ -127,7 +126,10 @@ pub enum MessageType {
     ThreadCreated,
     ThreadStarterMessage,
     ContextMenuCommand,
-    Unknown,
+    AutoModerationAction,
+    RoleSubscriptionPurchase,
+    InteractionPremiumUpsell,
+    GuildApplicationPremiumSubscription,
 }
 
 impl From<twilight_model::channel::message::MessageType> for MessageType {
@@ -162,13 +164,14 @@ impl From<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::ThreadStarterMessage => Self::ThreadStarterMessage,
             TwilightMessageType::ContextMenuCommand => Self::ContextMenuCommand,
             TwilightMessageType::ChatInputCommand => Self::ChatInputCommand,
-            TwilightMessageType::AutoModerationAction => todo!(),
-            TwilightMessageType::RoleSubscriptionPurchase => todo!(),
-            TwilightMessageType::InteractionPremiumUpsell => todo!(),
-            TwilightMessageType::GuildApplicationPremiumSubscription => todo!(),
+            TwilightMessageType::AutoModerationAction => Self::AutoModerationAction,
+            TwilightMessageType::RoleSubscriptionPurchase => Self::RoleSubscriptionPurchase,
+            TwilightMessageType::InteractionPremiumUpsell => Self::InteractionPremiumUpsell,
+            TwilightMessageType::GuildApplicationPremiumSubscription => {
+                Self::GuildApplicationPremiumSubscription
+            }
             _ => {
-                warn!("unknown message type: {}", u8::from(v));
-                Self::Unknown
+                panic!("unknown message type: {}", u8::from(v));
             }
         }
     }
