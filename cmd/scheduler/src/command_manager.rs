@@ -9,7 +9,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::application::command::{
     Command as TwilightCommand, CommandOption as TwilightCommandOption,
-    CommandType as TwilightCommandType, OptionsCommandOptionData,
+    CommandOptionType as TwilightCommandOptionType, CommandType as TwilightCommandType,
 };
 
 use runtime_models::internal::script::{Command, CommandGroup, ScriptMeta};
@@ -211,7 +211,7 @@ pub fn to_twilight_commands(
             name: cmd.name.clone(),
             description: if matches!(
                 cmd.kind,
-                runtime_models::internal::command_interaction::CommandType::Chat
+                runtime_models::internal::interaction::CommandType::Chat
             ) {
                 cmd.description.clone()
             } else {
@@ -227,6 +227,7 @@ pub fn to_twilight_commands(
             default_member_permissions: None,
             description_localizations: Default::default(),
             name_localizations: Default::default(),
+            nsfw: None,
         })
         .collect::<Vec<_>>();
 
@@ -254,28 +255,48 @@ pub fn to_twilight_commands(
             // check if this belongs to a subgroup
             if let Some(cmd_sub_group) = &cmd.sub_group {
                 match group.options.iter_mut().find(|sg| {
-                    matches!(sg, TwilightCommandOption::SubCommandGroup(OptionsCommandOptionData {
-                        name,
-                        ..
-                    }) if name == cmd_sub_group)
+                    &sg.name == cmd_sub_group
+
+                    // matches!(sg, TwilightCommandOption::SubCommandGroup(OptionsCommandOptionData {
+                    //     name,
+                    //     ..
+                    // }) if name == cmd_sub_group)
                 }) {
                     Some(g) => {
                         // add the cmd to the existing sub group
-                        if let TwilightCommandOption::SubCommandGroup(sub_group) = g {
-                            sub_group.options.push(cmd.clone().into())
+                        if let Some(options) = &mut g.options {
+                            options.push(cmd.clone().into());
+                        } else {
+                            g.options = Some(vec![cmd.clone().into()]);
                         }
                     }
                     None => {
                         // sub group not found, make a new one and add the cmd to it
-                        group.options.push(TwilightCommandOption::SubCommandGroup(
-                            OptionsCommandOptionData {
-                                name: cmd_sub_group.clone(),
-                                description: GROUP_DESC_PLACEHOLDER.to_string(),
-                                options: vec![cmd.clone().into()],
-                                description_localizations: Default::default(),
-                                name_localizations: Default::default(),
-                            },
-                        ));
+                        group.options.push(TwilightCommandOption {
+                            name: cmd_sub_group.clone(),
+                            description: GROUP_DESC_PLACEHOLDER.to_string(),
+                            options: Some(vec![cmd.clone().into()]),
+                            description_localizations: Default::default(),
+                            name_localizations: Default::default(),
+                            kind: TwilightCommandOptionType::SubCommandGroup,
+                            autocomplete: None,
+                            channel_types: None,
+                            choices: None,
+                            max_length: None,
+                            max_value: None,
+                            min_length: None,
+                            min_value: None,
+                            required: None,
+                        });
+                        // group.options.push(TwilightCommandOption::SubCommandGroup(
+                        //     OptionsCommandOptionData {
+                        //         name: cmd_sub_group.clone(),
+                        //         description: GROUP_DESC_PLACEHOLDER.to_string(),
+                        //         options: vec![cmd.clone().into()],
+                        //         description_localizations: Default::default(),
+                        //         name_localizations: Default::default(),
+                        //     },
+                        // ));
                     }
                 };
             } else {
@@ -303,6 +324,7 @@ fn make_unknown_group(guild_id: Id<GuildMarker>, name: String) -> TwilightComman
         dm_permission: None,
         description_localizations: Default::default(),
         name_localizations: Default::default(),
+        nsfw: None,
     }
 }
 
@@ -314,14 +336,21 @@ pub fn group_to_twilight_command(
     let opts = group
         .sub_groups
         .iter()
-        .map(|sg| {
-            TwilightCommandOption::SubCommandGroup(OptionsCommandOptionData {
-                name: sg.name.clone(),
-                description: sg.description.clone(),
-                options: Vec::new(),
-                description_localizations: Default::default(),
-                name_localizations: Default::default(),
-            })
+        .map(|sg| TwilightCommandOption {
+            name: sg.name.clone(),
+            description: sg.description.clone(),
+            options: None,
+            description_localizations: Default::default(),
+            name_localizations: Default::default(),
+            kind: TwilightCommandOptionType::SubCommandGroup,
+            autocomplete: None,
+            channel_types: None,
+            choices: None,
+            max_length: None,
+            max_value: None,
+            min_length: None,
+            min_value: None,
+            required: None,
         })
         .collect::<Vec<_>>();
 
@@ -338,6 +367,7 @@ pub fn group_to_twilight_command(
         dm_permission: None,
         description_localizations: Default::default(),
         name_localizations: Default::default(),
+        nsfw: None,
     }
 }
 
@@ -368,8 +398,8 @@ fn merge_command(dst: &mut TwilightCommand, src: TwilightCommand) {
 
     for opt in &dst.options {
         if !matches!(
-            opt,
-            TwilightCommandOption::SubCommand(_) | TwilightCommandOption::SubCommandGroup(_)
+            opt.kind,
+            TwilightCommandOptionType::SubCommand | TwilightCommandOptionType::SubCommandGroup
         ) {
             // We can only merge sub commands
             return;
@@ -378,25 +408,21 @@ fn merge_command(dst: &mut TwilightCommand, src: TwilightCommand) {
 
     for opt in src.options {
         if !matches!(
-            opt,
-            TwilightCommandOption::SubCommand(_) | TwilightCommandOption::SubCommandGroup(_)
+            opt.kind,
+            TwilightCommandOptionType::SubCommand | TwilightCommandOptionType::SubCommandGroup
         ) {
             // We can only merge sub commands
             return;
         }
 
-        let src_opt_name = command_option_name(&opt);
-        if let Some(dst_opt) = dst
-            .options
-            .iter_mut()
-            .find(|v| command_option_name(v) == src_opt_name)
-        {
+        let src_opt_name = &opt.name;
+        if let Some(dst_opt) = dst.options.iter_mut().find(|v| &v.name == src_opt_name) {
             // we need to merge these options
-            match (dst_opt, opt) {
+            match (dst_opt.kind, opt.kind) {
                 (
-                    TwilightCommandOption::SubCommandGroup(dst_sg),
-                    TwilightCommandOption::SubCommandGroup(src_sg),
-                ) => merge_subgroups(dst_sg, src_sg),
+                    TwilightCommandOptionType::SubCommandGroup,
+                    TwilightCommandOptionType::SubCommandGroup,
+                ) => merge_subgroups(dst_opt, opt),
                 _ => {
                     // we can only merge subgroups, how would we merge subcommands?
                     continue;
@@ -409,39 +435,23 @@ fn merge_command(dst: &mut TwilightCommand, src: TwilightCommand) {
     }
 }
 
-fn merge_subgroups(dst: &mut OptionsCommandOptionData, src: OptionsCommandOptionData) {
+fn merge_subgroups(dst: &mut TwilightCommandOption, src: TwilightCommandOption) {
     if dst.description == GROUP_DESC_PLACEHOLDER && src.description != GROUP_DESC_PLACEHOLDER {
         dst.description = src.description;
     }
 
-    for opt in src.options {
-        if dst
-            .options
-            .iter()
-            .any(|v| command_option_name(v) == command_option_name(&opt))
-        {
-            // we command merge sub commands themselves
-            continue;
+    for opt in src.options.as_ref().unwrap_or(&Vec::new()) {
+        if let Some(dst_options) = &mut dst.options {
+            if dst_options.iter().any(|v| v.name == opt.name) {
+                // we command merge sub commands themselves
+                continue;
+            }
+
+            // but we can add them to the group if there is no conflict!
+            dst_options.push(opt.clone());
+        } else {
+            dst.options = src.options.clone();
         }
-
-        // but we can add them to the group if there is no conflict!
-        dst.options.push(opt);
-    }
-}
-
-fn command_option_name(opt: &TwilightCommandOption) -> String {
-    match opt {
-        TwilightCommandOption::SubCommand(v) => v.name.clone(),
-        TwilightCommandOption::SubCommandGroup(v) => v.name.clone(),
-        TwilightCommandOption::String(v) => v.name.clone(),
-        TwilightCommandOption::Integer(v) => v.name.clone(),
-        TwilightCommandOption::Boolean(v) => v.name.clone(),
-        TwilightCommandOption::User(v) => v.name.clone(),
-        TwilightCommandOption::Channel(v) => v.name.clone(),
-        TwilightCommandOption::Role(v) => v.name.clone(),
-        TwilightCommandOption::Mentionable(v) => v.name.clone(),
-        TwilightCommandOption::Number(v) => v.name.clone(),
-        TwilightCommandOption::Attachment(v) => v.name.clone(),
     }
 }
 

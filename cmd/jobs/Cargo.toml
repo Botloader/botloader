@@ -13,4 +13,4 @@ dbrokerapi = {path="../../components/dbrokerapi"}
 tracing = {workspace = true}
 clap = {workspace = true}
 tokio = {workspace = true}
-twilight-http = {version = "0.11"}
+twilight-http = {workspace = true}

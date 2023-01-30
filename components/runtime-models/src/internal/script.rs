@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use twilight_model::application::command::NumberCommandOptionData;
 
 use crate::{discord::channel::ChannelType, util::NotBigU64};
 
-use super::command_interaction::CommandType;
+use super::interaction::CommandType;
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
@@ -77,15 +76,26 @@ pub struct Command {
 
 impl From<Command> for twilight_model::application::command::CommandOption {
     fn from(cmd: Command) -> Self {
-        Self::SubCommand(
-            twilight_model::application::command::OptionsCommandOptionData {
-                name: cmd.name,
-                description: cmd.description,
-                options: cmd.options.into_iter().map(Into::into).collect(),
-                description_localizations: Default::default(),
-                name_localizations: Default::default(),
+        twilight_model::application::command::CommandOption {
+            name: cmd.name,
+            description: cmd.description,
+            options: if cmd.options.is_empty() {
+                None
+            } else {
+                Some(cmd.options.into_iter().map(Into::into).collect())
             },
-        )
+            description_localizations: Default::default(),
+            name_localizations: Default::default(),
+            autocomplete: None,
+            channel_types: None,
+            choices: None,
+            kind: twilight_model::application::command::CommandOptionType::SubCommand,
+            max_length: None,
+            max_value: None,
+            min_length: None,
+            min_value: None,
+            required: None,
+        }
     }
 }
 
@@ -175,23 +185,34 @@ pub struct ExtraCommandOptions {
 
 impl From<CommandOption> for twilight_model::application::command::CommandOption {
     fn from(v: CommandOption) -> Self {
-        use twilight_model::application::command::BaseCommandOptionData;
-        use twilight_model::application::command::ChannelCommandOptionData;
-        use twilight_model::application::command::ChoiceCommandOptionData;
+        // use twilight_model::application::command::BaseCommandOptionData;
+        // use twilight_model::application::command::ChannelCommandOptionData;
+        // use twilight_model::application::command::ChoiceCommandOptionData;
         use twilight_model::application::command::CommandOptionValue;
-        use twilight_model::application::command::Number;
+        // use twilight_model::application::command::Number;
 
         match v.kind {
-            CommandOptionType::String => Self::String(ChoiceCommandOptionData {
+            CommandOptionType::String => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
-                ..Default::default()
-            }),
-            CommandOptionType::Integer => Self::Integer(NumberCommandOptionData {
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::String,
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
+                description_localizations: None,
+                max_length: None,
+                max_value: None,
+                min_length: None,
+                min_value: None,
+                name_localizations: None,
+                options: None,
+            },
+            CommandOptionType::Integer => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::Integer,
                 min_value: v
                     .extra_options
                     .min_value
@@ -200,64 +221,125 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                     .extra_options
                     .max_value
                     .map(|v| CommandOptionValue::Integer(v as i64)),
-                ..Default::default()
-            }),
-            CommandOptionType::Boolean => Self::Boolean(BaseCommandOptionData {
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
+                description_localizations: None,
+                max_length: None,
+                min_length: None,
+                name_localizations: None,
+                options: None,
+            },
+            CommandOptionType::Boolean => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::Boolean,
                 description_localizations: Default::default(),
                 name_localizations: Default::default(),
-            }),
-            CommandOptionType::User => Self::User(BaseCommandOptionData {
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
+                max_length: None,
+                max_value: None,
+                min_length: None,
+                min_value: None,
+                options: None,
+            },
+            CommandOptionType::User => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::User,
                 description_localizations: Default::default(),
                 name_localizations: Default::default(),
-            }),
-            CommandOptionType::Channel => Self::Channel(ChannelCommandOptionData {
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
+                max_length: None,
+                max_value: None,
+                min_length: None,
+                min_value: None,
+                options: None,
+            },
+            CommandOptionType::Channel => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
-                channel_types: v
-                    .extra_options
-                    .channel_types
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(Into::into)
-                    .collect(),
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::Channel,
+                channel_types: Some(
+                    v.extra_options
+                        .channel_types
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(Into::into)
+                        .collect(),
+                ),
                 description_localizations: Default::default(),
                 name_localizations: Default::default(),
-            }),
-            CommandOptionType::Role => Self::Role(BaseCommandOptionData {
+                autocomplete: None,
+                choices: None,
+                max_length: None,
+                max_value: None,
+                min_length: None,
+                min_value: None,
+                options: None,
+            },
+            CommandOptionType::Role => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::Role,
+
                 description_localizations: Default::default(),
                 name_localizations: Default::default(),
-            }),
-            CommandOptionType::Mentionable => Self::Mentionable(BaseCommandOptionData {
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
+                max_length: None,
+                max_value: None,
+                min_length: None,
+                min_value: None,
+                options: None,
+            },
+            CommandOptionType::Mentionable => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::Mentionable,
                 description_localizations: Default::default(),
                 name_localizations: Default::default(),
-            }),
-            CommandOptionType::Number => Self::Number(NumberCommandOptionData {
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
+                max_length: None,
+                max_value: None,
+                min_length: None,
+                min_value: None,
+                options: None,
+            },
+            CommandOptionType::Number => Self {
                 name: v.name,
                 description: v.description,
-                required: v.required,
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::Number,
                 min_value: v
                     .extra_options
                     .min_value
-                    .map(|v| CommandOptionValue::Number(Number(v))),
+                    .map(|v| CommandOptionValue::Number(v)),
                 max_value: v
                     .extra_options
                     .max_value
-                    .map(|v| CommandOptionValue::Number(Number(v))),
-                ..Default::default()
-            }),
+                    .map(|v| CommandOptionValue::Number(v)),
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
+                description_localizations: None,
+                max_length: None,
+                min_length: None,
+                name_localizations: None,
+                options: None,
+            },
         }
     }
 }

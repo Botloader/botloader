@@ -210,7 +210,7 @@ impl Broker {
             }
 
             Event::InteractionCreate(i) => {
-                if let Some(guild_id) = i.guild_id() {
+                if let Some(guild_id) = i.guild_id {
                     guild_id
                 } else {
                     return;

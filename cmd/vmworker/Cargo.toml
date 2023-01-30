@@ -25,5 +25,5 @@ async-trait = {workspace = true}
 anyhow = {workspace = true}
 metrics = "0.18"
 
-twilight-model = {version = "0.11"}
-twilight-http = {version = "0.11"}
+twilight-model = {workspace = true}
+twilight-http = {workspace = true}

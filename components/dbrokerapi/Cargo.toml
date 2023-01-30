@@ -12,4 +12,4 @@ reqwest = { version = "0.11", features = ["json"]}
 thiserror = "1.0"
 serde_json = {workspace = true}
 
-twilight-model = {version = "0.11"}
+twilight-model = {workspace = true}

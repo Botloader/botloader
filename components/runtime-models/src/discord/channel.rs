@@ -72,6 +72,7 @@ pub enum ChannelType {
     PrivateThread,
     GuildDirectory,
     Forum,
+    Unknown,
 }
 
 impl From<twilight_model::channel::ChannelType> for ChannelType {
@@ -80,11 +81,11 @@ impl From<twilight_model::channel::ChannelType> for ChannelType {
             twilight_model::channel::ChannelType::GuildText => Self::Text,
             twilight_model::channel::ChannelType::GuildVoice => Self::Voice,
             twilight_model::channel::ChannelType::GuildCategory => Self::Category,
-            twilight_model::channel::ChannelType::GuildNews => Self::News,
+            twilight_model::channel::ChannelType::GuildAnnouncement => Self::News,
             twilight_model::channel::ChannelType::GuildStageVoice => Self::StageVoice,
-            twilight_model::channel::ChannelType::GuildNewsThread => Self::NewsThread,
-            twilight_model::channel::ChannelType::GuildPublicThread => Self::PublicThread,
-            twilight_model::channel::ChannelType::GuildPrivateThread => Self::PrivateThread,
+            twilight_model::channel::ChannelType::AnnouncementThread => Self::NewsThread,
+            twilight_model::channel::ChannelType::PublicThread => Self::PublicThread,
+            twilight_model::channel::ChannelType::PrivateThread => Self::PrivateThread,
             twilight_model::channel::ChannelType::Group => panic!("unspported channel type: group"),
             twilight_model::channel::ChannelType::Private => {
                 panic!("unspported channel type: private")
@@ -102,14 +103,15 @@ impl From<ChannelType> for twilight_model::channel::ChannelType {
             ChannelType::Text => Self::GuildText,
             ChannelType::Voice => Self::GuildVoice,
             ChannelType::Category => Self::GuildCategory,
-            ChannelType::News => Self::GuildNews,
+            ChannelType::News => Self::GuildAnnouncement,
             ChannelType::StageVoice => Self::GuildStageVoice,
-            ChannelType::NewsThread => Self::GuildNewsThread,
-            ChannelType::PublicThread => Self::GuildPublicThread,
-            ChannelType::PrivateThread => Self::GuildPrivateThread,
+            ChannelType::NewsThread => Self::AnnouncementThread,
+            ChannelType::PublicThread => Self::PublicThread,
+            ChannelType::PrivateThread => Self::PrivateThread,
             ChannelType::GuildDirectory => Self::GuildDirectory,
             ChannelType::Forum => Self::GuildForum,
             ChannelType::Store => Self::GuildText,
+            ChannelType::Unknown => todo!(),
         }
     }
 }

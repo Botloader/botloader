@@ -48,7 +48,7 @@ pub struct Embed {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub video: Option<EmbedVideo>,
 }
-impl From<Embed> for twilight_model::channel::embed::Embed {
+impl From<Embed> for twilight_model::channel::message::embed::Embed {
     fn from(v: Embed) -> Self {
         Self {
             author: v.author.map(From::from),
@@ -75,8 +75,8 @@ impl From<Embed> for twilight_model::channel::embed::Embed {
     }
 }
 
-impl From<twilight_model::channel::embed::Embed> for Embed {
-    fn from(v: twilight_model::channel::embed::Embed) -> Self {
+impl From<twilight_model::channel::message::embed::Embed> for Embed {
+    fn from(v: twilight_model::channel::message::embed::Embed) -> Self {
         Self {
             author: v.author.map(From::from),
             color: v.color,
@@ -120,7 +120,7 @@ pub struct EmbedAuthor {
     pub url: Option<String>,
 }
 
-impl From<EmbedAuthor> for twilight_model::channel::embed::EmbedAuthor {
+impl From<EmbedAuthor> for twilight_model::channel::message::embed::EmbedAuthor {
     fn from(v: EmbedAuthor) -> Self {
         Self {
             icon_url: v.icon_url,
@@ -131,8 +131,8 @@ impl From<EmbedAuthor> for twilight_model::channel::embed::EmbedAuthor {
     }
 }
 
-impl From<twilight_model::channel::embed::EmbedAuthor> for EmbedAuthor {
-    fn from(v: twilight_model::channel::embed::EmbedAuthor) -> Self {
+impl From<twilight_model::channel::message::embed::EmbedAuthor> for EmbedAuthor {
+    fn from(v: twilight_model::channel::message::embed::EmbedAuthor) -> Self {
         Self {
             icon_url: v.icon_url,
             name: v.name,
@@ -152,7 +152,7 @@ pub struct EmbedField {
     pub name: String,
     pub value: String,
 }
-impl From<EmbedField> for twilight_model::channel::embed::EmbedField {
+impl From<EmbedField> for twilight_model::channel::message::embed::EmbedField {
     fn from(v: EmbedField) -> Self {
         Self {
             inline: v.inline.unwrap_or_default(),
@@ -162,8 +162,8 @@ impl From<EmbedField> for twilight_model::channel::embed::EmbedField {
     }
 }
 
-impl From<twilight_model::channel::embed::EmbedField> for EmbedField {
-    fn from(v: twilight_model::channel::embed::EmbedField) -> Self {
+impl From<twilight_model::channel::message::embed::EmbedField> for EmbedField {
+    fn from(v: twilight_model::channel::message::embed::EmbedField) -> Self {
         Self {
             inline: Some(v.inline),
             name: v.name,
@@ -185,7 +185,7 @@ pub struct EmbedFooter {
     pub proxy_icon_url: Option<String>,
 }
 
-impl From<EmbedFooter> for twilight_model::channel::embed::EmbedFooter {
+impl From<EmbedFooter> for twilight_model::channel::message::embed::EmbedFooter {
     fn from(v: EmbedFooter) -> Self {
         Self {
             icon_url: v.icon_url,
@@ -195,8 +195,8 @@ impl From<EmbedFooter> for twilight_model::channel::embed::EmbedFooter {
     }
 }
 
-impl From<twilight_model::channel::embed::EmbedFooter> for EmbedFooter {
-    fn from(v: twilight_model::channel::embed::EmbedFooter) -> Self {
+impl From<twilight_model::channel::message::embed::EmbedFooter> for EmbedFooter {
+    fn from(v: twilight_model::channel::message::embed::EmbedFooter) -> Self {
         Self {
             icon_url: v.icon_url,
             proxy_icon_url: v.proxy_icon_url,
@@ -220,7 +220,7 @@ pub struct EmbedImage {
     pub width: Option<i32>,
 }
 
-impl From<EmbedImage> for twilight_model::channel::embed::EmbedImage {
+impl From<EmbedImage> for twilight_model::channel::message::embed::EmbedImage {
     fn from(v: EmbedImage) -> Self {
         Self {
             height: v.height.map(|v| v as u64),
@@ -231,8 +231,8 @@ impl From<EmbedImage> for twilight_model::channel::embed::EmbedImage {
     }
 }
 
-impl From<twilight_model::channel::embed::EmbedImage> for EmbedImage {
-    fn from(v: twilight_model::channel::embed::EmbedImage) -> Self {
+impl From<twilight_model::channel::message::embed::EmbedImage> for EmbedImage {
+    fn from(v: twilight_model::channel::message::embed::EmbedImage) -> Self {
         Self {
             height: v.height.map(|v| v as i32),
             proxy_url: v.proxy_url,
@@ -253,7 +253,7 @@ pub struct EmbedProvider {
     pub url: Option<String>,
 }
 
-impl From<EmbedProvider> for twilight_model::channel::embed::EmbedProvider {
+impl From<EmbedProvider> for twilight_model::channel::message::embed::EmbedProvider {
     fn from(v: EmbedProvider) -> Self {
         Self {
             name: v.name,
@@ -262,8 +262,8 @@ impl From<EmbedProvider> for twilight_model::channel::embed::EmbedProvider {
     }
 }
 
-impl From<twilight_model::channel::embed::EmbedProvider> for EmbedProvider {
-    fn from(v: twilight_model::channel::embed::EmbedProvider) -> Self {
+impl From<twilight_model::channel::message::embed::EmbedProvider> for EmbedProvider {
+    fn from(v: twilight_model::channel::message::embed::EmbedProvider) -> Self {
         Self {
             name: v.name,
             url: v.url,
@@ -286,7 +286,7 @@ pub struct EmbedThumbnail {
     pub width: Option<i32>,
 }
 
-impl From<EmbedThumbnail> for twilight_model::channel::embed::EmbedThumbnail {
+impl From<EmbedThumbnail> for twilight_model::channel::message::embed::EmbedThumbnail {
     fn from(v: EmbedThumbnail) -> Self {
         Self {
             height: v.height.map(|v| v as u64),
@@ -296,8 +296,8 @@ impl From<EmbedThumbnail> for twilight_model::channel::embed::EmbedThumbnail {
         }
     }
 }
-impl From<twilight_model::channel::embed::EmbedThumbnail> for EmbedThumbnail {
-    fn from(v: twilight_model::channel::embed::EmbedThumbnail) -> Self {
+impl From<twilight_model::channel::message::embed::EmbedThumbnail> for EmbedThumbnail {
+    fn from(v: twilight_model::channel::message::embed::EmbedThumbnail) -> Self {
         Self {
             height: v.height.map(|v| v as i32),
             proxy_url: v.proxy_url,
@@ -322,8 +322,8 @@ pub struct EmbedVideo {
     pub width: Option<i32>,
 }
 
-impl From<twilight_model::channel::embed::EmbedVideo> for EmbedVideo {
-    fn from(v: twilight_model::channel::embed::EmbedVideo) -> Self {
+impl From<twilight_model::channel::message::embed::EmbedVideo> for EmbedVideo {
+    fn from(v: twilight_model::channel::message::embed::EmbedVideo) -> Self {
         Self {
             height: v.height.map(|v| v as i32),
             proxy_url: v.proxy_url,
@@ -333,7 +333,7 @@ impl From<twilight_model::channel::embed::EmbedVideo> for EmbedVideo {
     }
 }
 
-impl From<EmbedVideo> for twilight_model::channel::embed::EmbedVideo {
+impl From<EmbedVideo> for twilight_model::channel::message::embed::EmbedVideo {
     fn from(v: EmbedVideo) -> Self {
         Self {
             height: v.height.map(|v| v as u64),

@@ -1201,7 +1201,7 @@ pub async fn op_discord_create_ban(
         .create_ban(rt_ctx.guild_id, user_id);
 
     if let Some(days) = extras.delete_message_days {
-        req = req.delete_message_days(days as u16)?;
+        req = req.delete_message_seconds(days * 24 * 60 * 60)?;
     }
 
     if let Some(reason) = &extras.audit_log_reason {
@@ -1360,9 +1360,9 @@ pub async fn op_discord_get_member_permissions(
         let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
         // match channel.
         match channel.kind {
-            twilight_model::channel::ChannelType::GuildNewsThread
-            | twilight_model::channel::ChannelType::GuildPublicThread
-            | twilight_model::channel::ChannelType::GuildPrivateThread => {
+            twilight_model::channel::ChannelType::AnnouncementThread
+            | twilight_model::channel::ChannelType::PublicThread
+            | twilight_model::channel::ChannelType::PrivateThread => {
                 let real_channel = get_guild_channel(
                     &state,
                     &rt_ctx,

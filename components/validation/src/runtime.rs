@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use runtime_models::internal::{
-    command_interaction::CommandType,
+    interaction::CommandType,
     script::{Command, CommandGroup, CommandOption, CommandSubGroup},
 };
 

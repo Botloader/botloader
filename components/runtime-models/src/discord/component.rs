@@ -12,7 +12,7 @@ pub enum ComponentType {
     TextInput,
 }
 
-use twilight_model::application::component::ComponentType as TwilightComponentType;
+use twilight_model::channel::message::component::ComponentType as TwilightComponentType;
 impl From<TwilightComponentType> for ComponentType {
     fn from(v: TwilightComponentType) -> Self {
         match v {
@@ -38,9 +38,10 @@ pub enum Component {
     Button(Button),
     SelectMenu(SelectMenu),
     TextInput(TextInput),
+    Unknown(UnknownComponent),
 }
 
-use twilight_model::application::component::Component as TwilightComponent;
+use twilight_model::channel::message::component::Component as TwilightComponent;
 impl From<TwilightComponent> for Component {
     fn from(v: TwilightComponent) -> Self {
         match v {
@@ -48,6 +49,7 @@ impl From<TwilightComponent> for Component {
             TwilightComponent::Button(inner) => Self::Button(inner.into()),
             TwilightComponent::SelectMenu(inner) => Self::SelectMenu(inner.into()),
             TwilightComponent::TextInput(inner) => Self::TextInput(inner.into()),
+            TwilightComponent::Unknown(t) => todo!(),
         }
     }
 }
@@ -58,8 +60,20 @@ impl From<Component> for TwilightComponent {
             Component::Button(inner) => Self::Button(inner.into()),
             Component::SelectMenu(inner) => Self::SelectMenu(inner.into()),
             Component::TextInput(inner) => Self::TextInput(inner.into()),
+            Component::Unknown(c) => Self::Unknown(c.component_kind),
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IUnknownComponent",
+    export_to = "bindings/discord/IUnknownComponent.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct UnknownComponent {
+    pub component_kind: u8,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
@@ -73,7 +87,7 @@ pub struct ActionRow {
     pub components: Vec<Component>,
 }
 
-use twilight_model::application::component::ActionRow as TwilightActionRow;
+use twilight_model::channel::message::component::ActionRow as TwilightActionRow;
 impl From<TwilightActionRow> for ActionRow {
     fn from(v: TwilightActionRow) -> Self {
         Self {
@@ -107,7 +121,7 @@ pub struct Button {
     pub emoji: Option<ReactionType>,
 }
 
-use twilight_model::application::component::Button as TwilightButton;
+use twilight_model::channel::message::component::Button as TwilightButton;
 impl From<TwilightButton> for Button {
     fn from(v: TwilightButton) -> Self {
         Self {
@@ -153,7 +167,7 @@ pub struct SelectMenu {
     pub placeholder: Option<String>,
 }
 
-use twilight_model::application::component::SelectMenu as TwilightSelectMenu;
+use twilight_model::channel::message::component::SelectMenu as TwilightSelectMenu;
 impl From<TwilightSelectMenu> for SelectMenu {
     fn from(v: TwilightSelectMenu) -> Self {
         Self {
@@ -196,7 +210,7 @@ pub struct SelectMenuOption {
     pub value: String,
 }
 
-use twilight_model::application::component::select_menu::SelectMenuOption as TwilightSelectMenuOption;
+use twilight_model::channel::message::component::SelectMenuOption as TwilightSelectMenuOption;
 impl From<TwilightSelectMenuOption> for SelectMenuOption {
     fn from(v: TwilightSelectMenuOption) -> Self {
         Self {
@@ -231,7 +245,7 @@ pub enum ButtonStyle {
     Link,
 }
 
-use twilight_model::application::component::button::ButtonStyle as TwilightButtonStyle;
+use twilight_model::channel::message::component::ButtonStyle as TwilightButtonStyle;
 impl From<TwilightButtonStyle> for ButtonStyle {
     fn from(v: TwilightButtonStyle) -> Self {
         match v {
@@ -281,7 +295,7 @@ pub enum TextInputStyle {
     Paragraph,
 }
 
-use twilight_model::application::component::TextInput as TwilightTextInput;
+use twilight_model::channel::message::component::TextInput as TwilightTextInput;
 impl From<TwilightTextInput> for TextInput {
     fn from(v: TwilightTextInput) -> Self {
         Self {
@@ -312,7 +326,7 @@ impl From<TextInput> for TwilightTextInput {
     }
 }
 
-use twilight_model::application::component::text_input::TextInputStyle as TwilightTextInputStyle;
+use twilight_model::channel::message::component::TextInputStyle as TwilightTextInputStyle;
 impl From<TwilightTextInputStyle> for TextInputStyle {
     fn from(v: TwilightTextInputStyle) -> Self {
         match v {

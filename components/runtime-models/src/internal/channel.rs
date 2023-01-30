@@ -23,24 +23,25 @@ pub enum GuildChannel {
     Stage(VoiceChannel),
     GuildDirectory(TextChannel),
     Forum(TextChannel),
+    Unknown(UnknownChannel),
 }
 
 impl From<twilight_model::channel::Channel> for GuildChannel {
     fn from(v: twilight_model::channel::Channel) -> Self {
         match v.kind {
             twilight_model::channel::ChannelType::GuildCategory => Self::Category(v.into()),
-            twilight_model::channel::ChannelType::GuildNewsThread => {
+            twilight_model::channel::ChannelType::AnnouncementThread => {
                 Self::NewsThread(Box::new(v.into()))
             }
-            twilight_model::channel::ChannelType::GuildPrivateThread => {
+            twilight_model::channel::ChannelType::PrivateThread => {
                 Self::PrivateThread(Box::new(v.into()))
             }
-            twilight_model::channel::ChannelType::GuildPublicThread => {
+            twilight_model::channel::ChannelType::PublicThread => {
                 Self::PublicThread(Box::new(v.into()))
             }
 
             twilight_model::channel::ChannelType::GuildText
-            | twilight_model::channel::ChannelType::GuildNews => Self::Text(v.into()),
+            | twilight_model::channel::ChannelType::GuildAnnouncement => Self::Text(v.into()),
 
             twilight_model::channel::ChannelType::GuildVoice => Self::Voice(v.into()),
             twilight_model::channel::ChannelType::GuildStageVoice => Self::Stage(v.into()),
@@ -53,9 +54,25 @@ impl From<twilight_model::channel::Channel> for GuildChannel {
             }
             twilight_model::channel::ChannelType::GuildDirectory => Self::GuildDirectory(v.into()),
             twilight_model::channel::ChannelType::GuildForum => Self::Forum(v.into()),
-            _ => todo!(),
+            twilight_model::channel::ChannelType::Unknown(_) => todo!(),
+            _ => Self::Unknown(UnknownChannel {
+                id: v.id.to_string(),
+                kind: v.kind.into(),
+                unknown_kind_id: u8::from(v.kind),
+            }),
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IUnknownChannel")]
+#[ts(export_to = "bindings/internal/UnknownChannel.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct UnknownChannel {
+    pub id: String,
+    #[ts(type = "'Unknown'")]
+    pub kind: ChannelType,
+    pub unknown_kind_id: u8,
 }
 
 #[derive(Clone, Debug, Serialize, TS)]
@@ -63,23 +80,23 @@ impl From<twilight_model::channel::Channel> for GuildChannel {
 #[ts(export_to = "bindings/internal/VoiceChannel.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct VoiceChannel {
-    pub bitrate: NotBigU64,
+    pub bitrate: u32,
     pub id: String,
     #[ts(type = "'Voice'|'StageVoice'")]
     pub kind: ChannelType,
     pub name: String,
     pub parent_id: Option<String>,
     pub permission_overwrites: Vec<PermissionOverwrite>,
-    pub position: i64,
+    pub position: i32,
     pub rtc_region: Option<String>,
-    pub user_limit: Option<NotBigU64>,
+    pub user_limit: Option<u32>,
     pub video_quality_mode: Option<VideoQualityMode>,
 }
 
 impl From<twilight_model::channel::Channel> for VoiceChannel {
     fn from(v: twilight_model::channel::Channel) -> Self {
         Self {
-            bitrate: NotBigU64(v.bitrate.unwrap_or_default()),
+            bitrate: v.bitrate.unwrap_or_default(),
             id: v.id.to_string(),
             kind: v.kind.into(),
             name: v.name.unwrap_or_default(),
@@ -90,9 +107,9 @@ impl From<twilight_model::channel::Channel> for VoiceChannel {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            position: v.position.unwrap_or_default(),
+            position: v.position.unwrap_or_default().into(),
             rtc_region: v.rtc_region,
-            user_limit: v.user_limit.map(NotBigU64),
+            user_limit: v.user_limit,
             video_quality_mode: v.video_quality_mode.map(Into::into),
         }
     }
@@ -111,8 +128,8 @@ pub struct TextChannel {
     pub nsfw: bool,
     pub parent_id: Option<String>,
     pub permission_overwrites: Vec<PermissionOverwrite>,
-    pub position: i64,
-    pub rate_limit_per_user: Option<NotBigU64>,
+    pub position: i32,
+    pub rate_limit_per_user: Option<u16>,
     pub topic: Option<String>,
 }
 
@@ -133,8 +150,8 @@ impl From<twilight_model::channel::Channel> for TextChannel {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            position: v.position.unwrap_or_default(),
-            rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
+            position: v.position.unwrap_or_default().into(),
+            rate_limit_per_user: v.rate_limit_per_user,
             topic: v.topic,
         }
     }
@@ -150,12 +167,12 @@ pub struct PublicThread {
     #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
     pub member: Option<SelfThreadMember>,
-    pub member_count: u8,
+    pub member_count: i8,
     pub message_count: u32,
     pub name: String,
     pub owner_id: Option<String>,
     pub parent_id: Option<String>,
-    pub rate_limit_per_user: Option<NotBigU64>,
+    pub rate_limit_per_user: Option<u16>,
     pub thread_metadata: ThreadMetadata,
 }
 
@@ -173,7 +190,7 @@ impl From<twilight_model::channel::Channel> for PublicThread {
             name: v.name.unwrap_or_default(),
             owner_id: v.owner_id.as_ref().map(ToString::to_string),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
-            rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
+            rate_limit_per_user: v.rate_limit_per_user,
             thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
         }
     }
@@ -190,13 +207,13 @@ pub struct PrivateThread {
     #[ts(type = "'PrivateThread'")]
     pub kind: ChannelType,
     pub member: Option<SelfThreadMember>,
-    pub member_count: u8,
+    pub member_count: i8,
     pub message_count: u32,
     pub name: String,
     pub owner_id: Option<String>,
     pub parent_id: Option<String>,
     pub permission_overwrites: Vec<PermissionOverwrite>,
-    pub rate_limit_per_user: Option<NotBigU64>,
+    pub rate_limit_per_user: Option<u16>,
     pub thread_metadata: ThreadMetadata,
 }
 
@@ -214,7 +231,7 @@ impl From<twilight_model::channel::Channel> for PrivateThread {
             name: v.name.unwrap_or_default(),
             owner_id: v.owner_id.as_ref().map(ToString::to_string),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
-            rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
+            rate_limit_per_user: v.rate_limit_per_user,
             thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
             permission_overwrites: v
                 .permission_overwrites
@@ -237,12 +254,12 @@ pub struct NewsThread {
     #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
     pub member: Option<SelfThreadMember>,
-    pub member_count: u8,
+    pub member_count: i8,
     pub message_count: u32,
     pub name: String,
     pub owner_id: Option<String>,
     pub parent_id: Option<String>,
-    pub rate_limit_per_user: Option<NotBigU64>,
+    pub rate_limit_per_user: Option<u16>,
     pub thread_metadata: ThreadMetadata,
 }
 
@@ -260,7 +277,7 @@ impl From<twilight_model::channel::Channel> for NewsThread {
             name: v.name.unwrap_or_default(),
             owner_id: v.owner_id.as_ref().map(ToString::to_string),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
-            rate_limit_per_user: v.rate_limit_per_user.map(NotBigU64),
+            rate_limit_per_user: v.rate_limit_per_user,
             thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
         }
     }
@@ -325,7 +342,7 @@ pub struct CategoryChannel {
     pub kind: ChannelType,
     pub name: String,
     pub permission_overwrites: Vec<PermissionOverwrite>,
-    pub position: i64,
+    pub position: i32,
 }
 
 impl From<twilight_model::channel::Channel> for CategoryChannel {
@@ -334,7 +351,7 @@ impl From<twilight_model::channel::Channel> for CategoryChannel {
             kind: v.kind.into(),
             id: v.id.to_string(),
             name: v.name.unwrap_or_default(),
-            position: v.position.unwrap_or_default(),
+            position: v.position.unwrap_or_default().into(),
             permission_overwrites: v
                 .permission_overwrites
                 .unwrap_or_default()
@@ -416,7 +433,7 @@ impl EditChannel {
         'b: 'c,
     {
         if let Some(bitrate) = &self.bitrate {
-            req = req.bitrate(*bitrate);
+            req = req.bitrate(*bitrate)?;
         }
 
         if let Some(name) = &self.name {
@@ -530,7 +547,7 @@ impl CreateChannel {
         'b: 'c,
     {
         if let Some(bitrate) = &self.bitrate {
-            req = req.bitrate(*bitrate);
+            req = req.bitrate(*bitrate)?;
         }
 
         if let Some(nsfw) = &self.nsfw {

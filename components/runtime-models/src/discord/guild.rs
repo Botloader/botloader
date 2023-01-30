@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use dbrokerapi::models::BrokerGuild;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -60,7 +62,10 @@ impl From<&CachedGuild> for Guild {
             description: v.description().map(ToString::to_string),
             discovery_splash: v.discovery_splash().map(ToString::to_string),
             explicit_content_filter: v.explicit_content_filter().into(),
-            features: v.features().map(ToString::to_string).collect(),
+            features: v
+                .features()
+                .map(|v| Cow::<str>::from(v.clone()).to_string())
+                .collect(),
             icon: v.icon().map(ToString::to_string),
             id: v.id().to_string(),
             joined_at: v

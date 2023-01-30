@@ -120,47 +120,39 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
             data: serde_json::to_value(runtime_models::discord::events::EventThreadDelete::from(r))
                 .unwrap(),
         }),
-        DispatchEvent::InteractionCreate(interaction) => match interaction.0 {
-            twilight_model::application::interaction::Interaction::Ping(_) => None,
-            twilight_model::application::interaction::Interaction::MessageComponent(comp) => {
-                let guild_id = comp.guild_id;
-                Some(DiscordDispatchEvent {
-                    name: "BOTLOADER_COMPONENT_INTERACTION_CREATE",
-                    guild_id: guild_id.unwrap(),
-                    data: serde_json::to_value(
-                        &runtime_models::internal::component_interaction::MessageComponentInteraction::from(
-                            *comp,
-                        ),
-                    )
-                    .unwrap(),
-                })
+        DispatchEvent::InteractionCreate(interaction) => {
+            let guild_id = interaction.guild_id.unwrap();
+
+            if let Ok(v) =
+                runtime_models::internal::interaction::Interaction::try_from(interaction.0)
+            {
+                match v {
+                    runtime_models::internal::interaction::Interaction::Command(
+                        cmd_interaction,
+                    ) => Some(DiscordDispatchEvent {
+                        guild_id,
+                        name: "BOTLOADER_COMMAND_INTERACTION_CREATE",
+                        data: serde_json::to_value(&cmd_interaction).unwrap(),
+                    }),
+                    runtime_models::internal::interaction::Interaction::MessageComponent(
+                        component_interaction,
+                    ) => Some(DiscordDispatchEvent {
+                        guild_id,
+                        name: "BOTLOADER_COMPONENT_INTERACTION_CREATE",
+                        data: serde_json::to_value(&component_interaction).unwrap(),
+                    }),
+                    runtime_models::internal::interaction::Interaction::ModalSubmit(
+                        modal_interaction,
+                    ) => Some(DiscordDispatchEvent {
+                        guild_id,
+                        name: "BOTLOADER_MODAL_SUBMIT_INTERACTION_CREATE",
+                        data: serde_json::to_value(&modal_interaction).unwrap(),
+                    }),
+                }
+            } else {
+                None
             }
-            twilight_model::application::interaction::Interaction::ApplicationCommand(cmd) => {
-                let guild_id = cmd.guild_id;
-                Some(DiscordDispatchEvent {
-                    name: "BOTLOADER_COMMAND_INTERACTION_CREATE",
-                    guild_id: guild_id.unwrap(),
-                    data: serde_json::to_value(
-                        &runtime_models::internal::command_interaction::CommandInteraction::from(
-                            *cmd,
-                        ),
-                    )
-                    .unwrap(),
-                })
-            }
-            twilight_model::application::interaction::Interaction::ModalSubmit(m) => {
-                let guild_id = m.guild_id;
-                Some(DiscordDispatchEvent {
-                    name: "BOTLOADER_MODAL_SUBMIT_INTERACTION_CREATE",
-                    guild_id: guild_id.unwrap(),
-                    data: serde_json::to_value(
-                        &runtime_models::internal::modal_interaction::ModalInteraction::from(*m),
-                    )
-                    .unwrap(),
-                })
-            }
-            _ => None,
-        },
+        }
         _ => None,
     }
 }

@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::{discord::channel::ChannelType, util::NotBigU64};
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 use ts_rs::TS;
 use twilight_model::id::Id;
 
@@ -126,6 +127,7 @@ pub enum MessageType {
     ThreadCreated,
     ThreadStarterMessage,
     ContextMenuCommand,
+    Unknown,
 }
 
 impl From<twilight_model::channel::message::MessageType> for MessageType {
@@ -140,11 +142,11 @@ impl From<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::ChannelNameChange => Self::ChannelNameChange,
             TwilightMessageType::ChannelIconChange => Self::ChannelIconChange,
             TwilightMessageType::ChannelMessagePinned => Self::ChannelMessagePinned,
-            TwilightMessageType::GuildMemberJoin => Self::GuildMemberJoin,
-            TwilightMessageType::UserPremiumSub => Self::UserPremiumSub,
-            TwilightMessageType::UserPremiumSubTier1 => Self::UserPremiumSubTier1,
-            TwilightMessageType::UserPremiumSubTier2 => Self::UserPremiumSubTier2,
-            TwilightMessageType::UserPremiumSubTier3 => Self::UserPremiumSubTier3,
+            TwilightMessageType::UserJoin => Self::GuildMemberJoin,
+            TwilightMessageType::GuildBoost => Self::UserPremiumSub,
+            TwilightMessageType::GuildBoostTier1 => Self::UserPremiumSubTier1,
+            TwilightMessageType::GuildBoostTier2 => Self::UserPremiumSubTier2,
+            TwilightMessageType::GuildBoostTier3 => Self::UserPremiumSubTier3,
             TwilightMessageType::ChannelFollowAdd => Self::ChannelFollowAdd,
             TwilightMessageType::GuildDiscoveryDisqualified => Self::GuildDiscoveryDisqualified,
             TwilightMessageType::GuildDiscoveryRequalified => Self::GuildDiscoveryRequalified,
@@ -161,7 +163,13 @@ impl From<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::ContextMenuCommand => Self::ContextMenuCommand,
             TwilightMessageType::ChatInputCommand => Self::ChatInputCommand,
             TwilightMessageType::AutoModerationAction => todo!(),
-            _ => todo!(),
+            TwilightMessageType::RoleSubscriptionPurchase => todo!(),
+            TwilightMessageType::InteractionPremiumUpsell => todo!(),
+            TwilightMessageType::GuildApplicationPremiumSubscription => todo!(),
+            _ => {
+                warn!("unknown message type: {}", u8::from(v));
+                Self::Unknown
+            }
         }
     }
 }
@@ -198,8 +206,8 @@ pub struct MessageReaction {
     pub me: bool,
 }
 
-impl From<twilight_model::channel::message::MessageReaction> for MessageReaction {
-    fn from(v: twilight_model::channel::message::MessageReaction) -> Self {
+impl From<twilight_model::channel::message::Reaction> for MessageReaction {
+    fn from(v: twilight_model::channel::message::Reaction) -> Self {
         Self {
             count: NotBigU64(v.count),
             emoji: v.emoji.into(),
@@ -231,22 +239,24 @@ pub enum ReactionType {
     },
 }
 
-impl From<twilight_model::channel::ReactionType> for ReactionType {
-    fn from(v: twilight_model::channel::ReactionType) -> Self {
+impl From<twilight_model::channel::message::ReactionType> for ReactionType {
+    fn from(v: twilight_model::channel::message::ReactionType) -> Self {
         match v {
-            twilight_model::channel::ReactionType::Custom { animated, name, id } => Self::Custom {
-                animated,
-                name,
-                id: id.to_string(),
-            },
-            twilight_model::channel::ReactionType::Unicode { name } => {
+            twilight_model::channel::message::ReactionType::Custom { animated, name, id } => {
+                Self::Custom {
+                    animated,
+                    name,
+                    id: id.to_string(),
+                }
+            }
+            twilight_model::channel::message::ReactionType::Unicode { name } => {
                 Self::Unicode { unicode: name }
             }
         }
     }
 }
 
-impl From<ReactionType> for twilight_model::channel::ReactionType {
+impl From<ReactionType> for twilight_model::channel::message::ReactionType {
     fn from(v: ReactionType) -> Self {
         match v {
             ReactionType::Custom { animated, name, id } => Self::Custom {
