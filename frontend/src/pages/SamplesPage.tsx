@@ -1,5 +1,5 @@
+import { Gist } from "../components/Gist";
 import { Panel } from "../components/Panel";
-import Gist from "react-gist";
 import "./SamplesPage.css"
 
 interface ISample {
