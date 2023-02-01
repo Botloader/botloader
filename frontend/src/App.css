@@ -3,15 +3,19 @@
 }
 
 .App-header {
+  margin-top: 10px;
+  margin-bottom: 10px;
   background-color: #282c34;
-  min-height: 50vh;
+  /* min-height: 50vh; */
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  /* font-size: calc(10px + 2vmin); */
+  font-size: 2rem;
   color: white;
   text-align: center;
+  gap: 20px
 }
 
 .App-link {
@@ -19,23 +23,25 @@
 }
 
 .frontpage-links {
+  margin-top: 20px;
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 20px;
+  justify-content: center;
 }
 
 .frontpage-intro-container {
+  margin-top: 0px;
+  margin-left: 20px;
+  margin-right: 20px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
 }
 
 .frontpage-intro {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  width: 70vw;
-  text-align: center;
 }
 
 @media only screen and (max-width: 600px) {
@@ -52,6 +58,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -116,13 +123,3 @@ a:hover {
 .bl-button.danger:hover {
   background-color: var(--danger-color-dark);
 }
-
-/* button:hover,
-.button:hover {
-  background-color: color-mix()
-}
-
-button:active,
-.button:active {
-  background-color: rgba(0, 0, 0, 0.5);
-} */

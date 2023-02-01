@@ -97,22 +97,26 @@ export default App;
 
 function LandingPage() {
   return <>
-    <header className="App-header">
-      <p>Botloader<br></br>A programmable discord bot</p>
-      <small>Verified and in beta!</small>
-      <img src="/logo192.png" alt="zzz" className="avatar"></img>
-      <div className='frontpage-links'>
-        <Link to="/servers" className='bl-button' >Control panel</Link>
-        <a className='bl-button' href="https://discord.gg/HJM3MqVBfw">Discord server</a>
-        <a className='bl-button' href="/docs/">Documentation</a>
+    <header className='frontpage-intro-container' style={{marginTop: "20px"}}>
+      <div style={{flexShrink: 1, width: "500px", marginRight: "10px"}}>
+        <p style={{backgroundColor: "#378855", borderRadius: "10px", padding: "10px", fontSize: "1.5rem"}}>Verified and in beta!</p>
+        <section className="App-header">
+          <img src="/logo192.png" alt="zzz" className="avatar"></img>
+        </section>
+        <div className='frontpage-intro'>
+          <p>Create custom bots for your discord servers in minutes without having to install or host anything!</p>
+          <p>Program <b>TypeScript</b> scripts for your server in a online code editor, the same code editor inside in visual studio code!</p>
+          <p>We provide API's for storage, timers, scheduled tasks and more to come!</p>
+        </div>
+      </div>
+      <div style={{flexGrow: 1, display: "flex", justifyContent: "center"}}>
+        <img src={pogshowcase} alt="screenshot" style={{borderRadius: "10px", marginTop: "20px"}}></img>
       </div>
     </header>
-    <div className='frontpage-intro-container'>
-      <div className='frontpage-intro'>
-        <p>Botloader is a programmable discord bot that is currently in a beta phase.</p>
-        <p>You can find more information using the links at the top and by joining the server.</p>
-        <img src={pogshowcase} alt="screenshot"></img>
-      </div>
+    <div className='frontpage-links'>
+      <Link to="/servers" className='bl-button' >Control panel</Link>
+      <a className='bl-button' href="https://discord.gg/HJM3MqVBfw">Discord server</a>
+      <a className='bl-button' href="/docs/">Documentation</a>
     </div>
   </>
 }
