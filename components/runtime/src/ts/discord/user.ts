@@ -1,5 +1,7 @@
 import type { IUser } from "../generated/internal/IUser";
 import type { CdnImageSize } from "./common";
+import type { PremiumType } from "../generated/internal/PremiumType"
+export type { PremiumType } from "../generated/internal/PremiumType"
 
 export class User {
     avatar: string | null;
@@ -75,5 +77,4 @@ export interface UserFlags {
     botHttpInteractions: boolean;
 }
 
-
-export type PremiumType = "none" | "nitroClassic" | "nitro";
+// export type PremiumType = "none" | "nitroClassic" | "nitro" | "nitroBasic";

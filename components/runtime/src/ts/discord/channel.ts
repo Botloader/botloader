@@ -22,7 +22,8 @@ export type GuildChannel =
     | PrivateThread
     | PublicThread
     | TextChannel
-    | VoiceChannel;
+    | VoiceChannel
+    | UnknownChannel;
 
 
 /**
@@ -41,9 +42,9 @@ export function guildChannelFromInternal(json: InternalGuildChannel): GuildChann
         return new PrivateThread(json);
     } else if (json.kind === "PublicThread") {
         return new PublicThread(json);
+    } else {
+        return new UnknownChannel(json);
     }
-
-    throw new Error("unknown channel type: " + json.kind)
 }
 
 export abstract class BaseChannel {
@@ -57,7 +58,11 @@ export abstract class BaseChannel {
     constructor(json: InternalGuildChannel) {
         this.id = json.id;
         this.kind = json.kind;
-        this.name = json.name;
+        if ('name' in json) {
+            this.name = json.name;
+        } else {
+            this.name = ""
+        }
     }
 
     isCategoryChannel(): this is CategoryChannel {
@@ -92,6 +97,8 @@ export abstract class BaseChannel {
         return getPins(this.id);
     }
 }
+
+export class UnknownChannel extends BaseChannel { }
 
 export class PrivateThread extends BaseChannel {
     kind: "PrivateThread" = "PrivateThread";
@@ -156,7 +163,7 @@ export class PublicThread extends BaseChannel {
 export class CategoryChannel extends BaseChannel {
     kind: "Category" = "Category";
     permissionOverwrites: IPermissionOverwrite[];
-    position: bigint;
+    position: number;
 
     /**
      * @internal
@@ -175,7 +182,7 @@ export class TextChannel extends BaseChannel {
     nsfw: boolean;
     parentId: string | null;
     permissionOverwrites: IPermissionOverwrite[];
-    position: bigint;
+    position: number;
     rateLimitPerUser: number | null;
     topic: string | null;
 
@@ -230,7 +237,7 @@ export class VoiceChannel extends BaseChannel {
     kind: "Voice" | "StageVoice";
     parentId: string | null;
     permissionOverwrites: IPermissionOverwrite[];
-    position: bigint;
+    position: number;
     rtcRegion: string | null;
     userLimit: number | null;
     videoQualityMode: VideoQualityMode | null;

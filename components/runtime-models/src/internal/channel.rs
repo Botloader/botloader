@@ -69,7 +69,7 @@ impl From<twilight_model::channel::Channel> for GuildChannel {
 #[serde(rename_all = "camelCase")]
 pub struct UnknownChannel {
     pub id: String,
-    #[ts(type = "'Unknown'")]
+    #[ts(type = "{Unknown: number}")]
     pub kind: ChannelType,
     pub unknown_kind_id: u8,
 }
