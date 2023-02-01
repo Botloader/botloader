@@ -65,7 +65,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                     parent_parent_name,
                     options: opts,
                     channel_id: v.channel_id.unwrap().to_string(),
-                    id: data.id.to_string(),
+                    id: v.id.to_string(),
                     member: Member::from_partial(v.member.unwrap()),
                     token: v.token,
                     data_map: data.resolved.map(Into::into).unwrap_or_default(),
