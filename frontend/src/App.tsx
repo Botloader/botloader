@@ -97,8 +97,8 @@ export default App;
 
 function LandingPage() {
   return <>
-    <header className='frontpage-intro-container' style={{marginTop: "20px"}}>
-      <div style={{flexShrink: 1, width: "500px", marginRight: "10px"}}>
+    <header className='intro-container'>
+      <div className='intro-left' style={{flexShrink: 1, maxWidth: "500px", marginRight: "10px"}}>
         <p style={{backgroundColor: "#378855", borderRadius: "10px", padding: "10px", fontSize: "1.5rem"}}>Verified and in beta!</p>
         <section className="App-header">
           <img src="/logo192.png" alt="zzz" className="avatar"></img>
@@ -109,8 +109,8 @@ function LandingPage() {
           <p>We provide API's for storage, timers, scheduled tasks and more to come!</p>
         </div>
       </div>
-      <div style={{flexGrow: 1, display: "flex", justifyContent: "center"}}>
-        <img src={pogshowcase} alt="screenshot" style={{borderRadius: "10px", marginTop: "20px"}}></img>
+      <div style={{flexGrow: 1, display: "flex", justifyContent: "center", minWidth: 0}}>
+        <img className='screenshot' src={pogshowcase} alt="screenshot" style={{borderRadius: "10px", marginTop: "20px", objectFit: "contain", minWidth: 0}}></img>
       </div>
     </header>
     <div className='frontpage-links'>
