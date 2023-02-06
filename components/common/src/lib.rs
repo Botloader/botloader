@@ -9,7 +9,9 @@ use tracing_subscriber::{
 
 pub mod config;
 pub mod discord;
+pub mod plugin;
 pub mod shutdown;
+pub mod user;
 
 pub use discord::*;
 

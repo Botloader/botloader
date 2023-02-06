@@ -1,6 +1,10 @@
 use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use common::{
+    plugin::{Plugin, PluginData, ScriptPluginData},
+    user::UserMeta,
+};
 use sqlx::postgres::types::PgInterval;
 use twilight_model::id::{
     marker::{GuildMarker, UserMarker},
@@ -8,9 +12,9 @@ use twilight_model::id::{
 };
 
 use crate::config::{
-    ConfigStoreError, ConfigStoreResult, CreateScript, CreateUpdatePremiumSlotBySource,
-    GuildMetaConfig, JoinedGuild, PremiumSlot, PremiumSlotState, PremiumSlotTier, Script,
-    ScriptContributes, UpdateScript,
+    ConfigStoreError, ConfigStoreResult, CreatePlugin, CreateScript,
+    CreateUpdatePremiumSlotBySource, GuildMetaConfig, JoinedGuild, PremiumSlot, PremiumSlotState,
+    PremiumSlotTier, Script, ScriptContributes, UpdatePluginMeta, UpdateScript,
 };
 
 const GUILD_SCRIPT_COUNT_LIMIT: i64 = 100;
@@ -466,6 +470,278 @@ RETURNING id, title, user_id, message, source, source_id, tier, state, created_a
 
         Ok(res.into())
     }
+
+    async fn create_plugin(&self, create_plugin: CreatePlugin) -> ConfigStoreResult<Plugin> {
+        let res = sqlx::query_as!(
+            DbPlugin,
+            r#"INSERT INTO plugins (
+    created_at,
+    name,
+    short_description,
+    long_description,
+    is_published,
+    is_official,
+    plugin_kind,
+    current_version_number,
+    script_published_source,
+    script_published_version_updated_at,
+    script_dev_source,
+    script_dev_version_updated_at,
+    author_id,
+    is_public
+) VALUES (
+    now(), -- created_at
+    $1, -- name
+    $2, -- short_description
+    $3, -- long_description
+    false, -- is_published
+    $4, -- is_official
+    $5, -- plugin_kind
+    0, -- current_version_number
+    null, -- script_published_source
+    null, -- script_published_version_updated_at
+    null, -- script_dev_source
+    null, -- script_dev_version_updated_at
+    $6, -- author_id
+    $7 -- is_public
+) RETURNING id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public"#,
+            create_plugin.name,
+            create_plugin.short_description,
+            create_plugin.long_description,
+            create_plugin.is_official,
+            create_plugin.kind as i16,
+            create_plugin.author_id as i64,
+            create_plugin.is_public,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.into())
+    }
+    async fn update_plugin_meta(
+        &self,
+        plugin_id: u64,
+        update_plugin: UpdatePluginMeta,
+    ) -> ConfigStoreResult<Plugin> {
+        let res = sqlx::query_as!(
+            DbPlugin,
+            r#"UPDATE plugins SET
+name = COALESCE($2, plugins.name),
+short_description = COALESCE($3, plugins.short_description),
+long_description = COALESCE($4, plugins.long_description),
+is_official = COALESCE($5, plugins.is_official),
+author_id = COALESCE($6, plugins.author_id),
+is_public = COALESCE($7, plugins.is_public),
+is_published = COALESCE($8, plugins.is_published)
+WHERE id = $1
+RETURNING id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public"#,
+            plugin_id as i64,
+            update_plugin.name,
+            update_plugin.short_description,
+            update_plugin.long_description,
+            update_plugin.is_official,
+            update_plugin.author_id.map(|v| v as i64),
+            update_plugin.is_public,
+            update_plugin.is_published,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.into())
+    }
+
+    async fn update_script_plugin_dev_version(
+        &self,
+        plugin_id: u64,
+        new_source: String,
+    ) -> ConfigStoreResult<Plugin> {
+        let res = sqlx::query_as!(
+            DbPlugin,
+            r#"UPDATE plugins SET
+script_dev_source = $2, 
+script_dev_version_updated_at = now()
+WHERE id = $1
+RETURNING id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public"#,
+            plugin_id as i64,
+            new_source,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.into())
+    }
+    async fn publish_script_plugin_version(
+        &self,
+        plugin_id: u64,
+        new_source: String,
+    ) -> ConfigStoreResult<Plugin> {
+        // TODO: update all auto update scripts
+
+        let res = sqlx::query_as!(
+            DbPlugin,
+            r#"UPDATE plugins SET
+script_published_source = $2, 
+script_published_version_updated_at = now()
+WHERE id = $1
+RETURNING id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public"#,
+            plugin_id as i64,
+            new_source,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.into())
+    }
+
+    async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<UserMeta> {
+        let res = sqlx::query_as!(
+            DbUserMeta,
+            r#"SELECT discord_user_id, is_admin, is_moderator, is_verified FROM user_meta WHERE discord_user_id = $1"#,
+            user_id as i64,
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(res.map(Into::into).unwrap_or_default())
+    }
+
+    async fn get_plugin(&self, plugin_id: u64) -> ConfigStoreResult<Plugin> {
+        sqlx::query_as!(
+            DbPlugin,
+            r#"SELECT id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public
+FROM plugins WHERE id = $1"#,
+            plugin_id as i64,
+        )
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(ConfigStoreError::PluginNotFound(plugin_id))
+        .map(Into::into)
+    }
+
+    async fn get_user_plugins(&self, user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
+        Ok(sqlx::query_as!(
+            DbPlugin,
+            r#"SELECT id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public
+FROM plugins WHERE author_id = $1"#,
+            user_id as i64,
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+    }
+
+    async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>> {
+        Ok(sqlx::query_as!(
+            DbPlugin,
+            r#"SELECT id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public
+FROM plugins WHERE is_published = true AND is_public = true"#,
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+    }
 }
 
 #[allow(dead_code)]
@@ -608,5 +884,67 @@ fn state_to_int(state: PremiumSlotState) -> i32 {
         PremiumSlotState::Cancelling => 2,
         PremiumSlotState::Cancelled => 3,
         PremiumSlotState::PaymentFailed => 4,
+    }
+}
+
+struct DbPlugin {
+    id: i64,
+    created_at: DateTime<Utc>,
+    name: String,
+    short_description: String,
+    long_description: String,
+    is_published: bool,
+    is_official: bool,
+    plugin_kind: i16,
+    current_version_number: i32,
+    script_published_source: Option<String>,
+    script_published_version_updated_at: Option<DateTime<Utc>>,
+    script_dev_source: Option<String>,
+    script_dev_version_updated_at: Option<DateTime<Utc>>,
+    author_id: i64,
+    is_public: bool,
+}
+
+impl From<DbPlugin> for Plugin {
+    fn from(value: DbPlugin) -> Self {
+        Self {
+            id: value.id as u64,
+            created_at: value.created_at,
+            author_id: value.author_id as u64,
+            name: value.name,
+            short_description: value.short_description,
+            long_description: value.long_description,
+            is_public: value.is_public,
+            is_official: value.is_official,
+            data: match value.plugin_kind {
+                0 => PluginData::ScriptPluginData(ScriptPluginData {
+                    published_version: value.script_published_source,
+                    published_version_updated_at: value.script_published_version_updated_at,
+                    dev_version: value.script_dev_source,
+                    dev_version_updated_at: value.script_dev_version_updated_at,
+                }),
+                other => {
+                    panic!("unknown plugin kind: {other} for plugin id {}", value.id)
+                }
+            },
+        }
+    }
+}
+
+struct DbUserMeta {
+    #[allow(unused)]
+    discord_user_id: i64,
+    is_moderator: bool,
+    is_admin: bool,
+    is_verified: bool,
+}
+
+impl From<DbUserMeta> for UserMeta {
+    fn from(value: DbUserMeta) -> Self {
+        Self {
+            is_admin: value.is_admin,
+            is_moderator: value.is_moderator,
+            is_verified: value.is_verified,
+        }
     }
 }

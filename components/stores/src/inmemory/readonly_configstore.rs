@@ -1,9 +1,10 @@
 use crate::config::{
-    ConfigStore, ConfigStoreError, ConfigStoreResult, CreateScript,
+    ConfigStore, ConfigStoreError, ConfigStoreResult, CreatePlugin, CreateScript,
     CreateUpdatePremiumSlotBySource, GuildMetaConfig, JoinedGuild, PremiumSlot, Script,
-    ScriptContributes, UpdateScript,
+    ScriptContributes, UpdatePluginMeta, UpdateScript,
 };
 use async_trait::async_trait;
+use common::{plugin::Plugin, user::UserMeta};
 use twilight_model::id::{
     marker::{GuildMarker, UserMarker},
     Id,
@@ -172,6 +173,47 @@ impl ConfigStore for ReadOnlyConfigStore {
         _slot_id: u64,
         _guild_id: Option<Id<GuildMarker>>,
     ) -> ConfigStoreResult<PremiumSlot> {
+        todo!()
+    }
+
+    async fn create_plugin(&self, _create_plugin: CreatePlugin) -> ConfigStoreResult<Plugin> {
+        todo!()
+    }
+    async fn update_plugin_meta(
+        &self,
+        _plugin_id: u64,
+        _update_plugin: UpdatePluginMeta,
+    ) -> ConfigStoreResult<Plugin> {
+        todo!()
+    }
+    async fn update_script_plugin_dev_version(
+        &self,
+        _plugin_id: u64,
+        _new_source: String,
+    ) -> ConfigStoreResult<Plugin> {
+        todo!()
+    }
+    async fn publish_script_plugin_version(
+        &self,
+        _plugin_id: u64,
+        _new_source: String,
+    ) -> ConfigStoreResult<Plugin> {
+        todo!()
+    }
+
+    async fn get_user_meta(&self, _user_id: u64) -> ConfigStoreResult<UserMeta> {
+        todo!()
+    }
+
+    async fn get_plugin(&self, _plugin_id: u64) -> ConfigStoreResult<Plugin> {
+        todo!()
+    }
+
+    async fn get_user_plugins(&self, _user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
+        todo!()
+    }
+
+    async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>> {
         todo!()
     }
 }

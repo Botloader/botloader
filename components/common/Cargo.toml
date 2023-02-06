@@ -14,8 +14,10 @@ tracing-subscriber = {version = "0.3", features = ["env-filter"]}
 tracing-log = "0.1"
 
 tokio = {workspace = true}
+serde = {workspace = true}
 dotenv = "0.15"
 clap = {workspace = true}
+chrono = {workspace = true}
 oauth2 = "4.1"
 
 metrics = "0.18"

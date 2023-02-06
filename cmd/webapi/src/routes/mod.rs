@@ -2,6 +2,7 @@ pub mod auth;
 pub mod errortest;
 pub mod general;
 pub mod guilds;
+pub mod plugins;
 pub mod premium;
 pub mod scripts;
 pub mod sessions;

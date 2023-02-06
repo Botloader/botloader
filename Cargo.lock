@@ -626,11 +626,13 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "clap",
  "dotenv",
  "metrics",
  "metrics-exporter-prometheus",
  "oauth2",
+ "serde",
  "tokio",
  "tracing",
  "tracing-log",
@@ -3600,6 +3602,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.1",
  "chrono",
+ "common",
  "dashmap 5.4.0",
  "oauth2",
  "rand",

@@ -2,6 +2,10 @@ use std::num::NonZeroU64;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use common::{
+    plugin::{Plugin, PluginType},
+    user::UserMeta,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use twilight_model::id::{
@@ -22,6 +26,9 @@ pub enum ConfigStoreError {
 
     #[error("inner error occured: {0}")]
     Other(Box<dyn std::error::Error + Send + Sync>),
+
+    #[error("plugin not found: {0}")]
+    PluginNotFound(u64),
 }
 
 pub type ConfigStoreResult<T> = Result<T, ConfigStoreError>;
@@ -124,6 +131,28 @@ pub trait ConfigStore: Send + Sync {
         slot_id: u64,
         guild_id: Option<Id<GuildMarker>>,
     ) -> ConfigStoreResult<PremiumSlot>;
+
+    async fn create_plugin(&self, create_plugin: CreatePlugin) -> ConfigStoreResult<Plugin>;
+    async fn get_plugin(&self, plugin_id: u64) -> ConfigStoreResult<Plugin>;
+    async fn get_user_plugins(&self, user_id: u64) -> ConfigStoreResult<Vec<Plugin>>;
+    async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>>;
+    async fn update_plugin_meta(
+        &self,
+        plugin_id: u64,
+        update_plugin: UpdatePluginMeta,
+    ) -> ConfigStoreResult<Plugin>;
+    async fn update_script_plugin_dev_version(
+        &self,
+        plugin_id: u64,
+        new_source: String,
+    ) -> ConfigStoreResult<Plugin>;
+    async fn publish_script_plugin_version(
+        &self,
+        plugin_id: u64,
+        new_source: String,
+    ) -> ConfigStoreResult<Plugin>;
+
+    async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<UserMeta>;
 }
 
 /// Struct you get back from the store
@@ -254,4 +283,24 @@ pub struct User {
 
     pub is_developer: bool,
     pub is_subscriber: bool,
+}
+
+pub struct CreatePlugin {
+    pub name: String,
+    pub short_description: String,
+    pub long_description: String,
+    pub is_official: bool,
+    pub is_public: bool,
+    pub author_id: u64,
+    pub kind: PluginType,
+}
+
+pub struct UpdatePluginMeta {
+    pub name: Option<String>,
+    pub short_description: Option<String>,
+    pub long_description: Option<String>,
+    pub is_official: Option<bool>,
+    pub author_id: Option<u64>,
+    pub is_public: Option<bool>,
+    pub is_published: Option<bool>,
 }

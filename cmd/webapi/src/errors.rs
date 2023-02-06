@@ -25,6 +25,15 @@ pub enum ApiErrorResponse {
 
     #[error("not guild admin")]
     NotGuildAdmin,
+
+    #[error("Plugin does not exist")]
+    PluginNotFound,
+
+    #[error("you do not have access to this plugin")]
+    NoAccessToPlugin,
+
+    #[error("you have created too many plugins")]
+    UserPluginLimitReached,
 }
 
 impl ApiErrorResponse {
@@ -40,6 +49,9 @@ impl ApiErrorResponse {
             ),
             Self::NoActiveGuild => (StatusCode::BAD_REQUEST, 5, self.to_string()),
             Self::NotGuildAdmin => (StatusCode::FORBIDDEN, 6, self.to_string()),
+            Self::NoAccessToPlugin => (StatusCode::FORBIDDEN, 7, self.to_string()),
+            Self::UserPluginLimitReached => (StatusCode::BAD_REQUEST, 8, self.to_string()),
+            Self::PluginNotFound => (StatusCode::BAD_REQUEST, 9, self.to_string()),
         }
     }
 }
