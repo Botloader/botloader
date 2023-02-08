@@ -76,6 +76,27 @@ jobs:
             docker push "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
             docker push "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
             docker push "botloader/bl-dbserver:$CIRCLE_BUILD_NUM"
+  build-publish-db-migration-image:
+    machine:
+      image: ubuntu-2004:202111-01
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - run:
+          name: Build base Docker image
+          command: |
+            docker build -t bl-dbmigrations -f cmd/dbmigrations/Dockerfile .
+      - run:
+          name: Docker login
+          command: |
+            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            # tag with build number
+            docker tag botloader/bl-dbmigrations:latest "botloader/bl-dbmigrations:$CIRCLE_BUILD_NUM"
+            # push
+            docker push "botloader/bl-dbmigrations:$CIRCLE_BUILD_NUM"
   # publish-backend-images:
   #   resource_class: medium
   #   docker:
