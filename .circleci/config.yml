@@ -186,3 +186,9 @@ workflows:
           filters:
             branches:
               only: master
+  build-publish-db-migration-image:
+    jobs:
+      - build-publish-backend-docker-images:
+          filters:
+            branches:
+              only: master
