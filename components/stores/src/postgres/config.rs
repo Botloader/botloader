@@ -2,10 +2,10 @@ use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use common::{
-    plugin::{Plugin, PluginData, ScriptPluginData},
+    plugin::{self, Plugin, PluginData, ScriptPluginData},
     user::UserMeta,
 };
-use sqlx::postgres::types::PgInterval;
+use sqlx::{postgres::types::PgInterval, Executor, PgConnection, PgExecutor};
 use twilight_model::id::{
     marker::{GuildMarker, UserMarker},
     Id,
@@ -28,7 +28,8 @@ impl Postgres {
         match sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
+             contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE \
+             guild_id = $1 AND name = $2;",
             guild_id.get() as i64,
             script_name
         )
@@ -49,7 +50,8 @@ impl Postgres {
         Ok(sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers FROM guild_scripts WHERE guild_id = $1 AND id = $2;",
+             contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE \
+             guild_id = $1 AND id = $2;",
             guild_id.get() as i64,
             id
         )
@@ -57,15 +59,98 @@ impl Postgres {
         .await?)
     }
 
-    async fn get_guild_script_count(&self, guild_id: Id<GuildMarker>) -> ConfigStoreResult<i64> {
+    async fn get_guild_script_count(
+        conn: &mut PgConnection,
+        guild_id: Id<GuildMarker>,
+    ) -> ConfigStoreResult<i64> {
         let result = sqlx::query!(
             "SELECT count(*) FROM guild_scripts WHERE guild_id = $1;",
             guild_id.get() as i64,
         )
-        .fetch_one(&self.pool)
+        .fetch_one(conn)
         .await?;
 
         Ok(result.count.unwrap_or_default())
+    }
+
+    async fn get_guild_scripts(
+        conn: &mut PgConnection,
+        guild_id: Id<GuildMarker>,
+    ) -> ConfigStoreResult<Vec<Script>> {
+        let res = sqlx::query_as!(
+            DbScript,
+            "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
+             contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE \
+             guild_id = $1",
+            guild_id.get() as i64,
+        )
+        .fetch_all(conn)
+        .await?;
+
+        Ok(res.into_iter().map(|e| e.into()).collect())
+    }
+
+    async fn inner_create_script(
+        conn: &mut PgConnection,
+        guild_id: Id<GuildMarker>,
+        script: CreateScript,
+    ) -> ConfigStoreResult<Script> {
+        let count = Self::get_guild_script_count(conn, guild_id).await?;
+        if count > GUILD_SCRIPT_COUNT_LIMIT {
+            return Err(ConfigStoreError::GuildScriptLimitReached(
+                count as u64,
+                GUILD_SCRIPT_COUNT_LIMIT as u64,
+            ));
+        }
+
+        let res = sqlx::query_as!(
+            DbScript,
+            "INSERT INTO guild_scripts (guild_id, name, original_source, enabled, plugin_id, \
+             plugin_auto_update) 
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, guild_id, name, original_source, enabled, contributes_commands, \
+             contributes_interval_timers, plugin_id, plugin_auto_update;",
+            guild_id.get() as i64,
+            script.name,
+            script.original_source,
+            script.enabled,
+            script.plugin_id.map(|v| v as i64),
+            script.plugin_auto_update,
+        )
+        .fetch_one(conn)
+        .await?;
+
+        Ok(res.into())
+    }
+
+    async fn inner_get_plugin(
+        conn: &mut PgConnection,
+        plugin_id: u64,
+    ) -> ConfigStoreResult<Plugin> {
+        sqlx::query_as!(
+            DbPlugin,
+            r#"SELECT id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public
+FROM plugins WHERE id = $1"#,
+            plugin_id as i64,
+        )
+        .fetch_optional(conn)
+        .await?
+        .ok_or(ConfigStoreError::PluginNotFound(plugin_id))
+        .map(Into::into)
     }
 }
 
@@ -98,31 +183,7 @@ impl crate::config::ConfigStore for Postgres {
         guild_id: Id<GuildMarker>,
         script: CreateScript,
     ) -> ConfigStoreResult<Script> {
-        let count = self.get_guild_script_count(guild_id).await?;
-        if count > GUILD_SCRIPT_COUNT_LIMIT {
-            return Err(ConfigStoreError::GuildScriptLimitReached(
-                count as u64,
-                GUILD_SCRIPT_COUNT_LIMIT as u64,
-            ));
-        }
-
-        let res = sqlx::query_as!(
-            DbScript,
-            "
-                INSERT INTO guild_scripts (guild_id, name, original_source, enabled) 
-                VALUES ($1, $2, $3, $4)
-                RETURNING id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers;
-            ",
-            guild_id.get() as i64,
-            script.name,
-            script.original_source,
-            script.enabled,
-        )
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(res.into())
+        Self::inner_create_script(&mut *self.pool.acquire().await?, guild_id, script).await
     }
 
     async fn update_script(
@@ -141,7 +202,7 @@ impl crate::config::ConfigStore for Postgres {
                     contributes_commands = COALESCE($5, guild_scripts.contributes_commands)
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers;
+             contributes_interval_timers, plugin_id, plugin_auto_update;
                 ",
             guild_id.get() as i64,
             script.id as i64,
@@ -172,7 +233,7 @@ impl crate::config::ConfigStore for Postgres {
                     contributes_interval_timers = $4
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers;
+             contributes_interval_timers, plugin_id, plugin_auto_update;
                 ",
             guild_id.get() as i64,
             script_id as i64,
@@ -206,16 +267,7 @@ impl crate::config::ConfigStore for Postgres {
     }
 
     async fn list_scripts(&self, guild_id: Id<GuildMarker>) -> ConfigStoreResult<Vec<Script>> {
-        let res = sqlx::query_as!(
-            DbScript,
-            "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers FROM guild_scripts WHERE guild_id = $1",
-            guild_id.get() as i64,
-        )
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(res.into_iter().map(|e| e.into()).collect())
+        Self::get_guild_scripts(&mut *self.pool.acquire().await?, guild_id).await
     }
 
     async fn get_guild_meta_config(
@@ -662,30 +714,7 @@ is_public"#,
     }
 
     async fn get_plugin(&self, plugin_id: u64) -> ConfigStoreResult<Plugin> {
-        sqlx::query_as!(
-            DbPlugin,
-            r#"SELECT id,
-created_at,
-name,
-short_description,
-long_description,
-is_published,
-is_official,
-plugin_kind,
-current_version_number,
-script_published_source,
-script_published_version_updated_at,
-script_dev_source,
-script_dev_version_updated_at,
-author_id,
-is_public
-FROM plugins WHERE id = $1"#,
-            plugin_id as i64,
-        )
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(ConfigStoreError::PluginNotFound(plugin_id))
-        .map(Into::into)
+        Self::inner_get_plugin(&mut *self.pool.acquire().await?, plugin_id).await
     }
 
     async fn get_user_plugins(&self, user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
@@ -742,6 +771,39 @@ FROM plugins WHERE is_published = true AND is_public = true"#,
         .map(Into::into)
         .collect())
     }
+
+    async fn try_guild_add_script_plugin(
+        &self,
+        guild_id: Id<GuildMarker>,
+        plugin_id: u64,
+        auto_update: bool,
+    ) -> ConfigStoreResult<Script> {
+        let mut tx = self.pool.begin().await?;
+
+        let scripts = Self::get_guild_scripts(&mut tx, guild_id).await?;
+        if scripts.iter().any(|v| v.plugin_id == Some(plugin_id)) {
+            return Err(ConfigStoreError::GuildAlreadyHasPlugin);
+        }
+
+        let plugin = Self::inner_get_plugin(&mut tx, plugin_id).await?;
+
+        let source = match plugin.data {
+            PluginData::ScriptPluginData(d) => d.published_version.unwrap_or_default(),
+        };
+
+        Self::inner_create_script(
+            &mut tx,
+            guild_id,
+            CreateScript {
+                name: plugin.name.clone(),
+                original_source: source,
+                enabled: true,
+                plugin_auto_update: Some(auto_update),
+                plugin_id: Some(plugin_id),
+            },
+        )
+        .await
+    }
 }
 
 #[allow(dead_code)]
@@ -753,6 +815,8 @@ struct DbScript {
     enabled: bool,
     contributes_commands: serde_json::Value,
     contributes_interval_timers: serde_json::Value,
+    plugin_id: Option<i64>,
+    plugin_auto_update: Option<bool>,
 }
 
 impl From<DbScript> for Script {
@@ -770,6 +834,8 @@ impl From<DbScript> for Script {
                 commands: commands_dec,
                 interval_timers: intervals_dec,
             },
+            plugin_id: script.plugin_id.map(|v| v as u64),
+            plugin_auto_update: script.plugin_auto_update,
         }
     }
 }

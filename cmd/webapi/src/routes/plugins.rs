@@ -3,11 +3,13 @@ use common::plugin::Plugin;
 use serde::Deserialize;
 use stores::config::{ConfigStore, CreatePlugin, UpdatePluginMeta};
 use tracing::error;
+use twilight_model::user::CurrentUserGuild;
 use validation::{validate, ValidationContext, Validator};
 
 use crate::{
-    errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult, CurrentConfigStore,
-    CurrentSessionStore,
+    errors::ApiErrorResponse,
+    middlewares::{plugins::fetch_plugin, LoggedInSession},
+    ApiResult, CurrentConfigStore, CurrentSessionStore,
 };
 
 // get all plugins (TODO: filtering)
@@ -210,4 +212,42 @@ pub async fn publish_plugin_version(
         })?;
 
     Ok(Json(plugin))
+}
+
+#[derive(Deserialize)]
+pub struct GuildAddPluginData {
+    plugin_id: u64,
+    auto_update: bool,
+}
+
+pub async fn guild_add_plugin(
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    Extension(current_guild): Extension<CurrentUserGuild>,
+    Extension(bot_rpc): Extension<botrpc::Client>,
+    Json(body): Json<GuildAddPluginData>,
+) -> ApiResult<impl IntoResponse> {
+    let plugin = fetch_plugin(&config_store, body.plugin_id).await?;
+
+    if !plugin.is_public && plugin.author_id != session.session.user.id {
+        return Err(ApiErrorResponse::NoAccessToPlugin);
+    }
+
+    let script = config_store
+        .try_guild_add_script_plugin(current_guild.id, plugin.id, body.auto_update)
+        .await
+        .map_err(|err| {
+            error!(?err, "failed adding plugin");
+            ApiErrorResponse::InternalError
+        })?;
+
+    bot_rpc
+        .restart_guild_vm(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed reloading guild vm");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(Json(script))
 }

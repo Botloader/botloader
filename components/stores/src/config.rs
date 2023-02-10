@@ -29,6 +29,9 @@ pub enum ConfigStoreError {
 
     #[error("plugin not found: {0}")]
     PluginNotFound(u64),
+
+    #[error("plugin is already on guild")]
+    GuildAlreadyHasPlugin,
 }
 
 pub type ConfigStoreResult<T> = Result<T, ConfigStoreError>;
@@ -152,6 +155,13 @@ pub trait ConfigStore: Send + Sync {
         new_source: String,
     ) -> ConfigStoreResult<Plugin>;
 
+    async fn try_guild_add_script_plugin(
+        &self,
+        guild_id: Id<GuildMarker>,
+        plugin_id: u64,
+        auto_update: bool,
+    ) -> ConfigStoreResult<Script>;
+
     async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<UserMeta>;
 }
 
@@ -163,6 +173,8 @@ pub struct Script {
     pub original_source: String,
     pub enabled: bool,
     pub contributes: ScriptContributes,
+    pub plugin_id: Option<u64>,
+    pub plugin_auto_update: Option<bool>,
 }
 
 /// Struct you get back from the store
@@ -181,6 +193,8 @@ pub struct CreateScript {
     pub name: String,
     pub original_source: String,
     pub enabled: bool,
+    pub plugin_id: Option<u64>,
+    pub plugin_auto_update: Option<bool>,
 }
 
 /// Contribution points for a scripts, e.g triggers, commands etc

@@ -136,6 +136,7 @@ async fn main() {
             patch(routes::scripts::update_guild_script)
                 .delete(routes::scripts::delete_guild_script),
         )
+        .route("/add_plugin", post(routes::plugins::guild_add_plugin))
         .layer(auth_guild_mw_stack);
 
     let authorized_api_routes =

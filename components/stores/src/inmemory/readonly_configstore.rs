@@ -216,4 +216,13 @@ impl ConfigStore for ReadOnlyConfigStore {
     async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>> {
         todo!()
     }
+
+    async fn try_guild_add_script_plugin(
+        &self,
+        _guild_id: Id<GuildMarker>,
+        _plugin_id: u64,
+        _auto_update: bool,
+    ) -> ConfigStoreResult<Script> {
+        todo!()
+    }
 }

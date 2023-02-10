@@ -1,10 +1,11 @@
 use axum::{extract::Path, http::Request, middleware::Next, RequestPartsExt};
 
+use common::plugin::Plugin;
 use tracing::error;
 
 use stores::config::{ConfigStore, ConfigStoreError};
 
-use crate::{errors::ApiErrorResponse, CurrentConfigStore, CurrentSessionStore};
+use crate::{errors::ApiErrorResponse, ApiResult, CurrentConfigStore, CurrentSessionStore};
 
 use super::LoggedInSession;
 
@@ -29,17 +30,7 @@ where
     let config_store: &CurrentConfigStore = request.extensions().get().unwrap();
     let session: Option<&LoggedInSession<CurrentSessionStore>> = request.extensions().get();
 
-    let plugin = config_store
-        .get_plugin(path.plugin_id)
-        .await
-        .map_err(|err| {
-            if matches!(err, ConfigStoreError::PluginNotFound(_)) {
-                ApiErrorResponse::PluginNotFound
-            } else {
-                error!(?err, "failed fetching plugin");
-                ApiErrorResponse::InternalError
-            }
-        })?;
+    let plugin = fetch_plugin(config_store, path.plugin_id).await?;
 
     if !plugin.is_public {
         if let Some(session) = session {
@@ -55,4 +46,15 @@ where
 
     request.extensions_mut().insert(plugin);
     Ok(next.run(request).await)
+}
+
+pub async fn fetch_plugin(config_store: &CurrentConfigStore, plugin_id: u64) -> ApiResult<Plugin> {
+    config_store.get_plugin(plugin_id).await.map_err(|err| {
+        if matches!(err, ConfigStoreError::PluginNotFound(_)) {
+            ApiErrorResponse::PluginNotFound
+        } else {
+            error!(?err, "failed fetching plugin");
+            ApiErrorResponse::InternalError
+        }
+    })
 }

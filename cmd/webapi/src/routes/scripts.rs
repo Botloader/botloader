@@ -47,6 +47,8 @@ pub async fn create_guild_script(
         enabled: payload.enabled,
         original_source: payload.original_source,
         name: payload.name,
+        plugin_auto_update: None,
+        plugin_id: None,
     };
 
     if let Err(verr) = validate(&cs) {

@@ -45,6 +45,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     enabled: true,
                     name: name_with_suffix.strip_suffix(".ts").unwrap().to_string(),
                     original_source: contents,
+                    plugin_auto_update: None,
+                    plugin_id: None,
                 },
             )
             .await?;
