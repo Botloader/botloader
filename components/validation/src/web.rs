@@ -7,7 +7,7 @@ use crate::{ValidationContext, Validator};
 impl Validator for CreateScript {
     fn validate(&self, ctx: &mut ValidationContext) {
         check_script_name(ctx, &self.name);
-        check_script_source(ctx, &self.original_source);
+        check_script_source(ctx, "original_source", &self.original_source);
     }
 }
 
@@ -18,7 +18,7 @@ impl Validator for UpdateScript {
         }
 
         if let Some(source) = &self.original_source {
-            check_script_source(ctx, source);
+            check_script_source(ctx, "original_source", source);
         }
     }
 }
@@ -97,8 +97,8 @@ fn check_script_name(ctx: &mut ValidationContext, name: &str) {
     }
 }
 
-fn check_script_source(ctx: &mut ValidationContext, source: &str) {
+pub fn check_script_source(ctx: &mut ValidationContext, field_name: &str, source: &str) {
     if source.len() > 100_000 {
-        ctx.push_error("original_source", "source can be max 100KiB".to_string());
+        ctx.push_error(field_name, "source can be max 100KiB".to_string());
     }
 }

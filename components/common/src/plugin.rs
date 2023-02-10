@@ -1,11 +1,12 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
+use twilight_model::id::{marker::UserMarker, Id};
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Plugin {
     pub id: u64,
     pub created_at: DateTime<Utc>,
-    pub author_id: u64,
+    pub author_id: Id<UserMarker>,
     pub name: String,
     pub short_description: String,
     pub long_description: String,
@@ -15,7 +16,7 @@ pub struct Plugin {
     pub data: PluginData,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub enum PluginData {
     ScriptPluginData(ScriptPluginData),
 }
@@ -32,7 +33,7 @@ pub enum PluginType {
     Script = 0,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct ScriptPluginData {
     pub published_version: Option<String>,
     pub published_version_updated_at: Option<DateTime<Utc>>,

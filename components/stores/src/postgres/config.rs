@@ -910,7 +910,7 @@ impl From<DbPlugin> for Plugin {
         Self {
             id: value.id as u64,
             created_at: value.created_at,
-            author_id: value.author_id as u64,
+            author_id: Id::new(value.author_id as u64),
             name: value.name,
             short_description: value.short_description,
             long_description: value.long_description,

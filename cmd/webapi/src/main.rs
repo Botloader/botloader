@@ -4,7 +4,7 @@ use axum::{
     error_handling::HandleErrorLayer,
     extract::Extension,
     response::IntoResponse,
-    routing::{delete, get, patch, post},
+    routing::{delete, get, patch, post, put},
     BoxError, Router,
 };
 use clap::Parser;
@@ -23,7 +23,8 @@ mod routes;
 mod util;
 
 use crate::middlewares::{
-    require_current_guild_admin_middleware, CorsLayer, NoSession, SessionLayer,
+    plugins::plugin_middleware, require_current_guild_admin_middleware, CorsLayer, NoSession,
+    SessionLayer,
 };
 use crate::{errors::ApiErrorResponse, middlewares::current_guild_injector_middleware};
 
@@ -177,6 +178,25 @@ async fn main() {
                 "/current_user",
                 get(routes::general::get_current_user::<CurrentSessionStore>),
             )
+            .route(
+                "/user/plugins",
+                get(routes::plugins::get_user_plugins).put(routes::plugins::create_plugin),
+            )
+            .route(
+                "/plugins/:plugin_id",
+                patch(routes::plugins::update_plugin_meta)
+                    .layer(axum::middleware::from_fn(plugin_middleware)),
+            )
+            .route(
+                "/plugins/:plugin_id/commit_script_dev_version",
+                put(routes::plugins::update_plugin_dev_source)
+                    .layer(axum::middleware::from_fn(plugin_middleware)),
+            )
+            .route(
+                "/plugins/:plugin_id/publish_script_version",
+                post(routes::plugins::publish_plugin_version)
+                    .layer(axum::middleware::from_fn(plugin_middleware)),
+            )
             .route("/logout", post(AuthHandlerData::handle_logout));
 
     let auth_routes_mw_stack = ServiceBuilder::new()
@@ -190,6 +210,14 @@ async fn main() {
     let public_routes = Router::new()
         .route("/error", get(routes::errortest::handle_errortest))
         .route("/login", get(AuthHandlerData::handle_login))
+        .route(
+            "/api/plugins",
+            get(routes::plugins::get_published_public_plugins),
+        )
+        .route(
+            "/api/plugins/:plugin_id",
+            get(routes::plugins::get_plugin).layer(axum::middleware::from_fn(plugin_middleware)),
+        )
         .route("/api/news", get(routes::general::get_news))
         .route(
             "/api/ws",

@@ -1,8 +1,9 @@
-use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use axum::{response::IntoResponse, Extension, Json};
+use common::plugin::Plugin;
 use serde::Deserialize;
-use stores::config::{ConfigStore, ConfigStoreError, CreatePlugin, UpdatePluginMeta};
+use stores::config::{ConfigStore, CreatePlugin, UpdatePluginMeta};
 use tracing::error;
-use validation::validate;
+use validation::{validate, ValidationContext, Validator};
 
 use crate::{
     errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult, CurrentConfigStore,
@@ -41,24 +42,8 @@ pub async fn get_user_plugins(
 }
 
 // get plugin
-pub async fn get_plugin(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
-    Path(plugin_id): Path<u64>,
-) -> ApiResult<impl IntoResponse> {
-    let plugin = config_store.get_plugin(plugin_id).await.map_err(|err| {
-        if matches!(err, ConfigStoreError::PluginNotFound(_)) {
-            ApiErrorResponse::PluginNotFound
-        } else {
-            error!(?err, "failed fetching plugin");
-            ApiErrorResponse::InternalError
-        }
-    })?;
-
-    if !plugin.is_public && plugin.author_id != session.session.user.id.get() {
-        return Err(ApiErrorResponse::NoAccessToPlugin);
-    }
-
+pub async fn get_plugin(Extension(plugin): Extension<Plugin>) -> ApiResult<impl IntoResponse> {
+    // All the logic is handled by middleware
     Ok(Json(plugin))
 }
 
@@ -121,7 +106,7 @@ pub struct UpdatePluginMetaRequest {
 pub async fn update_plugin_meta(
     Extension(config_store): Extension<CurrentConfigStore>,
     Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
-    Path(plugin_id): Path<u64>,
+    Extension(plugin): Extension<Plugin>,
     Json(body): Json<UpdatePluginMetaRequest>,
 ) -> ApiResult<impl IntoResponse> {
     let update = UpdatePluginMeta {
@@ -138,21 +123,12 @@ pub async fn update_plugin_meta(
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
-    let plugin = config_store.get_plugin(plugin_id).await.map_err(|err| {
-        if matches!(err, ConfigStoreError::PluginNotFound(_)) {
-            ApiErrorResponse::PluginNotFound
-        } else {
-            error!(?err, "failed fetching plugin");
-            ApiErrorResponse::InternalError
-        }
-    })?;
-
-    if plugin.author_id != session.session.user.id.get() {
+    if plugin.author_id != session.session.user.id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
     let plugin = config_store
-        .update_plugin_meta(plugin_id, update)
+        .update_plugin_meta(plugin.id, update)
         .await
         .map_err(|err| {
             error!(?err, "failed updating plugin");
@@ -162,5 +138,76 @@ pub async fn update_plugin_meta(
     Ok(Json(plugin))
 }
 
+#[derive(Deserialize)]
+pub struct UpdatePluginDevSourceRequest {
+    new_source: String,
+}
+
+impl Validator for UpdatePluginDevSourceRequest {
+    fn validate(&self, ctx: &mut ValidationContext) {
+        validation::web::check_script_source(ctx, "new_source", &self.new_source);
+    }
+}
+
 // update plugin dev source
+pub async fn update_plugin_dev_source(
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    Extension(plugin): Extension<Plugin>,
+    Json(body): Json<UpdatePluginDevSourceRequest>,
+) -> ApiResult<impl IntoResponse> {
+    if let Err(err) = validate(&body) {
+        return Err(ApiErrorResponse::ValidationFailed(err));
+    }
+
+    if plugin.author_id != session.session.user.id {
+        return Err(ApiErrorResponse::NoAccessToPlugin);
+    }
+
+    let plugin = config_store
+        .update_script_plugin_dev_version(plugin.id, body.new_source)
+        .await
+        .map_err(|err| {
+            error!(?err, "failed updating plugin");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(Json(plugin))
+}
+
 // publish plugin version
+#[derive(Deserialize)]
+pub struct PublishPluginVersionData {
+    new_source: String,
+}
+
+impl Validator for PublishPluginVersionData {
+    fn validate(&self, ctx: &mut ValidationContext) {
+        validation::web::check_script_source(ctx, "new_source", &self.new_source);
+    }
+}
+
+pub async fn publish_plugin_version(
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    Extension(plugin): Extension<Plugin>,
+    Json(body): Json<PublishPluginVersionData>,
+) -> ApiResult<impl IntoResponse> {
+    if let Err(err) = validate(&body) {
+        return Err(ApiErrorResponse::ValidationFailed(err));
+    }
+
+    if plugin.author_id != session.session.user.id {
+        return Err(ApiErrorResponse::NoAccessToPlugin);
+    }
+
+    let plugin = config_store
+        .publish_script_plugin_version(plugin.id, body.new_source)
+        .await
+        .map_err(|err| {
+            error!(?err, "failed updating plugin");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(Json(plugin))
+}

@@ -18,10 +18,8 @@ impl Display for ValidationError {
 }
 
 pub fn validate<T: Validator>(val: &T) -> Result<(), Vec<ValidationError>> {
-    let mut ctx = ValidationContext {
-        errs: Vec::new(),
-        field_stack: Vec::new(),
-    };
+    let mut ctx = ValidationContext::new();
+
     val.validate(&mut ctx);
     if ctx.errs.is_empty() {
         Ok(())
@@ -33,6 +31,21 @@ pub fn validate<T: Validator>(val: &T) -> Result<(), Vec<ValidationError>> {
 pub struct ValidationContext {
     errs: Vec<ValidationError>,
     field_stack: Vec<String>,
+}
+
+impl ValidationContext {
+    pub fn new() -> Self {
+        ValidationContext {
+            errs: Vec::new(),
+            field_stack: Vec::new(),
+        }
+    }
+}
+
+impl Default for ValidationContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ValidationContext {
