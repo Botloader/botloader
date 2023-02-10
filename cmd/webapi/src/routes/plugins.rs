@@ -193,6 +193,7 @@ pub async fn publish_plugin_version(
     Extension(config_store): Extension<CurrentConfigStore>,
     Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
     Extension(plugin): Extension<Plugin>,
+    Extension(bot_rpc): Extension<botrpc::Client>,
     Json(body): Json<PublishPluginVersionData>,
 ) -> ApiResult<impl IntoResponse> {
     if let Err(err) = validate(&body) {
@@ -203,7 +204,7 @@ pub async fn publish_plugin_version(
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
-    let plugin = config_store
+    let guilds = config_store
         .publish_script_plugin_version(plugin.id, body.new_source)
         .await
         .map_err(|err| {
@@ -211,7 +212,15 @@ pub async fn publish_plugin_version(
             ApiErrorResponse::InternalError
         })?;
 
-    Ok(Json(plugin))
+    // restart relevant guild vms
+    // TODO: this should be done as a background task, and potentially throttled to avoid a spike
+    for guild_id in guilds {
+        if let Err(err) = bot_rpc.restart_guild_vm(guild_id).await {
+            error!(%err, "failed reloading guild vm");
+        }
+    }
+
+    Ok(())
 }
 
 #[derive(Deserialize)]

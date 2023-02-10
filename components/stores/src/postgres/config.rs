@@ -664,14 +664,13 @@ is_public"#,
 
         Ok(res.into())
     }
+
     async fn publish_script_plugin_version(
         &self,
         plugin_id: u64,
         new_source: String,
-    ) -> ConfigStoreResult<Plugin> {
-        // TODO: update all auto update scripts
-
-        let res = sqlx::query_as!(
+    ) -> ConfigStoreResult<Vec<Id<GuildMarker>>> {
+        let _ = sqlx::query_as!(
             DbPlugin,
             r#"UPDATE plugins SET
 script_published_source = $2, 
@@ -699,7 +698,23 @@ is_public"#,
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(res.into())
+        struct Row {
+            guild_id: i64,
+        }
+
+        let updated_guilds = sqlx::query_as!(
+            Row,
+            "UPDATE guild_scripts SET original_source = $2 WHERE plugin_id = $1 RETURNING guild_id",
+            plugin_id as i64,
+            new_source
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(updated_guilds
+            .into_iter()
+            .map(|v| Id::new(v.guild_id as u64))
+            .collect())
     }
 
     async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<UserMeta> {

@@ -1692,6 +1692,27 @@
     },
     "query": "DELETE FROM bucket_store WHERE guild_id = $1"
   },
+  "77ed2a8ec422385c406f4b60f7f088fa64b4c6585c931e32be8072448c64c002": {
+    "describe": {
+      "columns": [
+        {
+          "name": "guild_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "UPDATE guild_scripts SET original_source = $2 WHERE plugin_id = $1 RETURNING guild_id"
+  },
   "7d64e191ab05b594bf2b195fe4c488d994915ce424bbe7c368a9f29de6eb2839": {
     "describe": {
       "columns": [

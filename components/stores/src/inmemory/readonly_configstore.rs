@@ -197,7 +197,7 @@ impl ConfigStore for ReadOnlyConfigStore {
         &self,
         _plugin_id: u64,
         _new_source: String,
-    ) -> ConfigStoreResult<Plugin> {
+    ) -> ConfigStoreResult<Vec<Id<GuildMarker>>> {
         todo!()
     }
 

@@ -153,7 +153,7 @@ pub trait ConfigStore: Send + Sync {
         &self,
         plugin_id: u64,
         new_source: String,
-    ) -> ConfigStoreResult<Plugin>;
+    ) -> ConfigStoreResult<Vec<Id<GuildMarker>>>;
 
     async fn try_guild_add_script_plugin(
         &self,
