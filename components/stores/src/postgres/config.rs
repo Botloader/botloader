@@ -675,7 +675,8 @@ is_public"#,
             DbPlugin,
             r#"UPDATE plugins SET
 script_published_source = $2, 
-script_published_version_updated_at = now()
+script_published_version_updated_at = now(),
+current_version_number = current_version_number +1
 WHERE id = $1
 RETURNING id,
 created_at,
