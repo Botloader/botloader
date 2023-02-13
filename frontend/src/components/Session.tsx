@@ -1,45 +1,25 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { ApiClient, isErrorResponse, User } from "botloader-common";
+import { ApiClient, User } from "botloader-common";
 import { BuildConfig } from "../BuildConfig";
 import { CreateFetcher } from "../Util";
+import { sessionManager } from "../util/SessionManager";
+import { Navigate } from "react-router-dom";
 
 export const SessionContext = createContext<Session>({
     apiClient: new ApiClient(CreateFetcher(), BuildConfig.botloaderApiBase),
+    signingIn: false,
 });
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-    let [session, setSession] = useState<Session>({
-        apiClient: new ApiClient(CreateFetcher(), BuildConfig.botloaderApiBase),
-    });
+    let [session, setSession] = useState<Session>(sessionManager.session);
 
     useEffect(() => {
-        async function validateAndUpdateSession(apiClient: ApiClient) {
-            let user = await apiClient.getCurrentUser();
-            if (!isErrorResponse(user)) {
-                setSession({
-                    user: user,
-                    apiClient: apiClient,
-                });
-                console.log("session restored and valid: ", user);
-            } else {
-                localStorage.removeItem("botloader_token");
-                console.log("session is invalid");
-            }
+        setSession(sessionManager.session);
+        let handlerId = sessionManager.subscribe((newSession) => setSession(newSession));
+        return () => {
+            sessionManager.unSubscribe(handlerId);
         }
-
-        async function restoreSession() {
-            let token = localStorage.getItem("botloader_token");
-            if (token) {
-                // Got a token in storage, validate it and use it
-                let client = new ApiClient(CreateFetcher(), BuildConfig.botloaderApiBase, token);
-                await validateAndUpdateSession(client);
-            } else {
-                console.log("no token in local storage, no session to restore");
-            }
-        }
-
-        restoreSession()
-    }, []) // pass in [] to avoid running on each update
+    }, [])
 
     return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }
@@ -51,14 +31,17 @@ export function useSession(): Session {
 export interface Session {
     user?: User,
     apiClient: ApiClient,
+    signingIn: boolean,
 }
 
 export function RequireLoggedInSession({ children }: { children: React.ReactNode }) {
-    let session = useSession();
+    const session = useSession();
 
     if (session.user) {
         return <React.Fragment> {children} </React.Fragment>
+    } else if (session.signingIn) {
+        return <p>Logging you in...</p>
+    } else {
+        return <Navigate to="/"></Navigate>
     }
-
-    return <p>Not logged in or currently logging in...</p>
 }

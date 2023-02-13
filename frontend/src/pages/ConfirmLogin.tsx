@@ -33,8 +33,6 @@ export function ConfirmLoginPage() {
                     error: resp,
                 });
             }
-
-
         }
 
         completeLogin()
@@ -47,7 +45,7 @@ export function ConfirmLoginPage() {
         if (status.error) {
             return <p>Failed logging you in: <code>{JSON.stringify(status.error)}</code></p>
         } else {
-            window.location.pathname = "/servers";
+            window.location.href = window.location.origin + "/servers";
             return <p>Redirecing you...</p>
         }
     }

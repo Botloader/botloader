@@ -6,14 +6,12 @@ import { Panel } from "../components/Panel";
 import { useSession } from "../components/Session";
 import "./UserSettings.css"
 import { useGuilds } from "../components/GuildsProvider";
-import { Navigate } from "react-router-dom";
+import { sessionManager } from "../util/SessionManager";
 
 export function UserSettingsPage() {
 
     const session = useSession();
     let [allSessions, setAllSessions] = useState<SessionMeta[] | undefined | null>(undefined);
-
-    const [signedOut, setSignedOut] = useState<boolean>(false);
 
     useEffect(() => {
         async function fetchSessions() {
@@ -29,17 +27,11 @@ export function UserSettingsPage() {
     }, [session])
 
     async function doLogout() {
-        await session.apiClient.logout();
-        setSignedOut(true);
+        await sessionManager.logout();
     }
 
     async function clearAllSessions() {
-        await session.apiClient.deleteAllSessions();
-        setSignedOut(true);
-    }
-
-    if (signedOut) {
-        return <Navigate to="/"></Navigate>
+        await sessionManager.logoutAllSessions();
     }
 
     return <div className="user-settings">
