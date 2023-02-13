@@ -186,7 +186,7 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
 
     let isSaving = false;
     async function save() {
-        await monacoRef.current?.getAction('editor.action.formatDocument').run()
+        await monacoRef.current?.getAction('editor.action.formatDocument')?.run()
         const value = monacoRef.current?.getValue() || "";
         let innerIsDirty = value !== props.script.original_source
         setIsDirty(innerIsDirty);
