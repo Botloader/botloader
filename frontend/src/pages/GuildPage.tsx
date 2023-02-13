@@ -5,16 +5,18 @@ import { useSession } from "../components/Session";
 import './GuildPage.css'
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { BuildConfig } from "../BuildConfig";
-import { Link, Redirect, Route, Switch, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { Panel } from "../components/Panel";
 import { SideNav } from "../components/SideNav";
 import { EditScriptPage } from "./EditScript";
 
-export function GuildPage() {
+export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
     let guild = useCurrentGuild();
     if (guild) {
         if (guild.connected) {
-            return <GuildLoadedPage guild={guild}></GuildLoadedPage>
+            return <div className="guild-page">
+                {children}
+            </div>
         } else {
             return <div className="page-wrapper">
                 <InviteGuildPage guild={guild} />
@@ -37,14 +39,15 @@ function NoGuildPage() {
 }
 
 
+export function GuildSideNav() {
+    const guild = useCurrentGuild();
 
-function GuildLoadedPage(props: { guild: BotGuild }) {
     const navItems = {
         "home": {
             label: "Home",
             isNavLink: true,
             exact: true,
-            path: `/servers/${props.guild.guild.id}/`,
+            path: `/servers/${guild?.guild.id}/`,
         },
         // "scripts": {
         //     label: "Scripts",
@@ -60,53 +63,28 @@ function GuildLoadedPage(props: { guild: BotGuild }) {
         // },
     }
 
-    return <div className="guild-page">
-        <Switch>
-            <Route path={`/servers/${props.guild.guild.id}/`} exact>
-                <SideNav items={navItems} activePage={"home"}></SideNav>
-                {/* <GuildSideNav guild={guild} activePage="home" ></GuildSideNav> */}
-                <div className="guild-wrapper page-wrapper">
-                    <GuildHome guild={props.guild} />
-                </div>
-            </Route>
-            <Route path={`/servers/${props.guild.guild.id}/scripts/:scriptId/edit`}>
-                {/* <GuildSideNav guild={guild} activePage="settings" ></GuildSideNav> */}
-                <EditScript guild={props.guild}></EditScript>
-            </Route>
-        </Switch>
-    </div>
-
-    // <Route path={`/servers/${props.guild.guild.id}/scripts`}>
-    // <SideNav items={navItems} activePage={"scripts"}></SideNav>
-    // {/* <GuildSideNav guild={guild} activePage="scripts" ></GuildSideNav> */}
-    // <div className="guild-wrapper page-wrapper">
-    //     <GuildScripts guild={props.guild} />
-    // </div>
-    // </Route>
-    // <Route path={`/servers/${props.guild.guild.id}/settings`}>
-    // <SideNav items={navItems} activePage={"settings"}></SideNav>
-    // {/* <GuildSideNav guild={guild} activePage="settings" ></GuildSideNav> */}
-    // <div className="guild-wrapper page-wrapper">
-    //     <GuildSettings guild={props.guild} />
-    // </div>
-    // </Route>
+    return <SideNav items={navItems}></SideNav>
 }
 
-function EditScript(props: { guild: BotGuild }) {
-    let params: { scriptId: string } = useParams();
-    console.log(params);
+export function EditGuildScript() {
+    const guild = useCurrentGuild()!;
 
-    return <EditScriptPage guild={props.guild} scriptId={parseInt(params.scriptId)}></EditScriptPage>
+    let { scriptId } = useParams();
+    console.log(scriptId);
+
+    return <EditScriptPage guild={guild} scriptId={parseInt(scriptId!)}></EditScriptPage>
 }
 
 
-function GuildHome(props: { guild: BotGuild }) {
+export function GuildHome() {
+    const guild = useCurrentGuild()!;
+
     return <>
         <Panel>
             <p>This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</p>
         </Panel>
-        <PremiumPanel guild={props.guild}></PremiumPanel>
-        <GuildScripts guild={props.guild}></GuildScripts>
+        <PremiumPanel guild={guild}></PremiumPanel>
+        <GuildScripts guild={guild}></GuildScripts>
     </>
 }
 
@@ -246,7 +224,7 @@ function GuildScripts(props: { guild: BotGuild }) {
                 <AsyncOpButton label="Create" onClick={createScript}></AsyncOpButton>
             </div>
             {createError ? <p>Error creating script: <code>{createError}</code></p> : null}
-            {scriptCreated ? <Redirect to={`/servers/${props.guild.guild.id}/scripts/${scriptCreated.id}/edit`}></Redirect> : null}
+            {scriptCreated ? <Navigate to={`/servers/${props.guild.guild.id}/scripts/${scriptCreated.id}/edit`}></Navigate> : null}
         </Panel >
         <Panel>
             <h2>Guild scripts</h2>

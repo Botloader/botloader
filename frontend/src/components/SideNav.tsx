@@ -43,7 +43,7 @@ function Item(props: { itemName: string, item: SideNavItem, expanded: boolean })
     }
 
     if (props.item.isNavLink) {
-        return <><NavLink to={props.item.path} exact={props.item.exact}>{props.item.label}</NavLink>{footer}</>
+        return <><NavLink to={props.item.path} end={props.item.exact}>{props.item.label}</NavLink>{footer}</>
     }
 
     return <><a href={props.item.path}>{props.item.label}</a>{footer}</>

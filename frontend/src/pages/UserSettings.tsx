@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Redirect } from "react-router";
 import { isErrorResponse, PremiumSlot, SessionMeta } from "botloader-common";
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { DisplayDateTime } from "../components/DateTime";
@@ -7,6 +6,7 @@ import { Panel } from "../components/Panel";
 import { useSession } from "../components/Session";
 import "./UserSettings.css"
 import { useGuilds } from "../components/GuildsProvider";
+import { Navigate } from "react-router-dom";
 
 export function UserSettingsPage() {
 
@@ -39,7 +39,7 @@ export function UserSettingsPage() {
     }
 
     if (signedOut) {
-        return <Redirect to="/"></Redirect>
+        return <Navigate to="/"></Navigate>
     }
 
     return <div className="user-settings">
