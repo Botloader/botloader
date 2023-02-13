@@ -1,33 +1,3 @@
-.App {
-  text-align: center;
-}
-
-.App-header {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  background-color: #282c34;
-  /* min-height: 50vh; */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  /* font-size: calc(10px + 2vmin); */
-  font-size: 2rem;
-  color: white;
-  text-align: center;
-  gap: 20px
-}
-
-@media only screen and (max-width: 600px) {
-  /* body { */
-  /* background-color: lightblue; */
-  /* } */
-}
-
-.App-link {
-  color: #61dafb;
-}
-
 .frontpage-links {
   margin-top: 20px;
   display: flex;

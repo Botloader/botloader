@@ -1,3 +1,4 @@
+import { Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import pogshowcase from '../img/pogshowcase.png';
 
@@ -20,9 +21,9 @@ export function LandingPage() {
             </div>
         </header>
         <div className='frontpage-links'>
-            <Link to="/servers" className='bl-button' >Control panel</Link>
-            <a className='bl-button' href="https://discord.gg/HJM3MqVBfw">Discord server</a>
-            <a className='bl-button' href="/docs/">Documentation</a>
+            <Link to="/servers"><Button>Control panel</Button></Link>
+            <Button href="https://discord.gg/HJM3MqVBfw">Discord server</Button>
+            <Button href="/docs/">Documentation</Button>
         </div>
     </>
 }

@@ -3,15 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@fontsource/roboto": "^4.5.8",
     "@monaco-editor/react": "^4.4.6",
+    "@mui/icons-material": "^5.11.0",
+    "@mui/material": "^5.11.8",
     "@types/node": "^12.20.33",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.10",
-    "bootstrap": "^5.2.3",
     "botloader-common": "file:../frontend-common",
     "js-untar": "^2.0.0",
     "react": "^18.2.0",
-    "react-bootstrap": "^2.7.1",
     "react-dom": "^18.2.0",
     "react-markdown": "^8.0.5",
     "react-router-dom": "^6.8.1",
@@ -43,6 +46,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {}
+  }
 }
