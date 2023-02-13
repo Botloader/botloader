@@ -5,8 +5,8 @@
   "dependencies": {
     "@monaco-editor/react": "^4.4.6",
     "@types/node": "^12.20.33",
-    "@types/react": "^17.0.30",
-    "@types/react-dom": "^17.0.10",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.10",
     "bootstrap": "^5.2.3",
     "botloader-common": "file:../frontend-common",
     "js-untar": "^2.0.0",
