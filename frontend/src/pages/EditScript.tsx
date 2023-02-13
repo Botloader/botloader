@@ -145,13 +145,28 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
     const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
     useEffect(() => {
+        let ctrlSIsDown = false;
+        function handleKeyDown(evt: KeyboardEvent) {
+            if (evt.ctrlKey && evt.code === "KeyS") {
+                evt.preventDefault();
+                if (!ctrlSIsDown) {
+                    ctrlSIsDown = true;
+                    save();
+                }
+            }
+        }
+        function handleKeyUp(evt: KeyboardEvent) {
+            if (evt.ctrlKey && evt.code === "KeyS") {
+                ctrlSIsDown = false;
+            }
+        }
+
         document.addEventListener("keydown", handleKeyDown);
         document.addEventListener("keyup", handleKeyUp);
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
             document.removeEventListener("keyup", handleKeyUp);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     })
 
     async function toggleScript(scriptId: number, enabled: boolean) {
@@ -160,22 +175,6 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
         });
         await props.refreshScripts();
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
-    }
-
-    let ctrlSIsDown = false;
-    function handleKeyDown(evt: KeyboardEvent) {
-        if (evt.ctrlKey && evt.code === "KeyS") {
-            evt.preventDefault();
-            if (!ctrlSIsDown) {
-                ctrlSIsDown = true;
-                save();
-            }
-        }
-    }
-    function handleKeyUp(evt: KeyboardEvent) {
-        if (evt.ctrlKey && evt.code === "KeyS") {
-            ctrlSIsDown = false;
-        }
     }
 
     function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
@@ -299,7 +298,6 @@ function GuildConsole(props: { guild: BotGuild }) {
 
     useEffect(() => {
         listenerId.current = GuildMessages.addListener(props.guild.guild.id, onNewMessage);
-
         return () => {
             if (listenerId.current) {
                 GuildMessages.removeListener(props.guild.guild.id, listenerId.current);
