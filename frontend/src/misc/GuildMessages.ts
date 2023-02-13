@@ -49,7 +49,7 @@ export namespace GuildMessages {
         if (listeners[guildId]) {
             let index = listeners[guildId].findIndex(v => v.id === id);
             if (index > -1) {
-                listeners[guildId] = listeners[guildId].splice(index, 1);
+                listeners[guildId].splice(index, 1);
             }
         }
     }
