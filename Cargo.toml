@@ -1,6 +1,6 @@
 [workspace]
 members = ["components/*","cmd/*"]
-exclude = ["cmd/dbmigrations", "cmd/schedulewithworker"]
+exclude = ["cmd/dbmigrations", "cmd/schedulerwithworker"]
 
 [workspace.dependencies]
 serde = {version = "1.0", features=["derive"]}
