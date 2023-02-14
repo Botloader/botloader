@@ -1,4 +1,4 @@
-.guild-select-list {
+/* .guild-select-list {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -34,9 +34,4 @@
 
 .guild-list-item:hover {
     background-color: rgba(0, 0, 0, 0.4);
-}
-
-.user-session-item {
-    display: flex;
-    gap: 10px;
-}
+} */
