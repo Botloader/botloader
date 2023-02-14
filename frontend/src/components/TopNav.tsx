@@ -4,7 +4,8 @@ import { BuildConfig } from "../BuildConfig";
 import { useCurrentGuild } from "./GuildsProvider";
 import { useSession } from "./Session";
 import "./TopNav.css"
-import { guildIconUrl, userAvatarUrl } from "./Util";
+import { userAvatarUrl } from "./Util";
+import { GuildIcon } from "./GuildIcon";
 
 export function TopNav() {
     let session = useSession();
@@ -41,7 +42,7 @@ function UserNotLoggedIn() {
 
 function CurrentGuild(props: { guild: BotGuild }) {
     return <Link to="/servers">
-        {props.guild.guild.icon ? <img src={guildIconUrl(props.guild.guild, 32)} alt="guild icon" className="avatar" /> : null}
+        <GuildIcon guild={props.guild.guild} size={32} />
         <p>{props.guild.guild.name}</p>
     </Link>
 }
