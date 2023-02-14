@@ -2,12 +2,10 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { BotGuild, UserGuild } from "botloader-common";
 import { useGuilds } from "../components/GuildsProvider"
-import { guildIconUrl } from "../components/Util";
 import "./SelectServer.css"
-import { Panel } from "../components/Panel";
-import { Alert, Button, Card, CardActions, CardContent, CardHeader, CardMedia, Container, Skeleton, Typography } from "@mui/material";
+import { Alert, Button, Container, } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
-import { height } from "@mui/system";
+import { GuildIcon } from "../components/GuildIcon";
 
 export function SelectServerPage() {
 
@@ -47,18 +45,8 @@ export function SelectServerPage() {
 
 function GuildListItem({ guild: g }: { guild: BotGuild }) {
     return <Grid2>
-        <Link to={`/servers/${g.guild.id}`}><Button variant="outlined" startIcon={<GuildIcon guild={g.guild}></GuildIcon>}>{g.guild.name}</Button></Link>
+        <Link to={`/servers/${g.guild.id}`}><Button variant="outlined" startIcon={<GuildIcon guild={g.guild} size={64}></GuildIcon>}>{g.guild.name}</Button></Link>
     </Grid2>
-}
-
-function GuildIcon(props: { guild: UserGuild }) {
-    if (props.guild.icon) {
-        return <img src={guildIconUrl(props.guild)} alt={props.guild.name + " icon"} className="avatar" height={64} />
-    } else {
-        return <div style={{ height: "64px", width: "64px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#222", borderRadius: "50%" }}>
-            {props.guild.name.split(" ").map((v) => v.charAt(0))}
-        </div>
-    }
 }
 
 const permAdmin = BigInt("0x0000000008");
@@ -80,9 +68,4 @@ function hasAdmin(g: UserGuild): boolean {
     }
 
     return false
-}
-
-function shorten(name: string): string {
-    const maxLength = 35
-    return name.length > maxLength ? name.slice(0, 34) + '...' : name
 }
