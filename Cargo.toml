@@ -1,13 +1,6 @@
 [workspace]
-exclude = [
-	"components/vm-manager",
-	"components/common",
-	"components/runtime",
-	"components/tscompiler",
-	"cmd/dbmigrations",
-	"cmd/schedulewithworker",
-]
 members = ["components/*","cmd/*"]
+exclude = ["cmd/dbmigrations", "cmd/schedulewithworker"]
 
 [workspace.dependencies]
 serde = {version = "1.0", features=["derive"]}
