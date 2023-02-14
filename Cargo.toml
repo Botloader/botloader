@@ -1,27 +1,13 @@
 [workspace]
-members = [
-    "components/vmthread",
-    "components/vm",
-    "components/isolatecell",
-    "components/stores",
-    "components/discordoauthwrapper",
-    "components/simpleproto",
-    "components/botrpc",
-    "components/dbrokerapi",
-    "components/axum-metrics-layer",
-    # "components/vm-manager",
-    "components/guild-logger",
-    "components/runtime-models",
-    "components/scheduler-worker-rpc",
-    "cmd/webapi",
-    "cmd/prepare-integration-tests",
-    "cmd/discordbroker",
-    "cmd/scheduler",
-    "cmd/vmworker",
-    "cmd/dbserver",
-    "cmd/jobs",
-    "cmd/blcmd",
+exclude = [
+	"components/vm-manager",
+	"components/common",
+	"components/runtime",
+	"components/tscompiler",
+	"cmd/dbmigrations",
+	"cmd/schedulewithworker",
 ]
+members = ["components/*","cmd/*"]
 
 [workspace.dependencies]
 serde = {version = "1.0", features=["derive"]}
