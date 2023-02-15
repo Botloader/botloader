@@ -13,6 +13,7 @@ import '@fontsource/roboto/700.css';
 
 import { createTheme, ThemeProvider } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SideNavStateController } from './components/SideNavManager';
 
 const darkTheme = createTheme({
   palette: {
@@ -24,9 +25,11 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Router >
-        <RoutesElement />
-      </Router>
+      <SideNavStateController>
+        <Router >
+          <RoutesElement />
+        </Router>
+      </SideNavStateController>
     </ThemeProvider>
   );
 }

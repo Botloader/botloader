@@ -38,7 +38,6 @@ function NoGuildPage() {
     return <p>That's and unknown guild m8</p>
 }
 
-
 export function GuildSideNav() {
     const guild = useCurrentGuild();
 

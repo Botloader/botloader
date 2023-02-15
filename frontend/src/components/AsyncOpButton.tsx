@@ -1,3 +1,4 @@
+import { Button } from "@mui/material";
 import { useState } from "react"
 
 type Props = {
@@ -16,5 +17,10 @@ export function AsyncOpButton(props: Props) {
         setStatus(false);
     }
 
-    return <button disabled={status} onClick={() => doOp()} className={(props.className ?? "") + " bl-button"}>{props.label}</button>
+    return <Button
+        disabled={status}
+        onClick={() => doOp()}
+        className={(props.className ?? "") + " bl-button"}>
+        {props.label}
+    </Button>
 }
