@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Script } from "botloader-common";
 import { useCurrentGuild } from "../components/GuildsProvider";
 import { useSession } from "../components/Session";
-import './GuildPage.css'
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { BuildConfig } from "../BuildConfig";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Panel } from "../components/Panel";
 import { SideNav } from "../components/SideNav";
 import { EditScriptPage } from "./EditScript";
+import { Alert, Box, Button, Paper, Stack, Switch, Typography } from "@mui/material";
 
 export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
     let guild = useCurrentGuild();
@@ -78,13 +78,11 @@ export function EditGuildScript() {
 export function GuildHome() {
     const guild = useCurrentGuild()!;
 
-    return <>
-        <Panel>
-            <p>This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</p>
-        </Panel>
+    return <Stack spacing={2}>
+        <Alert severity="warning">This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</Alert>
         <PremiumPanel guild={guild}></PremiumPanel>
         <GuildScripts guild={guild}></GuildScripts>
-    </>
+    </Stack>
 }
 
 function PremiumPanel(props: { guild: BotGuild }) {
@@ -106,13 +104,15 @@ function PremiumPanel(props: { guild: BotGuild }) {
     }
 
 
-    return <Panel>
-        <h3>Premium/Lite</h3>
-        {slots === null ? <p>Failed loading slots</p>
-            : slots === undefined ? <p>Loading...</p>
-                : slots.length > 0 ? slots.map(v => <div className="guild-premium-slots" key={v.id}>{v.tier} by <code>{v.user_id}</code></div>)
-                    : <p>This server is on the free plan</p>}
-    </Panel>
+    return <>
+        <Typography variant="h4">Premium/Lite</Typography>
+        <Paper sx={{ p: 1 }}>
+            {slots === null ? <p>Failed loading slots</p>
+                : slots === undefined ? <p>Loading...</p>
+                    : slots.length > 0 ? slots.map(v => <div className="guild-premium-slots" key={v.id}>{v.tier} by <code>{v.user_id}</code></div>)
+                        : <p>This server is on the free plan</p>}
+        </Paper>
+    </>
 }
 
 function GuildSettings(props: { guild: BotGuild }) {
@@ -216,34 +216,74 @@ function GuildScripts(props: { guild: BotGuild }) {
     }
 
     return <>
-        <Panel>
-            <h2>Create a new script</h2>
+        <Typography variant="h4">Create a new script</Typography>
+        <Paper sx={{ p: 1 }}>
             <div className="create-script">
                 <input type="text" ref={createScriptInput}></input>
                 <AsyncOpButton label="Create" onClick={createScript}></AsyncOpButton>
             </div>
             {createError ? <p>Error creating script: <code>{createError}</code></p> : null}
             {scriptCreated ? <Navigate to={`/servers/${props.guild.guild.id}/scripts/${scriptCreated.id}/edit`}></Navigate> : null}
-        </Panel >
-        <Panel>
-            <h2>Guild scripts</h2>
+        </Paper >
+        <Typography variant="h4" sx={{ ml: 1, mb: 1 }}>Scripts</Typography>
+        <Paper>
             {scripts ?
-                <div className="scripts">
-                    {scripts.map(script => <div key={script.id} className="script-item">
-                        <p>#{script.id}</p>
-                        <p>{script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</p>
-                        <AsyncOpButton className="danger" label="delete" onClick={() => delScript(script.id)}></AsyncOpButton>
-                        {script.enabled ?
-                            <AsyncOpButton label="disable" onClick={() => toggleScript(script.id, false)}></AsyncOpButton>
-                            :
-                            <AsyncOpButton label="enable" onClick={() => toggleScript(script.id, true)}></AsyncOpButton>
-                        }
-                        <Link to={`/servers/${props.guild.guild.id}/scripts/${script.id}/edit`} className="bl-button">Edit</Link>
-                        <p><code>{script.name}.ts</code></p>
-                    </div>)}
-                </div> : scripts === null ? <p>Failed loading scripts</p>
+                <Stack spacing={1}>
+                    {scripts.map(script => <ScriptItem key={script.id}
+                        script={script}
+                        guildId={props.guild.guild.id}
+                        toggleScript={toggleScript}
+                        deleteScript={delScript} />)}
+                </Stack>
+                : scripts === null
+                    ? <p>Failed loading scripts</p>
                     : <p>Loading...</p>
             }
-        </Panel>
+        </Paper>
     </>
+}
+
+function ScriptItem({ script, guildId, toggleScript, deleteScript }: {
+    script: Script,
+    guildId: string,
+    toggleScript: (id: number, on: boolean) => any,
+    deleteScript: (id: number) => any
+}) {
+    const navigate = useNavigate();
+    const [isToggling, setToggling] = useState(false);
+
+    async function toggleWrapper(on: boolean) {
+        setToggling(true);
+        await toggleScript(script.id, on);
+        try {
+
+        } finally {
+            setToggling(false);
+        }
+    }
+
+    async function deleteConfirm() {
+        if (window.confirm("are you sure you want to delete this script?")) {
+            await deleteScript(script.id);
+        }
+    }
+
+    return <Box sx={{
+        p: 1, display: "flex", alignItems: "center",
+        borderLeft: 2,
+        borderColor: script.enabled ? "success.dark" : "error.dark",
+        '&:hover': { backgroundColor: "action.hover" }
+    }}>
+        <Typography variant="body1" flexGrow={1}>{script.name}.ts</Typography>
+        <Stack direction={"row"}>
+            <Button onClick={() => navigate(`/servers/${guildId}/scripts/${script.id}/edit`)}>
+                Edit
+            </Button>
+
+            <Switch checked={script.enabled} disabled={isToggling} color={"success"} onChange={(evt) => {
+                toggleWrapper(evt.target.checked)
+            }} />
+            <AsyncOpButton label="delete" onClick={() => deleteConfirm()}></AsyncOpButton>
+        </Stack>
+    </Box>
 }

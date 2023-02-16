@@ -102,11 +102,17 @@ const appRoutes: RouteObject[] = [
                     {
                         index: true,
                         element: <>
-                            <GuildSideNav />
-                            {/* <GuildSideNav guild={guild} activePage="home" ></GuildSideNav> */}
-                            <div className="guild-wrapper page-wrapper">
-                                <GuildHome />
-                            </div>
+                            <Box sx={{ display: 'flex' }}>
+
+                                <GuildSideNav />
+                                <Box
+                                    component="main"
+                                    sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+                                >
+
+                                    <GuildHome />
+                                </Box>
+                            </Box>
                         </>
                     },
                     {
