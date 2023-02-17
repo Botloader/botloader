@@ -72,3 +72,25 @@ export interface GuildMetaConfig {
     guild_id: string,
     error_channel_id: string | null,
 }
+
+export interface Plugin<Variant = ScriptPluginData> {
+    id: number,
+    created_at: string,
+    author_id: string,
+    name: string,
+    short_description: string,
+    long_description: string,
+    is_public: boolean,
+    is_official: boolean,
+    data: Variant,
+}
+
+export interface ScriptPluginData {
+    plugin_type: "ScriptPlugin",
+    published_version: string | null,
+    published_version_updated_at: string | null,
+    dev_version: string | null,
+    dev_version_updated_at: string | null,
+}
+
+export type ScriptPlugin = Plugin<ScriptPluginData>;

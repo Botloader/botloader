@@ -1,5 +1,5 @@
 import { GuildMetaConfig } from ".";
-import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Script, SessionMeta, UpdateScript, User } from "./api_models";
+import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Script, ScriptPlugin, SessionMeta, UpdateScript, User } from "./api_models";
 
 /* eslint-disable @typescript-eslint/naming-convention */
 export class ApiClient {
@@ -149,6 +149,70 @@ export class ApiClient {
     async getGuildPremiumSlots(guildId: string): Promise<ApiResult<GuildPremiumSlot[]>> {
         return await this.get(`/api/guilds/${guildId}/premium_slots`);
     }
+
+    async getPublishedPublicPlugin(): Promise<ApiResult<ScriptPlugin[]>> {
+        return await this.get(`/api/plugins`);
+    }
+
+    async getCurrentUserPlugins(): Promise<ApiResult<ScriptPlugin[]>> {
+        return await this.get(`/api/user/plugins`);
+    }
+
+    async getPlugin(scriptId: number): Promise<ApiResult<ScriptPlugin>> {
+        return await this.get(`/api/plugins/${scriptId}`);
+    }
+
+    async createPlugin(params: {
+        name: string,
+        shortDescription?: string,
+        longDescription?: string,
+    }): Promise<ApiResult<ScriptPlugin>> {
+        return await this.put(`/api/user/plugins`, {
+            name: params.name,
+            short_description: params.shortDescription,
+            long_description: params.longDescription,
+        });
+    }
+
+    async udpatePluginMeta(pluginId: number, params: {
+        name?: string,
+        shortDescription?: string,
+        longDescription?: string,
+        isPublic?: boolean,
+    }): Promise<ApiResult<ScriptPlugin>> {
+        return await this.patch(`/api/plugins/${pluginId}`, {
+            name: params.name,
+            short_description: params.shortDescription,
+            long_description: params.longDescription,
+            is_public: params.isPublic,
+        });
+    }
+
+    async updateScriptPluginDevVersion(pluginId: number, params: {
+        source: string,
+    }): Promise<ApiResult<ScriptPlugin>> {
+        return await this.put(`/api/plugins/${pluginId}/commit_script_dev_version`, {
+            new_source: params.source
+        });
+    }
+
+    async publishScriptPluginVersion(pluginId: number, params: {
+        source: string,
+    }): Promise<ApiResult<{}>> {
+        return await this.put(`/api/plugins/${pluginId}/publish_script_version`, {
+            new_source: params.source
+        });
+    }
+
+    async addPluginToGuild(pluginId: number, guildId: string, params: {
+        autoUpdate: boolean,
+    }): Promise<ApiResult<ScriptPlugin>> {
+        return await this.put(`/api/guilds/${guildId}/add_plugin`, {
+            plugin_id: pluginId,
+            auto_update: params.autoUpdate,
+        });
+    }
+
 }
 
 export type ApiResult<T> = T | ApiError;
