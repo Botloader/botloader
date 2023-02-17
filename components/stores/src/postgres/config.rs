@@ -804,7 +804,7 @@ FROM plugins WHERE is_published = true AND is_public = true"#,
         let plugin = Self::inner_get_plugin(&mut tx, plugin_id).await?;
 
         let source = match plugin.data {
-            PluginData::ScriptPluginData(d) => d.published_version.unwrap_or_default(),
+            PluginData::ScriptPlugin(d) => d.published_version.unwrap_or_default(),
         };
 
         Self::inner_create_script(
@@ -999,7 +999,7 @@ impl From<DbPlugin> for Plugin {
             is_public: value.is_public,
             is_official: value.is_official,
             data: match value.plugin_kind {
-                0 => PluginData::ScriptPluginData(ScriptPluginData {
+                0 => PluginData::ScriptPlugin(ScriptPluginData {
                     published_version: value.script_published_source,
                     published_version_updated_at: value.script_published_version_updated_at,
                     dev_version: value.script_dev_source,

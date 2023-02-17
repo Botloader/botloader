@@ -17,14 +17,15 @@ pub struct Plugin {
 }
 
 #[derive(Serialize, Clone)]
+#[serde(tag = "plugin_type")]
 pub enum PluginData {
-    ScriptPluginData(ScriptPluginData),
+    ScriptPlugin(ScriptPluginData),
 }
 
 impl PluginData {
     pub fn kind(&self) -> PluginType {
         match self {
-            PluginData::ScriptPluginData(_) => PluginType::Script,
+            PluginData::ScriptPlugin(_) => PluginType::Script,
         }
     }
 }
