@@ -37,32 +37,33 @@ pub enum ApiErrorResponse {
 }
 
 impl ApiErrorResponse {
-    pub fn public_desc(&self) -> (StatusCode, u32, String) {
+    pub fn public_desc(&self) -> (StatusCode, u32, Option<serde_json::Value>) {
         match &self {
-            Self::SessionExpired => (StatusCode::BAD_REQUEST, 1, self.to_string()),
-            Self::BadCsrfToken => (StatusCode::BAD_REQUEST, 2, self.to_string()),
-            Self::InternalError => (StatusCode::INTERNAL_SERVER_ERROR, 3, self.to_string()),
-            Self::ValidationFailed(verr) => (
+            Self::SessionExpired => (StatusCode::BAD_REQUEST, 1, None),
+            Self::BadCsrfToken => (StatusCode::BAD_REQUEST, 2, None),
+            Self::InternalError => (StatusCode::INTERNAL_SERVER_ERROR, 3, None),
+            Self::ValidationFailed(v_err) => (
                 StatusCode::BAD_REQUEST,
                 4,
-                serde_json::to_string(verr).unwrap_or_default(),
+                Some(serde_json::to_value(v_err).unwrap_or_default()),
             ),
-            Self::NoActiveGuild => (StatusCode::BAD_REQUEST, 5, self.to_string()),
-            Self::NotGuildAdmin => (StatusCode::FORBIDDEN, 6, self.to_string()),
-            Self::NoAccessToPlugin => (StatusCode::FORBIDDEN, 7, self.to_string()),
-            Self::UserPluginLimitReached => (StatusCode::BAD_REQUEST, 8, self.to_string()),
-            Self::PluginNotFound => (StatusCode::BAD_REQUEST, 9, self.to_string()),
+            Self::NoActiveGuild => (StatusCode::BAD_REQUEST, 5, None),
+            Self::NotGuildAdmin => (StatusCode::FORBIDDEN, 6, None),
+            Self::NoAccessToPlugin => (StatusCode::FORBIDDEN, 7, None),
+            Self::UserPluginLimitReached => (StatusCode::BAD_REQUEST, 8, None),
+            Self::PluginNotFound => (StatusCode::BAD_REQUEST, 9, None),
         }
     }
 }
 
 impl IntoResponse for ApiErrorResponse {
     fn into_response(self) -> Response<BoxBody> {
-        let (resp_code, err_code, msg) = self.public_desc();
+        let (resp_code, err_code, extra) = self.public_desc();
 
         let body = json!({
             "code": err_code,
-            "description": msg,
+            "description": self.to_string(),
+            "extra_data": extra
         })
         .to_string();
 
