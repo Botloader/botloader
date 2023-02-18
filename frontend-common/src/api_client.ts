@@ -1,7 +1,6 @@
 import { GuildMetaConfig } from ".";
-import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Script, ScriptPlugin, SessionMeta, UpdateScript, User } from "./api_models";
+import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Plugin, Script, ScriptPlugin, SessionMeta, UpdateScript, User } from "./api_models";
 
-/* eslint-disable @typescript-eslint/naming-convention */
 export class ApiClient {
     token?: string;
     base: string;
@@ -44,11 +43,7 @@ export class ApiClient {
 
         if (response.status !== 200) {
             let decoded: ApiErrorResponse = await response.json() as ApiErrorResponse;
-            return {
-                resp_code: response.status,
-                is_error: true,
-                response: decoded,
-            };
+            return new ApiError(response.status, decoded);
         }
 
         return await response.json() as ApiResult<T>;
@@ -150,48 +145,39 @@ export class ApiClient {
         return await this.get(`/api/guilds/${guildId}/premium_slots`);
     }
 
-    async getPublishedPublicPlugin(): Promise<ApiResult<ScriptPlugin[]>> {
+    async getPublishedPublicPlugins(): Promise<ApiResult<Plugin[]>> {
         return await this.get(`/api/plugins`);
     }
 
-    async getCurrentUserPlugins(): Promise<ApiResult<ScriptPlugin[]>> {
+    async getCurrentUserPlugins(): Promise<ApiResult<Plugin[]>> {
         return await this.get(`/api/user/plugins`);
     }
 
-    async getPlugin(scriptId: number): Promise<ApiResult<ScriptPlugin>> {
+    async getPlugin(scriptId: number): Promise<ApiResult<Plugin>> {
         return await this.get(`/api/plugins/${scriptId}`);
     }
 
     async createPlugin(params: {
         name: string,
-        shortDescription?: string,
-        longDescription?: string,
-    }): Promise<ApiResult<ScriptPlugin>> {
-        return await this.put(`/api/user/plugins`, {
-            name: params.name,
-            short_description: params.shortDescription,
-            long_description: params.longDescription,
-        });
+        short_description?: string,
+        long_description?: string,
+    }): Promise<ApiResult<Plugin>> {
+        return await this.put(`/api/user/plugins`, params);
     }
 
-    async udpatePluginMeta(pluginId: number, params: {
+    async updatePluginMeta(pluginId: number, params: {
         name?: string,
-        shortDescription?: string,
-        longDescription?: string,
-        isPublic?: boolean,
-    }): Promise<ApiResult<ScriptPlugin>> {
-        return await this.patch(`/api/plugins/${pluginId}`, {
-            name: params.name,
-            short_description: params.shortDescription,
-            long_description: params.longDescription,
-            is_public: params.isPublic,
-        });
+        short_description?: string,
+        long_description?: string,
+        is_public?: boolean,
+    }): Promise<ApiResult<Plugin>> {
+        return await this.patch(`/api/user/plugins/${pluginId}`, params);
     }
 
     async updateScriptPluginDevVersion(pluginId: number, params: {
         source: string,
     }): Promise<ApiResult<ScriptPlugin>> {
-        return await this.put(`/api/plugins/${pluginId}/commit_script_dev_version`, {
+        return await this.patch(`/api/user/plugins/${pluginId}/dev_version`, {
             new_source: params.source
         });
     }
@@ -199,7 +185,7 @@ export class ApiClient {
     async publishScriptPluginVersion(pluginId: number, params: {
         source: string,
     }): Promise<ApiResult<{}>> {
-        return await this.put(`/api/plugins/${pluginId}/publish_script_version`, {
+        return await this.post(`/api/user/plugins/${pluginId}/publish_script_version`, {
             new_source: params.source
         });
     }
@@ -217,23 +203,38 @@ export class ApiClient {
 
 export type ApiResult<T> = T | ApiError;
 
-export function isErrorResponse<T>(resp: ApiResult<T>): resp is ApiError {
-    if (resp) {
-        return (resp as ApiError).is_error !== undefined;
-    } else {
-        return false;
-    }
+export function isErrorResponse(resp: any): resp is ApiError {
+    return resp instanceof ApiError;
 }
 
-export interface ApiError {
-    resp_code: number,
-    is_error: true,
-    response?: ApiErrorResponse,
+export class ApiError {
+    resp_code: number;
+    is_error: true = true;
+    response?: ApiErrorResponse;
+
+    constructor(resp_code: number, response?: ApiErrorResponse) {
+        this.resp_code = resp_code;
+        this.response = response;
+    }
+
+    getFieldError(field: string) {
+        if (this.response?.code === 4 && this.response?.extra_data) {
+            return this.response.extra_data.find((v) => v.field === field)?.msg
+        }
+
+        return undefined;
+    }
 }
 
 export interface ApiErrorResponse {
     code: number,
     description: string,
+    extra_data: null | ValidationError[],
+}
+
+export interface ValidationError {
+    field: string,
+    msg: string,
 }
 
 // just some simple abstractions so that we can use this in both a node and browser context

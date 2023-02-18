@@ -15,6 +15,7 @@ import { UserGeneralPage } from "./pages/User/General"
 import { UserPremiumPage } from "./pages/User/Premium"
 import { UserScriptsPage } from "./pages/User/Scripts"
 import { Box } from "@mui/material"
+import { EditPluginPage } from "./pages/User/EditPlugin"
 
 export function RoutesElement() {
     let routes = useRoutes(appRoutes);
@@ -86,8 +87,12 @@ const appRoutes: RouteObject[] = [
                         element: <UserPremiumPage />
                     },
                     {
-                        path: "scripts",
-                        element: <UserScriptsPage />
+                        path: "plugins",
+                        element: <UserScriptsPage />,
+                    },
+                    {
+                        path: "plugins/:pluginId",
+                        element: <EditPluginPage />
                     }
                 ]
             },
@@ -158,11 +163,10 @@ export function UserSideNav() {
             exact: true,
             path: `/user/premium`,
         },
-        "Scripts": {
-            label: "Scripts",
+        "Plugins": {
+            label: "Plugins",
             isNavLink: true,
-            exact: true,
-            path: `/user/scripts`,
+            path: `/user/plugins`,
         },
     }
 
