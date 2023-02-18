@@ -101,7 +101,10 @@ export function SideNav<T extends SideNavItemMap>(props: { items: T }) {
 
 function Item(props: { item: SideNavItem }) {
     const location = useLocation();
-    const isActive = location.pathname === props.item.path;
+    const isActive = props.item.exact
+        ? location.pathname === props.item.path
+        : location.pathname.startsWith(props.item.path);
+
     return <ListItem disablePadding>
         <NavButton item={props.item} selected={isActive}>
             <ListItemText primary={props.item.label} />
