@@ -70,6 +70,10 @@ fn check_plugin_name(ctx: &mut ValidationContext, name: &str) {
         ctx.push_error("name", "name can be max 32 characters long".to_string());
     }
 
+    if name.chars().count() < 3 {
+        ctx.push_error("name", "name can be minimum 3 characters long".to_string());
+    }
+
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"^[\w_-]*$"#).unwrap();
     }
