@@ -4,7 +4,7 @@ use axum::{
     error_handling::HandleErrorLayer,
     extract::Extension,
     response::IntoResponse,
-    routing::{delete, get, patch, post, put},
+    routing::{delete, get, patch, post},
     BoxError, Router,
 };
 use clap::Parser;
@@ -184,17 +184,17 @@ async fn main() {
                 get(routes::plugins::get_user_plugins).put(routes::plugins::create_plugin),
             )
             .route(
-                "/plugins/:plugin_id",
+                "/user/plugins/:plugin_id",
                 patch(routes::plugins::update_plugin_meta)
                     .layer(axum::middleware::from_fn(plugin_middleware)),
             )
             .route(
-                "/plugins/:plugin_id/commit_script_dev_version",
-                put(routes::plugins::update_plugin_dev_source)
+                "/user/plugins/:plugin_id/dev_version",
+                patch(routes::plugins::update_plugin_dev_source)
                     .layer(axum::middleware::from_fn(plugin_middleware)),
             )
             .route(
-                "/plugins/:plugin_id/publish_script_version",
+                "/user/plugins/:plugin_id/publish_script_version",
                 post(routes::plugins::publish_plugin_version)
                     .layer(axum::middleware::from_fn(plugin_middleware)),
             )
