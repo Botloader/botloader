@@ -58,6 +58,7 @@ function EditPluginMetaForm() {
             setSaving(false);
         } else {
             setSaving(false);
+            setSaveNotifOpen(true);
         }
     }
 
@@ -76,7 +77,7 @@ function EditPluginMetaForm() {
         <Button disabled={isSaving} color="success" onClick={() => save()}>Save!</Button>
         <Snackbar open={saveNotifOpen} autoHideDuration={6000} onClose={() => setSaveNotifOpen(false)}>
             <Alert onClose={() => setSaveNotifOpen(false)} severity="success" sx={{ width: '100%' }}>
-                This is a success message!
+                Saved Settings!
             </Alert>
         </Snackbar>
     </Stack>
