@@ -21,14 +21,14 @@ export interface FetchDataHookNotBehindGuard<T> {
     value?: T | null;
     error?: Error | null;
     loading: boolean;
-    reload: () => void;
+    reload: () => unknown;
     setData: (d: SetData<T>) => void;
 }
 
 export interface FetchDataHookBehindGuard<T> {
     value: T;
     loading: false;
-    reload: () => void;
+    reload: () => unknown;
     setData: (d: SetData<T>) => void;
 }
 
@@ -75,6 +75,7 @@ export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResu
     }, [loader]);
 
     useEffect(() => {
+        console.log("called reload");
         load();
     }, [load]);
 

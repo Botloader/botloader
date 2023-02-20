@@ -1,0 +1,54 @@
+.dev-console {
+    list-style: none;
+    margin-left: 0;
+    padding-left: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: stretch;
+}
+
+.dev-console-message {
+    padding: 5px;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: small;
+    word-break: break-word;
+}
+
+.dev-console-message pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.dev-console-message:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.411);
+}
+
+.dev-console-message-source {
+    margin-right: 5px;
+}
+
+.dev-console-message-level-critical .dev-console-message-source {
+    color: red;
+}
+
+.dev-console-message-level-error .dev-console-message-source {
+    color: red;
+}
+
+.dev-console-message-level-warn .dev-console-message-source {
+    color: rgb(192, 183, 54);
+}
+
+.dev-console-message-level-info .dev-console-message-source {
+    color: rgb(117, 117, 117);
+}
+
+.dev-console-message-level-consolelog .dev-console-message-source {
+    color: rgb(119, 128, 255);
+}
+
+.dev-console-message-level-client .dev-console-message-source {
+    color: rgb(87, 87, 87);
+}

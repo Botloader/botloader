@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { User } from "botloader-common";
 import { BuildConfig } from "../BuildConfig";
-import { GuildMessages } from "./GuildMessages";
+import { debugMessageStore } from "./DebugMessages";
+import { sessionManager } from "../util/SessionManager";
 
 export class BotloaderWS {
     ws?: WebSocket;
@@ -22,14 +23,16 @@ export class BotloaderWS {
         }
     }
 
-    setToken(token: string) {
+    setToken(token?: string) {
         this.logToOutput("updated token", "Client");
         this.token = token;
         if (this.ws) {
             this.ws.onclose = () => { };
             this.ws.close();
         }
-        this.open();
+        if (token) {
+            this.open();
+        }
     }
 
     open() {
@@ -198,21 +201,20 @@ export const WebsocketSession = new BotloaderWS(getWsUrl(), (item) => {
     }
 
     console.log(`[WS]:[${item.level} ${context}] ${item.message}`)
-    if (item.guild_id) {
-        GuildMessages.pushGuildMessage(item.guild_id, {
-            level: item.level,
-            context: context,
-            message: item.message,
-        })
-    }
+    debugMessageStore.pushMessage({
+        guildId: item.guild_id,
+        level: item.level,
+        context: context,
+        message: item.message,
+    })
 });
 
 (() => {
-    let token = localStorage.getItem("botloader_token");
-    if (token) {
-        // Got a token in storage, validate it and use it
-        WebsocketSession.setToken(token);
-    } else {
-        console.log("no token in local storage, not connecting ws");
+    sessionManager.subscribe((evt) => {
+        WebsocketSession.setToken(evt.apiClient.token);
+    })
+
+    if (sessionManager.session.apiClient.token) {
+        WebsocketSession.setToken(sessionManager.session.apiClient.token);
     }
 })()

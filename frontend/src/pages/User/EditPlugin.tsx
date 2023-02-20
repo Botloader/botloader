@@ -1,29 +1,13 @@
 import { Alert, Box, Button, Divider, ListItem, Paper, Snackbar, Stack, TextField, Typography } from "@mui/material";
-import { isErrorResponse, Plugin, ScriptPlugin } from "botloader-common";
+import { isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { DisplayDateTime } from "../../components/DateTime";
-import { createFetchDataContext, FetchData, useFetchedDataBehindGuard } from "../../components/FetchData";
+import { useFetchedDataBehindGuard } from "../../components/FetchData";
+import { pluginContext } from "../../components/PluginProvider";
 import { useSession } from "../../components/Session";
 
-let pluginContext = createFetchDataContext<Plugin>();
-
-
 export function EditPluginPage() {
-    const { pluginId } = useParams();
-    const session = useSession();
-
-    async function fetchPlugin() {
-        let scripts = await session.apiClient.getPlugin(parseInt(pluginId!));
-        return scripts;
-    }
-
-    return <FetchData loader={fetchPlugin} context={pluginContext}>
-        <InnerPage />
-    </FetchData>
-}
-
-function InnerPage() {
     let { value: plugin } = useFetchedDataBehindGuard(pluginContext);
 
     return <>
@@ -99,8 +83,15 @@ function EditPluginMetaForm() {
 }
 
 function ScriptPluginSettings() {
-    let { value: plugin } = useFetchedDataBehindGuard(pluginContext);
-    let cast = plugin as ScriptPlugin;
+    const { value: plugin, reload } = useFetchedDataBehindGuard(pluginContext);
+    const session = useSession();
+    const cast = plugin as ScriptPlugin;
+    const navigate = useNavigate();
+
+    async function publish() {
+        await session.apiClient.publishScriptPluginVersion(plugin.id, { source: cast.data.dev_version ?? "" });
+        reload();
+    }
 
     return <Box>
         <ListItem>
@@ -114,12 +105,12 @@ function ScriptPluginSettings() {
                 ? <Typography>Last development version updated at: <DisplayDateTime dt={cast.data.dev_version_updated_at!} /> </Typography>
                 : <Typography>You have done zero development yet on this plugin :(</Typography>}
 
-            <Button>View changes</Button>
-            <Button>Publish</Button>
+            <Button onClick={() => navigate(`/user/plugins/${plugin.id}/edit_script_diff`)}>View changes</Button>
+            <Button onClick={publish}>Publish</Button>
         </ListItem>
 
         <ListItem>
-            <Button>Edit development version</Button>
+            <Button onClick={() => navigate(`/user/plugins/${plugin.id}/edit_script`)}>Edit development version</Button>
         </ListItem>
 
     </Box>

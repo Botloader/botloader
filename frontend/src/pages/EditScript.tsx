@@ -1,253 +1,125 @@
 import { BotGuild, isErrorResponse, Script } from "botloader-common";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useSession } from "../components/Session";
 import "./EditScript.css";
-import Editor, { useMonaco } from "@monaco-editor/react";
-import untar from "js-untar";
 import { AsyncOpButton } from "../components/AsyncOpButton";
-import { GuildMessage, GuildMessages } from "../misc/GuildMessages";
-import { WebsocketSession } from "../misc/WebsocketController";
-import monaco from "monaco-editor";
+import { debugMessageStore } from "../misc/DebugMessages";
+import { DevConsole } from "../components/DevConsole";
+import { useBotloaderMonaco } from "../components/BotloaderSdk";
+import { createFetchDataContext, FetchData, useFetchedDataBehindGuard } from "../components/FetchData";
+import { ScriptEditor } from "../components/ScriptEditor";
+import { Button } from "@mui/material";
 
-const DEFAULT_EMPTY_SCRIPT_CONTENT =
-    `import {} from 'botloader';
-
-// Type in the script content here
-// ctrl-s to save, changes will go live after that
-// Newly created scripts are disabled, you can enable it in the sidebar
-// You can find a lot of script examples in the support server
-// Docs are located at: https://botloader.io/docs/
-// There's also more in depth guides available at: https://botloader.io/book/
-`
+export const scriptsContext = createFetchDataContext<Script[]>();
 
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
-    const [script, setScript] = useState<Script | undefined | null>(undefined);
-    const [scripts, setScripts] = useState<Script[] | undefined | null>(undefined);
-    const [typings, setTypings] = useState<File[] | undefined | null>(undefined);
-    const [hasSetTypings, setHasSetTypings] = useState(false);
-    const monaco = useMonaco();
     const session = useSession();
 
-    async function load() {
-        await loadScripts()
-        await loadTypings();
-    }
-
-    async function loadScripts() {
+    async function fetchScripts() {
         let resp = await session.apiClient.getAllScripts(props.guild.guild.id);
-        if (isErrorResponse(resp)) {
-            setScript(null);
-            setScripts(null);
-        } else {
-            let s = resp.find(v => v.id === props.scriptId);
-            setScripts(resp);
-            if (s) {
-                setScript(s)
-            } else {
-                setScript(null);
-                setScripts(null);
-            }
-        }
+        return resp;
     }
 
-    async function loadTypings() {
-        let files = await downloadTypeDecls();
-        setTypings(files);
-    }
+    return <FetchData loader={fetchScripts} context={scriptsContext}>
+        <InnerPage guild={props.guild} scriptId={props.scriptId} />
+    </FetchData>
+}
 
-    useEffect(() => {
-        load()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props, session])
+export function InnerPage(props: { guild: BotGuild, scriptId: number }) {
+    const { value: scripts } = useFetchedDataBehindGuard(scriptsContext);
+    const script = scripts.find((v) => v.id === props.scriptId);
+    const loaded = useBotloaderMonaco(scripts
+        .filter((v) => v.id !== props.scriptId)
+        .map((v) => ({ name: v.name, content: v.original_source })))
 
-    useEffect(() => {
-        if (typings && monaco) {
-            monaco.languages.typescript.typescriptDefaults.setExtraLibs(
-                [
-                    ...typings.filter(v => v.type === "0")
-                        .map(v => {
-                            return {
-                                content: v.readAsString(),
-                                filePath: "file:///" + v.name,
-                            }
-                        }),
-                    ...(scripts?.filter(v => v.id !== script?.id)
-                        .map(v => {
-                            return {
-                                content: v.original_source,
-                                filePath: "file:///" + v.name + ".ts"
-                            }
-                        }) ?? [])
-                ]
-            )
-
-            monaco.languages.typescript.typescriptDefaults.setInlayHintsOptions({
-                includeInlayFunctionLikeReturnTypeHints: true,
-                includeInlayParameterNameHints: "all",
-                includeInlayVariableTypeHints: true,
-                includeInlayFunctionParameterTypeHints: true,
-                includeInlayPropertyDeclarationTypeHints: true,
-                includeInlayEnumMemberValueHints: true
-            })
-
-            monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-                // typeRoots: ["typings/"],
-                moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-                // baseUrl: "typings/",
-                module: monaco.languages.typescript.ModuleKind.ESNext,
-                // This property seems to fuck shit up, no idea why
-                // lib: [
-                //     "ES5",
-                //     "ES2015",
-                //     "ES2016",
-                //     "ES2017",
-                //     "ES2018",
-                //     "ES2019",
-                //     "ES2020",
-                //     "ES2021",
-                // ],
-                "noImplicitAny": true,
-                "removeComments": true,
-                "preserveConstEnums": true,
-                "sourceMap": false,
-                "target": monaco.languages.typescript.ScriptTarget.ESNext,
-                "alwaysStrict": true,
-                "strict": true,
-                "strictNullChecks": true,
-
-                paths: {
-                    "botloader": ["file:///typings/index.d.ts"]
-                }
-            })
-
-            setHasSetTypings(true);
-        }
-
-        // This is probably fine because of the if statement
-        // also we don't need this to update
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [monaco, typings]);
-
-    if (script && typings && hasSetTypings) {
-        return <Loaded guild={props.guild} script={script} files={typings} refreshScripts={loadScripts}></Loaded>
+    if (!script) {
+        return <>Unknown script</>
+    } else if (loaded) {
+        return <LoadedNew guild={props.guild} script={script}></LoadedNew>
     } else {
-        return <ul>
-            <li>Typings: {typings ? "Loaded" : typings === undefined ? "Loading..." : "Failed loading"}</li>
-            <li>Scripts: {script ? "Loaded" : script === undefined ? "Loading..." : "Failed loading"}</li>
-            <li>Set typings:: {hasSetTypings ? "true" : "false"}</li>
-        </ul>
+        return <>Loading...</>
     }
 }
 
-function Loaded(props: { guild: BotGuild, script: Script, files: File[], refreshScripts: () => unknown }) {
+function LoadedNew(props: { guild: BotGuild, script: Script }) {
+    const { value: scripts, setData } = useFetchedDataBehindGuard(scriptsContext);
     const session = useSession();
     const [isDirty, setIsDirty] = useState(false);
-    const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const newSource = useRef(props.script.original_source);
 
-    useEffect(() => {
-        let ctrlSIsDown = false;
-        function handleKeyDown(evt: KeyboardEvent) {
-            if (evt.ctrlKey && evt.code === "KeyS") {
-                evt.preventDefault();
-                if (!ctrlSIsDown) {
-                    ctrlSIsDown = true;
-                    save();
-                }
+    async function setScript(newScript: Script) {
+        setData((current) => {
+            let cop = [...(current ?? [])];
+            let index = cop.findIndex((v) => v.id === newScript.id);
+            if (index >= 0) {
+                cop[index] = newScript;
             }
-        }
-        function handleKeyUp(evt: KeyboardEvent) {
-            if (evt.ctrlKey && evt.code === "KeyS") {
-                ctrlSIsDown = false;
-            }
-        }
 
-        document.addEventListener("keydown", handleKeyDown);
-        document.addEventListener("keyup", handleKeyUp);
-        return () => {
-            document.removeEventListener("keydown", handleKeyDown);
-            document.removeEventListener("keyup", handleKeyUp);
-        }
-    })
+            return cop;
+        })
+    }
 
     async function toggleScript(scriptId: number, enabled: boolean) {
-        await session.apiClient.updateScript(props.guild.guild.id, scriptId, {
+        let newScript = await session.apiClient.updateScript(props.guild.guild.id, scriptId, {
             enabled,
         });
-        await props.refreshScripts();
+        if (!isErrorResponse(newScript)) {
+            setScript(newScript);
+        }
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
     }
 
-    function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
-        // here is another way to get monaco instance
-        // you can also store it in `useRef` for further usage
-        monacoRef.current = editor;
-    }
-
-    let isSaving = false;
-    async function save() {
-        await monacoRef.current?.getAction('editor.action.formatDocument')?.run()
-        const value = monacoRef.current?.getValue() || "";
-        let innerIsDirty = value !== props.script.original_source
-        setIsDirty(innerIsDirty);
-
-        if (!innerIsDirty || isSaving) {
-            return;
-        }
-        GuildMessages.pushGuildMessage(props.guild.guild.id, {
+    async function save(content: string) {
+        debugMessageStore.pushMessage({
+            guildId: props.guild.guild.id,
             level: "Client",
             message: "Saving..."
         });
 
-
         console.log("Saving!");
-        await session.apiClient.updateScript(props.guild.guild.id, props.script.id, {
-            original_source: value,
-        });
-        await props.refreshScripts();
 
-        GuildMessages.pushGuildMessage(props.guild.guild.id, {
-            level: "Client",
-            message: "Successfully saved! Reloading guild vm..."
+        let updated = await session.apiClient.updateScript(props.guild.guild.id, props.script.id, {
+            original_source: content,
         });
+        if (!isErrorResponse(updated)) {
+            setScript(updated);
+        }
 
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
-        GuildMessages.pushGuildMessage(props.guild.guild.id, {
+        debugMessageStore.pushMessage({
+            guildId: props.guild.guild.id,
             level: "Client",
-            message: "Reloaded guild vm, changes are now live!"
+            message: "Changes are live!"
         });
 
         setIsDirty(false);
     }
 
-    function onvalueChange(value: string | undefined) {
-        if (value !== props.script.original_source) {
-            setIsDirty(true);
-        } else {
-            setIsDirty(false);
-        }
-    }
-
     return <div className="scripting-ide">
-        <Editor
-            // loading
-            // className="scripting-editor"
-            path="file:///some_script.ts"
-            width={"75%"}
-            height={"calc(100vh - 55px)"}
-            className="scripting-editor"
-            theme="vs-dark"
-            defaultLanguage="typescript"
-            defaultValue={props.script.original_source || DEFAULT_EMPTY_SCRIPT_CONTENT}
-            saveViewState={false}
-            onChange={onvalueChange}
-            onMount={handleEditorDidMount}
+        <ScriptEditor
+            initialSource={props.script.original_source}
+            onSave={save}
+            files={scripts.filter((v) => v.id !== props.script.id)
+                .map((v) => ({ name: v.name, content: v.original_source }))}
+            onChange={(source) => {
+                newSource.current = source ?? "";
+                if (source !== props.script.original_source) {
+                    if (!isDirty) {
+                        setIsDirty(true);
+                    }
+                } else {
+                    if (isDirty) {
+                        setIsDirty(false);
+                    }
+                }
+            }}
         />
-        {/* <div className="scripting-editor"> */}
-        {/* <p>test</p> */}
-        {/* </div> */}
         <div className="scripting-panel">
             <div className="scripting-actions">
                 <h3 className="scripting-header">Editing {props.script.name}.ts</h3>
+                <div className="actions-row">
+                    <Button href={`/servers/${props.guild.guild.id}`}>Back to server page</Button>
+                </div>
                 <div className="actions-row">
                     <p>Script is {props.script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</p>
                     {props.script.enabled ?
@@ -258,78 +130,13 @@ function Loaded(props: { guild: BotGuild, script: Script, files: File[], refresh
                 </div>
                 <div className="actions-row">
                     {isDirty ?
-                        <AsyncOpButton className="primary" label="Save" onClick={() => save()}></AsyncOpButton>
+                        <AsyncOpButton className="primary" label="Save" onClick={() => save(newSource.current)}></AsyncOpButton>
                         : <p>No changes made</p>}
                 </div>
             </div>
             <div className="scripting-console">
-                <GuildConsole guild={props.guild}></GuildConsole>
+                <DevConsole guildId={props.guild.guild.id} />
             </div>
         </div>
     </div>
-}
-
-async function downloadTypeDecls(): Promise<File[]> {
-    let resp = await fetch("/typings.tar");
-    let res = await untar(await resp.arrayBuffer());
-    return res
-}
-
-interface File {
-    name: string,
-    mode: string,
-    type: string,
-
-    readAsString(): string,
-    readAsJSON(): unknown,
-}
-
-function GuildConsole(props: { guild: BotGuild }) {
-    const [messages, setMessages] = useState<GuildMessage[]>([])
-    const listenerId = useRef<undefined | number>(undefined);
-    const bottom = useRef<HTMLLIElement>(null);
-
-
-    useEffect(() => {
-        setMessages(GuildMessages.getGuildMessages(props.guild.guild.id));
-
-        WebsocketSession.subscribeGuild(props.guild.guild.id);
-    }, [props.guild.guild.id])
-
-    useEffect(() => {
-        listenerId.current = GuildMessages.addListener(props.guild.guild.id, onNewMessage);
-        return () => {
-            if (listenerId.current) {
-                GuildMessages.removeListener(props.guild.guild.id, listenerId.current);
-            }
-        }
-    }, [props.guild.guild.id])
-
-    useEffect(() => {
-        if (bottom.current) {
-            bottom.current.scrollIntoView({ behavior: 'auto' })
-        }
-    })
-
-    function onNewMessage(message: GuildMessage) {
-        setMessages((current) => {
-            let newMessages = [
-                ...current,
-                message
-            ]
-
-            return newMessages
-        });
-    }
-
-    return <ul className="guild-console">
-        {messages.map(v => <ConsoleMessage key={v.id} message={v}></ConsoleMessage>)}
-        <li ref={bottom}></li>
-    </ul>
-}
-
-function ConsoleMessage(props: { message: GuildMessage }) {
-    return <li className={`guild-console-message guild-console-message-level-${props.message.level.toLowerCase()}`}>
-        <pre><span className="guild-console-message-source">[{props.message.level}{props.message.context}]:</span>{props.message.message}</pre>
-    </li>
 }

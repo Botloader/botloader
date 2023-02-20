@@ -16,6 +16,8 @@ import { UserPremiumPage } from "./pages/User/Premium"
 import { UserScriptsPage } from "./pages/User/Scripts"
 import { Box } from "@mui/material"
 import { EditPluginPage } from "./pages/User/EditPlugin"
+import { EditPluginScriptPage } from "./pages/User/EditPluginScript"
+import { PluginProvider } from "./components/PluginProvider"
 
 export function RoutesElement() {
     let routes = useRoutes(appRoutes);
@@ -92,7 +94,15 @@ const appRoutes: RouteObject[] = [
                     },
                     {
                         path: "plugins/:pluginId",
-                        element: <EditPluginPage />
+                        element: <PluginProvider><EditPluginPage /></PluginProvider>
+                    },
+                    {
+                        path: "plugins/:pluginId/edit_script",
+                        element: <PluginProvider><EditPluginScriptPage isDiff={false} /></PluginProvider>
+                    },
+                    {
+                        path: "plugins/:pluginId/edit_script_diff",
+                        element: <PluginProvider><EditPluginScriptPage isDiff={true} /></PluginProvider>
                     }
                 ]
             },
@@ -177,11 +187,11 @@ function UserPages() {
     return <>
         <RequireLoggedInSession>
             <TopNav />
-            <Box sx={{ display: 'flex' }}>
+            <Box sx={{ display: 'flex', flexGrow: 1 }}>
                 <UserSideNav />
                 <Box
                     component="main"
-                    sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+                    sx={{ display: "flex", flexGrow: 1, alignItems: "stretch", flexDirection: "column", bgcolor: 'background.default' }}
                 >
                     <Outlet />
                 </Box>
