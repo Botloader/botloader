@@ -9,6 +9,7 @@ use validation::{validate, ValidationContext, Validator};
 use crate::{
     errors::ApiErrorResponse,
     middlewares::{plugins::fetch_plugin, LoggedInSession},
+    util::EmptyResponse,
     ApiResult, CurrentConfigStore, CurrentSessionStore,
 };
 
@@ -224,7 +225,7 @@ pub async fn publish_plugin_version(
         }
     }
 
-    Ok(())
+    Ok(EmptyResponse)
 }
 
 #[derive(Deserialize)]
