@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { ApiClient, User } from "botloader-common";
 import { BuildConfig } from "../BuildConfig";
 import { CreateFetcher } from "../Util";
-import { sessionManager } from "../util/SessionManager";
+import { sessionManager } from "../misc/SessionManager";
 import { Navigate } from "react-router-dom";
 
 export const SessionContext = createContext<Session>({

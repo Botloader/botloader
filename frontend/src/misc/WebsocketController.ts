@@ -2,7 +2,7 @@
 import { User } from "botloader-common";
 import { BuildConfig } from "../BuildConfig";
 import { debugMessageStore } from "./DebugMessages";
-import { sessionManager } from "../util/SessionManager";
+import { sessionManager } from "./SessionManager";
 
 export class BotloaderWS {
     ws?: WebSocket;

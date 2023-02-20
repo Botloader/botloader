@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { AsyncOpButton } from "../../components/AsyncOpButton";
 import { DisplayDateTime } from "../../components/DateTime";
 import { useSession } from "../../components/Session";
-import { sessionManager } from "../../util/SessionManager";
+import { sessionManager } from "../../misc/SessionManager";
 
 export function UserGeneralPage() {
     const session = useSession();
