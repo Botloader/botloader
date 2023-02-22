@@ -1,7 +1,7 @@
 use axum::{response::IntoResponse, Extension, Json};
 use common::plugin::Plugin;
 use serde::Deserialize;
-use stores::config::{ConfigStore, CreatePlugin, UpdatePluginMeta};
+use stores::config::{ConfigStore, ConfigStoreError, CreatePlugin, UpdatePluginMeta};
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
 use validation::{validate, ValidationContext, Validator};
@@ -250,9 +250,12 @@ pub async fn guild_add_plugin(
     let script = config_store
         .try_guild_add_script_plugin(current_guild.id, plugin.id, body.auto_update)
         .await
-        .map_err(|err| {
-            error!(?err, "failed adding plugin");
-            ApiErrorResponse::InternalError
+        .map_err(|err| match err {
+            ConfigStoreError::GuildAlreadyHasPlugin => ApiErrorResponse::GuildAlreadyHasPlugin,
+            _ => {
+                error!(?err, "failed adding plugin");
+                ApiErrorResponse::InternalError
+            }
         })?;
 
     bot_rpc

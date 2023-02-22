@@ -34,6 +34,9 @@ pub enum ApiErrorResponse {
 
     #[error("you have created too many plugins")]
     UserPluginLimitReached,
+
+    #[error("guild already has this plugin")]
+    GuildAlreadyHasPlugin,
 }
 
 impl ApiErrorResponse {
@@ -52,6 +55,7 @@ impl ApiErrorResponse {
             Self::NoAccessToPlugin => (StatusCode::FORBIDDEN, 7, None),
             Self::UserPluginLimitReached => (StatusCode::BAD_REQUEST, 8, None),
             Self::PluginNotFound => (StatusCode::BAD_REQUEST, 9, None),
+            Self::GuildAlreadyHasPlugin => (StatusCode::BAD_REQUEST, 10, None),
         }
     }
 }
