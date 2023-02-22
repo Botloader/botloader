@@ -306,3 +306,16 @@ export interface GuildPremiumSlot {
     expires_at: string,
     attached_guild_id: string | null,
 }
+
+export enum ErrorCode {
+    SessionExpired = 1,
+    BadCsrfToken = 2,
+    InternalError = 3,
+    ValidationFailed = 4,
+    NoActiveGuild = 5,
+    NotGuildAdmin = 6,
+    NoAccessToPlugin = 7,
+    UserPluginLimitReached = 8,
+    PluginNotFound = 9,
+    GuildAlreadyHasPlugin = 10,
+}
