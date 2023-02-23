@@ -59,7 +59,7 @@ const appRoutes: RouteObject[] = [
                 path: "samples",
                 element: <>
                     <TopNav />
-                    <div className="page-wrapper"><SamplesPage /></div>
+                    <SamplesPage />
                 </>
             },
             {
@@ -73,7 +73,7 @@ const appRoutes: RouteObject[] = [
                 path: "/servers",
                 element: <>
                     <TopNav />
-                    <div className="page-wrapper"><SelectServerPage /></div>
+                    <SelectServerPage />
                 </>
             },
             {
