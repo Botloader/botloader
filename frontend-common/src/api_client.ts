@@ -191,11 +191,11 @@ export class ApiClient {
     }
 
     async addPluginToGuild(pluginId: number, guildId: string, params: {
-        autoUpdate: boolean,
+        auto_update: boolean,
     }): Promise<ApiResult<ScriptPlugin>> {
-        return await this.put(`/api/guilds/${guildId}/add_plugin`, {
+        return await this.post(`/api/guilds/${guildId}/add_plugin`, {
             plugin_id: pluginId,
-            auto_update: params.autoUpdate,
+            auto_update: params.auto_update,
         });
     }
 
