@@ -1,6 +1,6 @@
 import { User } from "botloader-common";
 
-export function guildIconUrl(g: { icon?: string, id: string }, size = 64): string {
+export function guildIconUrl(g: { icon?: string, id: string }, size: 32 | 64 | 128 = 64): string {
 
     const extension =
         g.icon?.startsWith("a_") ? "gif" : "png";

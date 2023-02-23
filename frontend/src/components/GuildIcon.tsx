@@ -2,7 +2,7 @@ import { guildIconUrl } from "./Util"
 
 type Props = {
     guild: { icon?: string, name: string, id: string }
-    discordSize?: 32 | 64,
+    discordSize?: 32 | 64 | 128,
     size?: number,
 }
 
