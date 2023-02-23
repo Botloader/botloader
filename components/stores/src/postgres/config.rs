@@ -807,7 +807,7 @@ FROM plugins WHERE is_published = true AND is_public = true"#,
             PluginData::ScriptPlugin(d) => d.published_version.unwrap_or_default(),
         };
 
-        Self::inner_create_script(
+        let created = Self::inner_create_script(
             &mut tx,
             guild_id,
             CreateScript {
@@ -818,7 +818,11 @@ FROM plugins WHERE is_published = true AND is_public = true"#,
                 plugin_id: Some(plugin_id),
             },
         )
-        .await
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(created)
     }
 }
 
