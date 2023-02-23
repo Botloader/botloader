@@ -21,6 +21,7 @@ export interface FetchDataHookNotBehindGuard<T> {
     value?: T | null;
     error?: Error | null;
     loading: boolean;
+    waiting: boolean;
     reload: () => unknown;
     setData: (d: SetData<T>) => void;
 }
@@ -38,10 +39,10 @@ export type SetData<T> = T | ((cur: T | null) => T);
 // This Component/Context provider loads a remote resource returning the current load state with
 // methods to update and reload the resource
 export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResult<T>>(
-    loader: () => Promise<T>
+    loader: () => Promise<T | undefined>
 ): FetchDataHook<U> {
 
-    let [result, setResult] = useState<{ state: "loading" | "loaded", value: U | null, error: Error | null }>({
+    let [result, setResult] = useState<{ state: "loading" | "loaded" | "waiting", value: U | null, error: Error | null }>({
         state: "loading",
         value: null,
         error: null
@@ -59,11 +60,19 @@ export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResu
                     error: new Error(`Operation failed: ${resp.resp_code}: ${resp.response?.description} ${resp.response?.code}`)
                 });
             } else {
-                setResult({
-                    state: "loaded",
-                    value: resp as U,
-                    error: null,
-                })
+                if (resp === undefined) {
+                    setResult({
+                        state: "waiting",
+                        value: resp as U,
+                        error: null,
+                    })
+                } else {
+                    setResult({
+                        state: "loaded",
+                        value: resp as U,
+                        error: null,
+                    })
+                }
             }
         } catch (error) {
             setResult({
@@ -84,6 +93,7 @@ export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResu
         value: result.value,
         error: result.error,
         loading: result.state === "loading",
+        waiting: result.state === "waiting",
         setData: (val) => {
             if (typeof val === "function") {
                 setResult((current) => {
@@ -104,7 +114,7 @@ export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResu
     };
 }
 
-export function FetchData<T>({ loader, context, children }: {
+export function FetchDataGuarded<T>({ loader, context, children }: {
     loader: () => Promise<T>,
     context: React.Context<FetchDataHook<ResolvedApiResult<T>>>,
     children: ReactNode
@@ -118,6 +128,19 @@ export function FetchData<T>({ loader, context, children }: {
     </context.Provider>
 }
 
+export function FetchData<T>({ loader, context, children }: {
+    loader: () => Promise<T | undefined>,
+    context: React.Context<FetchDataHook<ResolvedApiResult<T>>>,
+    children: ReactNode
+}) {
+    let hook = useFetchData(loader);
+
+    return <context.Provider value={hook}>
+        {children}
+    </context.Provider>
+}
+
+
 export function useFetchedData<T, Guarded extends boolean = false>(context: React.Context<FetchDataHook<T, Guarded>>): FetchDataHook<T, Guarded> {
     return useContext(context)
 }
@@ -128,7 +151,7 @@ export function useFetchedDataBehindGuard<T>(context: React.Context<FetchDataHoo
 
 export function FetchDataGuard<T>(props: { context: React.Context<FetchDataHook<T>>, children: ReactNode }) {
     let hook = useFetchedData(props.context);
-    if (hook.loading) {
+    if (hook.loading || hook.waiting) {
         return <p>Loading</p>
     }
 
@@ -142,6 +165,7 @@ export function FetchDataGuard<T>(props: { context: React.Context<FetchDataHook<
 export function createFetchDataContext<T>(): React.Context<FetchDataHook<T>> {
     let defaultHook: FetchDataHook<T> = {
         loading: true,
+        waiting: false,
         reload: () => { },
         setData: (d: SetData<T>) => { },
         error: null,
