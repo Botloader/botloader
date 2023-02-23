@@ -1,6 +1,6 @@
 import { Plugin } from "botloader-common";
 import { useParams } from "react-router-dom";
-import { createFetchDataContext, FetchData } from "./FetchData";
+import { createFetchDataContext, FetchDataGuarded } from "./FetchData";
 import { useSession } from "./Session";
 
 export const pluginContext = createFetchDataContext<Plugin>();
@@ -15,7 +15,7 @@ export function PluginProvider({ children }: { children: React.ReactNode }) {
         return scripts;
     }
 
-    return <FetchData loader={fetchPlugin} context={pluginContext}>
+    return <FetchDataGuarded loader={fetchPlugin} context={pluginContext}>
         {children}
-    </FetchData>
+    </FetchDataGuarded>
 }

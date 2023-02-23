@@ -2,7 +2,7 @@ import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material"
 import { isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createFetchDataContext, FetchData, useFetchedDataBehindGuard } from "../../components/FetchData";
+import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../components/FetchData";
 import { useSession } from "../../components/Session";
 
 let scriptsContext = createFetchDataContext<ScriptPlugin[]>();
@@ -22,9 +22,9 @@ export function UserScriptsPage() {
         </Paper>
 
         <Typography variant="h4">Existing script plugins</Typography>
-        <FetchData loader={fetchScripts} context={scriptsContext}>
+        <FetchDataGuarded loader={fetchScripts} context={scriptsContext}>
             <ListScripts />
-        </FetchData>
+        </FetchDataGuarded>
     </>
 }
 

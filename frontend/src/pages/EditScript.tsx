@@ -6,7 +6,7 @@ import { AsyncOpButton } from "../components/AsyncOpButton";
 import { debugMessageStore } from "../misc/DebugMessages";
 import { DevConsole } from "../components/DevConsole";
 import { useBotloaderMonaco } from "../components/BotloaderSdk";
-import { createFetchDataContext, FetchData, useFetchedDataBehindGuard } from "../components/FetchData";
+import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../components/FetchData";
 import { ScriptEditor } from "../components/ScriptEditor";
 import { Button } from "@mui/material";
 
@@ -20,9 +20,9 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
         return resp;
     }
 
-    return <FetchData loader={fetchScripts} context={scriptsContext}>
+    return <FetchDataGuarded loader={fetchScripts} context={scriptsContext}>
         <InnerPage guild={props.guild} scriptId={props.scriptId} />
-    </FetchData>
+    </FetchDataGuarded>
 }
 
 export function InnerPage(props: { guild: BotGuild, scriptId: number }) {
