@@ -1,22 +1,26 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { BotGuild, UserGuild } from "botloader-common";
-import { useGuilds } from "../components/GuildsProvider"
+import { BotGuild } from "botloader-common";
+import { GuildsGuard, useGuilds } from "../components/GuildsProvider"
 import "./SelectServer.css"
 import { Alert, Button, Container, } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { GuildIcon } from "../components/GuildIcon";
 
 export function SelectServerPage() {
+    return <GuildsGuard ><InnerPage /></GuildsGuard>
+}
 
-    const guilds = useGuilds();
+function InnerPage() {
+
+    const guilds = useGuilds()!;
 
     const [joinedHasAdmin, notJoinedHasAdmin] = useMemo(() => {
         if (!guilds) {
             return [[], []];
         }
 
-        const guildsAdmins = guilds.guilds.filter(g => hasAdmin(g.guild));
+        const guildsAdmins = guilds.hasAdmin;
         const joinedHasAdmin = guildsAdmins.filter(g => g.connected);
         const notJoinedHasAdmin = guildsAdmins.filter(g => !g.connected);
 
@@ -47,25 +51,4 @@ function GuildListItem({ guild: g }: { guild: BotGuild }) {
     return <Grid2>
         <Link to={`/servers/${g.guild.id}`}><Button variant="outlined" startIcon={<GuildIcon guild={g.guild} size={64}></GuildIcon>}>{g.guild.name}</Button></Link>
     </Grid2>
-}
-
-const permAdmin = BigInt("0x0000000008");
-const permManageServer = BigInt("0x0000000020");
-
-function hasAdmin(g: UserGuild): boolean {
-    if (g.owner) {
-        return true
-    }
-
-
-    const perms = BigInt(g.permissions);
-    if ((perms & permAdmin) === permAdmin) {
-        return true
-    }
-
-    if ((perms & permManageServer) === permManageServer) {
-        return true
-    }
-
-    return false
 }

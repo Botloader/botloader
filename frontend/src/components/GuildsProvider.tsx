@@ -1,34 +1,42 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { BotGuild, CurrentGuildsResponse, isErrorResponse } from "botloader-common";
+import { createContext, useContext } from "react";
+import { ApiResult, BotGuild, isErrorResponse, UserGuild } from "botloader-common";
 import { useSession } from "./Session";
+import { createFetchDataContext, FetchData, FetchDataGuard, useFetchedData } from "./FetchData";
 
-export const GuildsContext = createContext<CurrentGuildsResponse | undefined>(undefined);
+export const GuildsContext = createFetchDataContext<LoadedGuilds>();
 
 export function GuildsProvider({ children }: { children: React.ReactNode }) {
-    let session = useSession();
-    let [guilds, setGuilds] = useState<CurrentGuildsResponse | undefined>(undefined);
+    const session = useSession();
 
-    useEffect(() => {
-        async function inner() {
-            let guilds = await session.apiClient.getCurrentUserGuilds();
-            if (!isErrorResponse(guilds)) {
-                setGuilds(guilds);
-            }
+    async function fetch(): Promise<ApiResult<LoadedGuilds> | undefined> {
+        if (!session.user) {
+            return undefined
         }
 
-        if (session.user) {
-            inner();
-        } else {
-            console.log("no user, not fetching guilds");
+        const resp = await session.apiClient.getCurrentUserGuilds();
+        if (isErrorResponse(resp)) {
+            return resp
         }
-    }, [session])
 
+        const adminGuilds = resp.guilds.filter((g) => userGuildHasAdmin(g.guild));
 
-    return <GuildsContext.Provider value={guilds}>{children}</GuildsContext.Provider>
+        return {
+            all: resp.guilds,
+            hasAdmin: adminGuilds,
+        }
+    }
+
+    return <FetchData loader={fetch} context={GuildsContext}>
+        {children}
+    </FetchData>
+}
+
+export function GuildsGuard({ children }: { children: React.ReactNode }) {
+    return <FetchDataGuard context={GuildsContext}>{children}</FetchDataGuard>
 }
 
 export function useGuilds() {
-    return useContext(GuildsContext)
+    return useFetchedData(GuildsContext).value
 }
 
 export const CurrentGuildContext = createContext<BotGuild | undefined>(undefined);
@@ -38,7 +46,7 @@ export function CurrentGuildProvider(props: { guildId?: string, children: React.
 
     let current = undefined;
     if (guilds && props.guildId) {
-        current = guilds.guilds.find(g => g.guild.id === props.guildId);
+        current = guilds.all.find(g => g.guild.id === props.guildId);
     }
 
     return <CurrentGuildContext.Provider value={current}>{props.children}</CurrentGuildContext.Provider>
@@ -46,4 +54,31 @@ export function CurrentGuildProvider(props: { guildId?: string, children: React.
 
 export function useCurrentGuild() {
     return useContext(CurrentGuildContext);
+}
+
+interface LoadedGuilds {
+    all: BotGuild[],
+    hasAdmin: BotGuild[],
+}
+
+
+const permAdmin = BigInt("0x0000000008");
+const permManageServer = BigInt("0x0000000020");
+
+function userGuildHasAdmin(g: UserGuild): boolean {
+    if (g.owner) {
+        return true
+    }
+
+
+    const perms = BigInt(g.permissions);
+    if ((perms & permAdmin) === permAdmin) {
+        return true
+    }
+
+    if ((perms & permManageServer) === permManageServer) {
+        return true
+    }
+
+    return false
 }
