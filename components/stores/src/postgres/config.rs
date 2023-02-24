@@ -733,6 +733,35 @@ is_public"#,
         Self::inner_get_plugin(&mut *self.pool.acquire().await?, plugin_id).await
     }
 
+    async fn get_plugins(&self, plugin_ids: &[u64]) -> ConfigStoreResult<Vec<Plugin>> {
+        let ids = plugin_ids.iter().map(|v| *v as i64).collect::<Vec<_>>();
+        Ok(sqlx::query_as!(
+            DbPlugin,
+            r#"SELECT id,
+created_at,
+name,
+short_description,
+long_description,
+is_published,
+is_official,
+plugin_kind,
+current_version_number,
+script_published_source,
+script_published_version_updated_at,
+script_dev_source,
+script_dev_version_updated_at,
+author_id,
+is_public
+FROM plugins WHERE id = ANY($1)"#,
+            &ids,
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+    }
+
     async fn get_user_plugins(&self, user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
         Ok(sqlx::query_as!(
             DbPlugin,

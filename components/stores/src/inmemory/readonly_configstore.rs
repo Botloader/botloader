@@ -208,6 +208,9 @@ impl ConfigStore for ReadOnlyConfigStore {
     async fn get_plugin(&self, _plugin_id: u64) -> ConfigStoreResult<Plugin> {
         todo!()
     }
+    async fn get_plugins(&self, _plugin_ids: &[u64]) -> ConfigStoreResult<Vec<Plugin>> {
+        todo!()
+    }
 
     async fn get_user_plugins(&self, _user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
         todo!()

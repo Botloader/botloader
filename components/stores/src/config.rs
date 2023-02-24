@@ -137,6 +137,7 @@ pub trait ConfigStore: Send + Sync {
 
     async fn create_plugin(&self, create_plugin: CreatePlugin) -> ConfigStoreResult<Plugin>;
     async fn get_plugin(&self, plugin_id: u64) -> ConfigStoreResult<Plugin>;
+    async fn get_plugins(&self, plugin_ids: &[u64]) -> ConfigStoreResult<Vec<Plugin>>;
     async fn get_user_plugins(&self, user_id: u64) -> ConfigStoreResult<Vec<Plugin>>;
     async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>>;
     async fn update_plugin_meta(
