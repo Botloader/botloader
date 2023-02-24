@@ -2,10 +2,10 @@ use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use common::{
-    plugin::{self, Plugin, PluginData, ScriptPluginData},
+    plugin::{Plugin, PluginData, ScriptPluginData},
     user::UserMeta,
 };
-use sqlx::{postgres::types::PgInterval, Executor, PgConnection, PgExecutor};
+use sqlx::{postgres::types::PgInterval, PgConnection};
 use twilight_model::id::{
     marker::{GuildMarker, UserMarker},
     Id,
