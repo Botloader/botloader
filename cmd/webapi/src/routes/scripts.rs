@@ -3,8 +3,9 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use serde::Deserialize;
-use stores::config::{ConfigStore, CreateScript, UpdateScript};
+use common::plugin::Plugin;
+use serde::{Deserialize, Serialize};
+use stores::config::{ConfigStore, CreateScript, Script, UpdateScript};
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
 use validation::validate;
@@ -24,6 +25,44 @@ pub async fn get_all_guild_scripts(
         })?;
 
     Ok(Json(scripts))
+}
+
+#[derive(Serialize)]
+pub struct GetScriptsWithPluginsResponse {
+    scripts: Vec<Script>,
+    plugins: Vec<Plugin>,
+}
+
+pub async fn get_all_guild_scripts_with_plugins(
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(current_guild): Extension<CurrentUserGuild>,
+) -> ApiResult<impl IntoResponse> {
+    let scripts = config_store
+        .list_scripts(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(?err, "failed fetching guild scripts");
+            ApiErrorResponse::InternalError
+        })?;
+
+    let fetch_plugins = scripts
+        .iter()
+        .filter_map(|v| v.plugin_id)
+        .collect::<Vec<_>>();
+
+    let plugins = if !fetch_plugins.is_empty() {
+        config_store
+            .get_plugins(&fetch_plugins)
+            .await
+            .map_err(|err| {
+                error!(?err, "failed fetching plugins");
+                ApiErrorResponse::InternalError
+            })?
+    } else {
+        Vec::new()
+    };
+
+    Ok(Json(GetScriptsWithPluginsResponse { plugins, scripts }))
 }
 
 #[derive(Deserialize)]

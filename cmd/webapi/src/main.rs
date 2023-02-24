@@ -132,6 +132,10 @@ async fn main() {
             get(routes::scripts::get_all_guild_scripts).put(routes::scripts::create_guild_script),
         )
         .route(
+            "/scripts_with_plugins",
+            get(routes::scripts::get_all_guild_scripts_with_plugins),
+        )
+        .route(
             "/scripts/:script_id",
             patch(routes::scripts::update_guild_script)
                 .delete(routes::scripts::delete_guild_script),
