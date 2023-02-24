@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Script } from "botloader-common";
+import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
 import { useCurrentGuild } from "../components/GuildsProvider";
 import { useSession } from "../components/Session";
 import { AsyncOpButton } from "../components/AsyncOpButton";
@@ -9,6 +9,7 @@ import { Panel } from "../components/Panel";
 import { SideNav } from "../components/SideNav";
 import { EditScriptPage } from "./EditScript";
 import { Alert, Box, Button, Paper, Stack, Switch, Typography } from "@mui/material";
+import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../components/FetchData";
 
 export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
     let guild = useCurrentGuild();
@@ -74,14 +75,18 @@ export function EditGuildScript() {
     return <EditScriptPage guild={guild} scriptId={parseInt(scriptId!)}></EditScriptPage>
 }
 
+const scriptsContext = createFetchDataContext<ScriptsWithPlugins>();
 
 export function GuildHome() {
     const guild = useCurrentGuild()!;
+    const session = useSession();
 
     return <Stack spacing={2}>
         <Alert severity="warning">This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</Alert>
         <PremiumPanel guild={guild}></PremiumPanel>
-        <GuildScripts guild={guild}></GuildScripts>
+        <FetchDataGuarded context={scriptsContext} loader={async () => {
+            return await session.apiClient.getAllScriptsWithPlugins(guild.guild.id);
+        }}><GuildScripts guild={guild}></GuildScripts></FetchDataGuarded>
     </Stack>
 }
 
@@ -149,31 +154,19 @@ function InnerGuildSettings(props: { guild: BotGuild, settings: GuildMetaConfig 
 }
 
 function GuildScripts(props: { guild: BotGuild }) {
-    const [scripts, setScripts] = useState<Script[] | undefined | null>(undefined);
     const session = useSession();
     const createScriptInput = useRef<HTMLInputElement>(null);
     const [createError, setCreateError] = useState("");
     const [scriptCreated, setScriptCreated] = useState<Script | null>(null)
 
-    async function loadScripts() {
-        let resp = await session.apiClient.getAllScripts(props.guild.guild.id);
-        if (isErrorResponse(resp)) {
-            setScripts(null);
-        } else {
-            setScripts(resp);
-        }
-    }
-
-    useEffect(() => {
-        loadScripts();
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props, session])
+    const { value: scripts, reload } = useFetchedDataBehindGuard(scriptsContext);
+    const pluginScripts = scripts.scripts.filter((v) => v.plugin_id !== null)
+    const normalScripts = scripts.scripts.filter((v) => v.plugin_id === null)
 
     async function delScript(scriptId: number) {
         let resp = await session.apiClient.delScript(props.guild.guild.id, scriptId);
         if (!isErrorResponse(resp)) {
-            await loadScripts();
+            reload();
         }
 
         await session.apiClient.reloadGuildVm(props.guild.guild.id);
@@ -184,15 +177,9 @@ function GuildScripts(props: { guild: BotGuild }) {
             enabled,
         });
         if (!isErrorResponse(resp)) {
-            let newScripts = [...scripts ?? []];
-            let script = newScripts.find(v => v.id === scriptId);
-            if (script) {
-                script.enabled = resp.enabled;
-            }
-            setScripts(newScripts);
+            await session.apiClient.reloadGuildVm(props.guild.guild.id);
+            reload();
         }
-
-        await session.apiClient.reloadGuildVm(props.guild.guild.id);
     }
 
     async function createScript() {
@@ -227,24 +214,32 @@ function GuildScripts(props: { guild: BotGuild }) {
         </Paper >
         <Typography variant="h4" sx={{ ml: 1, mb: 1 }}>Scripts</Typography>
         <Paper>
-            {scripts ?
-                <Stack spacing={1}>
-                    {scripts.map(script => <ScriptItem key={script.id}
-                        script={script}
-                        guildId={props.guild.guild.id}
-                        toggleScript={toggleScript}
-                        deleteScript={delScript} />)}
-                </Stack>
-                : scripts === null
-                    ? <p>Failed loading scripts</p>
-                    : <p>Loading...</p>
-            }
+            <Stack spacing={1}>
+                {normalScripts.map(script => <ScriptItem key={script.id}
+                    script={script}
+                    guildId={props.guild.guild.id}
+                    toggleScript={toggleScript}
+                    deleteScript={delScript} />)}
+            </Stack>
+        </Paper>
+
+        <Typography variant="h4" sx={{ ml: 1, mb: 1 }}>Plugins</Typography>
+        <Paper>
+            <Stack spacing={1}>
+                {pluginScripts.map(script => <ScriptItem key={script.id}
+                    script={script}
+                    plugin={scripts.plugins.find((p) => p.id === script.plugin_id)}
+                    guildId={props.guild.guild.id}
+                    toggleScript={toggleScript}
+                    deleteScript={delScript} />)}
+            </Stack>
         </Paper>
     </>
 }
 
-function ScriptItem({ script, guildId, toggleScript, deleteScript }: {
+function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
     script: Script,
+    plugin?: Plugin,
     guildId: string,
     toggleScript: (id: number, on: boolean) => any,
     deleteScript: (id: number) => any
