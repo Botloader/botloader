@@ -21,7 +21,6 @@ use stores::config::Script;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
-use url::Url;
 use v8::{CreateParams, HeapStatistics, IsolateHandle};
 use vmthread::{CreateVmSuccess, ShutdownHandle, ShutdownReason, VmInterface};
 
@@ -388,12 +387,8 @@ impl Vm {
         let eval_res = {
             let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
 
-            let parsed_uri =
-                Url::parse(format!("file:///guild_scripts/{}.js", script.script.name).as_str())
-                    .unwrap();
-
             let fut = rt.load_side_module(
-                &parsed_uri,
+                &script.url,
                 Some(prepend_script_source_header(
                     &script.compiled.output,
                     Some(&script.script),

@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use deno_core::{v8_set_flags, SourceMapGetter};
 use stores::config::Script;
 use tscompiler::CompiledItem;
+use url::Url;
 
 pub mod error;
 pub mod moduleloader;
@@ -83,6 +84,7 @@ pub fn init_v8_flags(v8_flags: &[String]) {
 #[derive(Clone)]
 pub struct ScriptState {
     pub script: Script,
+    pub url: url::Url,
     pub state: ScriptLoadState,
     pub compiled: CompiledItem,
 }
@@ -131,26 +133,11 @@ impl ScriptsStateStore {
         line: u32,
         col: u32,
     ) -> Option<(String, u32, u32)> {
-        if let Some(guild_script_name) = Self::get_guild_script_name(res) {
-            if let Some(script_load) = self
-                .scripts
-                .iter()
-                .find(|v| v.script.name == guild_script_name)
-                .cloned()
-            {
-                if let Some((line, col)) = script_load.get_original_line_col(line, col) {
-                    return Some((format!("guild_scripts/{guild_script_name}.ts"), line, col));
-                }
-            }
-        }
+        if let Some(script_load) = self.scripts.iter().find(|v| v.url.as_str() == res).cloned() {
+            if let Some((line, col)) = script_load.get_original_line_col(line, col) {
+                let excl_js = script_load.url.as_str().strip_suffix(".js").unwrap();
 
-        None
-    }
-
-    pub fn get_guild_script_name(res: &str) -> Option<&str> {
-        if let Some(stripped) = res.strip_prefix("file:///guild_scripts/") {
-            if let Some(end_trimmed) = stripped.strip_suffix(".js") {
-                return Some(end_trimmed);
+                return Some((format!("{excl_js}.ts"), line, col));
             }
         }
 
@@ -162,6 +149,7 @@ impl ScriptsStateStore {
             Ok(compiled) => {
                 let item = ScriptState {
                     compiled,
+                    url: script_url(&script),
                     script,
                     state: ScriptLoadState::Unloaded,
                 };
@@ -207,15 +195,13 @@ pub(crate) struct ScriptStateStoreWrapper(pub(crate) ScriptsStateStoreHandle);
 impl SourceMapGetter for ScriptStateStoreWrapper {
     fn get_source_map(&self, file_name: &str) -> Option<Vec<u8>> {
         let state = self.0.borrow();
-        if let Some(guild_script_name) = ScriptsStateStore::get_guild_script_name(file_name) {
-            if let Some(script_load) = state
-                .scripts
-                .iter()
-                .find(|v| v.script.name == guild_script_name)
-                .cloned()
-            {
-                return Some(script_load.compiled.source_map_raw.as_bytes().into());
-            }
+        if let Some(script_load) = state
+            .scripts
+            .iter()
+            .find(|v| v.url.as_str() == file_name)
+            .cloned()
+        {
+            return Some(script_load.compiled.source_map_raw.as_bytes().into());
         }
 
         None
@@ -224,4 +210,12 @@ impl SourceMapGetter for ScriptStateStoreWrapper {
     fn get_source_line(&self, file_name: &str, line_number: usize) -> Option<String> {
         Some(format!("{file_name}:{line_number}"))
     }
+}
+
+fn script_url(script: &Script) -> Url {
+    if let Some(plugin_id) = &script.plugin_id {
+        return Url::parse(&format!("file:///plugins/{}/{}.js", plugin_id, script.name)).unwrap();
+    }
+
+    return Url::parse(&format!("file:///guild_scripts/{}.js", script.name)).unwrap();
 }

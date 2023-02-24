@@ -29,17 +29,12 @@ impl ModuleManager {
         &self,
         module_specifier: &deno_core::ModuleSpecifier,
     ) -> Option<ModuleSource> {
-        if !module_specifier.path().starts_with("/guild_scripts/") {
-            return None;
-        }
-
-        let name = module_specifier
-            .path()
-            .strip_prefix("/guild_scripts/")?
-            .strip_suffix(".js")?;
-
         let mut store = self.guild_scripts.borrow_mut();
-        if let Some(script) = store.scripts.iter_mut().find(|v| v.script.name == name) {
+        if let Some(script) = store
+            .scripts
+            .iter_mut()
+            .find(|v| &v.url == module_specifier)
+        {
             script.state = ScriptLoadState::Loaded;
 
             let source =
