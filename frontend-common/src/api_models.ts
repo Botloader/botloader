@@ -51,6 +51,8 @@ export interface Script {
     original_source: string,
     compiled_js: string,
     enabled: boolean,
+    plugin_id: number | null,
+    plugin_auto_update: boolean | null,
 }
 
 export interface CreateScript {
@@ -94,3 +96,8 @@ export interface ScriptPluginData {
 }
 
 export type ScriptPlugin = Plugin<ScriptPluginData>;
+
+export interface ScriptsWithPlugins {
+    scripts: Script[],
+    plugins: Plugin[]
+}

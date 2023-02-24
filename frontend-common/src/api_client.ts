@@ -1,5 +1,5 @@
 import { GuildMetaConfig } from ".";
-import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Plugin, Script, ScriptPlugin, SessionMeta, UpdateScript, User } from "./api_models";
+import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Plugin, Script, ScriptPlugin, ScriptsWithPlugins, SessionMeta, UpdateScript, User } from "./api_models";
 
 export class ApiClient {
     token?: string;
@@ -113,8 +113,12 @@ export class ApiClient {
         return await this.post(`/api/premium_slots/${slotId}/update_guild`, { guild_id: guildId });
     }
 
-    async getAllScripts(guildId: string,): Promise<ApiResult<Script[]>> {
+    async getAllScripts(guildId: string): Promise<ApiResult<Script[]>> {
         return await this.get(`/api/guilds/${guildId}/scripts`);
+    }
+
+    async getAllScriptsWithPlugins(guildId: string): Promise<ApiResult<ScriptsWithPlugins>> {
+        return await this.get(`/api/guilds/${guildId}/scripts_with_plugins`);
     }
 
     async createScript(guildId: string, data: CreateScript): Promise<ApiResult<Script>> {
