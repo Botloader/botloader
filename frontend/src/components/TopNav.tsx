@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BuildConfig } from "../BuildConfig";
 import { useCurrentGuild } from "./GuildsProvider";
 import { useSession } from "./Session";
@@ -17,6 +17,7 @@ import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import { UseSideNavController } from "./SideNavManager";
+import { BlLink } from "./BLLink";
 
 export const TopBarNavPages = [{
     label: "Docs",
@@ -125,8 +126,9 @@ export function TopNav() {
                             {TopBarNavPages.map((page) => (
                                 <MenuItem
                                     key={page.label}
-                                    onClick={() => handleClickNavMenuItem(page)}
-                                    href={page.useHref ? page.path : ""}
+                                    component={Link}
+                                    to={page.path}
+                                    reloadDocument={page.useHref}
                                 >
                                     <Typography textAlign="center">{page.label}</Typography>
                                 </MenuItem>
@@ -151,39 +153,39 @@ export function TopNav() {
                     </Typography>
                     <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
                         {TopBarNavPages.map((page) => (
-                            <Button
+                            <BlLink
                                 key={page.label}
-                                onClick={() => handleClickNavMenuItem(page)}
                                 sx={{ my: 2, color: 'white', display: 'block' }}
-                                href={page.useHref ? page.path : undefined}
+                                to={page.path}
+                                skipClientRouting={page.useHref}
                             >
                                 {page.label}
-                            </Button>
+                            </BlLink>
                         ))}
                     </Box>
 
                     <Box sx={{ flexGrow: 0 }}>
                         {currentGuild ?
-                            <Tooltip title="Change server">
-                                <IconButton onClick={() => navigate("/servers")} sx={{ p: 0, marginRight: 1 }}>
+                            <Tooltip title="Change server" >
+                                <IconButton component={Link} to="/servers">
                                     <GuildIcon size={40} guild={currentGuild.guild}></GuildIcon>
                                 </IconButton>
                             </Tooltip>
                             : session.user ?
-                                <Button onClick={() => navigate("/servers")}>Manage</Button>
+                                <BlLink to={"/servers"} sx={{ mr: 1 }}>Servers</BlLink>
                                 // Don't show the pick server button if were not logged in
                                 : null}
 
                         {session.user ?
                             <>
                                 <Tooltip title="User Settings">
-                                    <IconButton onClick={() => navigate("/user/general")} sx={{ p: 0 }}>
+                                    <IconButton onClick={() => navigate("/user/general")}>
                                         <Avatar alt={session.user.username} src={userAvatarUrl(session.user, 64)} />
                                     </IconButton>
                                 </Tooltip>
                             </> :
                             <Tooltip title="Log in">
-                                <Button href={BuildConfig.botloaderApiBase + "/login"}>Sign in</Button>
+                                <BlLink to={BuildConfig.botloaderApiBase + "/login"} skipClientRouting>Sign in</BlLink>
                             </Tooltip>}
                     </Box>
                 </Toolbar>

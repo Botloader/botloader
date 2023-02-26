@@ -18,10 +18,6 @@ a {
   color: white;
 }
 
-a:hover {
-  text-decoration: underline !important;
-}
-
 .bl-button {
   display: flex;
   width: fit-content;

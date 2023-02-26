@@ -17,13 +17,18 @@ const DEFAULT_EMPTY_SCRIPT_CONTENT =
 export function ScriptEditor(props: {
     onSave: (content: string) => any,
     onChange?: (content: string | undefined) => any,
-    initialSource: string | null,
+    initialSource?: string,
     originalDiffSource?: string,
     isDiffEditor?: boolean,
     files?: IncludeFile[],
 }) {
     const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const blSdkInit = useBotloaderMonaco(props.files);
+
+    // we track it separately because otherwise it would clear when swapping between diff and code editor
+    // 
+    // the proper way is probably saving the model but ehh
+    const editedValue = useRef(props.initialSource || DEFAULT_EMPTY_SCRIPT_CONTENT);
 
     useEffect(() => {
         let ctrlSIsDown = false;
@@ -79,6 +84,7 @@ export function ScriptEditor(props: {
     }
 
     function onValueChange(value: string | undefined) {
+        editedValue.current = value || "";
         if (props.onChange) {
             props.onChange(value);
         }
@@ -90,7 +96,7 @@ export function ScriptEditor(props: {
 
     if (props.isDiffEditor) {
         return <DiffEditor
-            modified={props.initialSource || ""}
+            modified={editedValue.current || ""}
             modifiedModelPath="file:///temp.ts"
             original={props.originalDiffSource}
             originalModelPath="file://temp_og.ts"
@@ -105,7 +111,7 @@ export function ScriptEditor(props: {
             path="file:///some_script.ts"
             theme="vs-dark"
             defaultLanguage="typescript"
-            defaultValue={props.initialSource || DEFAULT_EMPTY_SCRIPT_CONTENT}
+            defaultValue={editedValue.current}
             saveViewState={false}
             onChange={onValueChange}
             onMount={handleEditorDidMount}
@@ -114,7 +120,7 @@ export function ScriptEditor(props: {
 
 }
 
-interface IncludeFile {
+export interface IncludeFile {
     name: string,
     content: string,
 }

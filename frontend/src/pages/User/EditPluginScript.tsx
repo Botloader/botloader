@@ -1,51 +1,72 @@
-import { Box, Button, Chip, Divider, Typography } from "@mui/material";
-import { ScriptPlugin } from "botloader-common";
+import { Box, Button, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { isErrorResponse, ScriptPlugin } from "botloader-common";
+import { useState } from "react";
+import { BlLink } from "../../components/BLLink";
 import { DevConsole } from "../../components/DevConsole";
 import { useFetchedDataBehindGuard } from "../../components/FetchData";
 import { pluginContext } from "../../components/PluginProvider";
-import { ScriptEditor } from "../../components/ScriptEditor";
+import { ScriptingIde } from "../../components/ScriptIde";
 import { useSession } from "../../components/Session";
 import { debugMessageStore } from "../../misc/DebugMessages";
 
-export function EditPluginScriptPage({ isDiff }: { isDiff: boolean }) {
+export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) {
     const session = useSession();
-    const { value: plugin } = useFetchedDataBehindGuard(pluginContext);
-
+    const { value: plugin, setData } = useFetchedDataBehindGuard(pluginContext);
+    const [diffSource, setDiffSource] = useState<"published" | "dev" | null>(initialDiff ? "published" : null)
     const cast = plugin as ScriptPlugin;
+
 
     async function save(content: string) {
         debugMessageStore.pushMessage({
             level: "Client",
             message: "Saving...",
         })
-        await session.apiClient.updateScriptPluginDevVersion(plugin.id, { source: content });
-        debugMessageStore.pushMessage({
-            level: "Client",
-            message: "Saved",
-        })
+        const resp = await session.apiClient.updateScriptPluginDevVersion(plugin.id, { source: content });
+        if (!isErrorResponse(resp)) {
+            setData(resp);
+            debugMessageStore.pushMessage({
+                level: "Client",
+                message: "Saved",
+            })
+        }
     }
 
-    return <Box sx={{ display: "flex", flexDirection: "row", flexGrow: 1 }}>
-        <Box sx={{ flexGrow: 1, marginRight: "250px" }}>
-            <ScriptEditor
-                initialSource={cast.data.dev_version || null}
-                onSave={save}
-                files={[]}
-                isDiffEditor={isDiff}
-                originalDiffSource={cast.data.published_version || ""}
-            />
+    return <ScriptingIde
+        initialSource={cast.data.dev_version || undefined}
+        onSave={save}
+        files={[]}
+        isDiffEditor={diffSource !== null}
+        diffSource={diffSource === "dev" ? cast.data.dev_version ?? "" : cast.data.published_version ?? ""}
+    >
+        <Box p={1}>
+            <Typography>Editing development version of plugin</Typography>
+            <Chip variant="outlined" label={plugin.name} />
+            <BlLink to={`/user/plugins/${plugin.id}`}>Back</BlLink>
+            <Divider sx={{ mb: 1 }} />
+            <Typography>Diff mode</Typography>
+            <ToggleButtonGroup
+                color="primary"
+                value={diffSource === null ? "off" : diffSource}
+                exclusive
+                onChange={(_, value) => {
+                    if (value === "off") {
+                        setDiffSource(null)
+                    } else {
+                        setDiffSource(value as "published" | "dev");
+                    }
+                }}
+                aria-label="Diff mode"
+            >
+                <ToggleButton value="published">Published</ToggleButton>
+                <ToggleButton value="dev">Dev</ToggleButton>
+                <ToggleButton value="off">Off</ToggleButton>
+            </ToggleButtonGroup>
+            <Divider sx={{ mb: 1 }} />
+            <Typography mt={1} variant="body1">Test this development version on a server before publishing it</Typography>
+            <Button>Test on a server</Button>
         </Box>
-        <Box width={250} display="flex" flexDirection="column" position={"absolute"} top={69} bottom={0} right={0}>
-            <Box p={1}>
-                <Typography>Editing development version of plugin <Chip variant="outlined" label={plugin.name} /></Typography>
-                <Button color="primary" href={`/user/plugins/${plugin.id}`}>Back</Button>
-                <Divider />
-                <Typography mt={1} variant="body1">Test this development version on a server before publishing it</Typography>
-                <Button>Test on a server</Button>
-            </Box>
-            <Box sx={{ overflowY: "auto" }}>
-                <DevConsole />
-            </Box>
+        <Box sx={{ overflowY: "auto" }}>
+            <DevConsole />
         </Box>
-    </Box >
+    </ScriptingIde >
 }

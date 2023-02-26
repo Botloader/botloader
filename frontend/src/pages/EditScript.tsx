@@ -1,22 +1,22 @@
-import { BotGuild, isErrorResponse, Script } from "botloader-common";
+import { BotGuild, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
 import { useRef, useState } from "react";
 import { useSession } from "../components/Session";
 import "./EditScript.css";
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { debugMessageStore } from "../misc/DebugMessages";
 import { DevConsole } from "../components/DevConsole";
-import { useBotloaderMonaco } from "../components/BotloaderSdk";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../components/FetchData";
-import { ScriptEditor } from "../components/ScriptEditor";
-import { Button } from "@mui/material";
+import { Box, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { ScriptingIde } from "../components/ScriptIde";
+import { BlLink } from "../components/BLLink";
 
-export const scriptsContext = createFetchDataContext<Script[]>();
+export const scriptsContext = createFetchDataContext<ScriptsWithPlugins>();
 
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     const session = useSession();
 
     async function fetchScripts() {
-        let resp = await session.apiClient.getAllScripts(props.guild.guild.id);
+        let resp = await session.apiClient.getAllScriptsWithPlugins(props.guild.guild.id);
         return resp;
     }
 
@@ -27,35 +27,37 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
 
 export function InnerPage(props: { guild: BotGuild, scriptId: number }) {
     const { value: scripts } = useFetchedDataBehindGuard(scriptsContext);
-    const script = scripts.find((v) => v.id === props.scriptId);
-    const loaded = useBotloaderMonaco(scripts
-        .filter((v) => v.id !== props.scriptId)
-        .map((v) => ({ name: v.name, content: v.original_source })))
+    const script = scripts.scripts.find((v) => v.id === props.scriptId);
+    const plugin = script?.plugin_id !== null ? scripts.plugins.find((v) => v.id === script?.plugin_id) : undefined;
 
     if (!script) {
         return <>Unknown script</>
-    } else if (loaded) {
-        return <LoadedNew guild={props.guild} script={script}></LoadedNew>
+    } else if (script.plugin_id && !plugin) {
+        return <>Unknown plugin</>
     } else {
-        return <>Loading...</>
+        return <LoadedNew guild={props.guild} script={script} plugin={plugin}></LoadedNew>
     }
 }
 
-function LoadedNew(props: { guild: BotGuild, script: Script }) {
+function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) {
     const { value: scripts, setData } = useFetchedDataBehindGuard(scriptsContext);
     const session = useSession();
     const [isDirty, setIsDirty] = useState(false);
     const newSource = useRef(props.script.original_source);
+    const [diffSource, setDiffSource] = useState<"unsaved" | "pluginPublished" | null>(null);
 
     async function setScript(newScript: Script) {
         setData((current) => {
-            let cop = [...(current ?? [])];
-            let index = cop.findIndex((v) => v.id === newScript.id);
+            let scriptsCop = [...(current?.scripts ?? [])]
+            let index = scriptsCop.findIndex((v) => v.id === newScript.id);
             if (index >= 0) {
-                cop[index] = newScript;
+                scriptsCop[index] = newScript;
             }
 
-            return cop;
+            return {
+                plugins: current?.plugins ?? [],
+                scripts: scriptsCop,
+            };
         })
     }
 
@@ -95,12 +97,14 @@ function LoadedNew(props: { guild: BotGuild, script: Script }) {
         setIsDirty(false);
     }
 
-    return <div className="scripting-ide">
-        <ScriptEditor
+    return <Box display={"flex"} flexGrow="1">
+        <ScriptingIde
             initialSource={props.script.original_source}
             onSave={save}
-            files={scripts.filter((v) => v.id !== props.script.id)
+            files={scripts.scripts.filter((v) => v.id !== props.script.id && v.plugin_id === null)
                 .map((v) => ({ name: v.name, content: v.original_source }))}
+            isDiffEditor={diffSource !== null}
+            diffSource={diffSource === "unsaved" ? props.script.original_source ?? "" : props.plugin?.data.published_version ?? ""}
             onChange={(source) => {
                 newSource.current = source ?? "";
                 if (source !== props.script.original_source) {
@@ -113,30 +117,45 @@ function LoadedNew(props: { guild: BotGuild, script: Script }) {
                     }
                 }
             }}
-        />
-        <div className="scripting-panel">
-            <div className="scripting-actions">
-                <h3 className="scripting-header">Editing {props.script.name}.ts</h3>
-                <div className="actions-row">
-                    <Button href={`/servers/${props.guild.guild.id}`}>Back to server page</Button>
-                </div>
-                <div className="actions-row">
-                    <p>Script is {props.script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</p>
-                    {props.script.enabled ?
-                        <AsyncOpButton className="primary" label="Disable" onClick={() => toggleScript(props.script.id, false)}></AsyncOpButton>
-                        :
-                        <AsyncOpButton className="primary" label="Enable" onClick={() => toggleScript(props.script.id, true)}></AsyncOpButton>
-                    }
-                </div>
-                <div className="actions-row">
-                    {isDirty ?
-                        <AsyncOpButton className="primary" label="Save" onClick={() => save(newSource.current)}></AsyncOpButton>
-                        : <p>No changes made</p>}
-                </div>
-            </div>
-            <div className="scripting-console">
+
+        >
+            <Box p={1}>
+                <Typography>Editing script</Typography><Chip variant="outlined" label={props.script.name} />
+                <BlLink to={`/servers/${props.guild.guild.id}`}>Back</BlLink>
+                <Divider sx={{ mb: 1 }} />
+                <Typography>Diff mode</Typography>
+                <ToggleButtonGroup
+                    color="primary"
+                    value={diffSource === null ? "off" : diffSource}
+                    exclusive
+                    onChange={(_, value) => {
+                        if (value === "off") {
+                            setDiffSource(null)
+                        } else {
+                            setDiffSource(value as "unsaved" | "pluginPublished");
+                        }
+                    }}
+                    aria-label="Diff mode"
+                >
+                    {props.script.plugin_id !== null ? <ToggleButton value="pluginPublished">Latest Plugin</ToggleButton> : null}
+                    <ToggleButton value="unsaved">Saved</ToggleButton>
+                    <ToggleButton value="off">Off</ToggleButton>
+                </ToggleButtonGroup>
+                <Divider sx={{ mb: 1 }} />
+                <Typography>Script is {props.script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</Typography>
+                {props.script.enabled ?
+                    <AsyncOpButton className="primary" label="Disable" onClick={() => toggleScript(props.script.id, false)}></AsyncOpButton>
+                    :
+                    <AsyncOpButton className="primary" label="Enable" onClick={() => toggleScript(props.script.id, true)}></AsyncOpButton>
+                }
+                <Divider sx={{ mb: 1 }} />
+                {isDirty ?
+                    <AsyncOpButton className="primary" label="Save" onClick={() => save(newSource.current)}></AsyncOpButton>
+                    : <p>No changes made</p>}
+            </Box>
+            <Box sx={{ overflowY: "auto" }}>
                 <DevConsole guildId={props.guild.guild.id} />
-            </div>
-        </div>
-    </div>
+            </Box>
+        </ScriptingIde >
+    </Box>
 }

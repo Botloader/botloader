@@ -1,6 +1,6 @@
 import { Button, Container, Paper } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
-import { Link } from 'react-router-dom';
+import { BlLink } from '../components/BLLink';
 import pogshowcase from '../img/pogshowcase.png';
 
 export function LandingPage() {
@@ -23,7 +23,7 @@ export function LandingPage() {
                 <img src={pogshowcase} alt="screenshot" style={{ borderRadius: "10px", marginTop: "20px", objectFit: "contain", minWidth: 0 }}></img>
             </Grid2>
             <div style={{ display: "flex", justifyContent: "center" }}>
-                <Link to="/servers"><Button>Control panel</Button></Link>
+                <BlLink to="/servers">Control panel</BlLink>
                 <Button href="https://discord.gg/HJM3MqVBfw">Discord server</Button>
                 <Button href="/docs/">Documentation</Button>
             </div>

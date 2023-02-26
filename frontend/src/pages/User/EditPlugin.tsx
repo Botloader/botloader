@@ -2,7 +2,6 @@ import { Alert, Box, CircularProgress, Divider, Paper, Snackbar, Stack, TextFiel
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { BotGuild, isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { DisplayDateTime } from "../../components/DateTime";
 import { useFetchedDataBehindGuard } from "../../components/FetchData";
 import { GuildsGuard, useGuilds } from "../../components/GuildsProvider";
@@ -13,6 +12,7 @@ import Button from '@mui/material/Button';
 import ListItem from '@mui/material/ListItem';
 import Typography from '@mui/material/Typography';
 import { GuildSelectionDialog } from "../../components/GuildSelectionDialog";
+import { BlLink } from "../../components/BLLink";
 
 
 export function EditPluginPage() {
@@ -101,7 +101,6 @@ function ScriptPluginSettings() {
     const { value: plugin, reload } = useFetchedDataBehindGuard(pluginContext);
     const session = useSession();
     const cast = plugin as ScriptPlugin;
-    const navigate = useNavigate();
 
     async function publish() {
         await session.apiClient.publishScriptPluginVersion(plugin.id, { source: cast.data.dev_version ?? "" });
@@ -120,12 +119,12 @@ function ScriptPluginSettings() {
                 ? <Typography>Last development version updated at: <DisplayDateTime dt={cast.data.dev_version_updated_at!} /> </Typography>
                 : <Typography>You have done zero development yet on this plugin :(</Typography>}
 
-            <Button onClick={() => navigate(`/user/plugins/${plugin.id}/edit_script_diff`)}>View changes</Button>
+            <BlLink to={`/user/plugins/${plugin.id}/edit_script_diff`}>View changes</BlLink>
             <Button onClick={publish}>Publish</Button>
         </ListItem>
 
         <ListItem>
-            <Button onClick={() => navigate(`/user/plugins/${plugin.id}/edit_script`)}>Edit development version</Button>
+            <BlLink to={`/user/plugins/${plugin.id}/edit_script`}>Edit development version</BlLink>
         </ListItem>
 
     </Paper>

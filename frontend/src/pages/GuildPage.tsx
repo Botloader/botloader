@@ -15,9 +15,9 @@ export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
     let guild = useCurrentGuild();
     if (guild) {
         if (guild.connected) {
-            return <div className="guild-page">
+            return <>
                 {children}
-            </div>
+            </>
         } else {
             return <div className="page-wrapper">
                 <InviteGuildPage guild={guild} />

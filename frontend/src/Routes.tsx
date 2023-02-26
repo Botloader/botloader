@@ -98,11 +98,11 @@ const appRoutes: RouteObject[] = [
                     },
                     {
                         path: "plugins/:pluginId/edit_script",
-                        element: <PluginProvider><EditPluginScriptPage isDiff={false} /></PluginProvider>
+                        element: <PluginProvider><EditPluginScriptPage initialDiff={false} /></PluginProvider>
                     },
                     {
                         path: "plugins/:pluginId/edit_script_diff",
-                        element: <PluginProvider><EditPluginScriptPage isDiff={true} /></PluginProvider>
+                        element: <PluginProvider><EditPluginScriptPage initialDiff={true} /></PluginProvider>
                     }
                 ]
             },

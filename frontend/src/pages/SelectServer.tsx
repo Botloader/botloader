@@ -6,6 +6,7 @@ import "./SelectServer.css"
 import { Alert, Button, Container, } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { GuildIcon } from "../components/GuildIcon";
+import { BlLink } from "../components/BLLink";
 
 export function SelectServerPage() {
     return <GuildsGuard ><InnerPage /></GuildsGuard>
@@ -49,6 +50,6 @@ function InnerPage() {
 
 function GuildListItem({ guild: g }: { guild: BotGuild }) {
     return <Grid2>
-        <Link to={`/servers/${g.guild.id}`}><Button variant="outlined" startIcon={<GuildIcon guild={g.guild} size={64}></GuildIcon>}>{g.guild.name}</Button></Link>
+        <BlLink to={`/servers/${g.guild.id}`}><Button variant="outlined" startIcon={<GuildIcon guild={g.guild} size={64}></GuildIcon>}>{g.guild.name}</Button></BlLink>
     </Grid2>
 }
