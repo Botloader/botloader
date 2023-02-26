@@ -15,6 +15,7 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box } from "@mui/system";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../components/FetchData";
+import { UseNotifications } from "../../components/Notifications";
 
 let slotsContext = createFetchDataContext<PremiumSlot[]>();
 
@@ -58,7 +59,7 @@ export function InnerPage() {
 
 function PremiumSlotComponent(props: { slot: PremiumSlot }) {
     const { reload } = useFetchedDataBehindGuard(slotsContext);
-
+    const notifications = UseNotifications();
     const changeGuildRef = useRef<HTMLSelectElement>(null);
     const session = useSession();
 
@@ -87,7 +88,15 @@ function PremiumSlotComponent(props: { slot: PremiumSlot }) {
         let resp = await session.apiClient.updatePremiumSlotGuild(props.slot.id + "", newGuild);
         reload();
         if (isErrorResponse(resp)) {
-            alert("failed updating slot, try again later or contact support");
+            notifications.push({
+                class: "error",
+                message: "Failed updating premium slot: " + (resp.response?.description ?? "unknown error")
+            })
+        } else {
+            notifications.push({
+                class: "success",
+                message: "Premium slot updated"
+            })
         }
     }
 

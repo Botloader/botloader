@@ -1,4 +1,4 @@
-import { Alert, Box, CircularProgress, Divider, Paper, Snackbar, Stack, TextField } from "@mui/material";
+import { Alert, Box, Checkbox, CircularProgress, Divider, FormControlLabel, Paper, Snackbar, Stack, TextField } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { BotGuild, isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
@@ -13,6 +13,7 @@ import ListItem from '@mui/material/ListItem';
 import Typography from '@mui/material/Typography';
 import { GuildSelectionDialog } from "../../components/GuildSelectionDialog";
 import { BlLink } from "../../components/BLLink";
+import { UseNotifications } from "../../components/Notifications";
 
 
 export function EditPluginPage() {
@@ -51,7 +52,7 @@ function EditPluginMetaForm() {
     const [isSaving, setSaving] = useState(false);
 
     const [errors, setErrors] = useState<{ name?: string, short?: string, long?: string, general?: string }>({})
-    const [saveNotifOpen, setSaveNotifOpen] = useState(false);
+    const notifications = UseNotifications();
 
     async function save() {
         setSaving(true);
@@ -74,7 +75,8 @@ function EditPluginMetaForm() {
             setSaving(false);
         } else {
             setSaving(false);
-            setSaveNotifOpen(true);
+
+            notifications.push({ class: "success", message: "Updated plugin settings!" })
         }
     }
 
@@ -94,11 +96,6 @@ function EditPluginMetaForm() {
 
         <Typography variant="body1" color={"error"}>{errors.general}</Typography>
         <Button disabled={isSaving} color="success" onClick={() => save()}>Save!</Button>
-        <Snackbar open={saveNotifOpen} autoHideDuration={6000} onClose={() => setSaveNotifOpen(false)}>
-            <Alert onClose={() => setSaveNotifOpen(false)} severity="success" sx={{ width: '100%' }}>
-                Saved Settings!
-            </Alert>
-        </Snackbar>
     </Stack>
 }
 
