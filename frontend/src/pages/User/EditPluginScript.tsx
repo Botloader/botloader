@@ -15,7 +15,6 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
     const [diffSource, setDiffSource] = useState<"published" | "dev" | null>(initialDiff ? "published" : null)
     const cast = plugin as ScriptPlugin;
 
-
     async function save(content: string) {
         debugMessageStore.pushMessage({
             level: "Client",
