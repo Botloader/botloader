@@ -46,6 +46,7 @@ function EditPluginMetaForm() {
     const [name, setName] = useState(plugin.name);
     const [shortDescription, setShortDescription] = useState(plugin.short_description);
     const [longDescription, setLongDescription] = useState(plugin.long_description);
+    const [isPublic, setIsPublic] = useState(plugin.is_public);
 
     const [isSaving, setSaving] = useState(false);
 
@@ -60,6 +61,7 @@ function EditPluginMetaForm() {
             name: name,
             short_description: shortDescription,
             long_description: longDescription,
+            is_public: isPublic,
         })
 
         if (isErrorResponse(result)) {
@@ -86,6 +88,9 @@ function EditPluginMetaForm() {
         <TextField label="Long description" multiline variant="outlined"
             error={Boolean(errors.long)} helperText={errors.long}
             onChange={(evt) => setLongDescription(evt.target.value)} value={longDescription} />
+
+        <FormControlLabel control={<Checkbox checked={isPublic} onChange={(_, v) => setIsPublic(v)} />} label="Public" />
+        <Typography variant="body1">Public plugins can be added by anyone and may appear in the public plugin directory</Typography>
 
         <Typography variant="body1" color={"error"}>{errors.general}</Typography>
         <Button disabled={isSaving} color="success" onClick={() => save()}>Save!</Button>
