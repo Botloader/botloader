@@ -26,7 +26,7 @@ class DebugMessageStore {
             ]
         }
 
-        if (key === "gloabl") {
+        if (key === "global") {
             // global triggers all guild listeners
             for (let [, table] of Object.entries(this.listeners)) {
                 for (let [, listener] of Object.entries(table)) {

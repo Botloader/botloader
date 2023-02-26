@@ -112,7 +112,6 @@ export class BotloaderWS {
     }
 
     handleScriptLogMessage(msg: WsEventScriptLogMessage) {
-        console.log("Script log message yoo");
         this.onLogMessage(msg.d);
     }
 
