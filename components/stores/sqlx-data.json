@@ -626,75 +626,6 @@
     },
     "query": "DELETE FROM interval_timers WHERE guild_id = $1;"
   },
-  "1c506b421ca5577f6cc875b53d2b1877fea051c693ed6fdea5838e3ad922cb50": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "guild_id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "name",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "original_source",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "enabled",
-          "ordinal": 4,
-          "type_info": "Bool"
-        },
-        {
-          "name": "contributes_commands",
-          "ordinal": 5,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "contributes_interval_timers",
-          "ordinal": 6,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "plugin_id",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "plugin_auto_update",
-          "ordinal": 8,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      }
-    },
-    "query": "SELECT id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE guild_id = $1 AND id = $2;"
-  },
   "1de1a34b2bf081a6b04c8d61337fbb1156e303d6056be2cf4939a9fe685fc220": {
     "describe": {
       "columns": [],
@@ -960,79 +891,6 @@
     },
     "query": "\nINSERT INTO premium_slots \n       (title, user_id, message, source, source_id, tier, state, created_at, updated_at,\n          expires_at, manage_url, attached_guild_id) \nVALUES ($1,       $2,      $3,     $4,       $5,     $6,    $7,     now(),      now(),\n            $8,          $9,           null        )\nON CONFLICT (source, source_id) DO UPDATE SET\n    title = $1,\n    user_id = $2,\n    message = $3,\n    source = $4,\n    source_id = $5,\n    tier = $6,\n    state = $7,\n    updated_at = now(),\n    expires_at = $8,\n    manage_url = $9\nRETURNING id, title, user_id, message, source, source_id, tier, state, created_at, \n            updated_at, expires_at, manage_url, attached_guild_id;\n             "
   },
-  "2f3dcf0ef134fc059d6fdcdd72465e6a55275aeaf912dbf06d6af03848305aa7": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "guild_id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "name",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "original_source",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "enabled",
-          "ordinal": 4,
-          "type_info": "Bool"
-        },
-        {
-          "name": "contributes_commands",
-          "ordinal": 5,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "contributes_interval_timers",
-          "ordinal": 6,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "plugin_id",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "plugin_auto_update",
-          "ordinal": 8,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Text",
-          "Bool",
-          "Int8",
-          "Bool"
-        ]
-      }
-    },
-    "query": "INSERT INTO guild_scripts (guild_id, name, original_source, enabled, plugin_id, plugin_auto_update) \nVALUES ($1, $2, $3, $4, $5, $6)\nRETURNING id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update;"
-  },
   "37c7c96d21db55b2bb8a79810dea6b0403c80b91a399b57fdc74bbd715a70781": {
     "describe": {
       "columns": [
@@ -1208,7 +1066,7 @@
     },
     "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float DESC, updated_at DESC LIMIT $3 OFFSET $4;"
   },
-  "497f43c216edb979660a46c19a6b96d99c39a489125213dbb0c1e78187e7870d": {
+  "42bd28b616f6ab97f1d677c2d4f40420961c9b5e562ca2ab7986c4c752e3a9de": {
     "describe": {
       "columns": [
         {
@@ -1222,12 +1080,12 @@
           "type_info": "Int8"
         },
         {
-          "name": "original_source",
+          "name": "name",
           "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "name": "name",
+          "name": "original_source",
           "ordinal": 3,
           "type_info": "Text"
         },
@@ -1255,6 +1113,11 @@
           "name": "plugin_auto_update",
           "ordinal": 8,
           "type_info": "Bool"
+        },
+        {
+          "name": "plugin_version_number",
+          "ordinal": 9,
+          "type_info": "Int4"
         }
       ],
       "nullable": [
@@ -1266,15 +1129,22 @@
         false,
         false,
         true,
+        true,
         true
       ],
       "parameters": {
         "Left": [
-          "Int8"
+          "Int8",
+          "Text",
+          "Text",
+          "Bool",
+          "Int8",
+          "Bool",
+          "Int4"
         ]
       }
     },
-    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE guild_id = $1"
+    "query": "INSERT INTO guild_scripts (guild_id, name, original_source, enabled, plugin_id, plugin_auto_update, plugin_version_number) \nVALUES ($1, $2, $3, $4, $5, $6, $7)\nRETURNING id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;"
   },
   "49a6466f558a6f6fd9c3c5fd330502113fabbf0276a0470b6c04ae0fffd551de": {
     "describe": {
@@ -1680,6 +1550,81 @@
     },
     "query": "SELECT count(*) FROM guild_scripts WHERE guild_id = $1;"
   },
+  "737c35c9bc5ea5b44f6134330981927efb5db9b519ad5cc2263e06d0a5d06f58": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "original_source",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "name",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "enabled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contributes_commands",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "contributes_interval_timers",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "plugin_id",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "plugin_auto_update",
+          "ordinal": 8,
+          "type_info": "Bool"
+        },
+        {
+          "name": "plugin_version_number",
+          "ordinal": 9,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number FROM guild_scripts WHERE guild_id = $1 AND name = $2;"
+  },
   "748ac769d3e4dfc3df429382f457413f3406f1fcb883171d1d0a2d24751631aa": {
     "describe": {
       "columns": [],
@@ -1691,27 +1636,6 @@
       }
     },
     "query": "DELETE FROM bucket_store WHERE guild_id = $1"
-  },
-  "77ed2a8ec422385c406f4b60f7f088fa64b4c6585c931e32be8072448c64c002": {
-    "describe": {
-      "columns": [
-        {
-          "name": "guild_id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text"
-        ]
-      }
-    },
-    "query": "UPDATE guild_scripts SET original_source = $2 WHERE plugin_id = $1 RETURNING guild_id"
   },
   "7d64e191ab05b594bf2b195fe4c488d994915ce424bbe7c368a9f29de6eb2839": {
     "describe": {
@@ -1972,6 +1896,83 @@
       }
     },
     "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND key > $4 AND (expires_at IS NULL OR expires_at > now()) ORDER BY (guild_id, bucket, key) LIMIT $5;"
+  },
+  "8824cd51c1c4d67ec225516f11a720b5889325c17305c1b6f65ca692d82adb03": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "original_source",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 3,
+          "type_info": "Int8"
+        },
+        {
+          "name": "enabled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contributes_commands",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "contributes_interval_timers",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "plugin_id",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "plugin_auto_update",
+          "ordinal": 8,
+          "type_info": "Bool"
+        },
+        {
+          "name": "plugin_version_number",
+          "ordinal": 9,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Jsonb",
+          "Jsonb"
+        ]
+      }
+    },
+    "query": "\n                    UPDATE guild_scripts SET\n                    contributes_commands = $3,\n                    contributes_interval_timers = $4\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;\n                "
   },
   "88dfd802c80088d5cfc801c71fa5afb970f17bad1b7e2afe17ec285de45d6f97": {
     "describe": {
@@ -2277,77 +2278,6 @@
     },
     "query": "SELECT id, name, icon, owner_id, left_at FROM joined_guilds WHERE id = ANY ($1) AND left_at IS NULL"
   },
-  "aaef9df7ea8e16968cdcf254622bb3f186cca8fb119d5dd4b5cceb53b986651d": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "name",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "original_source",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "guild_id",
-          "ordinal": 3,
-          "type_info": "Int8"
-        },
-        {
-          "name": "enabled",
-          "ordinal": 4,
-          "type_info": "Bool"
-        },
-        {
-          "name": "contributes_commands",
-          "ordinal": 5,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "contributes_interval_timers",
-          "ordinal": 6,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "plugin_id",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "plugin_auto_update",
-          "ordinal": 8,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "Jsonb",
-          "Jsonb"
-        ]
-      }
-    },
-    "query": "\n                    UPDATE guild_scripts SET\n                    contributes_commands = $3,\n                    contributes_interval_timers = $4\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update;\n                "
-  },
   "abb47ada0a375bab61b6af5397237afa44143194976edbaeac14cae05038a493": {
     "describe": {
       "columns": [
@@ -2490,6 +2420,81 @@
       }
     },
     "query": "UPDATE plugins SET\nscript_dev_source = $2, \nscript_dev_version_updated_at = now()\nWHERE id = $1\nRETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public"
+  },
+  "af06d06fb032bb000f1c8d894b048870b8236c3e9861601fd1b355788ba23da4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "original_source",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "enabled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contributes_commands",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "contributes_interval_timers",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "plugin_id",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "plugin_auto_update",
+          "ordinal": 8,
+          "type_info": "Bool"
+        },
+        {
+          "name": "plugin_version_number",
+          "ordinal": 9,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number FROM guild_scripts WHERE guild_id = $1 AND id = $2;"
   },
   "b26c05bfe195cf541bdc671d8e40d4f482b14e33b6cb619cf42d4acccb65f1f7": {
     "describe": {
@@ -2733,75 +2738,6 @@
       }
     },
     "query": "INSERT INTO bucket_store \n                     (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n                     VALUES \n                     ($1,         $2,    $3,   now(),      now(),      $4,         $5,         $6) \n                     ON CONFLICT (guild_id, bucket, key) DO UPDATE SET\n                     created_at = CASE\n                        WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() \n                        THEN now()\n                        ELSE bucket_store.created_at\n                        END,\n                     updated_at = now(),\n                     expires_at = excluded.expires_at,\n                     value_json = excluded.value_json,\n                     value_float = excluded.value_float\n                     RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;"
-  },
-  "c7cf36fd8963d29b5bd6a2e3c9d66335aafdd8ef4e8be320095a87d2ca8bcebe": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "guild_id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "original_source",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "name",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "enabled",
-          "ordinal": 4,
-          "type_info": "Bool"
-        },
-        {
-          "name": "contributes_commands",
-          "ordinal": 5,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "contributes_interval_timers",
-          "ordinal": 6,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "plugin_id",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "plugin_auto_update",
-          "ordinal": 8,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text"
-        ]
-      }
-    },
-    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE guild_id = $1 AND name = $2;"
   },
   "c96d002a2ece9be6cb4191eb01a85a74c718c85e63876c495696cbe083b8d26c": {
     "describe": {
@@ -3225,7 +3161,7 @@
     },
     "query": "INSERT INTO web_sessions (token, kind, user_id, discriminator, username, avatar, created_at) VALUES ($1, $2, $3, $4, $5, $6, now())\n            RETURNING token, kind, user_id, discriminator, username, avatar, created_at;"
   },
-  "f134c8c4909f742cd8ed4442159778eb9fb2ccb26c6af2d1fa3ae8181a9b3db1": {
+  "f4c5812a60d920e3af54f9356aeb0e75ac909d0a5bf95f3b8707a94fc1ad550b": {
     "describe": {
       "columns": [
         {
@@ -3234,9 +3170,9 @@
           "type_info": "Int8"
         },
         {
-          "name": "name",
+          "name": "guild_id",
           "ordinal": 1,
-          "type_info": "Text"
+          "type_info": "Int8"
         },
         {
           "name": "original_source",
@@ -3244,9 +3180,9 @@
           "type_info": "Text"
         },
         {
-          "name": "guild_id",
+          "name": "name",
           "ordinal": 3,
-          "type_info": "Int8"
+          "type_info": "Text"
         },
         {
           "name": "enabled",
@@ -3272,6 +3208,11 @@
           "name": "plugin_auto_update",
           "ordinal": 8,
           "type_info": "Bool"
+        },
+        {
+          "name": "plugin_version_number",
+          "ordinal": 9,
+          "type_info": "Int4"
         }
       ],
       "nullable": [
@@ -3283,19 +3224,16 @@
         false,
         false,
         true,
+        true,
         true
       ],
       "parameters": {
         "Left": [
-          "Int8",
-          "Int8",
-          "Text",
-          "Bool",
-          "Jsonb"
+          "Int8"
         ]
       }
     },
-    "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands)\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update;\n                "
+    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number FROM guild_scripts WHERE guild_id = $1"
   },
   "f58b0775234707bb5aa58e6dba98ed007dad8af946041a762d445267f89e4703": {
     "describe": {
@@ -3500,6 +3438,85 @@
     },
     "query": "UPDATE plugins SET\nname = COALESCE($2, plugins.name),\nshort_description = COALESCE($3, plugins.short_description),\nlong_description = COALESCE($4, plugins.long_description),\nis_official = COALESCE($5, plugins.is_official),\nauthor_id = COALESCE($6, plugins.author_id),\nis_public = COALESCE($7, plugins.is_public),\nis_published = COALESCE($8, plugins.is_published)\nWHERE id = $1\nRETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public"
   },
+  "f9a750f51bc6a022fbf2889799e169d4bb21eb3a884b5799654e085c53d3f6ea": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "original_source",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 3,
+          "type_info": "Int8"
+        },
+        {
+          "name": "enabled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contributes_commands",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "contributes_interval_timers",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "plugin_id",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "plugin_auto_update",
+          "ordinal": 8,
+          "type_info": "Bool"
+        },
+        {
+          "name": "plugin_version_number",
+          "ordinal": 9,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Text",
+          "Bool",
+          "Jsonb",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands),\n                    plugin_version_number = $6\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;\n                "
+  },
   "faf28d6116d9dadf33e57b5dc3b7b56e57b7323fd9fb5e4596865bdfc4b0bc75": {
     "describe": {
       "columns": [],
@@ -3512,5 +3529,27 @@
       }
     },
     "query": "DELETE FROM guild_scripts WHERE guild_id = $1 AND name = $2;"
+  },
+  "ffb221846f835515ad94e2f6b7fa6ffbe0c223004cb1fd6307909b497bef7e3a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "guild_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Int4"
+        ]
+      }
+    },
+    "query": "UPDATE guild_scripts SET original_source = $2, plugin_version_number = $3 WHERE plugin_id = $1 AND plugin_auto_update RETURNING guild_id"
   }
 }
