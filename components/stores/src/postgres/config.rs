@@ -81,7 +81,7 @@ impl Postgres {
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
              contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
-             FROM guild_scripts WHERE guild_id = $1",
+             FROM guild_scripts WHERE guild_id = $1 ORDER BY id ASC",
             guild_id.get() as i64,
         )
         .fetch_all(conn)
@@ -434,7 +434,7 @@ impl crate::config::ConfigStore for Postgres {
             DbPremiumSlot,
             "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, \
              updated_at, expires_at, manage_url, attached_guild_id
-             FROM premium_slots WHERE attached_guild_id = $1;",
+             FROM premium_slots WHERE attached_guild_id = $1 ORDER BY id ASC;",
             guild_id.get() as i64,
         )
         .fetch_all(&self.pool)
@@ -451,7 +451,7 @@ impl crate::config::ConfigStore for Postgres {
             DbPremiumSlot,
             "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, \
              updated_at, expires_at, manage_url, attached_guild_id
-             FROM premium_slots WHERE user_id = $1;",
+             FROM premium_slots WHERE user_id = $1 ORDER BY id ASC;",
             user_id.get() as i64,
         )
         .fetch_all(&self.pool)
@@ -757,7 +757,8 @@ script_dev_source,
 script_dev_version_updated_at,
 author_id,
 is_public
-FROM plugins WHERE id = ANY($1)"#,
+FROM plugins WHERE id = ANY($1)
+ORDER BY id ASC"#,
             &ids,
         )
         .fetch_all(&self.pool)
@@ -785,7 +786,8 @@ script_dev_source,
 script_dev_version_updated_at,
 author_id,
 is_public
-FROM plugins WHERE author_id = $1"#,
+FROM plugins WHERE author_id = $1
+ORDER BY id ASC"#,
             user_id as i64,
         )
         .fetch_all(&self.pool)
@@ -813,7 +815,8 @@ script_dev_source,
 script_dev_version_updated_at,
 author_id,
 is_public
-FROM plugins WHERE is_published = true AND is_public = true"#,
+FROM plugins WHERE is_published = true AND is_public = true
+ORDER BY id ASC"#,
         )
         .fetch_all(&self.pool)
         .await?

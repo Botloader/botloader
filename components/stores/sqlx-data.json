@@ -257,70 +257,7 @@
     },
     "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now());"
   },
-  "0cabf9cf6d7af05b932467a8f271cd68f6f9ec4640bfbfd47d66871287817ab6": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "guild_id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "name",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "unique_key",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "value",
-          "ordinal": 4,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "exec_at",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      }
-    },
-    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND id = $2"
-  },
-  "0d1be72462bf9559ba071f3b07b3d49006abff6585be3aa14b1d8ff1c2dde493": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      }
-    },
-    "query": "DELETE FROM joined_guilds WHERE id = $1;"
-  },
-  "0df020dd5429e94778e983360c99c061b7435667d4280658061500c193cb35e4": {
+  "0c24cb397250fe8f42162846d46fd26f4108cf7abb6a3070a48f07740bf60c53": {
     "describe": {
       "columns": [
         {
@@ -417,10 +354,75 @@
         false
       ],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Int8Array"
+        ]
       }
     },
-    "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE is_published = true AND is_public = true"
+    "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE id = ANY($1)\nORDER BY id ASC"
+  },
+  "0cabf9cf6d7af05b932467a8f271cd68f6f9ec4640bfbfd47d66871287817ab6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "unique_key",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "value",
+          "ordinal": 4,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "exec_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND id = $2"
+  },
+  "0d1be72462bf9559ba071f3b07b3d49006abff6585be3aa14b1d8ff1c2dde493": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "DELETE FROM joined_guilds WHERE id = $1;"
   },
   "0fb83131d557439fd5c1f683a6d135c43a9be1efd845080b98d7e44036c2701f": {
     "describe": {
@@ -640,7 +642,7 @@
     },
     "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND name = $2 AND unique_key = $3"
   },
-  "22478f0665fc8d1bfe289311323ab57b2a4915510c2cc8b1f968efa2a07ed84c": {
+  "1e3958ca5fddce8eff876a7f3059aa8b9f6f56c131e07109e0a249c46c4235a4": {
     "describe": {
       "columns": [
         {
@@ -730,7 +732,99 @@
         ]
       }
     },
-    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE user_id = $1;"
+    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE user_id = $1 ORDER BY id ASC;"
+  },
+  "22fb66d81e08282063568d3a6abcf305ae3adb02e0212eaca40be8fa3b528818": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "message",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "source",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "source_id",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "tier",
+          "ordinal": 6,
+          "type_info": "Int4"
+        },
+        {
+          "name": "state",
+          "ordinal": 7,
+          "type_info": "Int4"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 8,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 9,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "expires_at",
+          "ordinal": 10,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "manage_url",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "attached_guild_id",
+          "ordinal": 12,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE attached_guild_id = $1 ORDER BY id ASC;"
   },
   "268dab1dc855644aef999afdc5e61860ab7086b85b61c3304cdee9ab95379209": {
     "describe": {
@@ -1192,6 +1286,108 @@
     },
     "query": "SELECT guild_id, error_channel_id FROM guild_meta_configs\n        WHERE guild_id = $1;"
   },
+  "4fa34f8d498f0cada058a772c1b34cfe661bf12a20bf75595039a186649f2828": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "short_description",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "long_description",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "is_published",
+          "ordinal": 5,
+          "type_info": "Bool"
+        },
+        {
+          "name": "is_official",
+          "ordinal": 6,
+          "type_info": "Bool"
+        },
+        {
+          "name": "plugin_kind",
+          "ordinal": 7,
+          "type_info": "Int2"
+        },
+        {
+          "name": "current_version_number",
+          "ordinal": 8,
+          "type_info": "Int4"
+        },
+        {
+          "name": "script_published_source",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "script_published_version_updated_at",
+          "ordinal": 10,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "script_dev_source",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "script_dev_version_updated_at",
+          "ordinal": 12,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "author_id",
+          "ordinal": 13,
+          "type_info": "Int8"
+        },
+        {
+          "name": "is_public",
+          "ordinal": 14,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE is_published = true AND is_public = true\nORDER BY id ASC"
+  },
   "54bb94fe6ee54521736c16389c46c921c61da253122f7c510ca7c0376c988bb3": {
     "describe": {
       "columns": [
@@ -1425,110 +1621,6 @@
       }
     },
     "query": "DELETE FROM discord_oauth_tokens WHERE user_id= $1"
-  },
-  "6a59c83024a026e1afe98f6d99351103907b6908bda5dc8738b7212b6ca90e8b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 1,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "name",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "short_description",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "long_description",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "is_published",
-          "ordinal": 5,
-          "type_info": "Bool"
-        },
-        {
-          "name": "is_official",
-          "ordinal": 6,
-          "type_info": "Bool"
-        },
-        {
-          "name": "plugin_kind",
-          "ordinal": 7,
-          "type_info": "Int2"
-        },
-        {
-          "name": "current_version_number",
-          "ordinal": 8,
-          "type_info": "Int4"
-        },
-        {
-          "name": "script_published_source",
-          "ordinal": 9,
-          "type_info": "Text"
-        },
-        {
-          "name": "script_published_version_updated_at",
-          "ordinal": 10,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "script_dev_source",
-          "ordinal": 11,
-          "type_info": "Text"
-        },
-        {
-          "name": "script_dev_version_updated_at",
-          "ordinal": 12,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "author_id",
-          "ordinal": 13,
-          "type_info": "Int8"
-        },
-        {
-          "name": "is_public",
-          "ordinal": 14,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      }
-    },
-    "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE author_id = $1"
   },
   "72efcd2b9598423b2ac32fc51232e3da3bf281ae995f49993e09d6a8c519b382": {
     "describe": {
@@ -2085,7 +2177,52 @@
     },
     "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND exec_at < $2 AND name = ANY($3::TEXT[]) AND (NOT id = ANY ($4::BIGINT[]))"
   },
-  "96310871dd8f36f6d0094ff663a71563ac001fca91297c5bded8c85df1d30c3b": {
+  "9715f62dbaae02fd4f9ce3a7652adfa89268f3fbd546d9508adfe52a823686e2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "icon",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "owner_id",
+          "ordinal": 3,
+          "type_info": "Int8"
+        },
+        {
+          "name": "left_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool"
+        ]
+      }
+    },
+    "query": "UPDATE joined_guilds SET left_at = CASE \n                WHEN left_at IS NULL AND $2 = true THEN now()\n                WHEN $2 = false THEN null\n                ELSE left_at\n                END\n            WHERE id = $1 RETURNING id, name, icon, owner_id, left_at;"
+  },
+  "97f1fdde901e71107bca9316a73ed2027bc3ccb4117ad7386b3328b12d80fa7a": {
     "describe": {
       "columns": [
         {
@@ -2183,13 +2320,13 @@
       ],
       "parameters": {
         "Left": [
-          "Int8Array"
+          "Int8"
         ]
       }
     },
-    "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE id = ANY($1)"
+    "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE author_id = $1\nORDER BY id ASC"
   },
-  "9715f62dbaae02fd4f9ce3a7652adfa89268f3fbd546d9508adfe52a823686e2": {
+  "99b1e7c5ab19f640a505f60e1b6759d91bbd7e8e40f52fa741034094ac5dc874": {
     "describe": {
       "columns": [
         {
@@ -2198,24 +2335,49 @@
           "type_info": "Int8"
         },
         {
-          "name": "name",
+          "name": "guild_id",
           "ordinal": 1,
-          "type_info": "Text"
+          "type_info": "Int8"
         },
         {
-          "name": "icon",
+          "name": "original_source",
           "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "name": "owner_id",
+          "name": "name",
           "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "enabled",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contributes_commands",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "contributes_interval_timers",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "plugin_id",
+          "ordinal": 7,
           "type_info": "Int8"
         },
         {
-          "name": "left_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
+          "name": "plugin_auto_update",
+          "ordinal": 8,
+          "type_info": "Bool"
+        },
+        {
+          "name": "plugin_version_number",
+          "ordinal": 9,
+          "type_info": "Int4"
         }
       ],
       "nullable": [
@@ -2223,16 +2385,20 @@
         false,
         false,
         false,
+        false,
+        false,
+        false,
+        true,
+        true,
         true
       ],
       "parameters": {
         "Left": [
-          "Int8",
-          "Bool"
+          "Int8"
         ]
       }
     },
-    "query": "UPDATE joined_guilds SET left_at = CASE \n                WHEN left_at IS NULL AND $2 = true THEN now()\n                WHEN $2 = false THEN null\n                ELSE left_at\n                END\n            WHERE id = $1 RETURNING id, name, icon, owner_id, left_at;"
+    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number FROM guild_scripts WHERE guild_id = $1 ORDER BY id ASC"
   },
   "a6b42b45300551f880dc21a0ce2a8b406ef191ccfe7c3991835bd17fcc59e485": {
     "describe": {
@@ -3160,172 +3326,6 @@
       }
     },
     "query": "INSERT INTO web_sessions (token, kind, user_id, discriminator, username, avatar, created_at) VALUES ($1, $2, $3, $4, $5, $6, now())\n            RETURNING token, kind, user_id, discriminator, username, avatar, created_at;"
-  },
-  "f4c5812a60d920e3af54f9356aeb0e75ac909d0a5bf95f3b8707a94fc1ad550b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "guild_id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "original_source",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "name",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "enabled",
-          "ordinal": 4,
-          "type_info": "Bool"
-        },
-        {
-          "name": "contributes_commands",
-          "ordinal": 5,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "contributes_interval_timers",
-          "ordinal": 6,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "plugin_id",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "plugin_auto_update",
-          "ordinal": 8,
-          "type_info": "Bool"
-        },
-        {
-          "name": "plugin_version_number",
-          "ordinal": 9,
-          "type_info": "Int4"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      }
-    },
-    "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number FROM guild_scripts WHERE guild_id = $1"
-  },
-  "f58b0775234707bb5aa58e6dba98ed007dad8af946041a762d445267f89e4703": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "title",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 2,
-          "type_info": "Int8"
-        },
-        {
-          "name": "message",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "source",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "source_id",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "tier",
-          "ordinal": 6,
-          "type_info": "Int4"
-        },
-        {
-          "name": "state",
-          "ordinal": 7,
-          "type_info": "Int4"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 8,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "ordinal": 9,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "expires_at",
-          "ordinal": 10,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "manage_url",
-          "ordinal": 11,
-          "type_info": "Text"
-        },
-        {
-          "name": "attached_guild_id",
-          "ordinal": 12,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      }
-    },
-    "query": "SELECT id, title, user_id, message, source, source_id, tier, state, created_at, updated_at, expires_at, manage_url, attached_guild_id\n             FROM premium_slots WHERE attached_guild_id = $1;"
   },
   "f734a75427d66511f4290328198f37513acc21853e4bd2c359388c4ce6ec068f": {
     "describe": {
