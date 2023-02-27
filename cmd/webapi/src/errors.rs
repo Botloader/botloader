@@ -37,6 +37,9 @@ pub enum ApiErrorResponse {
 
     #[error("guild already has this plugin")]
     GuildAlreadyHasPlugin,
+
+    #[error("Script is not a plugin")]
+    ScriptNotAPlugin,
 }
 
 impl ApiErrorResponse {
@@ -56,6 +59,7 @@ impl ApiErrorResponse {
             Self::UserPluginLimitReached => (StatusCode::BAD_REQUEST, 8, None),
             Self::PluginNotFound => (StatusCode::BAD_REQUEST, 9, None),
             Self::GuildAlreadyHasPlugin => (StatusCode::BAD_REQUEST, 10, None),
+            Self::ScriptNotAPlugin => (StatusCode::BAD_REQUEST, 11, None),
         }
     }
 }

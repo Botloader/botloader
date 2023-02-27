@@ -28,8 +28,8 @@ impl Postgres {
         match sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE \
-             guild_id = $1 AND name = $2;",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
+             FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
             guild_id.get() as i64,
             script_name
         )
@@ -50,8 +50,8 @@ impl Postgres {
         Ok(sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE \
-             guild_id = $1 AND id = $2;",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
+             FROM guild_scripts WHERE guild_id = $1 AND id = $2;",
             guild_id.get() as i64,
             id
         )
@@ -80,8 +80,8 @@ impl Postgres {
         let res = sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update FROM guild_scripts WHERE \
-             guild_id = $1",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
+             FROM guild_scripts WHERE guild_id = $1",
             guild_id.get() as i64,
         )
         .fetch_all(conn)
@@ -106,16 +106,17 @@ impl Postgres {
         let res = sqlx::query_as!(
             DbScript,
             "INSERT INTO guild_scripts (guild_id, name, original_source, enabled, plugin_id, \
-             plugin_auto_update) 
-VALUES ($1, $2, $3, $4, $5, $6)
+             plugin_auto_update, plugin_version_number) 
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update;",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;",
             guild_id.get() as i64,
             script.name,
             script.original_source,
             script.enabled,
             script.plugin_id.map(|v| v as i64),
             script.plugin_auto_update,
+            script.plugin_version_number.map(|v| v as i32),
         )
         .fetch_one(conn)
         .await?;
@@ -199,16 +200,18 @@ impl crate::config::ConfigStore for Postgres {
                     UPDATE guild_scripts SET
                     original_source = COALESCE($3, guild_scripts.original_source),
                     enabled = COALESCE($4, guild_scripts.enabled),
-                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands)
+                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands),
+                    plugin_version_number = $6
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update;
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;
                 ",
             guild_id.get() as i64,
             script.id as i64,
             script.original_source,
             script.enabled,
             commands_enc,
+            script.plugin_version_number.map(|v| v as i32),
         )
         .fetch_one(&self.pool)
         .await?;
@@ -233,7 +236,7 @@ impl crate::config::ConfigStore for Postgres {
                     contributes_interval_timers = $4
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update;
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;
                 ",
             guild_id.get() as i64,
             script_id as i64,
@@ -670,7 +673,7 @@ is_public"#,
         plugin_id: u64,
         new_source: String,
     ) -> ConfigStoreResult<Vec<Id<GuildMarker>>> {
-        let _ = sqlx::query_as!(
+        let plugin = sqlx::query_as!(
             DbPlugin,
             r#"UPDATE plugins SET
 script_published_source = $2, 
@@ -704,9 +707,11 @@ is_public"#,
 
         let updated_guilds = sqlx::query_as!(
             Row,
-            "UPDATE guild_scripts SET original_source = $2 WHERE plugin_id = $1 RETURNING guild_id",
+            "UPDATE guild_scripts SET original_source = $2, plugin_version_number = $3 WHERE \
+             plugin_id = $1 AND plugin_auto_update RETURNING guild_id",
             plugin_id as i64,
-            new_source
+            new_source,
+            plugin.current_version_number,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -845,6 +850,7 @@ FROM plugins WHERE is_published = true AND is_public = true"#,
                 enabled: true,
                 plugin_auto_update: Some(auto_update),
                 plugin_id: Some(plugin_id),
+                plugin_version_number: Some(plugin.current_version),
             },
         )
         .await?;
@@ -866,6 +872,7 @@ struct DbScript {
     contributes_interval_timers: serde_json::Value,
     plugin_id: Option<i64>,
     plugin_auto_update: Option<bool>,
+    plugin_version_number: Option<i32>,
 }
 
 impl From<DbScript> for Script {
@@ -885,6 +892,7 @@ impl From<DbScript> for Script {
             },
             plugin_id: script.plugin_id.map(|v| v as u64),
             plugin_auto_update: script.plugin_auto_update,
+            plugin_version_number: script.plugin_version_number.map(|v| v as u32),
         }
     }
 }
@@ -1031,6 +1039,7 @@ impl From<DbPlugin> for Plugin {
             long_description: value.long_description,
             is_public: value.is_public,
             is_official: value.is_official,
+            current_version: value.current_version_number as u32,
             data: match value.plugin_kind {
                 0 => PluginData::ScriptPlugin(ScriptPluginData {
                     published_version: value.script_published_source,

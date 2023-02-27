@@ -10,7 +10,9 @@ use tracing::error;
 use twilight_model::user::CurrentUserGuild;
 use validation::validate;
 
-use crate::{errors::ApiErrorResponse, ApiResult, CurrentConfigStore};
+use crate::{
+    errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, ApiResult, CurrentConfigStore,
+};
 
 pub async fn get_all_guild_scripts(
     Extension(config_store): Extension<CurrentConfigStore>,
@@ -67,7 +69,7 @@ pub async fn get_all_guild_scripts_with_plugins(
 
 #[derive(Deserialize)]
 pub struct GuildScriptPathParams {
-    script_id: u64,
+    pub script_id: u64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -88,6 +90,7 @@ pub async fn create_guild_script(
         name: payload.name,
         plugin_auto_update: None,
         plugin_id: None,
+        plugin_version_number: None,
     };
 
     if let Err(verr) = validate(&cs) {
@@ -127,6 +130,7 @@ pub async fn update_guild_script(
         original_source: payload.original_source,
         name: payload.name,
         contributes: None,
+        plugin_version_number: None,
     };
 
     if let Err(verr) = validate(&sc) {
@@ -162,6 +166,66 @@ pub async fn delete_guild_script(
         .await
         .map_err(|err| {
             error!(%err, "failed deleting guild script");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(Json(script))
+}
+
+pub async fn update_script_plugin(
+    Extension(config_store): Extension<CurrentConfigStore>,
+    // Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    Extension(current_guild): Extension<CurrentUserGuild>,
+    Extension(bot_rpc): Extension<botrpc::Client>,
+    Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
+) -> ApiResult<impl IntoResponse> {
+    let script = config_store
+        .get_script_by_id(current_guild.id, script_id)
+        .await
+        .map_err(|err| {
+            error!(?err, "failed fetching guild script");
+            ApiErrorResponse::InternalError
+        })?;
+
+    let Some(plugin_id) = script.plugin_id else {
+        return Err(ApiErrorResponse::ScriptNotAPlugin)
+    };
+
+    let plugin = fetch_plugin(&config_store, plugin_id).await?;
+    let new_source = match plugin.data {
+        common::plugin::PluginData::ScriptPlugin(p) => p.published_version.unwrap_or_default(),
+    };
+
+    // I think if we have already added a plugin to a guild then we should still be able to update it even if it's set to private afterwards
+    //
+    // TODO decision on this
+    //
+    // if !plugin.is_public && plugin.author_id != session.session.user.id {
+    //     return Err(ApiErrorResponse::NoAccessToPlugin);
+    // }
+
+    let sc = UpdateScript {
+        id: script_id,
+        enabled: None,
+        original_source: Some(new_source),
+        name: None,
+        contributes: None,
+        plugin_version_number: Some(plugin.current_version),
+    };
+
+    let script = config_store
+        .update_script(current_guild.id, sc)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed updating guild script");
+            ApiErrorResponse::InternalError
+        })?;
+
+    bot_rpc
+        .restart_guild_vm(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed reloading guild vm");
             ApiErrorResponse::InternalError
         })?;
 

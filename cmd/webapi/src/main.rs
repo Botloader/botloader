@@ -140,6 +140,10 @@ async fn main() {
             patch(routes::scripts::update_guild_script)
                 .delete(routes::scripts::delete_guild_script),
         )
+        .route(
+            "/scripts/:script_id/update_plugin",
+            post(routes::scripts::update_script_plugin),
+        )
         .route("/add_plugin", post(routes::plugins::guild_add_plugin))
         .layer(auth_guild_mw_stack);
 

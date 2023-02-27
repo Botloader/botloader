@@ -53,6 +53,7 @@ export interface Script {
     enabled: boolean,
     plugin_id: number | null,
     plugin_auto_update: boolean | null,
+    plugin_version_number: number | null,
 }
 
 export interface CreateScript {
@@ -85,6 +86,7 @@ export interface Plugin<Variant = ScriptPluginData> {
     is_public: boolean,
     is_official: boolean,
     data: Variant,
+    current_version: number,
 }
 
 export interface ScriptPluginData {

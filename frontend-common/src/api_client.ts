@@ -203,6 +203,9 @@ export class ApiClient {
         });
     }
 
+    async updateScriptPlugin(guildId: string, scriptId: number): Promise<ApiResult<ScriptPlugin>> {
+        return await this.post(`/api/guilds/${guildId}/scripts/${scriptId}/update_plugin`);
+    }
 }
 
 export type ApiResult<T> = T | ApiError;

@@ -47,6 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     original_source: contents,
                     plugin_auto_update: None,
                     plugin_id: None,
+                    plugin_version_number: None,
                 },
             )
             .await?;

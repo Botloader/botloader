@@ -176,6 +176,7 @@ pub struct Script {
     pub contributes: ScriptContributes,
     pub plugin_id: Option<u64>,
     pub plugin_auto_update: Option<bool>,
+    pub plugin_version_number: Option<u32>,
 }
 
 /// Struct you get back from the store
@@ -186,6 +187,7 @@ pub struct UpdateScript {
     pub original_source: Option<String>,
     pub enabled: Option<bool>,
     pub contributes: Option<ScriptContributes>,
+    pub plugin_version_number: Option<u32>,
 }
 
 /// Struct used when creating a script
@@ -196,6 +198,7 @@ pub struct CreateScript {
     pub enabled: bool,
     pub plugin_id: Option<u64>,
     pub plugin_auto_update: Option<bool>,
+    pub plugin_version_number: Option<u32>,
 }
 
 /// Contribution points for a scripts, e.g triggers, commands etc
