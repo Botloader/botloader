@@ -170,18 +170,8 @@ impl VmSession {
     pub async fn load_contribs(&mut self) {
         info!("loading contribs");
 
-        let evt_id = self.gen_id();
-        if let Some(worker) = &self.current_worker {
-            if worker
-                .tx
-                .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
-                    seq: evt_id,
-                    guild_id: self.guild_id,
-                    premium_tier: self.get_premium_tier().option(),
-                    scripts: self.scripts.clone(),
-                }))
-                .is_err()
-            {
+        if self.current_worker.is_some() {
+            if self.send_create_scripts_vm().await.is_err() {
                 self.broken_worker().await;
             }
         } else {
@@ -288,6 +278,7 @@ impl VmSession {
                         PendingAck::IntervalTimer(name) => {
                             self.interval_timers_man.timer_ack(name).await;
                         }
+                        PendingAck::Restart => {}
                     }
                 }
             }
@@ -434,33 +425,52 @@ impl VmSession {
                     .req_worker(self.guild_id, self.get_premium_tier().option())
                     .await;
 
-                #[allow(clippy::collapsible_if)]
-                if self.should_send_scripts(wr) {
+                let should_create_vm = self.should_send_scripts(wr);
+
+                info!(tier = worker.priority_index, "claimed new worker");
+                self.current_worker = Some(worker);
+
+                if should_create_vm {
+                    // new worker, reset acks and whatnot
                     self.pending_acks.clear();
                     self.reset_contribs();
 
-                    if worker
-                        .tx
-                        .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
-                            seq: self.gen_id(),
-                            guild_id: self.guild_id,
-                            premium_tier: self.get_premium_tier().option(),
-                            scripts: self.scripts.clone(),
-                        }))
-                        .is_err()
-                    {
-                        // broken worker, get a new one
-                        self.worker_pool.return_worker(worker, true);
+                    if self.send_create_scripts_vm().await.is_err() {
+                        self.broken_worker().await;
+                        // try again
                         continue;
                     }
                 }
 
-                info!(tier = worker.priority_index, "claimed new worker");
                 self.force_load_scripts_next = false;
-                self.current_worker = Some(worker);
                 break;
             }
         }
+    }
+
+    async fn send_create_scripts_vm(&mut self) -> Result<(), ()> {
+        let evt_id = self.gen_id();
+
+        if let Some(worker) = &self.current_worker {
+            if worker
+                .tx
+                .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
+                    seq: evt_id,
+                    guild_id: self.guild_id,
+                    premium_tier: self.get_premium_tier().option(),
+                    scripts: self.scripts.clone(),
+                }))
+                .is_err()
+            {
+                return Err(());
+            }
+
+            self.pending_acks.insert(evt_id, PendingAck::Restart);
+        } else {
+            panic!("no worker");
+        }
+
+        Ok(())
     }
 
     async fn broken_worker(&mut self) {
@@ -572,4 +582,5 @@ pub enum PendingAck {
     Dispatch(Option<oneshot::Sender<()>>),
     ScheduledTask(u64),
     IntervalTimer(String),
+    Restart,
 }
