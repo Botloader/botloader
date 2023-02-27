@@ -44,7 +44,11 @@ function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) 
     const session = useSession();
     const [isDirty, setIsDirty] = useState(false);
     const newSource = useRef(props.script.original_source);
-    const [diffSource, setDiffSource] = useState<"unsaved" | "pluginPublished" | null>(null);
+    const [diffSource, setDiffSource] = useState<"unsaved" | "pluginPublished" | null>(() => {
+        let query = new URLSearchParams(window.location.search);
+        let initialDiffMode = query.get("diffMode");
+        return initialDiffMode as any;
+    });
 
     async function setScript(newScript: Script) {
         setData((current) => {

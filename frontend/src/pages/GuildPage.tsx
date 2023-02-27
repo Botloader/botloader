@@ -4,12 +4,14 @@ import { useCurrentGuild } from "../components/GuildsProvider";
 import { useSession } from "../components/Session";
 import { AsyncOpButton } from "../components/AsyncOpButton";
 import { BuildConfig } from "../BuildConfig";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { Panel } from "../components/Panel";
 import { SideNav } from "../components/SideNav";
 import { EditScriptPage } from "./EditScript";
 import { Alert, Box, Button, Paper, Stack, Switch, Typography } from "@mui/material";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../components/FetchData";
+import { BlLink } from "../components/BLLink";
+import { UseNotifications } from "../components/Notifications";
 
 export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
     let guild = useCurrentGuild();
@@ -244,8 +246,11 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
     toggleScript: (id: number, on: boolean) => any,
     deleteScript: (id: number) => any
 }) {
-    const navigate = useNavigate();
     const [isToggling, setToggling] = useState(false);
+    const session = useSession();
+    const notifications = UseNotifications();
+    const { reload } = useFetchedDataBehindGuard(scriptsContext);
+
 
     async function toggleWrapper(on: boolean) {
         setToggling(true);
@@ -263,6 +268,16 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
         }
     }
 
+    async function updatePluginVersion() {
+        const resp = await session.apiClient.updateScriptPlugin(guildId, script.id);
+        if (isErrorResponse(resp)) {
+            notifications.push({ class: "error", message: "failed updating plugin: " + resp.response?.description });
+        } else {
+            reload();
+            notifications.push({ class: "success", message: "updated plugin" });
+        }
+    }
+
     return <Box sx={{
         p: 1, display: "flex", alignItems: "center",
         borderLeft: 2,
@@ -270,10 +285,22 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
         '&:hover': { backgroundColor: "action.hover" }
     }}>
         <Typography variant="body1" flexGrow={1}>{script.name}.ts</Typography>
-        <Stack direction={"row"}>
-            <Button onClick={() => navigate(`/servers/${guildId}/scripts/${script.id}/edit`)}>
+        <Stack direction={"row"} alignItems="center">
+            {plugin ? (
+                <>
+                    <Typography variant="body1">{plugin.current_version === script.plugin_version_number ?
+                        "Using latest version"
+                        : script.plugin_version_number === null
+                            ? "Using a modified version"
+                            : "New version available"}</Typography>
+                    <AsyncOpButton disabled={plugin.current_version === script.plugin_version_number} onClick={updatePluginVersion} label="Update version"></AsyncOpButton>
+                    <BlLink disabled={plugin.current_version === script.plugin_version_number}
+                        to={`/servers/${guildId}/scripts/${script.id}/edit?diffMode=pluginPublished`}>View changes</BlLink>
+                </>
+            ) : null}
+            <BlLink to={`/servers/${guildId}/scripts/${script.id}/edit`}>
                 Edit
-            </Button>
+            </BlLink>
 
             <Switch checked={script.enabled} disabled={isToggling} color={"success"} onChange={(evt) => {
                 toggleWrapper(evt.target.checked)

@@ -5,6 +5,7 @@ type Props = {
     label: string,
     onClick: () => any,
     className?: string,
+    disabled?: boolean,
 }
 
 export function AsyncOpButton(props: Props) {
@@ -18,7 +19,7 @@ export function AsyncOpButton(props: Props) {
     }
 
     return <Button
-        disabled={status}
+        disabled={props.disabled || status}
         onClick={() => doOp()}
         className={(props.className ?? "")}>
         {props.label}
