@@ -120,16 +120,23 @@ function ScriptPluginSettings() {
             {cast.data.dev_version
                 ? <Typography>Last development version updated at: <DisplayDateTime dt={cast.data.dev_version_updated_at!} /> </Typography>
                 : <Typography>You have done zero development yet on this plugin :(</Typography>}
-
-            <BlLink to={`/user/plugins/${plugin.id}/edit_script_diff`}>View changes</BlLink>
-            <Button onClick={publish}>Publish</Button>
         </ListItem>
 
         <ListItem>
-            <BlLink to={`/user/plugins/${plugin.id}/edit_script`}>Edit development version</BlLink>
+            {cast.data.published_version !== cast.data.dev_version
+                ? <>
+                    <Typography>This plugin has unpublished changes!</Typography>
+                    <BlLink to={`/user/plugins/${plugin.id}/edit_script_diff`}>View changes</BlLink>
+                    <Button onClick={publish}>Publish</Button>
+                </>
+                : <Typography>No unpublished changes</Typography>}
         </ListItem>
 
-    </Paper>
+        <ListItem>
+            <BlLink to={`/user/plugins/${plugin.id}/edit_script`}>Open editor</BlLink>
+        </ListItem>
+
+    </Paper >
 }
 
 function AddToServer() {
