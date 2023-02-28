@@ -2,6 +2,8 @@ use serde::Serialize;
 use ts_rs::TS;
 use twilight_model::guild::{Role as TwilightRole, RoleTags as TwilightRoleTags};
 
+use crate::util::NotBigI64;
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
@@ -15,7 +17,7 @@ pub struct Role {
     pub(crate) mentionable: bool,
     pub(crate) name: String,
     pub(crate) permissions_raw: String,
-    pub(crate) position: i64,
+    pub(crate) position: NotBigI64,
     pub(crate) tags: Option<RoleTags>,
     pub(crate) unicode_emoji: Option<String>,
 }
@@ -31,7 +33,7 @@ impl From<&TwilightRole> for Role {
             mentionable: v.mentionable,
             name: v.name.clone(),
             permissions_raw: v.permissions.bits().to_string(),
-            position: v.position,
+            position: NotBigI64(v.position),
             tags: v.tags.clone().map(Into::into),
             unicode_emoji: v.unicode_emoji.clone(),
         }
@@ -49,7 +51,7 @@ impl From<TwilightRole> for Role {
             mentionable: v.mentionable,
             name: v.name,
             permissions_raw: v.permissions.bits().to_string(),
-            position: v.position,
+            position: NotBigI64(v.position),
             tags: v.tags.map(Into::into),
             unicode_emoji: v.unicode_emoji,
         }

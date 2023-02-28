@@ -1,5 +1,5 @@
 use super::{member::Member, messages::Message, script::CommandOptionType};
-use crate::discord::component::ComponentType;
+use crate::{discord::component::ComponentType, util::NotBigI64};
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -244,7 +244,7 @@ pub enum CommandInteractionOptionValue {
         value: String,
     },
     Integer {
-        value: i64,
+        value: NotBigI64,
     },
     Boolean {
         value: bool,
@@ -274,7 +274,9 @@ impl From<CommandOptionValue> for CommandInteractionOptionValue {
     fn from(v: CommandOptionValue) -> Self {
         match v {
             CommandOptionValue::String(ov) => Self::String { value: ov },
-            CommandOptionValue::Integer(ov) => Self::Integer { value: ov },
+            CommandOptionValue::Integer(ov) => Self::Integer {
+                value: NotBigI64(ov),
+            },
             CommandOptionValue::Boolean(ov) => Self::Boolean { value: ov },
             CommandOptionValue::User(ov) => Self::User {
                 value: ov.to_string(),
