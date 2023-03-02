@@ -783,53 +783,6 @@ impl<'a, 'b> core::future::Future for CompleteModuleEval<'a, 'b> {
     }
 }
 
-// impl VmInterface for Vm {
-//     type BuildDesc = CreateRt;
-
-//     type Future = LocalBoxFuture<'static, ()>;
-
-//     type VmId = RtId;
-
-//     fn create_vm(
-//         b: Self::BuildDesc,
-//         isolate_cell: Rc<IsolateCell>,
-//     ) -> vmthread::VmCreateResult<Self::VmId, Self::Future, Self::ShutdownHandle> {
-//         let (wakeup_tx, wakeup_rx) = mpsc::unbounded_channel();
-//         let shutdown_handle = VmShutdownHandle {
-//             terminated: Arc::new(AtomicBool::new(false)),
-//             inner: Arc::new(StdRwLock::new(ShutdownHandleInner {
-//                 isolate_handle: None,
-//                 shutdown_reason: None,
-//             })),
-//             wakeup: wakeup_tx,
-//         };
-//         let guild_id = b.ctx.guild_id;
-//         let id = RtId {
-//             guild_id,
-//             role: b.ctx.role,
-//         };
-
-//         let thandle_clone = shutdown_handle.clone();
-
-//         let fut = Box::pin(async move {
-//             let local_set = tokio::task::LocalSet::new();
-//             tracing_futures::Instrument::instrument(
-//                 local_set.run_until(Vm::create_run(b, thandle_clone, isolate_cell, wakeup_rx)),
-//                 tracing::info_span!("vm", guild_id = %guild_id),
-//             )
-//             .await;
-//         });
-
-//         Ok(CreateVmSuccess {
-//             future: fut,
-//             id,
-//             shutdown_handle,
-//         })
-//     }
-
-//     type ShutdownHandle = VmShutdownHandle;
-// }
-
 #[derive(Clone)]
 pub struct VmShutdownHandle {
     terminated: Arc<AtomicBool>,
@@ -877,26 +830,6 @@ impl VmShutdownHandle {
         self.wakeup.send(()).ok();
     }
 }
-
-// impl ShutdownHandle for VmShutdownHandle {
-//     fn shutdown_vm(&self, reason: ShutdownReason, force: bool) {
-//         let mut inner = self.inner.write().unwrap();
-//         inner.shutdown_reason = Some(reason);
-//         if let Some(iso_handle) = &inner.isolate_handle {
-//             self.terminated
-//                 .store(true, std::sync::atomic::Ordering::SeqCst);
-
-//             if force {
-//                 iso_handle.terminate_execution();
-//             }
-//         } else {
-//             inner.shutdown_reason = None;
-//         }
-
-//         // trigger a shutdown check if we weren't in the js runtime
-//         self.wakeup.send(()).ok();
-//     }
-// }
 
 struct ShutdownHandleInner {
     shutdown_reason: Option<ShutdownReason>,
