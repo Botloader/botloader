@@ -18,6 +18,7 @@ import { Box } from "@mui/material"
 import { EditPluginPage } from "./pages/User/EditPlugin"
 import { EditPluginScriptPage } from "./pages/User/EditPluginScript"
 import { PluginProvider } from "./components/PluginProvider"
+import { ViewPlugin } from "./pages/ViewPlugin"
 
 export function RoutesElement() {
     let routes = useRoutes(appRoutes);
@@ -135,6 +136,25 @@ const appRoutes: RouteObject[] = [
                         element: <EditGuildScript />
                     }
                 ]
+            },
+            {
+                path: "/plugins/:pluginId",
+                element: <>
+                    <TopNav />
+                    <PluginProvider>
+                        <Outlet />
+                    </PluginProvider>
+                </>,
+                children: [
+                    {
+                        index: true,
+                        element: <ViewPlugin />
+                    },
+                    {
+                        path: "source",
+                        element: <>TODO</>
+                    }
+                ]
             }
         ],
     }
@@ -199,3 +219,4 @@ function UserPages() {
         </RequireLoggedInSession>
     </>
 }
+
