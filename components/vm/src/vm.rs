@@ -398,7 +398,7 @@ impl Vm {
             if let Some(script) = borrow.get_script(script_id) {
                 script.clone()
             } else {
-                error!("tried to load non-existant script");
+                error!("tried to load non-existent script");
                 return;
             }
         };

@@ -191,7 +191,7 @@ pub fn error_from_code(resp_code: StatusCode, code: u64, message: &str) -> AnyEr
         other => custom_error(
             "DiscordGenericErrorResponse",
             format!(
-                "An error occured with the discord API, http status: {other}, code: {code}, \
+                "An error occurred with the discord API, http status: {other}, code: {code}, \
                  message: {message}"
             ),
         ),
@@ -410,7 +410,7 @@ pub async fn op_discord_interaction_callback(
     client
         .create_response(
             Id::from_str(&args.interaction_id)?,
-            &args.ineraction_token,
+            &args.interaction_token,
             &args.data.into(),
         )
         .await

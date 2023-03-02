@@ -65,7 +65,7 @@ export class Interaction {
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
-            ineractionToken: this.token,
+            interactionToken: this.token,
             data: {
                 kind: "ChannelMessageWithSource",
                 fields: toOpMessageFields(fields),
@@ -86,7 +86,7 @@ export class Interaction {
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
-            ineractionToken: this.token,
+            interactionToken: this.token,
             data: {
                 kind: "DeferredChannelMessageWithSource",
                 fields: toOpMessageFields(fields ?? {}),
@@ -183,7 +183,7 @@ export class ComponentInteraction extends Interaction {
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
-            ineractionToken: this.token,
+            interactionToken: this.token,
             data: {
                 kind: "UpdateMessage",
                 fields: toOpMessageFields(fields),
@@ -205,7 +205,7 @@ export class ComponentInteraction extends Interaction {
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
-            ineractionToken: this.token,
+            interactionToken: this.token,
             data: {
                 kind: "DeferredUpdateMessage",
             }
@@ -222,7 +222,7 @@ export class ComponentInteraction extends Interaction {
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
-            ineractionToken: this.token,
+            interactionToken: this.token,
             data: {
                 kind: "Modal",
                 title: modal.title,
@@ -294,7 +294,7 @@ export class ModalSubmitInteraction extends Interaction {
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
-            ineractionToken: this.token,
+            interactionToken: this.token,
             data: {
                 kind: "UpdateMessage",
                 fields: toOpMessageFields(fields),
@@ -316,7 +316,7 @@ export class ModalSubmitInteraction extends Interaction {
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
-            ineractionToken: this.token,
+            interactionToken: this.token,
             data: {
                 kind: "DeferredUpdateMessage",
             }

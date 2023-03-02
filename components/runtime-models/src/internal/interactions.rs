@@ -73,7 +73,7 @@ impl From<application_command::InteractionMember> for InteractionPartialMember {
 #[serde(rename_all = "camelCase")]
 pub struct InteractionCallback {
     pub interaction_id: String,
-    pub ineraction_token: String,
+    pub interaction_token: String,
     pub data: InteractionResponse,
 }
 

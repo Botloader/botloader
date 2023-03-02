@@ -201,7 +201,7 @@ export namespace Commands {
 
             return OpWrappers.interactionCallback({
                 interactionId: this.interactionId,
-                ineractionToken: this.token,
+                interactionToken: this.token,
                 data: {
                     kind: "Modal",
                     title: modal.title,

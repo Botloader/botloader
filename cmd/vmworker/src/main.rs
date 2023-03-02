@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap(),
     );
 
-    // surpress signals for now
+    // suppress signals for now
     // TODO: remove this? do we need signals here?
     // ideally we wanna manage this through the parent
     tokio::spawn(common::shutdown::wait_shutdown_signal());
