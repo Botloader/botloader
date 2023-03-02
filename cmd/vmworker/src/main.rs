@@ -9,8 +9,7 @@ use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
-use vm::vm::{CreateRt, GuildVmEvent, Vm, VmCommand, VmContext, VmEvent, VmRole};
-use vmthread::{VmThreadCommand, VmThreadFuture, VmThreadHandle};
+use vm::vm::{CreateRt, GuildVmEvent, VmCommand, VmContext, VmEvent, VmRole, VmShutdownHandle};
 
 mod metrics_forwarder;
 
@@ -88,7 +87,7 @@ pub struct WorkerConfig {
 
 struct WorkerState {
     guild_id: Id<GuildMarker>,
-    vm_thread: VmThreadHandle<Vm>,
+    vm_thread: VmShutdownHandle,
     scripts_vm: mpsc::UnboundedSender<VmCommand>,
     evt_rx: mpsc::UnboundedReceiver<(Id<GuildMarker>, VmRole, VmEvent)>,
 }
@@ -216,10 +215,9 @@ impl Worker {
             SchedulerMessage::Complete => {
                 // complete the vm
                 if let Some(current) = &self.current_state {
-                    let _ = current
+                    current
                         .vm_thread
-                        .send_cmd
-                        .send(vmthread::VmThreadCommand::Shutdown);
+                        .shutdown_vm(vm::vm::ShutdownReason::ThreadTermination, false);
                 }
                 Ok(ContinueState::Continue)
             }
@@ -271,16 +269,15 @@ impl Worker {
                 }
 
                 match reason {
-                    vmthread::ShutdownReason::OutOfMemory => {
+                    vm::vm::ShutdownReason::OutOfMemory => {
                         self.write_message(WorkerMessage::Shutdown(ShutdownReason::OutOfMemory))
                             .await?
                     }
-                    vmthread::ShutdownReason::Runaway => {
+                    vm::vm::ShutdownReason::Runaway => {
                         self.write_message(WorkerMessage::Shutdown(ShutdownReason::Runaway))
                             .await?
                     }
-                    vmthread::ShutdownReason::Unknown
-                    | vmthread::ShutdownReason::ThreadTermination => {
+                    vm::vm::ShutdownReason::Unknown | vm::vm::ShutdownReason::ThreadTermination => {
                         self.write_message(WorkerMessage::Shutdown(ShutdownReason::Other))
                             .await?
                     }
@@ -322,7 +319,6 @@ impl Worker {
             return Ok(ContinueState::Continue);
         }
 
-        let vmthread = VmThreadFuture::create();
         let (vm_cmd_tx, vm_cmd_rx) = mpsc::unbounded_channel();
         let (vm_evt_tx, vm_evt_rx) = mpsc::unbounded_channel();
 
@@ -342,24 +338,20 @@ impl Worker {
             event_tx: self.runtime_evt_tx.clone(),
         };
 
-        let _ = vmthread
-            .send_cmd
-            .send(VmThreadCommand::StartVM(CreateRt {
-                guild_logger: self.guild_logger.clone(),
-                rx: vm_cmd_rx,
-                tx: vm_evt_tx,
-                load_scripts: req.scripts,
+        let vmthread = vm::vmthread::spawn_vm_thread(CreateRt {
+            guild_logger: self.guild_logger.clone(),
+            rx: vm_cmd_rx,
+            tx: vm_evt_tx,
+            load_scripts: req.scripts,
 
-                ctx: VmContext {
-                    // bot_state: self.inner.shared_state.bot_context.state.clone(),
-                    // dapi: self.inner.shared_state.bot_context.http.clone(),
-                    guild_id: req.guild_id,
-                    role: VmRole::Main,
-                },
-                extension_factory: Box::new(move || runtime::create_extensions(rt_ctx.clone())),
-                extension_modules: runtime::jsmodules::create_module_map(),
-            }))
-            .map_err(|_| unreachable!());
+            ctx: VmContext {
+                guild_id: req.guild_id,
+                role: VmRole::Main,
+            },
+            extension_factory: Box::new(move || runtime::create_extensions(rt_ctx.clone())),
+            extension_modules: runtime::jsmodules::create_module_map(),
+        })
+        .await;
 
         self.current_state = Some(WorkerState {
             guild_id: req.guild_id,
@@ -382,12 +374,11 @@ impl Worker {
 
     async fn wait_shutdown_current_vm(&mut self) {
         if let Some(current) = &self.current_state {
-            let _ = current
+            current
                 .vm_thread
-                .send_cmd
-                .send(vmthread::VmThreadCommand::Shutdown);
+                .shutdown_vm(vm::vm::ShutdownReason::ThreadTermination, false);
 
-            current.vm_thread.send_cmd.closed().await;
+            current.scripts_vm.closed().await;
             self.current_state = None;
         }
     }

@@ -10,6 +10,7 @@ use guild_logger::{GuildLogger, LogEntry};
 use isolatecell::{IsolateCell, ManagedIsolate};
 use serde::Serialize;
 use std::convert::TryFrom;
+use std::fmt::Debug;
 use std::pin::Pin;
 use std::{
     fmt::Display,
@@ -22,7 +23,6 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
 use v8::{CreateParams, HeapStatistics, IsolateHandle};
-use vmthread::{CreateVmSuccess, ShutdownHandle, ShutdownReason, VmInterface};
 
 #[derive(Debug, Clone)]
 pub enum VmCommand {
@@ -84,6 +84,31 @@ pub struct VmContext {
 }
 
 impl Vm {
+    pub(crate) fn create_with_handles(
+        create_req: CreateRt,
+        isolate_cell: Rc<IsolateCell>,
+    ) -> CreateVmSuccess {
+        let (wakeup_tx, wakeup_rx) = mpsc::unbounded_channel();
+        let shutdown_handle = VmShutdownHandle::new(wakeup_tx);
+
+        let shutdown_handle_clone = shutdown_handle.clone();
+
+        let guild_id = create_req.ctx.guild_id;
+
+        let fut = Box::pin(async move {
+            tracing_futures::Instrument::instrument(
+                Vm::create_run(create_req, shutdown_handle_clone, isolate_cell, wakeup_rx),
+                tracing::info_span!("vm", guild_id = %guild_id),
+            )
+            .await;
+        });
+
+        CreateVmSuccess {
+            future: fut,
+            shutdown_handle,
+        }
+    }
+
     async fn create_run(
         create_req: CreateRt,
         timeout_handle: VmShutdownHandle,
@@ -758,52 +783,52 @@ impl<'a, 'b> core::future::Future for CompleteModuleEval<'a, 'b> {
     }
 }
 
-impl VmInterface for Vm {
-    type BuildDesc = CreateRt;
+// impl VmInterface for Vm {
+//     type BuildDesc = CreateRt;
 
-    type Future = LocalBoxFuture<'static, ()>;
+//     type Future = LocalBoxFuture<'static, ()>;
 
-    type VmId = RtId;
+//     type VmId = RtId;
 
-    fn create_vm(
-        b: Self::BuildDesc,
-        isolate_cell: Rc<IsolateCell>,
-    ) -> vmthread::VmCreateResult<Self::VmId, Self::Future, Self::ShutdownHandle> {
-        let (wakeup_tx, wakeup_rx) = mpsc::unbounded_channel();
-        let shutdown_handle = VmShutdownHandle {
-            terminated: Arc::new(AtomicBool::new(false)),
-            inner: Arc::new(StdRwLock::new(ShutdownHandleInner {
-                isolate_handle: None,
-                shutdown_reason: None,
-            })),
-            wakeup: wakeup_tx,
-        };
-        let guild_id = b.ctx.guild_id;
-        let id = RtId {
-            guild_id,
-            role: b.ctx.role,
-        };
+//     fn create_vm(
+//         b: Self::BuildDesc,
+//         isolate_cell: Rc<IsolateCell>,
+//     ) -> vmthread::VmCreateResult<Self::VmId, Self::Future, Self::ShutdownHandle> {
+//         let (wakeup_tx, wakeup_rx) = mpsc::unbounded_channel();
+//         let shutdown_handle = VmShutdownHandle {
+//             terminated: Arc::new(AtomicBool::new(false)),
+//             inner: Arc::new(StdRwLock::new(ShutdownHandleInner {
+//                 isolate_handle: None,
+//                 shutdown_reason: None,
+//             })),
+//             wakeup: wakeup_tx,
+//         };
+//         let guild_id = b.ctx.guild_id;
+//         let id = RtId {
+//             guild_id,
+//             role: b.ctx.role,
+//         };
 
-        let thandle_clone = shutdown_handle.clone();
+//         let thandle_clone = shutdown_handle.clone();
 
-        let fut = Box::pin(async move {
-            let local_set = tokio::task::LocalSet::new();
-            tracing_futures::Instrument::instrument(
-                local_set.run_until(Vm::create_run(b, thandle_clone, isolate_cell, wakeup_rx)),
-                tracing::info_span!("vm", guild_id = %guild_id),
-            )
-            .await;
-        });
+//         let fut = Box::pin(async move {
+//             let local_set = tokio::task::LocalSet::new();
+//             tracing_futures::Instrument::instrument(
+//                 local_set.run_until(Vm::create_run(b, thandle_clone, isolate_cell, wakeup_rx)),
+//                 tracing::info_span!("vm", guild_id = %guild_id),
+//             )
+//             .await;
+//         });
 
-        Ok(CreateVmSuccess {
-            future: fut,
-            id,
-            shutdown_handle,
-        })
-    }
+//         Ok(CreateVmSuccess {
+//             future: fut,
+//             id,
+//             shutdown_handle,
+//         })
+//     }
 
-    type ShutdownHandle = VmShutdownHandle;
-}
+//     type ShutdownHandle = VmShutdownHandle;
+// }
 
 #[derive(Clone)]
 pub struct VmShutdownHandle {
@@ -812,8 +837,29 @@ pub struct VmShutdownHandle {
     wakeup: mpsc::UnboundedSender<()>,
 }
 
-impl ShutdownHandle for VmShutdownHandle {
-    fn shutdown_vm(&self, reason: ShutdownReason, force: bool) {
+impl Debug for VmShutdownHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VmShutdownHandle")
+            .field("terminated", &self.terminated)
+            .field("inner", &"NA")
+            .field("wakeup", &self.wakeup)
+            .finish()
+    }
+}
+
+impl VmShutdownHandle {
+    pub(crate) fn new(wakeup_tx: mpsc::UnboundedSender<()>) -> Self {
+        Self {
+            terminated: Arc::new(AtomicBool::new(false)),
+            inner: Arc::new(StdRwLock::new(ShutdownHandleInner {
+                isolate_handle: None,
+                shutdown_reason: None,
+            })),
+            wakeup: wakeup_tx,
+        }
+    }
+
+    pub fn shutdown_vm(&self, reason: ShutdownReason, force: bool) {
         let mut inner = self.inner.write().unwrap();
         inner.shutdown_reason = Some(reason);
         if let Some(iso_handle) = &inner.isolate_handle {
@@ -831,6 +877,26 @@ impl ShutdownHandle for VmShutdownHandle {
         self.wakeup.send(()).ok();
     }
 }
+
+// impl ShutdownHandle for VmShutdownHandle {
+//     fn shutdown_vm(&self, reason: ShutdownReason, force: bool) {
+//         let mut inner = self.inner.write().unwrap();
+//         inner.shutdown_reason = Some(reason);
+//         if let Some(iso_handle) = &inner.isolate_handle {
+//             self.terminated
+//                 .store(true, std::sync::atomic::Ordering::SeqCst);
+
+//             if force {
+//                 iso_handle.terminate_execution();
+//             }
+//         } else {
+//             inner.shutdown_reason = None;
+//         }
+
+//         // trigger a shutdown check if we weren't in the js runtime
+//         self.wakeup.send(()).ok();
+//     }
+// }
 
 struct ShutdownHandleInner {
     shutdown_reason: Option<ShutdownReason>,
@@ -872,4 +938,19 @@ struct NoOpWaker;
 
 impl Wake for NoOpWaker {
     fn wake(self: Arc<Self>) {}
+}
+
+#[derive(Debug, Clone)]
+pub enum ShutdownReason {
+    Unknown,
+    Runaway,
+    ThreadTermination,
+    OutOfMemory,
+}
+
+pub type VmCreateResult = Result<CreateVmSuccess, String>;
+
+pub struct CreateVmSuccess {
+    pub future: LocalBoxFuture<'static, ()>,
+    pub shutdown_handle: VmShutdownHandle,
 }

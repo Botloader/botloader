@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 common = {path="../../components/common"}
-vmthread = {path="../../components/vmthread"}
 vm = {path="../../components/vm"}
 guild-logger = {path="../../components/guild-logger"}
 stores = {path="../../components/stores"}

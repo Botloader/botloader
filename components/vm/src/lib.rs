@@ -8,6 +8,7 @@ use url::Url;
 pub mod error;
 pub mod moduleloader;
 pub mod vm;
+pub mod vmthread;
 
 /// Represents a value passed to or from JavaScript.
 ///

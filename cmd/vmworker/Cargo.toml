@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 common = {path="../../components/common"}
 scheduler-worker-rpc = {path="../../components/scheduler-worker-rpc"}
-vmthread = {path="../../components/vmthread"}
 runtime = {path="../../components/runtime"}
 runtime-models = {path="../../components/runtime-models"}
 vm = {path="../../components/vm"}

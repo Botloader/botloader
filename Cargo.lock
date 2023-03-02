@@ -2977,7 +2977,6 @@ dependencies = [
  "v8",
  "validation",
  "vm",
- "vmthread",
 ]
 
 [[package]]
@@ -5218,6 +5217,7 @@ dependencies = [
  "guild-logger",
  "isolatecell",
  "lazy_static",
+ "metrics",
  "regex",
  "serde",
  "serde_json",
@@ -5230,17 +5230,6 @@ dependencies = [
  "twilight-model",
  "url",
  "v8",
- "vmthread",
-]
-
-[[package]]
-name = "vmthread"
-version = "0.1.0"
-dependencies = [
- "isolatecell",
- "metrics",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -5265,7 +5254,6 @@ dependencies = [
  "twilight-http",
  "twilight-model",
  "vm",
- "vmthread",
 ]
 
 [[package]]

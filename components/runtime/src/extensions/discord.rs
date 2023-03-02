@@ -41,7 +41,6 @@ use twilight_model::{
     id::marker::{ChannelMarker, UserMarker},
 };
 use vm::AnyError;
-use vmthread::ShutdownHandle;
 
 use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
 use crate::{get_rt_ctx, RuntimeContext, RuntimeEvent};
@@ -158,7 +157,7 @@ pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Er
                     "guild hit >30 invalid requests within 60s, suspending it"
                 );
                 let _ = rt_ctx.event_tx.send(RuntimeEvent::InvalidRequestsExceeded);
-                handle.shutdown_vm(vmthread::ShutdownReason::Unknown, false);
+                handle.shutdown_vm(vm::vm::ShutdownReason::Unknown, false);
             }
         }
     }
