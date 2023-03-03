@@ -1,10 +1,10 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { BuildConfig } from "../BuildConfig";
 import { useCurrentGuild } from "./GuildsProvider";
 import { useSession } from "./Session";
 import { userAvatarUrl } from "./Util";
 import { GuildIcon } from "./GuildIcon";
-import { AppBar, Button } from "@mui/material";
+import { AppBar } from "@mui/material";
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -44,7 +44,7 @@ export function TopNav() {
     let currentGuild = useCurrentGuild();
 
     const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
         if (sideNavController.pageHasSideNav) {
@@ -58,13 +58,13 @@ export function TopNav() {
         setAnchorElNav(null);
     };
 
-    const handleClickNavMenuItem = (page: typeof TopBarNavPages[number]) => {
-        handleCloseNavMenu();
+    // const handleClickNavMenuItem = (page: typeof TopBarNavPages[number]) => {
+    //     handleCloseNavMenu();
 
-        if (!page.useHref) {
-            navigate(page.path);
-        }
-    };
+    //     if (!page.useHref) {
+    //         navigate(page.path);
+    //     }
+    // };
 
     const drawerWidth = sideNavController.pageHasSideNav ? 250 : 0;
 
@@ -129,6 +129,7 @@ export function TopNav() {
                                     component={Link}
                                     to={page.path}
                                     reloadDocument={page.useHref}
+                                    target={page.useHref ? "_blank" : undefined}
                                 >
                                     <Typography textAlign="center">{page.label}</Typography>
                                 </MenuItem>
@@ -158,6 +159,7 @@ export function TopNav() {
                                 sx={{ my: 2, color: 'white', display: 'block' }}
                                 to={page.path}
                                 skipClientRouting={page.useHref}
+                                newTab={page.useHref}
                             >
                                 {page.label}
                             </BlLink>
@@ -179,7 +181,7 @@ export function TopNav() {
                         {session.user ?
                             <>
                                 <Tooltip title="User Settings">
-                                    <IconButton onClick={() => navigate("/user/general")}>
+                                    <IconButton component={Link} to={"/user/general"}>
                                         <Avatar alt={session.user.username} src={userAvatarUrl(session.user, 64)} />
                                     </IconButton>
                                 </Tooltip>
