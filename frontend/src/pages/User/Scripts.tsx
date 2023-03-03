@@ -2,6 +2,7 @@ import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material"
 import { isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { BlLink } from "../../components/BLLink";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../components/FetchData";
 import { useSession } from "../../components/Session";
 
@@ -41,8 +42,6 @@ function ListScripts() {
 function ScriptItem({ script }: {
     script: ScriptPlugin,
 }) {
-    const navigate = useNavigate();
-
     // async function deleteConfirm() {
     //     if (window.confirm("are you sure you want to delete this script?")) {
     //         // await deleteScript(script.id);
@@ -54,12 +53,12 @@ function ScriptItem({ script }: {
     }}>
         <Typography variant="body1" flexGrow={1}>{script.name}</Typography>
         <Stack direction={"row"}>
-            <Button onClick={() => navigate(`/user/plugins/${script.id}/`)}>
+            <BlLink to={`/user/plugins/${script.id}/`}>
                 Manage
-            </Button>
+            </BlLink>
             {/* <AsyncOpButton label="delete" onClick={() => deleteConfirm()}></AsyncOpButton> */}
         </Stack>
-    </Box>
+    </Box >
 }
 
 function NewPluginForm() {
