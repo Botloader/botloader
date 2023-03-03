@@ -144,7 +144,7 @@ function AddToServer() {
     return (
         <Paper sx={{ p: 1 }}>
             <AddPluginToServerButton />
-            <BlLink to={`/plugins/${plugin.id}`} disabled={Boolean(plugin.is_public)}>
+            <BlLink to={`/plugins/${plugin.id}`} disabled={!Boolean(plugin.is_public)}>
                 View public page
             </BlLink>
         </Paper>
