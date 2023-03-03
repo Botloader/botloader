@@ -44,7 +44,6 @@ export function TopNav() {
     let currentGuild = useCurrentGuild();
 
     const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
-    // const navigate = useNavigate();
 
     const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
         if (sideNavController.pageHasSideNav) {
