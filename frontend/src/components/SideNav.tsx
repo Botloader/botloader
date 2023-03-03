@@ -1,7 +1,7 @@
 import { Divider, Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar } from "@mui/material";
 import { Box } from "@mui/system";
 import { ReactNode, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { UseSideNavController } from "./SideNavManager";
 import { TopBarNavPages } from "./TopNav";
 
@@ -113,16 +113,16 @@ function Item(props: { item: SideNavItem }) {
 }
 
 function NavButton({ item, children, selected }: { item: SideNavItem, children: ReactNode, selected: boolean }) {
-    const navigate = useNavigate();
     let sideNavController = UseSideNavController();
 
     if (item.isNavLink) {
-        return <ListItemButton selected={selected} onClick={() => {
-            navigate(item.path);
-            sideNavController.close();
-        }}>
+        return <ListItemButton
+            selected={selected}
+            component={Link}
+            to={item.path}
+            onClick={() => sideNavController.close()}>
             {children}
-        </ListItemButton>
+        </ ListItemButton>
     }
 
     return <ListItemButton href={item.path}>{children}</ListItemButton>
