@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
-use clap::{Args, Parser, Subcommand};
-use common::DiscordConfig;
+use clap::Parser;
+use common::{shutdown, DiscordConfig};
 use dbrokerapi::state_client::ConnectedGuildsResponse;
 use stores::{
     bucketstore::BucketStore, config::ConfigStore, postgres::Postgres, timers::TimerStore,
 };
-use tracing::{info, warn};
+use tracing::{error, info, warn, Instrument};
 use twilight_http::error::ErrorType;
 
 #[tokio::main]
@@ -22,14 +20,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .unwrap();
 
-    println!("Hello, world!");
+    let stop_future = shutdown::wait_shutdown_signal();
+    tokio::pin!(stop_future);
+    loop {
+        let span = tracing::info_span!("bl_jobs");
 
-    match &config.command {
-        Command::ScanForLeftGuilds => scan_for_left_guilds(config, db, discord_config).await,
-        Command::DeleteLeftGuilds(opts) => {
-            delete_left_guilds(config.clone(), opts.clone(), db).await
+        let config_clone = config.clone();
+        let db_clone = db.clone();
+        let discord_config_clone = discord_config.clone();
+        async move {
+            if let Err(err) =
+                scan_for_left_guilds(&config_clone, &db_clone, &discord_config_clone).await
+            {
+                error!(err, "failed scanning for left guilds");
+            }
+            if let Err(err) = delete_left_guilds(&config_clone, &db_clone).await {
+                error!(err, "failed deleting left guilds");
+            }
+        }
+        .instrument(span)
+        .await;
+
+        tokio::select! {
+            _ = &mut stop_future => {
+                break;
+            },
+            _ = tokio::time::sleep(std::time::Duration::from_secs(60*60)) => {
+                continue;
+            }
         }
     }
+
+    Ok(())
+
+    // match &config.command {
+    //     Command::ScanForLeftGuilds => scan_for_left_guilds(config, db, discord_config).await,
+    //     Command::DeleteLeftGuilds(opts) => {
+    //         delete_left_guilds(config.clone(), opts.clone(), db).await
+    //     }
+    // }
 }
 
 #[derive(Clone, clap::Parser)]
@@ -44,30 +73,19 @@ struct Config {
     )]
     broker_api_addr: String,
 
-    #[clap(subcommand)]
-    command: Command,
-}
-
-#[derive(Clone, Subcommand)]
-enum Command {
-    ScanForLeftGuilds,
-    DeleteLeftGuilds(DeleteSettings),
-}
-#[derive(Clone, Args)]
-struct DeleteSettings {
-    #[clap(long)]
-    min_age_days: u16,
+    #[clap(long, env = "BL_JOBS_DELETE_GUILDS_MIN_LEFT_DAYS", default_value = "7")]
+    delete_guilds_min_left_days: u16,
 }
 
 async fn scan_for_left_guilds(
-    conf: Config,
-    db: Postgres,
-    discord_config: Arc<DiscordConfig>,
+    conf: &Config,
+    db: &Postgres,
+    discord_config: &DiscordConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!("Scanning for left guilds");
 
     // get a list of all connected guilds
-    let client = dbrokerapi::state_client::Client::new(conf.broker_api_addr);
+    let client = dbrokerapi::state_client::Client::new(conf.broker_api_addr.clone());
     let connected_guilds = match client.get_connected_guilds().await? {
         ConnectedGuildsResponse::NotReady => {
             warn!("broker not ready yet");
@@ -108,20 +126,21 @@ async fn scan_for_left_guilds(
 }
 
 async fn delete_left_guilds(
-    _conf: Config,
-    opts: DeleteSettings,
-    db: Postgres,
+    conf: &Config,
+    db: &Postgres,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!(
         "Deleting left guilds, min left age days: {}",
-        opts.min_age_days
+        conf.delete_guilds_min_left_days
     );
 
-    if opts.min_age_days < 1 {
+    if conf.delete_guilds_min_left_days < 1 {
         panic!("min-age-days needs to be above 0");
     }
 
-    let guilds = db.get_left_guilds(opts.min_age_days as u64 * 24).await?;
+    let guilds = db
+        .get_left_guilds(conf.delete_guilds_min_left_days as u64 * 24)
+        .await?;
     for g in guilds {
         info!("deleting {}", g.id);
 
