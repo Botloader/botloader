@@ -40,30 +40,20 @@ export function useBotloaderMonaco(extraSources?: { name: string, content: strin
         })
 
         monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-            // typeRoots: ["typings/"],
             moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-            // baseUrl: "typings/",
             module: monaco.languages.typescript.ModuleKind.ESNext,
-            // This property seems to fuck shit up, no idea why
-            // lib: [
-            //     "ES5",
-            //     "ES2015",
-            //     "ES2016",
-            //     "ES2017",
-            //     "ES2018",
-            //     "ES2019",
-            //     "ES2020",
-            //     "ES2021",
-            // ],
-            "noImplicitAny": true,
-            "removeComments": true,
-            "preserveConstEnums": true,
-            "sourceMap": false,
-            "target": monaco.languages.typescript.ScriptTarget.ESNext,
-            "alwaysStrict": true,
-            "strict": true,
-            "strictNullChecks": true,
-
+            lib: [
+                "es2021",
+            ],
+            allowNonTsExtensions: true,
+            noImplicitAny: true,
+            removeComments: true,
+            preserveConstEnums: true,
+            sourceMap: false,
+            target: monaco.languages.typescript.ScriptTarget.ESNext,
+            alwaysStrict: true,
+            strict: true,
+            strictNullChecks: true,
             paths: {
                 "botloader": ["file:///typings/index.d.ts"]
             }
