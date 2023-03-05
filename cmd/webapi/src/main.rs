@@ -7,7 +7,6 @@ use axum::{
     routing::{delete, get, patch, post},
     BoxError, Router,
 };
-use clap::Parser;
 use oauth2::basic::BasicClient;
 use routes::auth::AuthHandlers;
 use stores::{inmemory::web::InMemoryCsrfStore, postgres::Postgres};
@@ -40,8 +39,10 @@ type ApiResult<T> = Result<T, ApiErrorResponse>;
 
 #[tokio::main]
 async fn main() {
-    common::common_init(Some("0.0.0.0:7801"));
-    let web_conf = WebConfig::parse();
+    let web_conf: WebConfig = common::load_config();
+    common::setup_tracing(&web_conf.common, "webapi");
+    common::setup_metrics("0.0.0.0:7801");
+
     let conf = web_conf.common;
 
     info!("starting...");

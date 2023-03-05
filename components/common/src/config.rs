@@ -41,6 +41,10 @@ pub struct RunConfig {
 
     #[clap(long, env = "BL_USER_SCRIPT_HTTP_PROXY")]
     pub user_script_http_proxy: Option<String>,
+
+    /// Export traces to an otlp compatible client (such as grafana agent) at the provided url
+    #[clap(long, env = "BL_OTLP_GRPC_URL")]
+    pub otlp_grpc_url: Option<String>,
 }
 
 impl RunConfig {

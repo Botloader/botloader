@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use axum::{extract::Extension, http::StatusCode, routing::get, Json, Router};
-use clap::Parser;
 use stores::{
     config::{ConfigStore, CreateUpdatePremiumSlotBySource, PremiumSlot},
     postgres::Postgres,
@@ -10,8 +9,9 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    common::common_init(Some("0.0.0.0:7804"));
-    let config = BrokerConfig::parse();
+    let config: BrokerConfig = common::load_config();
+    common::setup_tracing(&config.common, "dbserver");
+    common::setup_metrics("0.0.0.0:7804");
 
     info!("Launching!");
 

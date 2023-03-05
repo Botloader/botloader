@@ -1,4 +1,3 @@
-use clap::Parser;
 use common::{shutdown, DiscordConfig};
 use dbrokerapi::state_client::ConnectedGuildsResponse;
 use stores::{
@@ -9,8 +8,9 @@ use twilight_http::error::ErrorType;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    common::common_init(None);
-    let config = Config::parse();
+    let config: Config = common::load_config();
+    common::setup_tracing(&config.common, "jobs");
+    // common::setup_metrics("0.0.0.0:7802");
 
     let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
         .await

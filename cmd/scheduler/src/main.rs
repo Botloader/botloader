@@ -1,6 +1,5 @@
 use std::{num::NonZeroU64, sync::Arc, time::Duration};
 
-use clap::Parser;
 use stores::{
     config::{ConfigStore, PremiumSlotTier},
     postgres::Postgres,
@@ -26,8 +25,10 @@ mod worker_listener;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    common::common_init(Some("0.0.0.0:7803"));
-    let config = SchedulerConfig::parse();
+    let config: SchedulerConfig = common::load_config();
+    common::setup_tracing(&config.common, "scheduler");
+    common::setup_metrics("0.0.0.0:7803");
+
     let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
         .await
         .expect("failed fetching discord config");

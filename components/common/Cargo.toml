@@ -22,3 +22,6 @@ oauth2 = "4.1"
 
 metrics = "0.18"
 metrics-exporter-prometheus = "0.8"
+opentelemetry = "0.18.0"
+opentelemetry-otlp = "0.11.0"
+tracing-opentelemetry = "0.18.0"

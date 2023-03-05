@@ -1,6 +1,5 @@
 use std::sync::{Arc, RwLock};
 
-use clap::Parser;
 use common::DiscordConfig;
 use guild_logger::GuildLogger;
 use runtime::{CreateRuntimeContext, RuntimeEvent};
@@ -15,8 +14,9 @@ mod metrics_forwarder;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    common::common_init(None);
-    let config = WorkerConfig::parse();
+    let config: WorkerConfig = common::load_config();
+    common::setup_tracing(&config.common, "vmworker");
+
     let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
         .await
         .expect("failed fetching discord config");

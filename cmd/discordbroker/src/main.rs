@@ -1,6 +1,5 @@
 use std::sync::{atomic::AtomicBool, Arc};
 
-use clap::Parser;
 use stores::postgres::Postgres;
 use tracing::info;
 use twilight_cache_inmemory::InMemoryCacheBuilder;
@@ -13,8 +12,10 @@ mod http_api;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    common::common_init(Some("0.0.0.0:7802"));
-    let config = BrokerConfig::parse();
+    let config: BrokerConfig = common::load_config();
+    common::setup_tracing(&config.common, "discordbroker");
+    common::setup_metrics("0.0.0.0:7802");
+
     // let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
     //     .await
     //     .expect("failed fetching discord config");
