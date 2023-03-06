@@ -11,8 +11,8 @@ use oauth2::basic::BasicClient;
 use routes::auth::AuthHandlers;
 use stores::{inmemory::web::InMemoryCsrfStore, postgres::Postgres};
 use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
-use tracing::{error, info};
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
+use tracing::{error, info, Level};
 use twilight_model::id::{marker::GuildMarker, Id};
 
 mod errors;
@@ -90,7 +90,7 @@ async fn main() {
         .layer(Extension(ConfigData {
             oauth_client: oatuh_client,
         }))
-        .layer(TraceLayer::new_for_http())
+        .layer(TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)))
         .layer(Extension(bot_rpc_client))
         .layer(Extension(Arc::new(auth_handler)))
         .layer(Extension(config_store))
