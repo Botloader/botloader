@@ -103,6 +103,5 @@ pub fn setup_tracing_stdout() {
 fn global_filters() -> Targets {
     Targets::new()
         .with_default(Level::DEBUG)
-        .with_target("swc_ecma_codegen", Level::ERROR)
-        .with_target("swc_timer", Level::ERROR)
+        .with_target("swc", Level::ERROR)
 }
