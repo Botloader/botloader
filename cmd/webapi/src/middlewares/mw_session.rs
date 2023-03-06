@@ -132,7 +132,17 @@ where
                         let logged_in_session = LoggedInSession::new(session, api_client);
                         extensions.insert(logged_in_session.clone());
 
-                        let resp = inner.call(req).instrument(span).await.map_err(|e| e.into());
+                        let resp = {
+                            // catch potential work being made creating the future
+                            let _guard = span.enter();
+                            let fut = inner.call(req);
+                            drop(_guard);
+
+                            fut
+                        }
+                        .instrument(span)
+                        .await
+                        .map_err(|e| e.into());
 
                         if logged_in_session.api_client.is_broken() {
                             // remove from store if the refresh token is broken
@@ -140,7 +150,7 @@ where
                                 .del_all_sessions(logged_in_session.session.user.id)
                                 .await
                                 .map_err(|err| {
-                                    error!(%err, "failed clearing sessiosn from broken token")
+                                    error!(%err, "failed clearing sessions from broken token")
                                 }).ok();
                         }
 
