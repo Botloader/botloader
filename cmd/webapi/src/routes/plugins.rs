@@ -22,8 +22,8 @@ use crate::{
 #[derive(Serialize, Clone, Debug)]
 pub struct DiscordUser {
     id: Id<UserMarker>,
-    username: Option<String>,
-    discriminator: Option<String>,
+    username: String,
+    discriminator: String,
     avatar: Option<String>,
 }
 
@@ -385,8 +385,8 @@ async fn fetch_discord_user(
             return Ok(DiscordUser {
                 id,
                 avatar: current_user.avatar.map(|v| v.to_string()),
-                discriminator: Some(current_user.discriminator.to_string()),
-                username: Some(current_user.name.clone()),
+                discriminator: current_user.discriminator.to_string(),
+                username: current_user.name.clone(),
             });
         }
     }
@@ -400,8 +400,8 @@ async fn fetch_discord_user(
             Ok(DiscordUser {
                 id,
                 avatar: user.avatar.map(|v| v.to_string()),
-                discriminator: Some(user.discriminator.to_string()),
-                username: Some(user.name),
+                discriminator: user.discriminator.to_string(),
+                username: user.name,
             })
         }
         Err(err) => match err.kind() {
@@ -419,8 +419,8 @@ async fn fetch_discord_user(
                 // is there potentially user info we might need to remove (think: gdpr?)
                 Ok(DiscordUser {
                     id,
-                    username: Some("Deleted user".to_owned()),
-                    discriminator: Some("0000".to_owned()),
+                    username: "Deleted user".to_owned(),
+                    discriminator: "0000".to_owned(),
                     avatar: None,
                 })
             }
