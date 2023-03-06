@@ -116,7 +116,7 @@ where
                     if let Some(session) = store.get_session(t).await? {
                         let extensions = req.extensions_mut();
 
-                        let span = tracing::debug_span!("session", user_id=%session.user.id);
+                        let span = tracing::info_span!("session", user_id=%session.user.id);
 
                         let api_client = cache
                             .fetch(session.user.id, || {
