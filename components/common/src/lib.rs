@@ -6,8 +6,8 @@ use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use tracing::{info, Level};
 use tracing_subscriber::filter::Targets;
-use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod config;
 pub mod discord;
