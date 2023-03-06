@@ -4,7 +4,8 @@ use clap::Parser;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use opentelemetry::{sdk::Resource, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use tracing::info;
+use tracing::{info, Level};
+use tracing_subscriber::filter::Targets;
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
 
@@ -79,7 +80,7 @@ pub fn setup_tracing_otlp(url: &str, service_name: String) {
 
     // We need to register our layer with `tracing`.
     tracing_subscriber::registry()
-        .with(LevelFilter::INFO)
+        .with(global_filters().with_default(Level::INFO))
         .with(otlp_layer)
         // Tracing error sadly can't be used as it results in deadlocks
         .with(tracing_subscriber::fmt::Layer::new())
@@ -93,7 +94,15 @@ pub fn setup_tracing_stdout() {
     let env_filter = EnvFilter::from_default_env();
 
     tracing_subscriber::registry()
+        .with(global_filters())
         .with(fmt_layer)
         .with(env_filter)
         .init();
+}
+
+fn global_filters() -> Targets {
+    Targets::new()
+        .with_default(Level::DEBUG)
+        .with_target("swc_ecma_codegen", Level::ERROR)
+        .with_target("swc_timer", Level::ERROR)
 }
