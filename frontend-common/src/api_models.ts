@@ -1,5 +1,5 @@
 export interface User {
-    avatar?: string,
+    avatar: string | null,
     bot: boolean,
     discriminator: string,
     email?: string,
@@ -80,6 +80,8 @@ export interface Plugin<Variant = ScriptPluginData> {
     id: number,
     created_at: string,
     author_id: string,
+    // Only included on certain endpoints
+    author?: BlUser,
     name: string,
     short_description: string,
     long_description: string,
@@ -102,4 +104,14 @@ export type ScriptPlugin = Plugin<ScriptPluginData>;
 export interface ScriptsWithPlugins {
     scripts: Script[],
     plugins: Plugin[]
+}
+
+export interface BlUser {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar: string | null;
+
+    is_bl_staff: boolean;
+    is_bl_trusted: boolean;
 }

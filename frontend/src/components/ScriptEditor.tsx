@@ -21,6 +21,7 @@ export function ScriptEditor(props: {
     originalDiffSource?: string,
     isDiffEditor?: boolean,
     files?: IncludeFile[],
+    isReadOnly?: boolean,
 }) {
     const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const blSdkInit = useBotloaderMonaco(props.files);
@@ -104,6 +105,7 @@ export function ScriptEditor(props: {
             modifiedLanguage="typescript"
             theme="vs-dark"
             onMount={handleEditorDidMountDiff}
+            options={{ readOnly: props.isReadOnly }}
         />
 
     } else {
@@ -115,6 +117,7 @@ export function ScriptEditor(props: {
             saveViewState={false}
             onChange={onValueChange}
             onMount={handleEditorDidMount}
+            options={{ readOnly: props.isReadOnly }}
         />
     }
 

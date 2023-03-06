@@ -8,7 +8,7 @@ export function guildIconUrl(g: { icon?: string, id: string }, size: 32 | 64 | 1
     return `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.${extension}?size=${size}`
 }
 
-export function userAvatarUrl(u: User, size = 64): string {
+export function userAvatarUrl(u: Pick<User, "avatar" | "id" | "discriminator">, size = 64): string {
     if (u.avatar) {
         const extension =
             u.avatar.startsWith("a_") ? "gif" : "png";

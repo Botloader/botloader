@@ -18,7 +18,7 @@ import { Box } from "@mui/material"
 import { EditPluginPage } from "./pages/User/EditPlugin"
 import { EditPluginScriptPage } from "./pages/User/EditPluginScript"
 import { PluginProvider } from "./components/PluginProvider"
-import { ViewPlugin } from "./pages/ViewPlugin"
+import { ViewPlugin, ViewPluginSource } from "./pages/ViewPlugin"
 
 export function RoutesElement() {
     let routes = useRoutes(appRoutes);
@@ -152,7 +152,7 @@ const appRoutes: RouteObject[] = [
                     },
                     {
                         path: "source",
-                        element: <>TODO</>
+                        element: <ViewPluginSource />
                     }
                 ]
             }

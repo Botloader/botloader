@@ -8,7 +8,7 @@ type Props = {
     initialSource?: string,
     diffSource?: string,
     isDiffEditor: boolean,
-    readOnly?: boolean,
+    isReadyOnly?: boolean,
     files?: IncludeFile[],
     onChange?: (content: string | undefined) => any,
 }
@@ -24,6 +24,7 @@ export function ScriptingIde(props: Props) {
                     isDiffEditor={props.isDiffEditor}
                     originalDiffSource={props.diffSource}
                     onChange={props.onChange}
+                    isReadOnly={props.isReadyOnly}
                 />
             </Box>
             <Box width={300} display="flex" flexDirection="column" position={"absolute"} top={69} bottom={0} right={0}>
