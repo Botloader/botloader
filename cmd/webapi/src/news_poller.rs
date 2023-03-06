@@ -3,6 +3,7 @@ use std::{
     time::Duration,
 };
 
+use common::DiscordConfig;
 use serde::Serialize;
 use tracing::{error, info};
 use twilight_model::{
@@ -14,7 +15,7 @@ use twilight_model::{
 };
 
 pub struct NewsPoller {
-    discord_http: Arc<twilight_http::Client>,
+    discord_http: Arc<DiscordConfig>,
     follow_channels: Vec<Id<ChannelMarker>>,
     guild_channels: Vec<Channel>,
     items: Arc<RwLock<Arc<Vec<NewsItem>>>>,
@@ -22,18 +23,19 @@ pub struct NewsPoller {
 
 impl NewsPoller {
     pub async fn new(
-        discord_http: Arc<twilight_http::Client>,
+        discord_config: Arc<DiscordConfig>,
         follow_channels: Vec<Id<ChannelMarker>>,
         guild_id: Id<GuildMarker>,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let channels = discord_http
+        let channels = discord_config
+            .client
             .guild_channels(guild_id)
             .await?
             .models()
             .await?;
 
         Ok(Self {
-            discord_http,
+            discord_http: discord_config,
             follow_channels,
             guild_channels: channels,
             items: Arc::new(RwLock::new(Arc::new(Vec::new()))),
@@ -73,6 +75,7 @@ impl NewsPoller {
         for channel in &self.follow_channels {
             let mut msgs = self
                 .discord_http
+                .client
                 .channel_messages(*channel)
                 .limit(100)
                 .unwrap()

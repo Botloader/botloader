@@ -23,7 +23,7 @@ mod util;
 
 use crate::middlewares::{
     plugins::plugin_middleware, require_current_guild_admin_middleware, CorsLayer, NoSession,
-    SessionLayer,
+    OptionalSession, SessionLayer,
 };
 use crate::{errors::ApiErrorResponse, middlewares::current_guild_injector_middleware};
 
@@ -47,11 +47,15 @@ async fn main() {
 
     info!("starting...");
 
+    let discord_config = common::discord::fetch_discord_config(conf.discord_token.clone())
+        .await
+        .unwrap();
+
     let news_handle = if let Some(guild_id) = web_conf.news_guild {
         let split = web_conf.news_channels.split(',');
 
         let poller = news_poller::NewsPoller::new(
-            Arc::new(twilight_http::Client::new(conf.discord_token.clone())),
+            discord_config.clone(),
             split
                 .into_iter()
                 .map(|v| Id::new(v.parse().unwrap()))
@@ -97,6 +101,8 @@ async fn main() {
         .layer(Extension(session_store.clone()))
         .layer(Extension(client_cache))
         .layer(Extension(news_handle))
+        .layer(Extension(discord_config))
+        .layer(Extension(OptionalSession::<CurrentSessionStore>::none()))
         .layer(session_layer)
         .layer(CorsLayer {
             run_config: conf.clone(),

@@ -1,22 +1,53 @@
+use std::sync::Arc;
+
 use axum::{response::IntoResponse, Extension, Json};
-use common::plugin::Plugin;
-use serde::Deserialize;
+use common::{plugin::Plugin, DiscordConfig};
+use serde::{Deserialize, Serialize};
 use stores::config::{ConfigStore, ConfigStoreError, CreatePlugin, UpdatePluginMeta};
 use tracing::error;
-use twilight_model::user::CurrentUserGuild;
+use twilight_http::api_error::{ApiError, GeneralApiError};
+use twilight_model::{
+    id::{marker::UserMarker, Id},
+    user::{CurrentUser, CurrentUserGuild},
+};
 use validation::{validate, ValidationContext, Validator};
 
 use crate::{
     errors::ApiErrorResponse,
-    middlewares::{plugins::fetch_plugin, LoggedInSession},
+    middlewares::{plugins::fetch_plugin, LoggedInSession, OptionalSession},
     util::EmptyResponse,
     ApiResult, CurrentConfigStore, CurrentSessionStore,
 };
 
+#[derive(Serialize, Clone, Debug)]
+pub struct DiscordUser {
+    id: Id<UserMarker>,
+    username: Option<String>,
+    discriminator: Option<String>,
+    avatar: Option<String>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct User {
+    #[serde(flatten)]
+    inner: DiscordUser,
+    is_bl_staff: bool,
+    is_bl_trusted: bool,
+}
+
+#[derive(Serialize)]
+pub struct PluginResponse {
+    #[serde(flatten)]
+    plugin: Plugin,
+    author: User,
+}
+
 // get all plugins (TODO: filtering)
 pub async fn get_published_public_plugins(
     Extension(config_store): Extension<CurrentConfigStore>,
-) -> ApiResult<impl IntoResponse> {
+    Extension(discord_config): Extension<Arc<DiscordConfig>>,
+    Extension(maybe_session): Extension<OptionalSession<CurrentSessionStore>>,
+) -> ApiResult<Json<Vec<PluginResponse>>> {
     let plugins = config_store
         .get_published_public_plugins()
         .await
@@ -25,6 +56,13 @@ pub async fn get_published_public_plugins(
             ApiErrorResponse::InternalError
         })?;
 
+    let plugins = fetch_plugin_authors(
+        &discord_config,
+        maybe_session.as_ref().map(|v| &v.session.user),
+        &plugins,
+    )
+    .await?;
+
     Ok(Json(plugins))
 }
 
@@ -32,6 +70,7 @@ pub async fn get_published_public_plugins(
 pub async fn get_user_plugins(
     Extension(config_store): Extension<CurrentConfigStore>,
     Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    Extension(discord_config): Extension<Arc<DiscordConfig>>,
 ) -> ApiResult<impl IntoResponse> {
     let plugins = config_store
         .get_user_plugins(session.session.user.id.get())
@@ -41,12 +80,25 @@ pub async fn get_user_plugins(
             ApiErrorResponse::InternalError
         })?;
 
+    let plugins =
+        fetch_plugin_authors(&discord_config, Some(&session.session.user), &plugins).await?;
+
     Ok(Json(plugins))
 }
 
 // get plugin
-pub async fn get_plugin(Extension(plugin): Extension<Plugin>) -> ApiResult<impl IntoResponse> {
-    // All the logic is handled by middleware
+pub async fn get_plugin(
+    Extension(plugin): Extension<Plugin>,
+    Extension(maybe_session): Extension<OptionalSession<CurrentSessionStore>>,
+    Extension(discord_config): Extension<Arc<DiscordConfig>>,
+) -> ApiResult<impl IntoResponse> {
+    let plugin = fetch_plugin_author(
+        &discord_config,
+        maybe_session.as_ref().map(|v| &v.session.user),
+        &plugin,
+    )
+    .await?;
+
     Ok(Json(plugin))
 }
 
@@ -267,4 +319,115 @@ pub async fn guild_add_plugin(
         })?;
 
     Ok(Json(script))
+}
+
+pub async fn fetch_plugin_author(
+    config: &DiscordConfig,
+    logged_in_user: Option<&CurrentUser>,
+    plugin: &Plugin,
+) -> ApiResult<PluginResponse> {
+    let user = fetch_discord_user(config, logged_in_user, plugin.author_id).await?;
+    let is_staff = config.owners.iter().any(|v| v.id == plugin.author_id);
+
+    Ok(PluginResponse {
+        plugin: plugin.clone(),
+        author: User {
+            inner: user,
+            is_bl_staff: is_staff,
+            is_bl_trusted: is_staff,
+        },
+    })
+}
+
+pub async fn fetch_plugin_authors(
+    config: &DiscordConfig,
+    logged_in_user: Option<&CurrentUser>,
+    plugins: &[Plugin],
+) -> ApiResult<Vec<PluginResponse>> {
+    let mut ids: Vec<_> = plugins.iter().map(|v| v.author_id).collect::<Vec<_>>();
+    ids.sort_unstable();
+    ids.dedup();
+
+    let mut fetched_users: Vec<User> = Vec::with_capacity(ids.len());
+    for id in ids {
+        let user = fetch_discord_user(config, logged_in_user, id).await?;
+        let is_staff = config.owners.iter().any(|v| v.id == id);
+        fetched_users.push(User {
+            inner: user,
+            is_bl_staff: is_staff,
+            is_bl_trusted: is_staff,
+        });
+    }
+
+    Ok(plugins
+        .iter()
+        .map(|v| PluginResponse {
+            plugin: v.clone(),
+            author: fetched_users
+                .iter()
+                // fetch_discord_user always returns a user on Ok, it errors out on failure
+                // so all users are present at this point
+                .find(|u| u.inner.id == v.author_id)
+                .unwrap()
+                .clone(),
+        })
+        .collect())
+}
+
+async fn fetch_discord_user(
+    config: &DiscordConfig,
+    logged_in_user: Option<&CurrentUser>,
+    id: Id<UserMarker>,
+) -> ApiResult<DiscordUser> {
+    // shortcut if were trying to fetch the currently signed in user!
+    if let Some(current_user) = &logged_in_user {
+        if id == current_user.id {
+            return Ok(DiscordUser {
+                id,
+                avatar: current_user.avatar.map(|v| v.to_string()),
+                discriminator: Some(current_user.discriminator.to_string()),
+                username: Some(current_user.name.clone()),
+            });
+        }
+    }
+
+    match config.client.user(id).await {
+        Ok(v) => {
+            let user = v.model().await.map_err(|err| {
+                error!(?err, "failed fetching user");
+                ApiErrorResponse::InternalError
+            })?;
+            Ok(DiscordUser {
+                id,
+                avatar: user.avatar.map(|v| v.to_string()),
+                discriminator: Some(user.discriminator.to_string()),
+                username: Some(user.name),
+            })
+        }
+        Err(err) => match err.kind() {
+            twilight_http::error::ErrorType::Response {
+                error:
+                    ApiError::General(GeneralApiError {
+                        code: 10013, // Unknown user
+                        ..
+                    }),
+                ..
+            } => {
+                // Use mock values, user was most likely deleted
+                //
+                // Question: should we purge deleted user's plugins from the DB?
+                // is there potentially user info we might need to remove (think: gdpr?)
+                Ok(DiscordUser {
+                    id,
+                    username: Some("Deleted user".to_owned()),
+                    discriminator: Some("0000".to_owned()),
+                    avatar: None,
+                })
+            }
+            _ => {
+                error!(?err, "failed fetching user");
+                Err(ApiErrorResponse::InternalError)
+            }
+        },
+    }
 }

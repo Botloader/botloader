@@ -9,6 +9,7 @@ use futures::future::BoxFuture;
 use std::{
     convert::Infallible,
     marker::PhantomData,
+    ops::Deref,
     task::{Context, Poll},
 };
 use tower::{Layer, Service};
@@ -23,6 +24,23 @@ type OAuthApiClientWrapper<ST> =
 pub struct LoggedInSession<ST> {
     pub api_client: OAuthApiClientWrapper<ST>,
     pub session: Session,
+}
+
+#[derive(Clone)]
+pub struct OptionalSession<ST>(Option<LoggedInSession<ST>>);
+
+impl<ST> Deref for OptionalSession<ST> {
+    type Target = Option<LoggedInSession<ST>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<ST> OptionalSession<ST> {
+    pub fn none() -> Self {
+        Self(None)
+    }
 }
 
 impl<T> LoggedInSession<T>
@@ -131,6 +149,7 @@ where
 
                         let logged_in_session = LoggedInSession::new(session, api_client);
                         extensions.insert(logged_in_session.clone());
+                        extensions.insert(OptionalSession(Some(logged_in_session.clone())));
 
                         let resp = {
                             // catch potential work being made creating the future
