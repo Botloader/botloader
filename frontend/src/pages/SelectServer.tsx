@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
 import { BotGuild } from "botloader-common";
 import { GuildsGuard, useGuilds } from "../components/GuildsProvider"
 import "./SelectServer.css"
