@@ -19,6 +19,7 @@ import { EditPluginPage } from "./pages/User/EditPlugin"
 import { EditPluginScriptPage } from "./pages/User/EditPluginScript"
 import { PluginProvider } from "./components/PluginProvider"
 import { ViewPlugin, ViewPluginSource } from "./pages/ViewPlugin"
+import { ViewPlugins } from "./pages/Plugins"
 
 export function RoutesElement() {
     let routes = useRoutes(appRoutes);
@@ -136,6 +137,13 @@ const appRoutes: RouteObject[] = [
                         element: <EditGuildScript />
                     }
                 ]
+            },
+            {
+                path: "/plugins",
+                element: <>
+                    <TopNav />
+                    <ViewPlugins />
+                </>
             },
             {
                 path: "/plugins/:pluginId",

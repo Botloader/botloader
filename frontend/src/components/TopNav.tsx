@@ -32,8 +32,8 @@ export const TopBarNavPages = [{
     path: "/news",
     useHref: false,
 }, {
-    label: "Samples",
-    path: "/Samples",
+    label: "Plugins",
+    path: "/plugins",
     useHref: false,
 }]
 
