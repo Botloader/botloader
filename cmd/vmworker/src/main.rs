@@ -1,14 +1,14 @@
 use std::sync::{Arc, RwLock};
 
 use common::DiscordConfig;
-use guild_logger::GuildLogger;
+use guild_logger::LogSender;
 use runtime::{CreateRuntimeContext, RuntimeEvent};
 use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
 use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
-use vm::vm::{CreateRt, GuildVmEvent, VmCommand, VmContext, VmEvent, VmRole, VmShutdownHandle};
+use vm::vm::{CreateRt, VmCommand, VmEvent, VmShutdownHandle};
 
 mod metrics_forwarder;
 
@@ -89,7 +89,7 @@ struct WorkerState {
     guild_id: Id<GuildMarker>,
     vm_thread: VmShutdownHandle,
     scripts_vm: mpsc::UnboundedSender<VmCommand>,
-    evt_rx: mpsc::UnboundedReceiver<(Id<GuildMarker>, VmRole, VmEvent)>,
+    evt_rx: mpsc::UnboundedReceiver<VmEvent>,
 }
 
 struct Worker {
@@ -98,7 +98,7 @@ struct Worker {
     runtime_evt_rx: mpsc::UnboundedReceiver<RuntimeEvent>,
     runtime_evt_tx: mpsc::UnboundedSender<RuntimeEvent>,
 
-    guild_logger: guild_logger::GuildLogger,
+    guild_logger: guild_logger::LogSender,
     discord_config: Arc<DiscordConfig>,
     user_http_proxy: Option<String>,
     broker_client: dbrokerapi::state_client::Client,
@@ -113,7 +113,7 @@ impl Worker {
         scheduler_rx: mpsc::UnboundedReceiver<SchedulerMessage>,
         scheduler_tx: mpsc::UnboundedSender<WorkerMessage>,
         stores: Arc<Postgres>,
-        guild_logger: GuildLogger,
+        guild_logger: LogSender,
         discord_config: Arc<DiscordConfig>,
         user_http_proxy: Option<String>,
         broker_client: dbrokerapi::state_client::Client,
@@ -241,23 +241,7 @@ impl Worker {
         }
         Ok(ContinueState::Continue)
     }
-    async fn handle_vm_evt(
-        &mut self,
-        (guild_id, _vm_role, evt): GuildVmEvent,
-    ) -> anyhow::Result<ContinueState> {
-        // TODO: is this bulletproof, could there be a situation where we get a event from a previous session?
-        if let Some(current) = &self.current_state {
-            if current.guild_id != guild_id {
-                info!(
-                    "mismatched guild for evt: {} - {}",
-                    current.guild_id, guild_id
-                );
-                return Ok(ContinueState::Continue);
-            }
-        } else {
-            return Ok(ContinueState::Continue);
-        }
-
+    async fn handle_vm_evt(&mut self, evt: VmEvent) -> anyhow::Result<ContinueState> {
         match evt {
             VmEvent::Shutdown(reason) => {
                 info!("vm shut down: {:?}", reason);
@@ -326,8 +310,7 @@ impl Worker {
             bot_state: self.broker_client.clone(),
             discord_config: self.discord_config.clone(),
             guild_id: req.guild_id,
-            role: VmRole::Main,
-            guild_logger: self.guild_logger.clone(),
+            guild_logger: self.guild_logger.with_guild(req.guild_id),
             script_http_client_proxy: self.user_http_proxy.clone(),
             premium_tier: self.premium_tier.clone(),
 
@@ -338,19 +321,18 @@ impl Worker {
             event_tx: self.runtime_evt_tx.clone(),
         };
 
-        let vmthread = vm::vmthread::spawn_vm_thread(CreateRt {
-            guild_logger: self.guild_logger.clone(),
-            rx: vm_cmd_rx,
-            tx: vm_evt_tx,
-            load_scripts: req.scripts,
+        let vmthread = vm::vmthread::spawn_vm_thread(
+            CreateRt {
+                guild_logger: self.guild_logger.with_guild(req.guild_id),
+                rx: vm_cmd_rx,
+                tx: vm_evt_tx,
+                load_scripts: req.scripts,
 
-            ctx: VmContext {
-                guild_id: req.guild_id,
-                role: VmRole::Main,
+                extension_factory: Box::new(move || runtime::create_extensions(rt_ctx.clone())),
+                extension_modules: runtime::jsmodules::create_module_map(),
             },
-            extension_factory: Box::new(move || runtime::create_extensions(rt_ctx.clone())),
-            extension_modules: runtime::jsmodules::create_module_map(),
-        })
+            move || tracing::info_span!("vmthread", guild_id = %req.guild_id),
+        )
         .await;
 
         self.current_state = Some(WorkerState {

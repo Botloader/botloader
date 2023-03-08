@@ -8,7 +8,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
-use guild_logger::GuildLogger;
+use guild_logger::LogSender;
 use stores::config::PremiumSlotTier;
 use tokio::sync::mpsc;
 use tracing::{info, instrument};
@@ -44,7 +44,7 @@ pub struct GuildHandler {
 
     _discord_config: Arc<DiscordConfig>,
     stores: Arc<dyn Store>,
-    _logger: GuildLogger,
+    _logger: LogSender,
     _worker_pool: crate::vmworkerpool::VmWorkerPool,
     scheduler_tx: mpsc::UnboundedSender<VmSessionEvent>,
     guild_rx: mpsc::UnboundedReceiver<GuildCommand>,
@@ -61,7 +61,7 @@ impl GuildHandler {
     pub fn new_run(
         stores: Arc<dyn Store>,
         guild_id: Id<GuildMarker>,
-        logger: GuildLogger,
+        logger: LogSender,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
         cmd_manager_handle: crate::command_manager::Handle,
         discord_config: Arc<DiscordConfig>,
@@ -93,7 +93,7 @@ impl GuildHandler {
             scripts_session: VmSession::new(
                 stores,
                 guild_id,
-                logger,
+                logger.with_guild(guild_id),
                 worker_pool,
                 cmd_manager_handle,
                 discord_config,

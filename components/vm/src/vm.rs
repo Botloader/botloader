@@ -6,14 +6,14 @@ use crate::{
 };
 use deno_core::{Extension, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
-use guild_logger::{GuildLogger, LogEntry};
+use guild_logger::entry::CreateLogEntry;
+use guild_logger::GuildLogSender;
 use isolatecell::{IsolateCell, ManagedIsolate};
 use serde::Serialize;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::pin::Pin;
 use std::{
-    fmt::Display,
     rc::Rc,
     sync::{atomic::AtomicBool, Arc, RwLock as StdRwLock},
     task::{Context, Poll, Wake, Waker},
@@ -21,7 +21,6 @@ use std::{
 use stores::config::Script;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, instrument};
-use twilight_model::id::{marker::GuildMarker, Id};
 use v8::{CreateParams, HeapStatistics, IsolateHandle};
 
 #[derive(Debug, Clone)]
@@ -43,14 +42,6 @@ pub enum VmEvent {
     VmFinished,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum VmRole {
-    Main,
-    Pack(u64),
-}
-
-pub type GuildVmEvent = (Id<GuildMarker>, VmRole, VmEvent);
-
 #[derive(Serialize)]
 struct ScriptDispatchData {
     name: String,
@@ -58,16 +49,15 @@ struct ScriptDispatchData {
 }
 
 pub struct Vm {
-    ctx: VmContext,
     runtime: ManagedIsolate,
 
     rx: UnboundedReceiver<VmCommand>,
-    tx: UnboundedSender<GuildVmEvent>,
+    tx: UnboundedSender<VmEvent>,
 
     script_store: ScriptsStateStoreHandle,
 
     timeout_handle: VmShutdownHandle,
-    guild_logger: GuildLogger,
+    guild_logger: GuildLogSender,
 
     isolate_cell: Rc<IsolateCell>,
 
@@ -75,12 +65,6 @@ pub struct Vm {
     module_manager: Rc<ModuleManager>,
 
     wakeup_rx: UnboundedReceiver<()>,
-}
-
-#[derive(Debug, Clone)]
-pub struct VmContext {
-    pub guild_id: Id<GuildMarker>,
-    pub role: VmRole,
 }
 
 impl Vm {
@@ -93,15 +77,12 @@ impl Vm {
 
         let shutdown_handle_clone = shutdown_handle.clone();
 
-        let guild_id = create_req.ctx.guild_id;
-
-        let fut = Box::pin(async move {
-            tracing_futures::Instrument::instrument(
-                Vm::create_run(create_req, shutdown_handle_clone, isolate_cell, wakeup_rx),
-                tracing::info_span!("vm", guild_id = %guild_id),
-            )
-            .await;
-        });
+        let fut = Box::pin(Vm::create_run(
+            create_req,
+            shutdown_handle_clone,
+            isolate_cell,
+            wakeup_rx,
+        ));
 
         CreateVmSuccess {
             future: fut,
@@ -131,7 +112,6 @@ impl Vm {
 
         let mut rt = Self {
             guild_logger: create_req.guild_logger,
-            ctx: create_req.ctx,
             rx: create_req.rx,
             tx: create_req.tx,
             script_store,
@@ -144,8 +124,7 @@ impl Vm {
             wakeup_rx,
         };
 
-        rt.guild_logger.log(LogEntry::info(
-            rt.ctx.guild_id,
+        rt.guild_logger.log(CreateLogEntry::info(
             "starting fresh guild vm...".to_string(),
         ));
 
@@ -238,10 +217,8 @@ impl Vm {
         self.emit_isolate_handle();
 
         info!("running runtime");
-        self.guild_logger.log(LogEntry::info(
-            self.ctx.guild_id,
-            "guild vm started".to_string(),
-        ));
+        self.guild_logger
+            .log(CreateLogEntry::info("guild vm started".to_string()));
 
         let mut completed = false;
         while !self.check_terminated() {
@@ -264,18 +241,13 @@ impl Vm {
                 }
                 TickResult::Continue => {}
                 TickResult::VmError(e) => {
-                    self.guild_logger.log(LogEntry::error(
-                        self.ctx.guild_id,
-                        format!(
-                            "Script error occurred: {}",
-                            source_map_error(&self.script_store, e)
-                        ),
-                    ));
+                    self.guild_logger.log(CreateLogEntry::error(format!(
+                        "Script error occurred: {}",
+                        source_map_error(&self.script_store, e)
+                    )));
                 }
                 TickResult::Completed => {
-                    let _ = self
-                        .tx
-                        .send((self.ctx.guild_id, self.ctx.role, VmEvent::VmFinished));
+                    let _ = self.tx.send(VmEvent::VmFinished);
                     completed = true;
                 }
             }
@@ -298,15 +270,11 @@ impl Vm {
         }
 
         self.tx
-            .send((
-                self.ctx.guild_id,
-                self.ctx.role,
-                VmEvent::Shutdown(if let Some(reason) = shutdown_reason {
-                    reason
-                } else {
-                    ShutdownReason::Unknown
-                }),
-            ))
+            .send(VmEvent::Shutdown(if let Some(reason) = shutdown_reason {
+                reason
+            } else {
+                ShutdownReason::Unknown
+            }))
             .unwrap();
     }
 
@@ -377,10 +345,9 @@ impl Vm {
         match script_store.compile_add_script(script) {
             Ok(compiled) => Some(compiled),
             Err(e) => {
-                self.guild_logger.log(LogEntry::error(
-                    self.ctx.guild_id,
-                    format!("Script compilation failed for {name}.ts: {e}"),
-                ));
+                self.guild_logger.log(CreateLogEntry::error(format!(
+                    "Script compilation failed for {name}.ts: {e}"
+                )));
                 None
             }
         }
@@ -458,11 +425,7 @@ impl Vm {
     where
         P: Serialize,
     {
-        let _ = self.tx.send((
-            self.ctx.guild_id,
-            self.ctx.role,
-            VmEvent::DispatchedEvent(evt_id),
-        ));
+        let _ = self.tx.send(VmEvent::DispatchedEvent(evt_id));
 
         let data = ScriptDispatchData {
             data: serde_json::to_value(args).unwrap(),
@@ -552,8 +515,7 @@ impl Vm {
         .await
         .is_err()
         {
-            self.guild_logger.log(LogEntry::error(
-                self.ctx.guild_id,
+            self.guild_logger.log(CreateLogEntry::error(
                 "shutting down your vm timed out after 15 sec, cancelling all pending promises \
                  and force-shutting down now instead..."
                     .to_string(),
@@ -597,20 +559,15 @@ impl Vm {
     }
 
     fn log_guild_err(&self, err: AnyError) {
-        self.guild_logger.log(LogEntry::error(
-            self.ctx.guild_id,
-            format!(
-                "Script error occurred: {}",
-                source_map_error(&self.script_store, err)
-            ),
-        ));
+        self.guild_logger.log(CreateLogEntry::error(format!(
+            "Script error occurred: {}",
+            source_map_error(&self.script_store, err)
+        )));
     }
 
     async fn restart(&mut self, new_scripts: Vec<Script>) {
-        self.guild_logger.log(LogEntry::info(
-            self.ctx.guild_id,
-            "restarting guild vm...".to_string(),
-        ));
+        self.guild_logger
+            .log(CreateLogEntry::info("restarting guild vm...".to_string()));
 
         self.stop_vm().await;
 
@@ -638,10 +595,8 @@ impl Vm {
             self.run_script(script.id).await;
         }
 
-        self.guild_logger.log(LogEntry::info(
-            self.ctx.guild_id,
-            "vm restarted".to_string(),
-        ));
+        self.guild_logger
+            .log(CreateLogEntry::info("vm restarted".to_string()));
     }
 }
 
@@ -837,31 +792,15 @@ struct ShutdownHandleInner {
 }
 
 pub struct CreateRt {
-    pub guild_logger: GuildLogger,
+    pub guild_logger: GuildLogSender,
     pub rx: UnboundedReceiver<VmCommand>,
-    pub tx: UnboundedSender<GuildVmEvent>,
-    pub ctx: VmContext,
+    pub tx: UnboundedSender<VmEvent>,
     pub load_scripts: Vec<Script>,
     pub extension_factory: ExtensionFactory,
     pub extension_modules: Vec<ModuleEntry>,
 }
 
 type ExtensionFactory = Box<dyn Fn() -> Vec<Extension> + Send>;
-
-#[derive(Clone)]
-pub struct RtId {
-    guild_id: Id<GuildMarker>,
-    role: VmRole,
-}
-
-impl Display for RtId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "Isolate (guild_id: {}, role: {:?})",
-            self.guild_id, self.role
-        ))
-    }
-}
 
 pub fn in_mem_source_load_fn(src: &'static str) -> Box<dyn Fn() -> Result<String, AnyError>> {
     Box::new(move || Ok(src.to_string()))

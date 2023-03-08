@@ -1,5 +1,5 @@
 use deno_core::{op, Extension, OpState};
-use guild_logger::LogEntry;
+use guild_logger::entry::CreateLogEntry;
 use runtime_models::internal::console::ConsoleLogMessage;
 use vm::ScriptsStateStoreHandle;
 
@@ -32,10 +32,6 @@ pub fn op_botloader_log(state: &mut OpState, args: ConsoleLogMessage) {
 
     let ctx = state.borrow::<RuntimeContext>();
 
-    ctx.guild_logger.log(LogEntry::script_console(
-        ctx.guild_id,
-        args.message,
-        name,
-        line_col,
-    ));
+    ctx.guild_logger
+        .log(CreateLogEntry::script_console(args.message, name, line_col));
 }

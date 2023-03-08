@@ -13,7 +13,7 @@ use crate::{
 };
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
-use guild_logger::{GuildLogger, LogEntry};
+use guild_logger::{entry::CreateLogEntry, GuildLogSender};
 use runtime_models::internal::script::ScriptMeta;
 use scheduler_worker_rpc::{
     CreateScriptsVmReq, MetricEvent, SchedulerMessage, VmDispatchEvent, WorkerMessage,
@@ -31,7 +31,7 @@ pub struct VmSession {
 
     _discord_config: Arc<DiscordConfig>,
     stores: Arc<dyn Store>,
-    logger: GuildLogger,
+    logger: GuildLogSender,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
     interval_timers_man: crate::interval_timer_manager::Manager,
     cmd_manager_handle: command_manager::Handle,
@@ -50,7 +50,7 @@ impl VmSession {
     pub fn new(
         stores: Arc<dyn Store>,
         guild_id: Id<GuildMarker>,
-        logger: GuildLogger,
+        logger: GuildLogSender,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
         cmd_manager_handle: crate::command_manager::Handle,
         discord_config: Arc<DiscordConfig>,
@@ -95,10 +95,9 @@ impl VmSession {
     pub async fn handle_action(&mut self, action: NextAction) -> Option<VmSessionEvent> {
         match action {
             NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(reason))) => {
-                self.logger.log(LogEntry::critical(
-                    self.guild_id,
-                    format!("vm was forcibly shut down, reason: {reason:?}"),
-                ));
+                self.logger.log(CreateLogEntry::critical(format!(
+                    "vm was forcibly shut down, reason: {reason:?}"
+                )));
 
                 self.reset_contribs();
                 self.pending_acks.clear();
@@ -298,7 +297,7 @@ impl VmSession {
                 self.scheduled_tasks_man.clear_next();
             }
             WorkerMessage::GuildLog(entry) => {
-                self.logger.log(entry);
+                self.logger.log_raw(entry);
             }
             WorkerMessage::Hello(_) => {
                 // handled when connection is established, not applicable here

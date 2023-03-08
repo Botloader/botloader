@@ -93,6 +93,67 @@ impl LogEntry {
     }
 }
 
+pub struct CreateLogEntry {
+    pub message: String,
+    pub script_context: Option<ScriptContext>,
+    pub level: LogLevel,
+}
+
+impl CreateLogEntry {
+    pub fn critical(msg: String) -> Self {
+        Self {
+            message: msg,
+            level: LogLevel::Critical,
+            script_context: None,
+        }
+    }
+
+    pub fn error(msg: String) -> Self {
+        Self {
+            message: msg,
+            level: LogLevel::Error,
+            script_context: None,
+        }
+    }
+
+    pub fn info(msg: String) -> Self {
+        Self {
+            message: msg,
+            level: LogLevel::Info,
+            script_context: None,
+        }
+    }
+
+    pub fn script_error(msg: String, filename: String, line_col: Option<LineCol>) -> Self {
+        Self {
+            script_context: Some(ScriptContext { filename, line_col }),
+            message: msg,
+            level: LogLevel::Error,
+        }
+    }
+    pub fn script_warning(msg: String, filename: String, line_col: Option<LineCol>) -> Self {
+        Self {
+            script_context: Some(ScriptContext { filename, line_col }),
+            message: msg,
+            level: LogLevel::Warn,
+        }
+    }
+    pub fn script_console(msg: String, filename: String, line_col: Option<LineCol>) -> Self {
+        Self {
+            script_context: Some(ScriptContext { filename, line_col }),
+            message: msg,
+            level: LogLevel::ConsoleLog,
+        }
+    }
+    pub fn script_info(msg: String, filename: String, line_col: Option<LineCol>) -> Self {
+        Self {
+            script_context: Some(ScriptContext { filename, line_col }),
+            message: msg,
+            level: LogLevel::Info,
+        }
+    }
+}
+
 pub type LineCol = (u32, u32);
 
 #[derive(Clone, Serialize, Deserialize)]

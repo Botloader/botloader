@@ -11,8 +11,6 @@ stores = {path="../../components/stores"}
 guild-logger = {path="../../components/guild-logger"}
 tscompiler = {path="../../components/tscompiler"}
 
-twilight-model = {workspace = true}
-
 deno_core = {workspace = true}
 v8 = {workspace = true}
 serde_v8 = "0.78"

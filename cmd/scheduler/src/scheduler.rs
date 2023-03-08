@@ -38,7 +38,7 @@ pub struct Scheduler {
     queued_events: Vec<GuildEvent>,
     pending_starts: Vec<Id<GuildMarker>>,
     stores: Arc<dyn Store>,
-    logger: guild_logger::GuildLogger,
+    logger: guild_logger::LogSender,
     cmd_manager_handle: command_manager::Handle,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
     discord_config: Arc<DiscordConfig>,
@@ -50,7 +50,7 @@ impl Scheduler {
     pub fn new(
         scheduler_rx: mpsc::UnboundedReceiver<SchedulerCommand>,
         stores: Arc<dyn Store>,
-        logger: guild_logger::GuildLogger,
+        logger: guild_logger::LogSender,
         cmd_manager_handle: command_manager::Handle,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
         discord_config: Arc<DiscordConfig>,

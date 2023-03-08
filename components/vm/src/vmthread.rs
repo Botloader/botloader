@@ -3,17 +3,18 @@ use std::{rc::Rc, time::Duration};
 use isolatecell::IsolateCell;
 use metrics::counter;
 use tokio::{
-    sync::{
-        mpsc::{self},
-        oneshot,
-    },
+    sync::{mpsc, oneshot},
     task::LocalSet,
     time::Instant,
 };
+use tracing::Instrument;
 
 use crate::vm::{CreateRt, ShutdownReason, Vm, VmShutdownHandle};
 
-pub async fn spawn_vm_thread(create: CreateRt) -> VmShutdownHandle {
+pub async fn spawn_vm_thread<F: FnOnce() -> tracing::Span + Send + Sync + 'static>(
+    create: CreateRt,
+    make_span: F,
+) -> VmShutdownHandle {
     let (vm_created_send, vm_created_recv) = oneshot::channel();
     let (ping_send, mut ping_recv) = mpsc::channel::<oneshot::Sender<()>>(1);
 
@@ -29,28 +30,31 @@ pub async fn spawn_vm_thread(create: CreateRt) -> VmShutdownHandle {
             .unwrap();
 
         // tokio_current.block_on(t);
-        tokio_current.block_on(async move {
-            let set = LocalSet::new();
+        let span = make_span();
+        tokio_current.block_on(
+            async move {
+                let set = LocalSet::new();
 
-            // A simple task that sends echo responses on a channel
-            //
-            // if the js runtime encounters a runaway situation with something like
-            // an infinite "for" loop, then the thread will be blocked and this task
-            // will not send echo responses anymore, leading to an outside thread
-            // being able to detect the runaway and being able to shut down the runaway runtime
-            set.spawn_local(async move {
-                loop {
-                    match ping_recv.recv().await {
-                        Some(r) => {
-                            let _ = r.send(());
+                // A simple task that sends echo responses on a channel
+                //
+                // if the js runtime encounters a runaway situation with something like
+                // an infinite "for" loop, then the thread will be blocked and this task
+                // will not send echo responses anymore, leading to an outside thread
+                // being able to detect the runaway and being able to shut down the runaway runtime
+                set.spawn_local(async move {
+                    loop {
+                        match ping_recv.recv().await {
+                            Some(r) => {
+                                let _ = r.send(());
+                            }
+                            None => return,
                         }
-                        None => return,
                     }
-                }
-            });
-
-            set.run_until(result.future).await
-        });
+                });
+                set.run_until(result.future).await
+            }
+            .instrument(span),
+        );
     });
 
     let shutdown_handle = vm_created_recv.await.unwrap();

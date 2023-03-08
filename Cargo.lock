@@ -5332,7 +5332,6 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "tscompiler",
- "twilight-model",
  "url",
  "v8",
 ]

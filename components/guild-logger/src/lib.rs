@@ -1,3 +1,4 @@
+use entry::CreateLogEntry;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -6,6 +7,7 @@ pub mod entry;
 pub mod guild_subscriber_backend;
 
 pub use entry::{LogEntry, LogLevel, ScriptContext};
+use twilight_model::id::{marker::GuildMarker, Id};
 
 #[async_trait::async_trait]
 pub trait GuildLoggerBackend {
@@ -53,7 +55,7 @@ impl GuildLoggerBuilder {
         self
     }
 
-    pub fn run(self) -> GuildLogger {
+    pub fn run(self) -> LogSender {
         let (tx, rx) = unbounded_channel();
 
         tokio::spawn(async move {
@@ -65,17 +67,45 @@ impl GuildLoggerBuilder {
             logger_task.run().await
         });
 
-        GuildLogger { tx }
+        LogSender { tx }
     }
 }
 
 #[derive(Clone)]
-pub struct GuildLogger {
+pub struct LogSender {
     tx: UnboundedSender<LogEntry>,
 }
 
-impl GuildLogger {
+impl LogSender {
     pub fn log(&self, entry: LogEntry) {
+        let _ = self.tx.send(entry);
+    }
+
+    pub fn with_guild(&self, guild_id: Id<GuildMarker>) -> GuildLogSender {
+        GuildLogSender {
+            tx: self.tx.clone(),
+            guild_id,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct GuildLogSender {
+    tx: UnboundedSender<LogEntry>,
+    guild_id: Id<GuildMarker>,
+}
+
+impl GuildLogSender {
+    pub fn log(&self, entry: CreateLogEntry) {
+        let _ = self.tx.send(LogEntry {
+            guild_id: self.guild_id,
+            level: entry.level,
+            message: entry.message,
+            script_context: entry.script_context,
+        });
+    }
+
+    pub fn log_raw(&self, entry: LogEntry) {
         let _ = self.tx.send(entry);
     }
 }

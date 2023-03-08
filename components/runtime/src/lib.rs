@@ -6,7 +6,7 @@ use std::{
 
 use common::DiscordConfig;
 use deno_core::{op, Extension, OpState, ResourceId, ResourceTable};
-use guild_logger::{GuildLogger, LogEntry};
+use guild_logger::{entry::CreateLogEntry, GuildLogSender};
 use runtime_models::internal::script::ScriptMeta;
 use stores::{
     bucketstore::BucketStore,
@@ -17,7 +17,7 @@ use tokio::sync::mpsc;
 use tracing::info;
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
-use vm::{vm::VmRole, AnyError, JsValue};
+use vm::{AnyError, JsValue};
 
 use crate::limits::RateLimiters;
 
@@ -51,7 +51,6 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
                 guild_id: ctx.guild_id,
                 bot_state: ctx.bot_state.clone(),
                 discord_config: ctx.discord_config.clone(),
-                role: ctx.role,
                 guild_logger: ctx.guild_logger.clone(),
                 script_http_client_proxy: ctx.script_http_client_proxy.clone(),
                 event_tx: ctx.event_tx.clone(),
@@ -100,8 +99,7 @@ pub struct RuntimeContext {
     pub guild_id: Id<GuildMarker>,
     pub bot_state: dbrokerapi::state_client::Client,
     pub discord_config: Arc<DiscordConfig>,
-    pub role: VmRole,
-    pub guild_logger: GuildLogger,
+    pub guild_logger: GuildLogSender,
     pub script_http_client_proxy: Option<String>,
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
     pub premium_tier: Option<PremiumSlotTier>,
@@ -116,8 +114,7 @@ pub struct CreateRuntimeContext {
     pub guild_id: Id<GuildMarker>,
     pub bot_state: dbrokerapi::state_client::Client,
     pub discord_config: Arc<DiscordConfig>,
-    pub role: VmRole,
-    pub guild_logger: GuildLogger,
+    pub guild_logger: GuildLogSender,
     pub script_http_client_proxy: Option<String>,
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
     pub premium_tier: Arc<RwLock<Option<PremiumSlotTier>>>,
@@ -155,8 +152,7 @@ pub fn op_botloader_script_start(state: &mut OpState, args: JsValue) -> Result<(
 
     if let Err(err) = validate_script_meta(&des) {
         // error!(%err, "script meta validation failed");
-        ctx.guild_logger.log(LogEntry::script_error(
-            ctx.guild_id,
+        ctx.guild_logger.log(CreateLogEntry::script_error(
             format!("script meta validation failed: {err}"),
             format!("{}", des.script_id),
             None,

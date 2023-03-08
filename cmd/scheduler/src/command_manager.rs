@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use common::DiscordConfig;
-use guild_logger::{GuildLogger, LogEntry};
+use guild_logger::{LogEntry, LogSender};
 use stores::config::Script;
 use tokio::sync::mpsc;
 use tracing::{error, info};
@@ -34,7 +34,7 @@ pub struct Manager {
     discord_config: Arc<DiscordConfig>,
     rcv_loaded_script: mpsc::UnboundedReceiver<LoadedScript>,
     pending_checks: Vec<PendingCheckGroup>,
-    guild_logger: GuildLogger,
+    guild_logger: LogSender,
 
     cached_commands: HashMap<Id<GuildMarker>, String>,
 }
@@ -42,7 +42,7 @@ pub struct Manager {
 pub fn create_manager_pair(
     config_store: Arc<dyn scheduler::Store>,
     discord_config: Arc<DiscordConfig>,
-    guild_logger: GuildLogger,
+    guild_logger: LogSender,
 ) -> (Manager, Handle) {
     let (send, rcv) = mpsc::unbounded_channel();
 
