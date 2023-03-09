@@ -274,7 +274,9 @@ impl Worker {
                 while let Ok(evt) = self.runtime_evt_rx.try_recv() {
                     self.handle_runtime_evt(evt).await?;
                 }
-                self.write_message(WorkerMessage::NonePending).await?
+                self.guild_logger.flush().await;
+                self.write_message(WorkerMessage::NonePending).await?;
+                info!("vm finished");
             }
         }
         Ok(ContinueState::Continue)
