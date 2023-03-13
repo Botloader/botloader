@@ -16,6 +16,7 @@ import { ComponentInteraction, SelectMenuInteraction, ModalSubmitInteraction } f
 export class Script {
     readonly scriptId: number;
     readonly description: string;
+    readonly pluginId: number | null;
 
     private events = new EventSystem.Muxer();
     private commandSystem = new Commands.System();
@@ -29,9 +30,10 @@ export class Script {
     /**
      * @internal
      */
-    constructor(id: number) {
+    constructor(id: number, pluginId: number | null) {
         this.description = `script id ${id}`;
         this.scriptId = id;
+        this.pluginId = pluginId;
     }
 
     /**

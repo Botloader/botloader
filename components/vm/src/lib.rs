@@ -41,16 +41,19 @@ fn gen_script_source_header(script: Option<&Script>) -> String {
     match script {
         None => r#"
         import {Script} from "/script";
-        const script = new Script(0);
+        const script = new Script(0, null);
         "#
         .to_string(),
         Some(h) => {
             format!(
                 r#"
                 import {{Script}} from "/script";
-                const script = new Script({});
+                const script = new Script({}, {});
                 "#,
-                h.id
+                h.id,
+                h.plugin_id
+                    .map(|v| v.to_string())
+                    .unwrap_or("null".to_string()),
             )
         }
     }
