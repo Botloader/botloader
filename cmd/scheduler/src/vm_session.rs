@@ -118,15 +118,29 @@ impl VmSession {
                 self.broken_worker().await;
             }
             NextAction::CheckScheduledTasks => {
-                let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
-                for task in tasks {
-                    self.dispatch_scheduled_task(task).await;
+                match self.ensure_claim_worker().await {
+                    ClaimWorkerResult::Reused => {
+                        let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
+                        for task in tasks {
+                            self.dispatch_scheduled_task(task).await;
+                        }
+                    }
+                    ClaimWorkerResult::Reloaded => {
+                        // contribs was cleared, no tasks/timers to fire.
+                    }
                 }
             }
             NextAction::CheckIntervalTimers => {
-                let timers = self.interval_timers_man.trigger_timers().await;
-                for timer in timers {
-                    self.dispatch_interval_timer(timer).await;
+                match self.ensure_claim_worker().await {
+                    ClaimWorkerResult::Reused => {
+                        let timers = self.interval_timers_man.trigger_timers().await;
+                        for timer in timers {
+                            self.dispatch_interval_timer(timer).await;
+                        }
+                    }
+                    ClaimWorkerResult::Reloaded => {
+                        // contribs was cleared, no tasks/timers to fire.
+                    }
                 }
             }
         }
@@ -416,37 +430,46 @@ impl VmSession {
         }
     }
 
-    async fn ensure_claim_worker(&mut self) {
-        if self.current_worker.is_none() {
-            loop {
-                let (worker, wr) = self
-                    .worker_pool
-                    .req_worker(self.guild_id, self.get_premium_tier().option())
-                    .await;
+    async fn ensure_claim_worker(&mut self) -> ClaimWorkerResult {
+        if self.current_worker.is_some() {
+            return ClaimWorkerResult::Reused;
+        }
 
-                let should_create_vm = self.should_send_scripts(wr);
+        loop {
+            let (worker, wr) = self
+                .worker_pool
+                .req_worker(self.guild_id, self.get_premium_tier().option())
+                .await;
 
-                info!(tier = worker.priority_index, "claimed new worker");
-                self.current_worker = Some(worker);
+            let should_create_vm = self.should_send_scripts(wr);
 
-                if should_create_vm {
-                    // new worker, reset acks and whatnot
-                    self.pending_acks.clear();
-                    self.reset_contribs();
+            info!(tier = worker.priority_index, "claimed new worker");
+            self.current_worker = Some(worker);
 
-                    if self.send_create_scripts_vm().await.is_err() {
-                        self.broken_worker().await;
-                        // try again
-                        continue;
-                    }
+            let res = if should_create_vm {
+                // new worker, reset acks and whatnot
+                self.pending_acks.clear();
+                self.reset_contribs();
+                if self.send_create_scripts_vm().await.is_err() {
+                    self.broken_worker().await;
+                    // try again
+                    continue;
                 }
+                ClaimWorkerResult::Reloaded
+            } else {
+                ClaimWorkerResult::Reused
+            };
 
-                self.force_load_scripts_next = false;
-                break;
-            }
+            self.force_load_scripts_next = false;
+            break res;
         }
     }
 
+    // TODO: this should reset contribs in some way, reason for this being
+    // task handlers/interval timers could have been removed
+    //
+    // but we would have to wait for potential in flight tasks/timers
+    // and the only downside for not resetting contribs is timers being fired that's not used
     async fn send_create_scripts_vm(&mut self) -> Result<(), ()> {
         let evt_id = self.gen_id();
 
@@ -582,4 +605,11 @@ pub enum PendingAck {
     ScheduledTask(u64),
     IntervalTimer(String),
     Restart,
+}
+
+enum ClaimWorkerResult {
+    // A worker was already claimed or we managed to reuse the worker from the pool we had last time
+    Reused,
+    // We had to reload our VM
+    Reloaded,
 }
