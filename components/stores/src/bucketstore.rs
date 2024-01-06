@@ -20,6 +20,7 @@ pub trait BucketStore: Send + Sync {
     async fn get(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
     ) -> StoreResult<Option<Entry>>;
@@ -27,6 +28,7 @@ pub trait BucketStore: Send + Sync {
     async fn set(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
         value: StoreValue,
@@ -36,6 +38,7 @@ pub trait BucketStore: Send + Sync {
     async fn set_if(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
         value: StoreValue,
@@ -46,6 +49,7 @@ pub trait BucketStore: Send + Sync {
     async fn del(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
     ) -> StoreResult<Option<Entry>>;
@@ -53,6 +57,7 @@ pub trait BucketStore: Send + Sync {
     async fn del_many(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key_pattern: String,
     ) -> StoreResult<u64>;
@@ -60,6 +65,7 @@ pub trait BucketStore: Send + Sync {
     async fn get_many(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key_pattern: String,
         after: String,
@@ -69,6 +75,7 @@ pub trait BucketStore: Send + Sync {
     async fn count(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key_pattern: String,
     ) -> StoreResult<u64>;
@@ -79,6 +86,7 @@ pub trait BucketStore: Send + Sync {
     async fn incr(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
         incr_by: f64,
@@ -87,6 +95,7 @@ pub trait BucketStore: Send + Sync {
     async fn sorted_entries(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         order: SortedOrder,
         offset: u32,

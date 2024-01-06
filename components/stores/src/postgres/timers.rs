@@ -75,7 +75,7 @@ impl crate::timers::TimerStore for Postgres {
              last_run_at, created_at, updated_at;
              ",
             guild_id.get() as i64,
-            0,
+            timer.script_id as i64,
             timer.name,
             interval_minutes,
             interval_cron,
@@ -344,6 +344,7 @@ impl TryFrom<DbIntervalTimer> for IntervalTimer {
             name: value.timer_name,
             last_run: value.last_run_at,
             interval: interval_type,
+            script_id: value.script_id as u64,
         })
     }
 }
