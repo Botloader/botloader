@@ -33,6 +33,7 @@ pub trait TimerStore: Send + Sync {
     async fn create_task(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: String,
         unique_key: Option<String>,
         data: serde_json::Value,
@@ -47,6 +48,7 @@ pub trait TimerStore: Send + Sync {
     async fn get_task_by_key(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: String,
         key: String,
     ) -> TimerStoreResult<Option<ScheduledTask>>;
@@ -112,6 +114,7 @@ pub struct IntervalTimer {
     pub name: String,
     pub interval: IntervalType,
     pub last_run: DateTime<Utc>,
+    pub script_id: u64,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

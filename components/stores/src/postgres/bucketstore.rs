@@ -13,6 +13,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn get(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
     ) -> StoreResult<Option<Entry>> {
@@ -34,6 +35,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn set(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
         value: StoreValue,
@@ -85,6 +87,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn set_if(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
         value: StoreValue,
@@ -160,6 +163,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn del(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
     ) -> StoreResult<Option<Entry>> {
@@ -181,6 +185,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn del_many(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key_pattern: String,
     ) -> StoreResult<u64> {
@@ -200,6 +205,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn get_many(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key_pattern: String,
         after: String,
@@ -226,6 +232,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn count(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key_pattern: String,
     ) -> StoreResult<u64> {
@@ -258,6 +265,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn incr(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         key: String,
         incr_by: f64,
@@ -297,6 +305,7 @@ impl crate::bucketstore::BucketStore for Postgres {
     async fn sorted_entries(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         bucket: String,
         order: SortedOrder,
         offset: u32,
