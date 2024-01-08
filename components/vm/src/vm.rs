@@ -1,10 +1,10 @@
 use crate::error::source_map_error;
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
-    prepend_script_source_header, AnyError, ScriptLoadState, ScriptState, ScriptStateStoreWrapper,
-    ScriptsStateStore, ScriptsStateStoreHandle,
+    bl_core, prepend_script_source_header, AnyError, ScriptLoadState, ScriptState,
+    ScriptStateStoreWrapper, ScriptsStateStore, ScriptsStateStoreHandle,
 };
-use deno_core::{Extension, RuntimeOptions, Snapshot};
+use deno_core::{Extension, FastString, PollEventLoopOptions, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
 use guild_logger::entry::CreateLogEntry;
 use guild_logger::GuildLogSender;
@@ -12,7 +12,8 @@ use isolatecell::{IsolateCell, ManagedIsolate};
 use serde::Serialize;
 use std::convert::TryFrom;
 use std::fmt::Debug;
-use std::pin::Pin;
+use std::future::Future;
+use std::pin::{pin, Pin};
 use std::{
     rc::Rc,
     sync::{atomic::AtomicBool, Arc, RwLock as StdRwLock},
@@ -21,7 +22,7 @@ use std::{
 use stores::config::Script;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, instrument};
-use v8::{CreateParams, HeapStatistics, IsolateHandle};
+use v8::{CreateParams, IsolateHandle};
 
 #[derive(Debug, Clone)]
 pub enum VmCommand {
@@ -151,22 +152,29 @@ impl Vm {
 
         let mut extensions = extension_factory();
         let cloned_load_states = script_load_states.clone();
+        // extensions.insert(
+        //     0,
+        //     Extension::builder("bl_core_rt")
+        //         .js(deno_core::include_js_files!(
+        //           prefix "bl:core",
+        //           "botloader-core-rt.js",
+        //         ))
+        //         .state(move |op| {
+        //             op.put(cloned_load_states.clone());
+        //             Ok(())
+        //         })
+        //         .build(),
+        // );
+
+        // let core
+
         extensions.insert(
             0,
-            Extension::builder("bl_core_rt")
-                .js(deno_core::include_js_files!(
-                  prefix "bl:core",
-                  "botloader-core-rt.js",
-                ))
-                .state(move |op| {
-                    op.put(cloned_load_states.clone());
-                    Ok(())
-                })
-                .build(),
+            bl_core::init_ops_and_esm(crate::BlCoreOptions { cloned_load_states }),
         );
 
         let options = RuntimeOptions {
-            extensions_with_js: extensions,
+            extensions,
             module_loader: Some(module_manager),
             get_error_class_fn: Some(&|err| {
                 deno_core::error::get_custom_error_class(err).unwrap_or("Error")
@@ -381,10 +389,10 @@ impl Vm {
 
             let fut = rt.load_side_module(
                 &script.url,
-                Some(prepend_script_source_header(
+                Some(FastString::from(prepend_script_source_header(
                     &script.compiled.output,
                     Some(&script.script),
-                )),
+                ))),
             );
 
             // Yes this is very hacky, we should have a proper solution for this at some point.
@@ -433,7 +441,7 @@ impl Vm {
         };
 
         let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
-        let global_ctx = rt.global_context();
+        let global_ctx = rt.main_context();
         let ctx = global_ctx.open(rt.v8_isolate());
 
         let mut scope = rt.handle_scope();
@@ -484,7 +492,7 @@ impl Vm {
     fn _dump_heap_stats(&mut self) {
         let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
         let iso = rt.v8_isolate();
-        let mut stats = HeapStatistics::default();
+        let mut stats = v8::HeapStatistics::default();
         iso.get_heap_statistics(&mut stats);
         dbg!(stats.total_heap_size());
         dbg!(stats.total_heap_size_executable());
@@ -540,13 +548,15 @@ impl Vm {
 
     async fn complete_module_eval(
         &mut self,
-        mut rcv: futures::channel::oneshot::Receiver<Result<(), AnyError>>,
+        mut fut: impl Future<Output = Result<(), AnyError>>,
+        // mut rcv: futures::channel::oneshot::Receiver<Result<(), AnyError>>,
     ) {
+        let mut pinned: Pin<&mut dyn Future<Output = Result<(), AnyError>>> = pin!(fut);
         loop {
             let fut = CompleteModuleEval {
                 cell: &self.isolate_cell,
                 rt: &mut self.runtime,
-                rcv: &mut rcv,
+                fut: &mut pinned,
             };
 
             match fut.await {
@@ -637,7 +647,7 @@ impl<'a> core::future::Future for TickFuture<'a> {
         // if !self.completed{
         // }
 
-        match rt.poll_event_loop(cx, false) {
+        match rt.poll_event_loop(cx, Default::default()) {
             Poll::Pending => {
                 // let state_rc = rt.op_state();
                 // let op_state = state_rc.borrow();
@@ -676,7 +686,7 @@ impl<'a> core::future::Future for RunUntilCompletion<'a> {
     ) -> std::task::Poll<Self::Output> {
         let mut rt = self.cell.enter_isolate(self.rt);
 
-        match rt.poll_event_loop(cx, false) {
+        match rt.poll_event_loop(cx, Default::default()) {
             // Poll::Pending => {
             //     let state_rc = rt.op_state();
             //     let op_state = state_rc.borrow();
@@ -697,31 +707,30 @@ impl<'a> core::future::Future for RunUntilCompletion<'a> {
 }
 
 // future that drives the vm to completion, acquiring the isolate guard when needed
-struct CompleteModuleEval<'a, 'b> {
+struct CompleteModuleEval<'a, 'b, 'c> {
     rt: &'a mut ManagedIsolate,
     cell: &'a IsolateCell,
-    rcv: &'b mut futures::channel::oneshot::Receiver<Result<(), AnyError>>,
+    // rcv: &'b mut futures::channel::oneshot::Receiver<Result<(), AnyError>>,
+    fut: &'c mut Pin<&'b mut dyn Future<Output = Result<(), AnyError>>>,
 }
 
-impl<'a, 'b> core::future::Future for CompleteModuleEval<'a, 'b> {
+impl<'a, 'b, 'c> core::future::Future for CompleteModuleEval<'a, 'b, 'c> {
     type Output = Result<(), AnyError>;
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        let pinned = Pin::new(&mut self.rcv);
-        match pinned.poll(cx) {
-            Poll::Ready(res) => {
-                return Poll::Ready(if let Ok(inner) = res { inner } else { Ok(()) })
-            }
+        // let pinned = pin!(self.fut);
+        match self.fut.as_mut().poll(cx) {
+            Poll::Ready(res) => return Poll::Ready(res),
             Poll::Pending => {}
         }
 
         {
             let mut rt = self.cell.enter_isolate(self.rt);
 
-            match rt.poll_event_loop(cx, false) {
+            match rt.poll_event_loop(cx, PollEventLoopOptions::default()) {
                 Poll::Pending => return Poll::Pending,
                 Poll::Ready(Err(e)) => return Poll::Ready(Err(e)),
                 Poll::Ready(_) => {}
@@ -729,9 +738,10 @@ impl<'a, 'b> core::future::Future for CompleteModuleEval<'a, 'b> {
         }
 
         // we might have gotten a result on the channel after polling the event loop
-        let pinned = Pin::new(&mut self.rcv);
-        if let Poll::Ready(r) = pinned.poll(cx) {
-            return Poll::Ready(if let Ok(inner) = r { inner } else { Ok(()) });
+        // let pinned = pin!(*self.fut);
+        match self.fut.as_mut().poll(cx) {
+            Poll::Ready(res) => return Poll::Ready(res),
+            Poll::Pending => {}
         }
 
         Poll::Ready(Ok(()))

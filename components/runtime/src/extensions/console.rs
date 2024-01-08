@@ -1,17 +1,14 @@
-use deno_core::{op, Extension, OpState};
+use deno_core::{op2, OpState};
 use guild_logger::entry::CreateLogEntry;
 use runtime_models::internal::console::ConsoleLogMessage;
 use vm::ScriptsStateStoreHandle;
 
 use crate::RuntimeContext;
-pub fn extension() -> Extension {
-    Extension::builder("bl_console")
-        .ops(vec![op_botloader_log::decl()])
-        .build()
-}
 
-#[op]
-pub fn op_botloader_log(state: &mut OpState, args: ConsoleLogMessage) {
+deno_core::extension!(bl_console, ops = [op_botloader_log,]);
+
+#[op2]
+pub fn op_botloader_log(state: &mut OpState, #[serde] args: ConsoleLogMessage) {
     let script_store = state.borrow::<ScriptsStateStoreHandle>();
 
     let (name, line_col) = if let (Some(orig_name), Some(line)) = (args.file_name, args.line_number)

@@ -18,11 +18,15 @@ pub async fn spawn_vm_thread<F: FnOnce() -> tracing::Span + Send + Sync + 'stati
     let (vm_created_send, vm_created_recv) = oneshot::channel();
     let (ping_send, mut ping_recv) = mpsc::channel::<oneshot::Sender<()>>(1);
 
-    let tokio_current = tokio::runtime::Handle::current();
     std::thread::spawn(move || {
         let iso_cell = Rc::new(IsolateCell::new_with_tracker(Box::new(|dur| {
             counter!("bl.vm.cpu_microseconds_total", dur.as_micros() as u64);
         })));
+
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
 
         let result = Vm::create_with_handles(create, iso_cell);
         vm_created_send
@@ -31,7 +35,7 @@ pub async fn spawn_vm_thread<F: FnOnce() -> tracing::Span + Send + Sync + 'stati
 
         // tokio_current.block_on(t);
         let span = make_span();
-        tokio_current.block_on(
+        rt.block_on(
             async move {
                 let set = LocalSet::new();
 

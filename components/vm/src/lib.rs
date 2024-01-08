@@ -221,5 +221,28 @@ fn script_url(script: &Script) -> Url {
         return Url::parse(&format!("file:///plugins/{}/{}.js", plugin_id, script.name)).unwrap();
     }
 
-    return Url::parse(&format!("file:///guild_scripts/{}.js", script.name)).unwrap();
+    Url::parse(&format!("file:///guild_scripts/{}.js", script.name)).unwrap()
 }
+
+// deno_core::extension!(bl_core, js = ["src/botloader-core.js",],);
+
+pub struct BlCoreOptions {
+    cloned_load_states: Rc<RefCell<ScriptsStateStore>>,
+}
+
+// parameters = [FP: FetchPermissions],
+//   op_fetch<FP>,
+//   op_fetch_send,
+//   op_fetch_response_upgrade,
+//   op_utf8_to_byte_string,
+//   op_fetch_custom_client<FP>,
+
+deno_core::extension!(bl_core,
+  js = ["src/botloader-core-rt.js",],
+  options = {
+    options: BlCoreOptions,
+  },
+  state = |state, options| {
+    state.put::<Rc<RefCell<ScriptsStateStore>>>(options.options.cloned_load_states);
+  },
+);

@@ -1,31 +1,45 @@
 use std::{cell::RefCell, rc::Rc};
 
 use chrono::TimeZone;
-use deno_core::{op, Extension, OpState};
+use deno_core::{op2, OpState};
 use runtime_models::internal::tasks::{CreateScheduledTask, ScheduledTask};
 use vm::AnyError;
 
 use crate::{get_rt_ctx, limits::RateLimiters, RuntimeEvent};
 
-pub fn extension() -> Extension {
-    Extension::builder("bl_tasks")
-        .ops(vec![
-            // botloader stuff
-            op_bl_schedule_task::decl(),
-            op_bl_del_task::decl(),
-            op_bl_del_task_by_key::decl(),
-            op_bl_del_all_tasks::decl(),
-            op_bl_get_task::decl(),
-            op_bl_get_task_by_key::decl(),
-            op_bl_get_all_tasks::decl(),
-        ])
-        .build()
-}
+deno_core::extension!(
+    bl_tasks,
+    ops = [
+        op_bl_schedule_task,
+        op_bl_del_task,
+        op_bl_del_task_by_key,
+        op_bl_del_all_tasks,
+        op_bl_get_task,
+        op_bl_get_task_by_key,
+        op_bl_get_all_tasks,
+    ],
+);
 
-#[op]
+// pub fn extension() -> Extension {
+//     Extension::builder("bl_tasks")
+//         .ops(vec![
+//             // botloader stuff
+//             op_bl_schedule_task::decl(),
+//             op_bl_del_task::decl(),
+//             op_bl_del_task_by_key::decl(),
+//             op_bl_del_all_tasks::decl(),
+//             op_bl_get_task::decl(),
+//             op_bl_get_task_by_key::decl(),
+//             op_bl_get_all_tasks::decl(),
+//         ])
+//         .build()
+// }
+
+#[op2(async)]
+#[serde]
 async fn op_bl_schedule_task(
     state: Rc<RefCell<OpState>>,
-    opts: CreateScheduledTask,
+    #[serde] opts: CreateScheduledTask,
 ) -> Result<ScheduledTask, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
@@ -70,8 +84,11 @@ async fn op_bl_schedule_task(
     Ok(res)
 }
 
-#[op]
-async fn op_bl_del_task(state: Rc<RefCell<OpState>>, task_id: u64) -> Result<bool, AnyError> {
+#[op2(async)]
+async fn op_bl_del_task(
+    state: Rc<RefCell<OpState>>,
+    #[number] task_id: u64,
+) -> Result<bool, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
 
@@ -82,11 +99,11 @@ async fn op_bl_del_task(state: Rc<RefCell<OpState>>, task_id: u64) -> Result<boo
     Ok(del > 0)
 }
 
-#[op]
+#[op2(async)]
 async fn op_bl_del_task_by_key(
     state: Rc<RefCell<OpState>>,
-    name: String,
-    key: String,
+    #[string] name: String,
+    #[string] key: String,
 ) -> Result<bool, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
@@ -99,8 +116,12 @@ async fn op_bl_del_task_by_key(
     Ok(del > 0)
 }
 
-#[op]
-async fn op_bl_del_all_tasks(state: Rc<RefCell<OpState>>, name: String) -> Result<u64, AnyError> {
+#[op2(async)]
+#[number]
+async fn op_bl_del_all_tasks(
+    state: Rc<RefCell<OpState>>,
+    #[string] name: String,
+) -> Result<u64, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
     RateLimiters::task_ops(&state).await;
@@ -112,10 +133,11 @@ async fn op_bl_del_all_tasks(state: Rc<RefCell<OpState>>, name: String) -> Resul
     Ok(del)
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 async fn op_bl_get_task(
     state: Rc<RefCell<OpState>>,
-    id: u64,
+    #[number] id: u64,
 ) -> Result<Option<ScheduledTask>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -128,11 +150,12 @@ async fn op_bl_get_task(
         .map(Into::into))
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 async fn op_bl_get_task_by_key(
     state: Rc<RefCell<OpState>>,
-    name: String,
-    key: String,
+    #[string] name: String,
+    #[string] key: String,
 ) -> Result<Option<ScheduledTask>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
@@ -144,11 +167,12 @@ async fn op_bl_get_task_by_key(
         .map(Into::into))
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 async fn op_bl_get_all_tasks(
     state: Rc<RefCell<OpState>>,
-    name: Option<String>,
-    after_id: u64,
+    #[string] name: Option<String>,
+    #[number] after_id: u64,
 ) -> Result<Vec<ScheduledTask>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;

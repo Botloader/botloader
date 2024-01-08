@@ -1,31 +1,34 @@
 // Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.
 
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file ban-types no-explicit-any
 
 /// <reference no-default-lib="true" />
 /// <reference lib="esnext" />
 
 declare namespace Deno {
     namespace core {
-        /** Call an op in Rust, and asynchronously receive the result. */
-        function opAsync(
-            opName: string,
-            ...args: any[]
-        ): Promise<any>;
+        /** Returns a proxy that generates the fast versions of sync and async ops. */
+        function ensureFastOps(): any;
 
         /** Mark following promise as "ref", ie. event loop won't exit
          * until all "ref" promises are resolved. All async ops are "ref" by default. */
-        function refOp(promiseId: number): void;
+        function refOpPromise<T>(promise: Promise<T>): void;
 
         /** Mark following promise as "unref", ie. event loop will exit
          * if there are only "unref" promises left. */
-        function unrefOps(promiseId: number): void;
+        function unrefOpPromise<T>(promise: Promise<T>): void;
 
         /**
          * List of all registered ops, in the form of a map that maps op
-         * name to internal numerical op id.
+         * name to function.
          */
         const ops: Record<string, (...args: unknown[]) => any>;
+
+        /**
+         * List of all registered async ops, in the form of a map that maps op
+         * name to function.
+         */
+        const asyncOps: Record<string, (...args: unknown[]) => any>;
 
         /**
          * Retrieve a list of all open resources, in the form of a map that maps
@@ -61,6 +64,16 @@ declare namespace Deno {
         function writeAll(rid: number, buf: Uint8Array): Promise<void>;
 
         /**
+         * Synchronously read from a (stream) resource that implements readSync().
+         */
+        function readSync(rid: number, buf: Uint8Array): number;
+
+        /**
+         * Synchronously write to a (stream) resource that implements writeSync().
+         */
+        function writeSync(rid: number, buf: Uint8Array): number;
+
+        /**
          * Print a message to stdout or stderr
          */
         function print(message: string, is_err?: boolean): void;
@@ -72,6 +85,8 @@ declare namespace Deno {
 
         /** Encode a string to its Uint8Array representation. */
         function encode(input: string): Uint8Array;
+
+        /** Decode a string from its Uint8Array representation. */
         function decode(input: Uint8Array): string;
 
         /**
@@ -109,6 +124,26 @@ declare namespace Deno {
         /** Set a value telling the runtime if there are "next ticks" scheduled */
         function setHasNextTickScheduled(value: boolean): void;
 
+        /** Enqueue a timer at the given depth, optionally repeating. */
+        function queueTimer(
+            depth: number,
+            repeat: boolean,
+            delay: number,
+            callback: () => void,
+        ): number;
+
+        /** Cancel a timer with a given ID. */
+        function cancelTimer(id: number): any;
+
+        /** Ref a timer with a given ID, blocking the runtime from exiting if the timer is still running. */
+        function refTimer(id: number): any;
+
+        /** Unref a timer with a given ID, allowing the runtime to exit if the timer is still running. */
+        function unrefTimer(id: number): any;
+
+        /** Gets the current timer depth. */
+        function getTimerDepth(): number;
+
         /**
          * Set a callback that will be called after resolving ops and "next ticks".
          */
@@ -117,18 +152,42 @@ declare namespace Deno {
         ): void;
 
         /**
-         * Set a callback that will be called when a promise without a .catch
-         * handler is rejected. Returns the old handler or undefined.
+         * Sets the unhandled promise rejection handler. The handler returns 'true' if the
+         * rejection has been handled. If the handler returns 'false', the promise is considered
+         * unhandled, and the runtime then raises an uncatchable error and halts.
          */
-        function setPromiseRejectCallback(
+        function setUnhandledPromiseRejectionHandler(
             cb: PromiseRejectCallback,
-        ): undefined | PromiseRejectCallback;
+        ): PromiseRejectCallback;
 
         export type PromiseRejectCallback = (
-            type: number,
+            promise: Promise<unknown>,
+            reason: any,
+        ) => boolean;
+
+        /**
+         * Sets the handled promise rejection handler.
+         */
+        function setHandledPromiseRejectionHandler(
+            cb: PromiseHandledCallback,
+        ): PromiseHandledCallback;
+
+        export type PromiseHandledCallback = (
             promise: Promise<unknown>,
             reason: any,
         ) => void;
+
+        /**
+         * Report an exception that was not handled by any runtime handler, and escaped to the
+         * top level. This terminates the runtime.
+         */
+        function reportUnhandledException(e: Error): void;
+
+        /**
+         * Report an unhandled promise rejection that was not handled by any runtime handler, and
+         * escaped to the top level. This terminates the runtime.
+         */
+        function reportUnhandledPromiseRejection(e: Error): void;
 
         /**
          * Set a callback that will be called when an exception isn't caught
@@ -141,6 +200,14 @@ declare namespace Deno {
         ): undefined | UncaughtExceptionCallback;
 
         export type UncaughtExceptionCallback = (err: any) => void;
+
+        function serialize(
+            value: any,
+            options?: any,
+            errorCallback?: any,
+        ): Uint8Array;
+
+        function deserialize(buffer: Uint8Array, options?: any): any;
 
         /**
          * Enables collection of stack traces of all async ops. This allows for
@@ -186,6 +253,64 @@ declare namespace Deno {
             resolve_hook?: (promise: Promise<unknown>) => void,
         ): void;
 
-        function registerErrorClass(name: string, t: any): void;
+        function isAnyArrayBuffer(
+            value: unknown,
+        ): value is ArrayBuffer | SharedArrayBuffer;
+        function isArgumentsObject(value: unknown): value is IArguments;
+        function isArrayBuffer(value: unknown): value is ArrayBuffer;
+        function isArrayBufferView(value: unknown): value is ArrayBufferView;
+        function isAsyncFunction(
+            value: unknown,
+        ): value is (
+            ...args: unknown[]
+        ) => Promise<unknown> | AsyncGeneratorFunction;
+        function isBigIntObject(value: unknown): value is BigInt;
+        function isBooleanObject(value: unknown): value is Boolean;
+        function isBoxedPrimitive(
+            value: unknown,
+        ): value is BigInt | Boolean | Number | String | Symbol;
+        function isDataView(value: unknown): value is DataView;
+        function isDate(value: unknown): value is Date;
+        function isGeneratorFunction(
+            value: unknown,
+        ): value is GeneratorFunction | AsyncGeneratorFunction;
+        function isGeneratorObject(value: unknown): value is Generator;
+        function isMap(value: unknown): value is Map<unknown, unknown>;
+        function isMapIterator(value: unknown): value is IterableIterator<unknown>;
+        function isModuleNamespaceObject(value: unknown): value is object;
+        function isNativeError(value: unknown): value is Error;
+        function isNumberObject(value: unknown): value is Number;
+        function isPromise(value: unknown): value is Promise<unknown>;
+        function isProxy(value: unknown): value is object;
+        function isRegExp(value: unknown): value is RegExp;
+        function isSet(value: unknown): value is Set<unknown>;
+        function isSetIterator(value: unknown): value is IterableIterator<unknown>;
+        function isSharedArrayBuffer(value: unknown): value is SharedArrayBuffer;
+        function isStringObject(value: unknown): value is String;
+        function isSymbolObject(value: unknown): value is Symbol;
+        function isTypedArray(
+            value: unknown,
+        ): value is
+            | Uint8Array
+            | Uint8ClampedArray
+            | Uint16Array
+            | Uint32Array
+            | Int8Array
+            | Int16Array
+            | Int32Array
+            | Float32Array
+            | Float64Array
+            | BigUint64Array
+            | BigInt64Array;
+        function isWeakMap(value: unknown): value is WeakMap<WeakKey, unknown>;
+        function isWeakSet(value: unknown): value is WeakSet<WeakKey>;
+
+        const build: {
+            target: string;
+            arch: string;
+            os: string;
+            vendor: string;
+            env: string | undefined;
+        };
     }
 }

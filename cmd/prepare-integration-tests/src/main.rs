@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .await?;
 
-        info!("added scrpt {}", name_with_suffix);
+        info!("added script {}", name_with_suffix);
     }
 
     Ok(())
