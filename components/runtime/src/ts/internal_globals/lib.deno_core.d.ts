@@ -7,6 +7,8 @@
 
 declare namespace Deno {
     namespace core {
+        function registerErrorClass(className: string, errorClass: any): any;
+
         /** Returns a proxy that generates the fast versions of sync and async ops. */
         function ensureFastOps(): any;
 
