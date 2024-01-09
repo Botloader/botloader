@@ -318,8 +318,7 @@ impl VmSession {
                 unreachable!();
             }
             WorkerMessage::Shutdown(_) => {
-                // handled in parent
-                unreachable!();
+                // handled in caller
             }
             WorkerMessage::Metric(name, m, labels) => self.handle_metric(name, m, labels),
         }
