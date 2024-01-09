@@ -1,7 +1,7 @@
 # This is the base Docker file we use to build the executables
 # this way we can reuse the image layer caching across all the executables
 # since they mostly use the same ones anwyays
-FROM lukemathwalker/cargo-chef:latest-rust-1.66.1-bullseye AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.75.0-bullseye AS chef
 WORKDIR /app
 
 FROM chef AS planner
