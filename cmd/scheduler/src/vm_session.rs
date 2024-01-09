@@ -326,12 +326,6 @@ impl VmSession {
     }
 
     fn handle_metric(&mut self, name: String, m: MetricEvent, labels: HashMap<String, String>) {
-        let recorder = if let Some(rec) = metrics::try_recorder() {
-            rec
-        } else {
-            return;
-        };
-
         let mut labels = labels
             .into_iter()
             .map(|(k, v)| metrics::Label::new(k, v))
@@ -339,18 +333,16 @@ impl VmSession {
 
         labels.push(metrics::Label::new("guild_id", self.guild_id.to_string()));
 
-        let key = metrics::Key::from_parts(name, labels);
-
         match m {
             MetricEvent::Gauge(action) => {
-                let handle = recorder.register_gauge(&key);
+                let handle = metrics::gauge!(name, labels);
                 match action {
                     scheduler_worker_rpc::GaugeEvent::Set(v) => handle.set(v),
                     scheduler_worker_rpc::GaugeEvent::Incr(v) => handle.increment(v),
                 }
             }
             MetricEvent::Counter(action) => {
-                let handle = recorder.register_counter(&key);
+                let handle = metrics::counter!(name, labels);
 
                 match action {
                     scheduler_worker_rpc::CounterEvent::Incr(v) => handle.increment(v),

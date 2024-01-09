@@ -6,23 +6,23 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-common = {path="../../components/common"}
-scheduler-worker-rpc = {path="../../components/scheduler-worker-rpc"}
-runtime = {path="../../components/runtime"}
-runtime-models = {path="../../components/runtime-models"}
-vm = {path="../../components/vm"}
-guild-logger = {path="../../components/guild-logger"}
-stores = {path="../../components/stores"}
-simpleproto = {path="../../components/simpleproto"}
-dbrokerapi = {path="../../components/dbrokerapi"}
+common = { path = "../../components/common" }
+scheduler-worker-rpc = { path = "../../components/scheduler-worker-rpc" }
+runtime = { path = "../../components/runtime" }
+runtime-models = { path = "../../components/runtime-models" }
+vm = { path = "../../components/vm" }
+guild-logger = { path = "../../components/guild-logger" }
+stores = { path = "../../components/stores" }
+simpleproto = { path = "../../components/simpleproto" }
+dbrokerapi = { path = "../../components/dbrokerapi" }
 
-tokio = {workspace = true}
-tracing = {workspace = true}
-clap = {workspace = true}
-serde = {workspace = true}
-async-trait = {workspace = true}
-anyhow = {workspace = true}
-metrics = "0.18"
+tokio = { workspace = true }
+tracing = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+metrics = { workspace = true }
 
-twilight-model = {workspace = true}
-twilight-http = {workspace = true}
+twilight-model = { workspace = true }
+twilight-http = { workspace = true }

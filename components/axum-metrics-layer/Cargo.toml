@@ -6,6 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = {workspace = true}
-metrics = "0.18"
+axum = { workspace = true }
+metrics = { workspace = true }
 tower = "0.4"

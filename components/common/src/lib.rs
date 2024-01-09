@@ -33,7 +33,7 @@ pub fn setup_metrics(metrics_listen_addr: &str) {
         .build()
         .unwrap();
 
-    metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
+    metrics::set_global_recorder(recorder).unwrap();
 
     info!("exposing metrics at {}", metrics_listen_addr);
     tokio::spawn(exporter);

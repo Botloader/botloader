@@ -1,4 +1,5 @@
 use axum::http::{Request, Response};
+use metrics::Counter;
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
 
@@ -11,17 +12,15 @@ impl<S> Layer<S> for MetricsLayer {
     type Service = MetricsMiddleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        MetricsMiddleware {
-            inner,
-            name: self.name,
-        }
+        let counter = metrics::counter!(self.name);
+        MetricsMiddleware { inner, counter }
     }
 }
 
 #[derive(Clone)]
 pub struct MetricsMiddleware<S> {
     pub inner: S,
-    name: &'static str,
+    counter: Counter,
 }
 
 impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for MetricsMiddleware<S>
@@ -40,7 +39,7 @@ where
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        metrics::counter!(self.name, 1);
+        self.counter.increment(1);
         self.inner.call(req)
     }
 }

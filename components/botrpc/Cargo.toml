@@ -6,17 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-stores = {path="../../components/stores"}
-guild-logger = {path="../../components/guild-logger"}
+stores = { path = "../../components/stores" }
+guild-logger = { path = "../../components/guild-logger" }
 
-async-trait = {workspace = true}
-tracing = {workspace = true}
-tonic = {workspace = true}
+async-trait = { workspace = true }
+tracing = { workspace = true }
+tonic = { workspace = true }
 prost = "0.11"
-tokio = {workspace = true}
-futures = "0.3"
+tokio = { workspace = true }
+futures = { workspace = true }
 
-twilight-model = {workspace = true}
- 
+twilight-model = { workspace = true }
+
 [build-dependencies]
 tonic-build = "0.8.4"

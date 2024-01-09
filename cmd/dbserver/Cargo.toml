@@ -6,17 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-common = {path="../../components/common"}
-simpleproto = {path="../../components/simpleproto"}
-dbrokerapi = {path="../../components/dbrokerapi"}
-axum-metrics-layer = {path="../../components/axum-metrics-layer"}
-stores = {path="../../components/stores"}
- 
-axum = {workspace = true}
-tokio = {workspace = true}
-clap = {workspace = true}
-tracing = {workspace = true}
+common = { path = "../../components/common" }
+simpleproto = { path = "../../components/simpleproto" }
+dbrokerapi = { path = "../../components/dbrokerapi" }
+axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
+stores = { path = "../../components/stores" }
+
+
+axum = { workspace = true }
+tokio = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
 futures-util = "0.3"
-serde = {workspace = true}
-serde_json = {workspace = true}
-metrics = "0.18"
+serde = { workspace = true }
+serde_json = { workspace = true }
+metrics = { workspace = true }

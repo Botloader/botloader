@@ -109,18 +109,18 @@ impl Broker {
 
     async fn handle_event(&mut self, evt: Event) {
         self.discord_state.update(&evt);
-        metrics::counter!("bl.broker.handled_events_total", 1);
+        metrics::counter!("bl.broker.handled_events_total").increment(1);
 
         let guild_id = match &evt {
             Event::Ready(_) => {
                 self.ready.store(true, std::sync::atomic::Ordering::SeqCst);
 
-                metrics::gauge!("bl.broker.connected_guilds_total", 0.0);
+                metrics::gauge!("bl.broker.connected_guilds_total").set(0.0);
                 info!("received ready!");
                 return;
             }
             Event::GuildDelete(g) => {
-                metrics::decrement_gauge!("bl.broker.connected_guilds_total", 1.0);
+                metrics::gauge!("bl.broker.connected_guilds_total").decrement(1.0);
 
                 if !g.unavailable {
                     let _ = self.stores.set_guild_left_status(g.id, true).await;
@@ -144,7 +144,7 @@ impl Broker {
                     })
                     .await;
 
-                metrics::increment_gauge!("bl.broker.connected_guilds_total", 1.0);
+                metrics::gauge!("bl.broker.connected_guilds_total").increment(1.0);
                 gc.id
             }
             Event::MemberAdd(m) => m.guild_id,
@@ -256,7 +256,7 @@ impl Broker {
         };
 
         if let Ok(dispatch) = DispatchEvent::try_from(evt) {
-            metrics::counter!("bl.broker.dispatched_events", 1);
+            metrics::counter!("bl.broker.dispatched_events").increment(1);
             self.dispatch_or_queue_event(guild_id, dispatch).await;
         }
     }

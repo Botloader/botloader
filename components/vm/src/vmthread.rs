@@ -20,7 +20,7 @@ pub async fn spawn_vm_thread<F: FnOnce() -> tracing::Span + Send + Sync + 'stati
 
     std::thread::spawn(move || {
         let iso_cell = Rc::new(IsolateCell::new_with_tracker(Box::new(|dur| {
-            counter!("bl.vm.cpu_microseconds_total", dur.as_micros() as u64);
+            counter!("bl.vm.cpu_microseconds_total").increment(dur.as_micros() as u64);
         })));
 
         let rt = tokio::runtime::Builder::new_current_thread()

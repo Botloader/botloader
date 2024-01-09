@@ -89,7 +89,7 @@ impl VmWorkerPool {
                     .map(|(i, _)| i);
 
                 if let Some(pref_worker) = pref_worker {
-                    metrics::decrement_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
+                    metrics::gauge!("bl.scheduler.workerpool_available_workers").decrement(1.0);
                     return pool.remove(pref_worker);
                 }
 
@@ -116,7 +116,7 @@ impl VmWorkerPool {
                 }
 
                 if let Some(can) = candidate {
-                    metrics::decrement_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
+                    metrics::gauge!("bl.scheduler.workerpool_available_workers").decrement(1.0);
                     return pool.remove(can);
                 }
 
@@ -149,7 +149,7 @@ impl VmWorkerPool {
         let elapsed = worker.returned_at - worker.claimed_at;
         if let Some(guild_id) = worker.last_active_guild {
             let micros = elapsed.as_micros() as u64;
-            counter!("bl.worker.claimed_microseconds_total", micros, "guild_id" => guild_id.get().to_string());
+            counter!("bl.worker.claimed_microseconds_total", "guild_id" => guild_id.get().to_string()).increment(micros);
         }
 
         if broken {
@@ -157,7 +157,7 @@ impl VmWorkerPool {
                 "returned broken worker to the pool: {:?}",
                 worker.last_active_guild
             );
-            metrics::counter!("bl.scheduler.broken_workers_total", 1);
+            metrics::counter!("bl.scheduler.broken_workers_total").increment(1);
             self.spawn_worker(worker.priority_index);
         } else {
             info!(
@@ -192,7 +192,7 @@ impl VmWorkerPool {
         }
 
         // no pending worker requests
-        metrics::increment_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
+        metrics::gauge!("bl.scheduler.workerpool_available_workers").increment(1.0);
         w.pools[worker.priority_index].push(worker);
     }
 

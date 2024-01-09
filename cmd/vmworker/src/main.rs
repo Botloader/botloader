@@ -26,9 +26,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (scheduler_tx, scheduler_rx) =
         connect_scheduler("/tmp/botloader_scheduler_workers", config.worker_id).await;
 
-    metrics::set_boxed_recorder(Box::new(metrics_forwarder::MetricsForwarder {
+    metrics::set_global_recorder(metrics_forwarder::MetricsForwarder {
         tx: scheduler_tx.clone(),
-    }))
+    })
     .expect("set metrics recorder");
 
     let postgres_store = Arc::new(
