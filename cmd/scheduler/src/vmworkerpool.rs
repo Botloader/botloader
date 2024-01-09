@@ -89,7 +89,7 @@ impl VmWorkerPool {
                     .map(|(i, _)| i);
 
                 if let Some(pref_worker) = pref_worker {
-                    metrics::gauge!("bl.scheduler.workerpool_available_workers").decrement(1.0);
+                    metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => i.to_string()).decrement(1.0);
                     return pool.remove(pref_worker);
                 }
 
@@ -116,7 +116,7 @@ impl VmWorkerPool {
                 }
 
                 if let Some(can) = candidate {
-                    metrics::gauge!("bl.scheduler.workerpool_available_workers").decrement(1.0);
+                    metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => i.to_string()).decrement(1.0);
                     return pool.remove(can);
                 }
 
@@ -192,7 +192,7 @@ impl VmWorkerPool {
         }
 
         // no pending worker requests
-        metrics::gauge!("bl.scheduler.workerpool_available_workers").increment(1.0);
+        metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => worker.priority_index.to_string()).increment(1.0);
         w.pools[worker.priority_index].push(worker);
     }
 
