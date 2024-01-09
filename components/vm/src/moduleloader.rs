@@ -2,7 +2,7 @@ use deno_core::{ModuleLoader, ModuleSource, ModuleType, ResolutionKind};
 use futures::future::ready;
 use url::Url;
 
-use crate::{prepend_script_source_header, ScriptLoadState, ScriptsStateStoreHandle};
+use crate::{ScriptLoadState, ScriptsStateStoreHandle};
 
 pub struct ModuleManager {
     pub module_map: Vec<ModuleEntry>,
@@ -38,12 +38,9 @@ impl ModuleManager {
         {
             script.state = ScriptLoadState::Loaded;
 
-            let source =
-                prepend_script_source_header(&script.compiled.output, Some(&script.script));
-
             return Some(ModuleSource::new(
                 ModuleType::JavaScript,
-                deno_core::ModuleSourceCode::Bytes(source.as_bytes().into()),
+                deno_core::ModuleSourceCode::Bytes(script.compiled.output.as_bytes().into()),
                 module_specifier,
             ));
         }

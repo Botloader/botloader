@@ -1,8 +1,8 @@
 use crate::error::source_map_error;
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
-    bl_core, prepend_script_source_header, AnyError, ScriptLoadState, ScriptState,
-    ScriptStateStoreWrapper, ScriptsStateStore, ScriptsStateStoreHandle,
+    bl_core, AnyError, ScriptLoadState, ScriptState, ScriptStateStoreWrapper, ScriptsStateStore,
+    ScriptsStateStoreHandle,
 };
 use deno_core::{Extension, FastString, PollEventLoopOptions, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
@@ -389,10 +389,7 @@ impl Vm {
 
             let fut = rt.load_side_module(
                 &script.url,
-                Some(FastString::from(prepend_script_source_header(
-                    &script.compiled.output,
-                    Some(&script.script),
-                ))),
+                Some(FastString::from(script.compiled.output.clone())),
             );
 
             // Yes this is very hacky, we should have a proper solution for this at some point.

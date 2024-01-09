@@ -42,14 +42,14 @@ fn gen_script_source_header(script: Option<&Script>) -> String {
         None => r#"
         import {Script} from "/script";
         const script = new Script(0, null);
-        "#
+"#
         .to_string(),
         Some(h) => {
             format!(
                 r#"
                 import {{Script}} from "/script";
                 const script = new Script({}, {});
-                "#,
+"#,
                 h.id,
                 h.plugin_id
                     .map(|v| v.to_string())
@@ -100,14 +100,15 @@ pub enum ScriptLoadState {
     Failed,
 }
 
-impl ScriptState {
-    fn get_original_line_col(&self, line_no: u32, col: u32) -> Option<(u32, u32)> {
-        self.compiled
-            .source_map
-            .lookup_token(line_no - SCRIPT_HEADER_NUM_LINES, col)
-            .map(|token| (token.get_src_line() + 1, token.get_src_col()))
-    }
-}
+// impl ScriptState {
+//     fn get_original_line_col(&self, line_no: u32, col: u32) -> Option<(u32, u32)> {
+//         dbg!(line_no);
+//         self.compiled
+//             .source_map
+//             .lookup_token(line_no, col)
+//             .map(|token| (token.get_src_line() + 1, token.get_src_col()))
+//     }
+// }
 
 pub type ScriptsStateStoreHandle = Rc<RefCell<ScriptsStateStore>>;
 
@@ -137,19 +138,31 @@ impl ScriptsStateStore {
         line: u32,
         col: u32,
     ) -> Option<(String, u32, u32)> {
-        if let Some(script_load) = self.scripts.iter().find(|v| v.url.as_str() == res).cloned() {
-            if let Some((line, col)) = script_load.get_original_line_col(line, col) {
-                let excl_js = script_load.url.as_str().strip_suffix(".js").unwrap();
+        let excl_js = res.strip_suffix(".js").unwrap();
+        Some((
+            format!("{excl_js}.ts"),
+            line - (SCRIPT_HEADER_NUM_LINES - 1),
+            col,
+        ))
 
-                return Some((format!("{excl_js}.ts"), line, col));
-            }
-        }
+        // return (res.)
 
-        None
+        // if let Some(script_load) = self.scripts.iter().find(|v| v.url.as_str() == res).cloned() {
+        //     if let Some((line, col)) = script_load.get_original_line_col(line, col) {
+        //         let excl_js = script_load.url.as_str().strip_suffix(".js").unwrap();
+
+        //         return Some((format!("{excl_js}.ts"), line, col));
+        //     }
+        // }
+
+        // None
     }
 
     pub fn compile_add_script(&mut self, script: Script) -> Result<ScriptState, String> {
-        match tscompiler::compile_typescript(&script.original_source) {
+        match tscompiler::compile_typescript(&prepend_script_source_header(
+            &script.original_source,
+            Some(&script),
+        )) {
             Ok(compiled) => {
                 let item = ScriptState {
                     compiled,
