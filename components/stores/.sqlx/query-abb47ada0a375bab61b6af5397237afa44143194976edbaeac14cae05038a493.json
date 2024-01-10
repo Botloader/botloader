@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at\n            FROM discord_oauth_tokens WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "discord_bearer_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "discord_refresh_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "discord_token_expires_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "abb47ada0a375bab61b6af5397237afa44143194976edbaeac14cae05038a493"
+}

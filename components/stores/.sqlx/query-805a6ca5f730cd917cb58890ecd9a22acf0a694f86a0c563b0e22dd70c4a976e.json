@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at\n            FROM interval_timers WHERE guild_id=$1;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "script_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "timer_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "interval_minutes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "interval_cron",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "last_run_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "805a6ca5f730cd917cb58890ecd9a22acf0a694f86a0c563b0e22dd70c4a976e"
+}

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guild_meta_configs (guild_id, error_channel_id) VALUES ($1, $2)\n            ON CONFLICT (guild_id) DO UPDATE SET\n            error_channel_id = $2\n            RETURNING guild_id, error_channel_id;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "error_channel_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b26c05bfe195cf541bdc671d8e40d4f482b14e33b6cb619cf42d4acccb65f1f7"
+}

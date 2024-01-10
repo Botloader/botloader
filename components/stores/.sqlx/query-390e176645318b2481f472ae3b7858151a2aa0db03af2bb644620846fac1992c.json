@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO scheduled_tasks (guild_id, name, unique_key, value, exec_at) VALUES($1, $2, $3, $4, $5)\n            ON CONFLICT (guild_id, name, unique_key) WHERE unique_key IS NOT NULL DO UPDATE SET\n            value = excluded.value,\n            exec_at = excluded.exec_at\n            RETURNING id, guild_id, name, unique_key, value, exec_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unique_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "value",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "exec_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "390e176645318b2481f472ae3b7858151a2aa0db03af2bb644620846fac1992c"
+}

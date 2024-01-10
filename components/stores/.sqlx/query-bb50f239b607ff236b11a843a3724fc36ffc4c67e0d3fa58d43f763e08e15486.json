@@ -1,0 +1,43 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO discord_oauth_tokens (user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (user_id) DO UPDATE SET \n            discord_bearer_token = $2,\n            discord_refresh_token = $3,\n            discord_token_expires_at = $4\n            RETURNING user_id, discord_bearer_token, discord_refresh_token, discord_token_expires_at;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "discord_bearer_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "discord_refresh_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "discord_token_expires_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bb50f239b607ff236b11a843a3724fc36ffc4c67e0d3fa58d43f763e08e15486"
+}

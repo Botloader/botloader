@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT token, kind, user_id, discriminator, username, avatar, created_at FROM web_sessions WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "kind",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "discriminator",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 4,
+        "name": "username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "avatar",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "37c7c96d21db55b2bb8a79810dea6b0403c80b91a399b57fdc74bbd715a70781"
+}

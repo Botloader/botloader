@@ -1,0 +1,49 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO joined_guilds (id, name, icon, owner_id, left_at) VALUES ($1, $2, $3, $4, null)\n            ON CONFLICT (id) DO UPDATE SET \n            name = $2, icon = $3, owner_id = $4, left_at = null\n            RETURNING id, name, icon, owner_id, left_at;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "icon",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "owner_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "left_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "56c8f5afadce3129b07621c6dd478a18f091bf2b3416032e01b0b9765ab81244"
+}
