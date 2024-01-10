@@ -557,10 +557,14 @@ impl Vm {
             };
 
             match fut.await {
-                Err(err) => {
-                    self.log_guild_err(err);
+                CompleteModuleEvalResult::Completed(res) => {
+                    match res {
+                        Ok(_) => {}
+                        Err(err) => self.log_guild_err(err),
+                    };
+                    break;
                 }
-                Ok(_) => break,
+                CompleteModuleEvalResult::VmError(err) => self.log_guild_err(err),
             }
         }
     }
@@ -711,8 +715,13 @@ struct CompleteModuleEval<'a, 'b, 'c> {
     fut: &'c mut Pin<&'b mut dyn Future<Output = Result<(), AnyError>>>,
 }
 
+enum CompleteModuleEvalResult {
+    Completed(Result<(), AnyError>),
+    VmError(AnyError),
+}
+
 impl<'a, 'b, 'c> core::future::Future for CompleteModuleEval<'a, 'b, 'c> {
-    type Output = Result<(), AnyError>;
+    type Output = CompleteModuleEvalResult;
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
@@ -720,7 +729,7 @@ impl<'a, 'b, 'c> core::future::Future for CompleteModuleEval<'a, 'b, 'c> {
     ) -> std::task::Poll<Self::Output> {
         // let pinned = pin!(self.fut);
         match self.fut.as_mut().poll(cx) {
-            Poll::Ready(res) => return Poll::Ready(res),
+            Poll::Ready(res) => return Poll::Ready(CompleteModuleEvalResult::Completed(res)),
             Poll::Pending => {}
         }
 
@@ -729,7 +738,7 @@ impl<'a, 'b, 'c> core::future::Future for CompleteModuleEval<'a, 'b, 'c> {
 
             match rt.poll_event_loop(cx, PollEventLoopOptions::default()) {
                 Poll::Pending => return Poll::Pending,
-                Poll::Ready(Err(e)) => return Poll::Ready(Err(e)),
+                Poll::Ready(Err(e)) => return Poll::Ready(CompleteModuleEvalResult::VmError(e)),
                 Poll::Ready(_) => {}
             }
         }
@@ -737,11 +746,11 @@ impl<'a, 'b, 'c> core::future::Future for CompleteModuleEval<'a, 'b, 'c> {
         // we might have gotten a result on the channel after polling the event loop
         // let pinned = pin!(*self.fut);
         match self.fut.as_mut().poll(cx) {
-            Poll::Ready(res) => return Poll::Ready(res),
+            Poll::Ready(res) => return Poll::Ready(CompleteModuleEvalResult::Completed(res)),
             Poll::Pending => {}
         }
 
-        Poll::Ready(Ok(()))
+        Poll::Ready(CompleteModuleEvalResult::Completed(Ok(())))
     }
 }
 
