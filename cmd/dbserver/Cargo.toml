@@ -7,8 +7,6 @@ edition = "2021"
 
 [dependencies]
 common = { path = "../../components/common" }
-simpleproto = { path = "../../components/simpleproto" }
-dbrokerapi = { path = "../../components/dbrokerapi" }
 axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
 stores = { path = "../../components/stores" }
 
