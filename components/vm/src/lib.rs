@@ -190,6 +190,8 @@ impl ScriptsStateStore {
                     state: ScriptLoadState::FailedCompilation,
                 };
 
+                self.scripts.push(item.clone());
+
                 Err(e)
             }
         }
