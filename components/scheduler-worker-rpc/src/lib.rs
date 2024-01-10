@@ -42,6 +42,22 @@ pub enum WorkerMessage {
     Metric(String, MetricEvent, HashMap<String, String>),
 }
 
+impl WorkerMessage {
+    pub fn name(&self) -> &'static str {
+        match self {
+            WorkerMessage::Ack(_) => "Ack",
+            WorkerMessage::Shutdown(_) => "Shutdown",
+            WorkerMessage::ScriptStarted(_) => "ScriptStarted",
+            WorkerMessage::ScriptsInit => "ScriptsInit",
+            WorkerMessage::NonePending => "NonePending",
+            WorkerMessage::TaskScheduled => "TaskScheduled",
+            WorkerMessage::GuildLog(_) => "GuildLog",
+            WorkerMessage::Hello(_) => "Hello",
+            WorkerMessage::Metric(_, _, _) => "Metric",
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 pub enum ShutdownReason {
     Runaway,
