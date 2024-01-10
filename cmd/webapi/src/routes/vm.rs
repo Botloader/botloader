@@ -1,11 +1,10 @@
 use axum::{extract::Extension, response::IntoResponse};
-use stores::web::SessionStore;
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
 
 use crate::{errors::ApiErrorResponse, util::EmptyResponse, ApiResult};
 
-pub async fn reload_guild_vm<ST: SessionStore + Clone + Send + Sync + 'static>(
+pub async fn reload_guild_vm(
     Extension(bot_rpc): Extension<botrpc::Client>,
     Extension(current_guild): Extension<CurrentUserGuild>,
 ) -> ApiResult<impl IntoResponse> {

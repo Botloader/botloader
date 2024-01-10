@@ -122,10 +122,7 @@ async fn main() {
         ));
 
     let authorized_api_guild_routes = Router::new()
-        .route(
-            "/reload_vm",
-            post(routes::vm::reload_guild_vm::<CurrentSessionStore>),
-        )
+        .route("/reload_vm", post(routes::vm::reload_guild_vm))
         .route(
             "/settings",
             get(routes::guilds::get_guild_settings::<CurrentSessionStore>),
