@@ -363,15 +363,21 @@ impl Vm {
 
     #[instrument(skip(self))]
     async fn run_script(&mut self, script_id: u64) {
-        let script = {
+        let (script, compiled) = {
             let borrow = self.script_store.borrow();
-            if matches!(borrow.is_failed_or_loaded(script_id), Some(true)) {
-                info!("script: was already loaded or failed, skipping");
-                return;
-            }
 
             if let Some(script) = borrow.get_script(script_id) {
-                script.clone()
+                if script.can_run() {
+                    if let Some(source) = &script.compiled {
+                        (script.clone(), source.clone())
+                    } else {
+                        error!("script marked as can run with no compiled source",);
+                        return;
+                    }
+                } else {
+                    info!("skipping loading script");
+                    return;
+                }
             } else {
                 error!("tried to load non-existent script");
                 return;
@@ -387,10 +393,7 @@ impl Vm {
         let eval_res = {
             let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
 
-            let fut = rt.load_side_module(
-                &script.url,
-                Some(FastString::from(script.compiled.output.clone())),
-            );
+            let fut = rt.load_side_module(&script.url, Some(FastString::from(compiled.output)));
 
             // Yes this is very hacky, we should have a proper solution for this at some point.
             //

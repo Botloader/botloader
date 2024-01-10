@@ -90,7 +90,13 @@ pub struct ScriptState {
     pub script: Script,
     pub url: url::Url,
     pub state: ScriptLoadState,
-    pub compiled: CompiledItem,
+    pub compiled: Option<CompiledItem>,
+}
+
+impl ScriptState {
+    pub fn can_run(&self) -> bool {
+        matches!(self.state, ScriptLoadState::Unloaded) && self.compiled.is_some()
+    }
 }
 
 #[derive(Clone)]
@@ -98,6 +104,7 @@ pub enum ScriptLoadState {
     Unloaded,
     Loaded,
     Failed,
+    FailedCompilation,
 }
 
 // impl ScriptState {
@@ -165,7 +172,7 @@ impl ScriptsStateStore {
         )) {
             Ok(compiled) => {
                 let item = ScriptState {
-                    compiled,
+                    compiled: Some(compiled),
                     url: script_url(&script),
                     script,
                     state: ScriptLoadState::Unloaded,
@@ -175,15 +182,17 @@ impl ScriptsStateStore {
 
                 Ok(item)
             }
-            Err(e) => Err(e),
-        }
-    }
+            Err(e) => {
+                let item = ScriptState {
+                    compiled: None,
+                    url: script_url(&script),
+                    script,
+                    state: ScriptLoadState::FailedCompilation,
+                };
 
-    pub fn is_failed_or_loaded(&self, script_id: u64) -> Option<bool> {
-        Some(matches!(
-            self.get_script(script_id)?.state,
-            ScriptLoadState::Failed | ScriptLoadState::Loaded
-        ))
+                Err(e)
+            }
+        }
     }
 
     pub fn set_state(&mut self, script_id: u64, new_state: ScriptLoadState) {
@@ -218,7 +227,9 @@ impl SourceMapGetter for ScriptStateStoreWrapper {
             .find(|v| v.url.as_str() == file_name)
             .cloned()
         {
-            return Some(script_load.compiled.source_map_raw.as_bytes().into());
+            if let Some(compiled) = script_load.compiled {
+                return Some(compiled.source_map_raw.as_bytes().into());
+            }
         }
 
         None

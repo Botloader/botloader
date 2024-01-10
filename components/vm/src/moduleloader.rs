@@ -36,13 +36,15 @@ impl ModuleManager {
             .iter_mut()
             .find(|v| &v.url == module_specifier)
         {
-            script.state = ScriptLoadState::Loaded;
+            if let Some(compiled) = &script.compiled {
+                script.state = ScriptLoadState::Loaded;
 
-            return Some(ModuleSource::new(
-                ModuleType::JavaScript,
-                deno_core::ModuleSourceCode::Bytes(script.compiled.output.as_bytes().into()),
-                module_specifier,
-            ));
+                return Some(ModuleSource::new(
+                    ModuleType::JavaScript,
+                    deno_core::ModuleSourceCode::Bytes(compiled.output.as_bytes().into()),
+                    module_specifier,
+                ));
+            }
         }
 
         None
