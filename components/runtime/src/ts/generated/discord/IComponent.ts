@@ -5,4 +5,9 @@ import type { ISelectMenu } from "./ISelectMenu";
 import type { ITextInput } from "./ITextInput";
 import type { IUnknownComponent } from "./IUnknownComponent";
 
-export type IComponent = { "kind": "ActionRow" } & IActionRow | { "kind": "Button" } & IButton | { "kind": "SelectMenu" } & ISelectMenu | { "kind": "TextInput" } & ITextInput | { "kind": "Unknown" } & IUnknownComponent;
+export type IComponent =
+  | { "kind": "ActionRow" } & IActionRow
+  | { "kind": "Button" } & IButton
+  | { "kind": "SelectMenu" } & ISelectMenu
+  | { "kind": "TextInput" } & ITextInput
+  | { "kind": "Unknown" } & IUnknownComponent;

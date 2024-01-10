@@ -7,4 +7,14 @@ import type { ITextChannel } from "./TextChannel";
 import type { IUnknownChannel } from "./UnknownChannel";
 import type { IVoiceChannel } from "./VoiceChannel";
 
-export type InternalGuildChannel = ICategoryChannel | INewsThread | IPrivateThread | IPublicThread | ITextChannel | IVoiceChannel | IVoiceChannel | ITextChannel | ITextChannel | IUnknownChannel;
+export type InternalGuildChannel =
+  | ICategoryChannel
+  | INewsThread
+  | IPrivateThread
+  | IPublicThread
+  | ITextChannel
+  | IVoiceChannel
+  | IVoiceChannel
+  | ITextChannel
+  | ITextChannel
+  | IUnknownChannel;
