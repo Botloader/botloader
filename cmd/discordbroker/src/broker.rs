@@ -13,7 +13,12 @@ use tokio::{
 };
 use tracing::{error, info, warn};
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::{cluster::Events, Cluster, Event, Intents};
+use twilight_gateway::{
+    stream::{self, ShardEventStream},
+    Config, Event, Intents, Shard,
+};
+use twilight_http::Client;
+// use twilight_gateway::{cluster::Events, Cluster, stream, Event, Intents};
 use twilight_model::{
     gateway::event::DispatchEvent,
     id::{marker::GuildMarker, Id},
@@ -34,21 +39,19 @@ pub async fn run_broker(
         | Intents::GUILD_VOICE_STATES
         | Intents::GUILD_MESSAGES
         | Intents::GUILD_MESSAGE_REACTIONS;
+    let config = Config::new(token.clone(), intents);
 
-    let (cluster, events) = Cluster::new(token, intents).await?;
-    let cluster = Arc::new(cluster);
+    // let (cluster, events) = Cluster::new(token, intents).await?;
 
-    let cluster_spawn = cluster.clone();
-    tokio::spawn(async move {
-        cluster_spawn.up().await;
-    });
+    let client = Client::new(token.clone());
+    let shards = stream::create_recommended(&client, config, |_, builder| builder.build())
+        .await?
+        .collect::<Vec<_>>();
 
     let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
     let mut discord_manager = Broker {
-        _cluster: cluster,
         discord_state,
-        events,
         cmd_rx,
         stores,
         ready,
@@ -57,7 +60,7 @@ pub async fn run_broker(
         scheduler_discconected_at: Instant::now(),
     };
 
-    tokio::spawn(async move { discord_manager.run().await });
+    tokio::spawn(async move { discord_manager.run(shards).await });
 
     Ok(cmd_tx)
 }
@@ -65,9 +68,7 @@ pub async fn run_broker(
 pub type BrokerHandle = mpsc::UnboundedSender<BrokerCommand>;
 
 struct Broker {
-    _cluster: Arc<Cluster>,
     discord_state: Arc<InMemoryCache>,
-    events: Events,
     cmd_rx: mpsc::UnboundedReceiver<BrokerCommand>,
 
     connected_scheduler: Option<TcpStream>,
@@ -80,12 +81,38 @@ struct Broker {
 }
 
 impl Broker {
-    pub async fn run(&mut self) {
+    pub async fn run(&mut self, mut shards: Vec<Shard>) {
+        let mut stream = ShardEventStream::new(shards.iter_mut());
+
+        // while let Some((shard, event)) = stream.next().await {
+        //     let event = match event {
+        //         Ok(event) => event,
+        //         Err(source) => {
+        //             tracing::warn!(?source, "error receiving event");
+
+        //             if source.is_fatal() {
+        //                 break;
+        //             }
+
+        //             continue;
+        //         }
+        //     };
+
+        //     tracing::debug!(?event, shard = ?shard.id(), "received event");
+        // }
+
         loop {
             tokio::select! {
-                evt = self.events.next() => match evt {
-                    Some((_shard_id, evt)) => {
-                        self.handle_event(evt).await;
+                evt = stream.next() => match evt {
+                    Some((_shard_id, evt)) => match evt{
+                        Ok(evt) => self.handle_event(evt).await,
+                        Err(err) => {
+                            error!(?err, "failed handling event");
+                            if err.is_fatal(){
+                                error!(?err, "fatal error occurred");
+                                break;
+                            }
+                        }
                     },
                     None => todo!(),
                 },

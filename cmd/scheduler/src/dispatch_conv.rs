@@ -30,7 +30,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         DispatchEvent::MemberAdd(m) => Some(DiscordDispatchEvent {
             name: "MEMBER_ADD",
             guild_id: m.guild_id,
-            data: serde_json::to_value(runtime_models::internal::member::Member::from(m.0))
+            data: serde_json::to_value(runtime_models::internal::member::Member::from(m.member))
                 .unwrap(),
         }),
         DispatchEvent::MemberUpdate(m) => Some(DiscordDispatchEvent {

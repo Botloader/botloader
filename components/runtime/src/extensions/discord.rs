@@ -722,7 +722,7 @@ pub async fn op_discord_bulk_delete_messages(
     rt_ctx
         .discord_config
         .client
-        .delete_messages(channel.id, &message_ids)
+        .delete_messages(channel.id, &message_ids)?
         .await
         .map_err(|err| handle_discord_error(&state, err))?;
 

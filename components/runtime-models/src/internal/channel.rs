@@ -477,7 +477,7 @@ impl EditChannel {
         }
 
         if let Some(user_limit) = &self.user_limit {
-            req = req.user_limit(*user_limit);
+            req = req.user_limit(*user_limit)?;
         }
 
         if let Some(video_quality_mode) = &self.video_quality_mode {

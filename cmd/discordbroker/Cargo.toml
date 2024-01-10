@@ -24,3 +24,4 @@ metrics = { workspace = true }
 twilight-model = { workspace = true }
 twilight-gateway = { workspace = true }
 twilight-cache-inmemory = { workspace = true }
+twilight-http = { workspace = true }

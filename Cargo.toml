@@ -25,9 +25,9 @@ futures = "0.3"
 url = "2.2"
 tracing-log = "0.2"
 
-twilight-model = { version = "0.14" }
-twilight-http = { version = "0.14" }
-twilight-gateway = { version = "0.14" }
-twilight-cache-inmemory = { version = "0.14" }
-twilight-util = { version = "0.14", features = ["permission-calculator"] }
-twilight-validate = { version = "0.14" }
+twilight-model = { version = "0.15.4" }
+twilight-http = { version = "0.15.4" }
+twilight-gateway = { version = "0.15.4" }
+twilight-cache-inmemory = { version = "0.15.4" }
+twilight-util = { version = "0.15.4", features = ["permission-calculator"] }
+twilight-validate = { version = "0.15.3" }
