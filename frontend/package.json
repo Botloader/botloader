@@ -11,7 +11,7 @@
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.8",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
-    "@svgr/webpack": "^5.5.0",
+    "@svgr/webpack": "^8.1.0",
     "@types/node": "^12.20.33",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.10",
@@ -54,7 +54,7 @@
     "react-refresh": "^0.11.0",
     "react-router-dom": "^6.8.1",
     "resolve": "^1.20.0",
-    "resolve-url-loader": "^4.0.0",
+    "resolve-url-loader": "^5.0.0",
     "sass-loader": "^12.3.0",
     "semver": "^7.3.5",
     "source-map-loader": "^3.0.0",
@@ -63,10 +63,11 @@
     "terser-webpack-plugin": "^5.2.5",
     "typescript": "^5.3.3",
     "web-vitals": "^1.1.2",
-    "webpack": "^5.64.4",
+    "webpack": "^5.89.0",
     "webpack-dev-server": "^4.6.0",
     "webpack-manifest-plugin": "^4.0.2",
-    "workbox-webpack-plugin": "^6.4.1"
+    "workbox-webpack-plugin": "^6.4.1",
+    "@babel/plugin-proposal-private-property-in-object": "7.21.0-placeholder-for-preset-env.2"
   },
   "scripts": {
     "start": "node scripts/start.js",
