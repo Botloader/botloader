@@ -1,9 +1,9 @@
-import { useMonaco } from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 import untar from "js-untar";
+import useMonacoFixed from "./useMonacoFixed";
 
 export function useBotloaderMonaco(extraSources?: { name: string, content: string }[]) {
-    const monaco = useMonaco();
+    const monaco = useMonacoFixed();
     const [init, setInit] = useState(false);
     const [typings, setTypings] = useState<File[] | undefined | null>(undefined);
 
