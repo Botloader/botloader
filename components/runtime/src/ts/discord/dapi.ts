@@ -77,11 +77,14 @@ export interface InteractionCreateMessageFields extends CreateMessageFields {
     flags?: InteractionMessageFlags,
 }
 
+
 export interface InteractionMessageFlags {
     /**
      * Ephemeral messages can only be seen by the author of the interaction
      */
     ephemeral?: boolean,
+
+    suppressEmbeds?: boolean,
 }
 
 

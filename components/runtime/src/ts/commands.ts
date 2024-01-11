@@ -1,5 +1,5 @@
 import * as Internal from "./generated/internal/index";
-import { ChannelType, Interaction, Message, Role, IModalFields } from "./discord/index";
+import { ChannelType, Interaction, Message, Role, IModalFields, MessageFlags } from "./discord/index";
 import { User } from "./discord/user";
 import { Member } from "./discord/member";
 import { OpWrappers } from "./op_wrappers";
@@ -38,7 +38,9 @@ export namespace Commands {
 
             let ctx = new ExecutedCommandContext(interaction);
             if (command.ackMode === "DeferredMessage") {
-                await ctx.ackWithDeferredMessage();
+                await ctx.ackWithDeferredMessage({
+                    flags: command.ackMessageFlags,
+                });
             }
 
             if (interaction.kind === "Chat") {
@@ -240,6 +242,7 @@ export namespace Commands {
         group?: Group,
         options?: OptionMap;
         ackMode: AckMode,
+        ackMessageFlags: MessageFlags,
         cb: (ctx: {}, args: {}) => any,
     }
 
@@ -374,6 +377,7 @@ export namespace Commands {
         private options: OptionMap;
         private group?: Group;
         private ackMode: AckMode = "DeferredMessage";
+        private ackMessageFlags: MessageFlags = {}
 
         constructor(name: string, description: string, options: OptionMap, group?: Group) {
             this.name = name;
@@ -399,16 +403,23 @@ export namespace Commands {
          * Set the ack mode of this command
          * (if you're experienced with the discord api, this is the callback type to the interaction)
          * 
-         * `DeferredMessage`: It will respond with a public deferred message.
-         * `Custom`: You handle the ack'ing of the interaction yourself, this allows you to
-         * use ephemeral responses and modals.
-         * 
+         * `DeferredMessage`: It will respond with a deferred message, using the flags from setAckMessageFlags.
+         * `Custom`: You handle the ack'ing of the interaction yourself, this allows you to use modals.
          * 
          * Keep in mind when using custom, you have to ack the interaction within 3 seconds otherwise it will fail.
          */
         setAckMode(mode: AckMode) {
             this.ackMode = mode;
             return this;
+        }
+
+        /**
+         * Sets the flags for the mssage sent when sending the intial interaction response.
+         * Epehemeral means that it can only be see by the person issuing the command.
+         */
+        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds">) {
+            this.ackMessageFlags = flags
+            return this
         }
 
         /**
@@ -529,6 +540,7 @@ export namespace Commands {
                 options: this.options,
                 group: this.group,
                 ackMode: this.ackMode,
+                ackMessageFlags: this.ackMessageFlags,
                 cb: callback as any,
             };
         }
@@ -582,6 +594,7 @@ export namespace Commands {
     export class UserCommandBuilder {
         name: string;
         ackMode: AckMode = "DeferredMessage";
+        private ackMessageFlags: MessageFlags = {}
 
         constructor(name: string) {
             this.name = name;
@@ -603,6 +616,15 @@ export namespace Commands {
             return this;
         }
 
+        /**
+         * Sets the flags for the mssage sent when sending the intial interaction response.
+         * Epehemeral means that it can only be see by the person issuing the command.
+         */
+        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds">) {
+            this.ackMessageFlags = flags
+            return this
+        }
+
         build(cb: (ctx: ExecutedCommandContext, target: InteractionUser) => any): Command {
             return {
                 name: this.name,
@@ -610,6 +632,7 @@ export namespace Commands {
                 description: "",
                 ackMode: this.ackMode,
                 cb: cb as any,
+                ackMessageFlags: this.ackMessageFlags,
             }
         }
     }
@@ -628,6 +651,7 @@ export namespace Commands {
     export class MessageCommandBuilder {
         name: string;
         ackMode: AckMode = "DeferredMessage";
+        private ackMessageFlags: MessageFlags = {}
 
         constructor(name: string) {
             this.name = name;
@@ -649,6 +673,15 @@ export namespace Commands {
             return this;
         }
 
+        /**
+         * Sets the flags for the mssage sent when sending the intial interaction response.
+         * Epehemeral means that it can only be see by the person issuing the command.
+         */
+        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds">) {
+            this.ackMessageFlags = flags
+            return this
+        }
+
         build(cb: (ctx: ExecutedCommandContext, target: Message) => any): Command {
             return {
                 name: this.name,
@@ -656,6 +689,7 @@ export namespace Commands {
                 description: "",
                 ackMode: this.ackMode,
                 cb: cb as any,
+                ackMessageFlags: this.ackMessageFlags,
             }
         }
     }
