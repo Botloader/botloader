@@ -145,24 +145,18 @@ impl ScriptsStateStore {
         line: u32,
         col: u32,
     ) -> Option<(String, u32, u32)> {
-        let excl_js = res.strip_suffix(".js").unwrap();
-        Some((
-            format!("{excl_js}.ts"),
-            line - (SCRIPT_HEADER_NUM_LINES - 1),
-            col,
-        ))
+        if let Some(stripped) = res.strip_suffix(".js") {
+            if stripped.starts_with("file://guild_scripts/") {
+                return Some((
+                    format!("{stripped}.ts"),
+                    line - (SCRIPT_HEADER_NUM_LINES - 1),
+                    col,
+                ));
+            }
+        }
 
-        // return (res.)
-
-        // if let Some(script_load) = self.scripts.iter().find(|v| v.url.as_str() == res).cloned() {
-        //     if let Some((line, col)) = script_load.get_original_line_col(line, col) {
-        //         let excl_js = script_load.url.as_str().strip_suffix(".js").unwrap();
-
-        //         return Some((format!("{excl_js}.ts"), line, col));
-        //     }
-        // }
-
-        // None
+        // Source is not a guild script
+        Some((res.to_owned(), line, col))
     }
 
     pub fn compile_add_script(&mut self, script: Script) -> Result<ScriptState, String> {
