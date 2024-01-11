@@ -590,6 +590,10 @@ impl CreateChannel {
             req = req.user_limit(*user_limit);
         }
 
+        if let Some(kind) = self.kind {
+            req = req.kind(kind.into())
+        }
+
         Ok(req)
     }
 }

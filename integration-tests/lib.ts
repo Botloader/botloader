@@ -31,7 +31,7 @@ export function assetJsonEquals(a: any, b: any) {
     }
 }
 
-export function assertExpected<T>(expected: T, actual: T) {
+export function assertExpected(expected: any, actual: any) {
     if (expected !== actual) {
         throw new Error(`expected: ${expected}, actual: ${actual}`);
     }
