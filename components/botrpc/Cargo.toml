@@ -12,11 +12,11 @@ guild-logger = { path = "../../components/guild-logger" }
 async-trait = { workspace = true }
 tracing = { workspace = true }
 tonic = { workspace = true }
-prost = "0.11"
+prost = "0.12.3"
 tokio = { workspace = true }
 futures = { workspace = true }
 
 twilight-model = { workspace = true }
 
 [build-dependencies]
-tonic-build = "0.8.4"
+tonic-build = "0.10.2"
