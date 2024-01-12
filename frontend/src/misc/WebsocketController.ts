@@ -95,7 +95,7 @@ export class BotloaderWS {
                 this.handleScriptLogMessage(decoded);
                 break;
             case "SubscriptionsUpdated":
-                this.logToOutput("sbuscriptions updated successfully: " + decoded.d, "Client");
+                this.logToOutput("subscriptions updated successfully: " + decoded.d, "Client");
                 this.activeSubs = decoded.d;
                 break;
         }
