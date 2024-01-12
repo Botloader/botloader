@@ -5,7 +5,6 @@ use stores::config::Script;
 use tscompiler::CompiledItem;
 use url::Url;
 
-pub mod error;
 pub mod moduleloader;
 pub mod vm;
 pub mod vmthread;
@@ -29,27 +28,14 @@ pub fn prepend_script_source_header(source: &str, script: Option<&Script>) -> St
     result
 }
 
-const SCRIPT_HEADER_NUM_LINES: u32 = 4;
-
-#[test]
-fn hmm() {
-    let res = gen_script_source_header(None);
-    assert!(res.lines().count() == 4);
-}
-
 fn gen_script_source_header(script: Option<&Script>) -> String {
     match script {
-        None => r#"
-        import {Script} from "/script";
-        const script = new Script(0, null);
-"#
-        .to_string(),
+        None => {
+            r#"import {Script} from "/script"; const script = new Script(0, null);"#.to_string()
+        }
         Some(h) => {
             format!(
-                r#"
-                import {{Script}} from "/script";
-                const script = new Script({}, {});
-"#,
+                r#"import {{Script}} from "/script";const script = new Script({}, {});"#,
                 h.id,
                 h.plugin_id
                     .map(|v| v.to_string())
@@ -107,16 +93,6 @@ pub enum ScriptLoadState {
     FailedCompilation,
 }
 
-// impl ScriptState {
-//     fn get_original_line_col(&self, line_no: u32, col: u32) -> Option<(u32, u32)> {
-//         dbg!(line_no);
-//         self.compiled
-//             .source_map
-//             .lookup_token(line_no, col)
-//             .map(|token| (token.get_src_line() + 1, token.get_src_col()))
-//     }
-// }
-
 pub type ScriptsStateStoreHandle = Rc<RefCell<ScriptsStateStore>>;
 
 #[derive(Clone)]
@@ -139,35 +115,17 @@ impl ScriptsStateStore {
         self.scripts.clear();
     }
 
-    pub fn get_original_line_col(
-        &self,
-        res: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<(String, u32, u32)> {
-        if let Some(stripped) = res.strip_suffix(".js") {
-            if stripped.starts_with("file://guild_scripts/") {
-                return Some((
-                    format!("{stripped}.ts"),
-                    line - (SCRIPT_HEADER_NUM_LINES - 1),
-                    col,
-                ));
-            }
-        }
-
-        // Source is not a guild script
-        Some((res.to_owned(), line, col))
-    }
-
     pub fn compile_add_script(&mut self, script: Script) -> Result<ScriptState, String> {
-        match tscompiler::compile_typescript(&prepend_script_source_header(
-            &script.original_source,
-            Some(&script),
-        )) {
+        let prefixed_source = prepend_script_source_header(&script.original_source, Some(&script));
+
+        match tscompiler::compile_typescript(
+            &prefixed_source,
+            script_url(&script, "ts").to_string(),
+        ) {
             Ok(compiled) => {
                 let item = ScriptState {
                     compiled: Some(compiled),
-                    url: script_url(&script),
+                    url: script_url(&script, "js"),
                     script,
                     state: ScriptLoadState::Unloaded,
                 };
@@ -179,7 +137,7 @@ impl ScriptsStateStore {
             Err(e) => {
                 let item = ScriptState {
                     compiled: None,
-                    url: script_url(&script),
+                    url: script_url(&script, "js"),
                     script,
                     state: ScriptLoadState::FailedCompilation,
                 };
@@ -236,26 +194,21 @@ impl SourceMapGetter for ScriptStateStoreWrapper {
     }
 }
 
-fn script_url(script: &Script) -> Url {
+fn script_url(script: &Script, suffix: &str) -> Url {
     if let Some(plugin_id) = &script.plugin_id {
-        return Url::parse(&format!("file:///plugins/{}/{}.js", plugin_id, script.name)).unwrap();
+        return Url::parse(&format!(
+            "file:///plugins/{}/{}.{suffix}",
+            plugin_id, script.name
+        ))
+        .unwrap();
     }
 
-    Url::parse(&format!("file:///guild_scripts/{}.js", script.name)).unwrap()
+    Url::parse(&format!("file:///guild_scripts/{}.{suffix}", script.name)).unwrap()
 }
-
-// deno_core::extension!(bl_core, js = ["src/botloader-core.js",],);
 
 pub struct BlCoreOptions {
     cloned_load_states: Rc<RefCell<ScriptsStateStore>>,
 }
-
-// parameters = [FP: FetchPermissions],
-//   op_fetch<FP>,
-//   op_fetch_send,
-//   op_fetch_response_upgrade,
-//   op_utf8_to_byte_string,
-//   op_fetch_custom_client<FP>,
 
 deno_core::extension!(bl_core,
   js = ["src/botloader-core-rt.js",],

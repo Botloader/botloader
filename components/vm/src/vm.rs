@@ -1,4 +1,3 @@
-use crate::error::source_map_error;
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
     bl_core, AnyError, ScriptLoadState, ScriptState, ScriptStateStoreWrapper, ScriptsStateStore,
@@ -251,7 +250,7 @@ impl Vm {
                 TickResult::VmError(e) => {
                     self.guild_logger.log(CreateLogEntry::error(format!(
                         "Script error occurred: {}",
-                        source_map_error(&self.script_store, e)
+                        e
                     )));
                 }
                 TickResult::Completed => {
@@ -575,7 +574,7 @@ impl Vm {
     fn log_guild_err(&self, err: AnyError) {
         self.guild_logger.log(CreateLogEntry::error(format!(
             "Script error occurred: {}",
-            source_map_error(&self.script_store, err)
+            err
         )));
     }
 

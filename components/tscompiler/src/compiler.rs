@@ -9,16 +9,16 @@ use swc_common::{self, FileName, SourceMap};
 use swc_ecma_ast::EsVersion;
 use swc_ecma_parser::{Syntax, TsConfig};
 
-pub fn compile_typescript(input: &str) -> Result<CompiledItem, String> {
-    compile_typescript_inner(input)
+pub fn compile_typescript(input: &str, filename: String) -> Result<CompiledItem, String> {
+    compile_typescript_inner(input, filename)
 }
 
-fn compile_typescript_inner(input: &str) -> Result<CompiledItem, String> {
+fn compile_typescript_inner(input: &str, filename: String) -> Result<CompiledItem, String> {
     swc_common::GLOBALS.set(&Default::default(), || {
         let cm: Arc<SourceMap> = Arc::new(SourceMap::default());
 
         let c = Compiler::new(cm.clone());
-        let fm = cm.new_source_file(FileName::Custom("script.ts".into()), input.into());
+        let fm = cm.new_source_file(FileName::Custom("file:///script.ts".into()), input.into());
 
         match swc::try_with_handler(
             cm,
@@ -41,6 +41,7 @@ fn compile_typescript_inner(input: &str) -> Result<CompiledItem, String> {
                             },
                             ..Default::default()
                         },
+                        source_file_name: Some(filename.to_owned()),
                         source_maps: Some(SourceMapsConfig::Bool(true)),
                         ..Default::default()
                     },
@@ -74,7 +75,7 @@ mod tests {
     use crate::compile_typescript;
 
     fn compile(input: &str, expected_output: &str) {
-        let output = compile_typescript(input).unwrap();
+        let output = compile_typescript(input, "test.ts".to_owned()).unwrap();
         assert_eq!(output.output, expected_output);
     }
 
