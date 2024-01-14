@@ -2,12 +2,12 @@ import { Alert, Avatar, Box, Chip, Divider, Stack, Typography } from "@mui/mater
 import { Container } from "@mui/system";
 import { ScriptPlugin } from "botloader-common";
 import ReactMarkdown from "react-markdown";
-import { AddPluginToServerButton } from "../components/AddPluginToServer";
-import { BlLink } from "../components/BLLink";
-import { useFetchedDataBehindGuard } from "../components/FetchData";
-import { pluginContext } from "../components/PluginProvider";
-import { ScriptingIde } from "../components/ScriptIde";
-import { userAvatarUrl } from "../components/Util";
+import { AddPluginToServerButton } from "../../../components/AddPluginToServer";
+import { BlLink } from "../../../components/BLLink";
+import { useFetchedDataBehindGuard } from "../../../components/FetchData";
+import { pluginContext } from "../../../components/PluginProvider";
+import { ScriptingIde } from "../../../components/ScriptIde";
+import { userAvatarUrl } from "../../../components/Util";
 
 export function ViewPlugin() {
     let { value: plugin } = useFetchedDataBehindGuard(pluginContext);

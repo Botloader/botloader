@@ -1,14 +1,14 @@
 import { BotGuild, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
 import { useRef, useState } from "react";
-import { useSession } from "../components/Session";
+import { useSession } from "../../../../../../components/Session";
 import "./EditScript.css";
-import { AsyncOpButton } from "../components/AsyncOpButton";
-import { debugMessageStore } from "../misc/DebugMessages";
-import { DevConsole } from "../components/DevConsole";
-import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../components/FetchData";
+import { AsyncOpButton } from "../../../../../../components/AsyncOpButton";
+import { debugMessageStore } from "../../../../../../misc/DebugMessages";
+import { DevConsole } from "../../../../../../components/DevConsole";
+import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../../../../components/FetchData";
 import { Box, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import { ScriptingIde } from "../components/ScriptIde";
-import { BlLink } from "../components/BLLink";
+import { ScriptingIde } from "../../../../../../components/ScriptIde";
+import { BlLink } from "../../../../../../components/BLLink";
 
 export const scriptsContext = createFetchDataContext<ScriptsWithPlugins>();
 

@@ -2,9 +2,9 @@ import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material"
 import { isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BlLink } from "../../components/BLLink";
-import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../components/FetchData";
-import { useSession } from "../../components/Session";
+import { BlLink } from "../../../components/BLLink";
+import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
+import { useSession } from "../../../components/Session";
 
 let scriptsContext = createFetchDataContext<ScriptPlugin[]>();
 

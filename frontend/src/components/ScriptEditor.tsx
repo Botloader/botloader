@@ -106,6 +106,9 @@ export function ScriptEditor(props: {
             theme="vs-dark"
             onMount={handleEditorDidMountDiff}
             options={{ readOnly: props.isReadOnly }}
+            key="diff-editor"
+            keepCurrentOriginalModel={true}
+            keepCurrentModifiedModel={true}
         />
 
     } else {
@@ -118,6 +121,7 @@ export function ScriptEditor(props: {
             onChange={onValueChange}
             onMount={handleEditorDidMount}
             options={{ readOnly: props.isReadOnly }}
+            key="normal-editor"
         />
     }
 

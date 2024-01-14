@@ -1,10 +1,10 @@
 import { Alert, Avatar, Box, Chip, Container, Divider, Paper, Typography } from "@mui/material";
 import { Stack } from "@mui/system";
 import { Plugin } from "botloader-common";
-import { BlLink } from "../components/BLLink";
-import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../components/FetchData";
-import { useSession } from "../components/Session";
-import { userAvatarUrl } from "../components/Util";
+import { BlLink } from "../../components/BLLink";
+import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../components/FetchData";
+import { useSession } from "../../components/Session";
+import { userAvatarUrl } from "../../components/Util";
 
 let context = createFetchDataContext<Plugin[]>();
 

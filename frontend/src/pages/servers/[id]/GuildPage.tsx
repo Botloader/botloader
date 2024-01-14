@@ -1,45 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
-import { useCurrentGuild } from "../components/GuildsProvider";
-import { useSession } from "../components/Session";
-import { AsyncOpButton } from "../components/AsyncOpButton";
-import { BuildConfig } from "../BuildConfig";
+import { useCurrentGuild } from "../../../components/GuildsProvider";
+import { useSession } from "../../../components/Session";
+import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { Navigate, useParams } from "react-router-dom";
-import { Panel } from "../components/Panel";
-import { SideNav } from "../components/SideNav";
-import { EditScriptPage } from "./EditScript";
-import { Alert, Box, Button, Paper, Stack, Switch, Typography } from "@mui/material";
-import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../components/FetchData";
-import { BlLink } from "../components/BLLink";
-import { UseNotifications } from "../components/Notifications";
-
-export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
-    let guild = useCurrentGuild();
-    if (guild) {
-        if (guild.connected) {
-            return <>
-                {children}
-            </>
-        } else {
-            return <div className="page-wrapper">
-                <InviteGuildPage guild={guild} />
-            </div>
-        }
-    } else {
-        return <div className="page-wrapper">
-            <NoGuildPage />
-        </div>
-    }
-}
-
-
-function InviteGuildPage(props: { guild: BotGuild }) {
-    return <a href={`https://discord.com/api/oauth2/authorize?client_id=${BuildConfig.botloaderClientId}&permissions=515463572672&scope=bot%20applications.commands&guild_id=${props.guild.guild.id}`} className="add-to-server" target="_blank" rel="noreferrer">Click here to add to server!</a>;
-}
-
-function NoGuildPage() {
-    return <p>That's and unknown guild m8</p>
-}
+import { Panel } from "../../../components/Panel";
+import { SideNav } from "../../../components/SideNav";
+import { EditScriptPage } from "./scripts/[script_id]/edit/EditScript";
+import { Alert, Box, Paper, Stack, Switch, Typography } from "@mui/material";
+import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
+import { BlLink } from "../../../components/BLLink";
+import { UseNotifications } from "../../../components/Notifications";
 
 export function GuildSideNav() {
     const guild = useCurrentGuild();

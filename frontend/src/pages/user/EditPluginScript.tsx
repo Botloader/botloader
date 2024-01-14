@@ -114,7 +114,7 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
 
         debugMessageStore.pushMessage({
             level: "Client",
-            message: "Changes are live on testing guild!"
+            message: "Changes are live are live on testing guild!"
         });
     }
 

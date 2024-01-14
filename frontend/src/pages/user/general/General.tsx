@@ -2,10 +2,10 @@ import { Alert, Button, Card, CardActions, CardContent, Paper, Table, TableBody,
 import { Stack } from "@mui/system";
 import { isErrorResponse, SessionMeta } from "botloader-common";
 import { useEffect, useState } from "react";
-import { AsyncOpButton } from "../../components/AsyncOpButton";
-import { DisplayDateTime } from "../../components/DateTime";
-import { useSession } from "../../components/Session";
-import { sessionManager } from "../../misc/SessionManager";
+import { AsyncOpButton } from "../../../components/AsyncOpButton";
+import { DisplayDateTime } from "../../../components/DateTime";
+import { useSession } from "../../../components/Session";
+import { sessionManager } from "../../../misc/SessionManager";
 
 export function UserGeneralPage() {
     const session = useSession();

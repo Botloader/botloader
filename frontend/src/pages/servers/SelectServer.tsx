@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { BotGuild } from "botloader-common";
-import { GuildsGuard, useGuilds } from "../components/GuildsProvider"
+import { GuildsGuard, useGuilds } from "../../components/GuildsProvider"
 import "./SelectServer.css"
 import { Alert, Button, Container, } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
-import { GuildIcon } from "../components/GuildIcon";
-import { BlLink } from "../components/BLLink";
+import { GuildIcon } from "../../components/GuildIcon";
+import { BlLink } from "../../components/BLLink";
 
 export function SelectServerPage() {
     return <GuildsGuard ><InnerPage /></GuildsGuard>

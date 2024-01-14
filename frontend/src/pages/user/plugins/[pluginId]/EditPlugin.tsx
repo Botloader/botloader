@@ -2,18 +2,18 @@ import { Box, Checkbox, Divider, FormControlLabel, Paper, Stack, TextField } fro
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
-import { DisplayDateTime } from "../../components/DateTime";
-import { useFetchedDataBehindGuard } from "../../components/FetchData";
-import { GuildsGuard } from "../../components/GuildsProvider";
-import { pluginContext } from "../../components/PluginProvider";
-import { useSession } from "../../components/Session";
+import { DisplayDateTime } from "../../../../components/DateTime";
+import { useFetchedDataBehindGuard } from "../../../../components/FetchData";
+import { GuildsGuard } from "../../../../components/GuildsProvider";
+import { pluginContext } from "../../../../components/PluginProvider";
+import { useSession } from "../../../../components/Session";
 import * as React from 'react';
 import Button from '@mui/material/Button';
 import ListItem from '@mui/material/ListItem';
 import Typography from '@mui/material/Typography';
-import { BlLink } from "../../components/BLLink";
-import { UseNotifications } from "../../components/Notifications";
-import { AddPluginToServerButton } from "../../components/AddPluginToServer";
+import { BlLink } from "../../../../components/BLLink";
+import { UseNotifications } from "../../../../components/Notifications";
+import { AddPluginToServerButton } from "../../../../components/AddPluginToServer";
 
 
 export function EditPluginPage() {
