@@ -505,7 +505,7 @@ impl VmSession {
                 self.handle_worker_msg(msg).await;
             }
 
-            self.worker_pool.return_worker(worker, true);
+            self.worker_pool.return_worker(worker, false);
         }
     }
 
