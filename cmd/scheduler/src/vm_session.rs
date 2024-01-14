@@ -101,6 +101,7 @@ impl VmSession {
 
                 self.reset_contribs();
                 self.pending_acks.clear();
+                self.return_worker().await;
 
                 match reason {
                     scheduler_worker_rpc::ShutdownReason::TooManyInvalidRequests => {
@@ -495,6 +496,16 @@ impl VmSession {
             self.worker_pool.return_worker(worker, true);
             self.reset_contribs();
             self.pending_acks.clear();
+        }
+    }
+
+    async fn return_worker(&mut self) {
+        if let Some(mut worker) = self.current_worker.take() {
+            while let Ok(msg) = worker.rx.try_recv() {
+                self.handle_worker_msg(msg).await;
+            }
+
+            self.worker_pool.return_worker(worker, true);
         }
     }
 
