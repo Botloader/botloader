@@ -2,7 +2,6 @@ import React from 'react';
 import './App.css';
 import {
   createBrowserRouter,
-  BrowserRouter as Router,
   RouterProvider,
 } from "react-router-dom";
 import './misc/WebsocketController';
@@ -33,9 +32,6 @@ function App() {
       <Notifications>
         <SideNavStateController>
           <RouterProvider router={router} />
-          {/* <Router >
-                    </Router> */}
-
         </SideNavStateController>
       </Notifications>
     </ThemeProvider>
