@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use deno_core::{v8_set_flags, SourceMapGetter};
+use deno_core::{v8_set_flags, JsRuntime, SourceMapGetter};
 use stores::config::Script;
 use tscompiler::CompiledItem;
 use url::Url;
@@ -219,3 +219,7 @@ deno_core::extension!(bl_core,
     state.put::<Rc<RefCell<ScriptsStateStore>>>(options.options.cloned_load_states);
   },
 );
+
+pub fn init_v8_platform() {
+    JsRuntime::init_platform(None);
+}

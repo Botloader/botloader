@@ -53,6 +53,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let broker_client = dbrokerapi::state_client::Client::new(config.broker_api_addr);
 
+    vm::init_v8_platform();
+
     let worker = Worker::new(
         scheduler_rx,
         scheduler_tx,
