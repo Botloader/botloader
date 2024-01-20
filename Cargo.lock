@@ -6576,7 +6576,6 @@ dependencies = [
  "discordoauthwrapper",
  "futures",
  "guild-logger",
- "http-body 0.4.6",
  "oauth2",
  "serde",
  "serde_json",
