@@ -1,6 +1,5 @@
 import { Alert, Avatar, Box, Chip, Divider, Stack, Typography } from "@mui/material";
 import { Container } from "@mui/system";
-import { ScriptPlugin } from "botloader-common";
 import ReactMarkdown from "react-markdown";
 import { AddPluginToServerButton } from "../../../components/AddPluginToServer";
 import { BlLink } from "../../../components/BLLink";
@@ -11,6 +10,9 @@ import { userAvatarUrl } from "../../../components/Util";
 
 export function ViewPlugin() {
     let { value: plugin } = useFetchedDataBehindGuard(pluginContext);
+    if (!plugin) {
+        throw new Error("plugin value was null")
+    }
 
     return <Container>
         <Typography>Plugin</Typography>
@@ -32,10 +34,12 @@ export function ViewPlugin() {
 
 export function ViewPluginSource() {
     const { value: plugin } = useFetchedDataBehindGuard(pluginContext);
-    const cast = plugin as ScriptPlugin;
+    if (!plugin) {
+        throw new Error("plugin value was null")
+    }
 
     return <ScriptingIde
-        initialSource={cast.data.published_version || undefined}
+        initialSource={plugin.data.published_version || undefined}
         onSave={() => { }}
         files={[]}
         isReadyOnly={true}

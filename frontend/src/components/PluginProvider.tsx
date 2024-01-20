@@ -1,21 +1,24 @@
 import { Plugin } from "botloader-common";
-import { useParams } from "react-router-dom";
-import { createFetchDataContext, FetchDataGuarded } from "./FetchData";
-import { useSession } from "./Session";
+import { createFetchDataContext, FetchData } from "./FetchData";
+import { useSession } from "../modules/session/useSession";
+import { useCallback } from "react";
 
 export const pluginContext = createFetchDataContext<Plugin>();
 
 
-export function PluginProvider({ children }: { children: React.ReactNode }) {
-    const { pluginId } = useParams();
+export function MaybePluginProvider({ pluginId, children }: { pluginId?: number, children: React.ReactNode }) {
     const session = useSession();
 
-    async function fetchPlugin() {
-        let scripts = await session.apiClient.getPlugin(parseInt(pluginId!));
-        return scripts;
-    }
+    const fetchPlugin = useCallback(async () => {
+        if (!pluginId) {
+            throw new Error("No plugin id")
+        }
 
-    return <FetchDataGuarded loader={fetchPlugin} context={pluginContext}>
+        let scripts = await session.apiClient.getPlugin(pluginId!);
+        return scripts;
+    }, [pluginId, session])
+
+    return <FetchData loader={fetchPlugin} context={pluginContext}>
         {children}
-    </FetchDataGuarded>
+    </FetchData>
 }

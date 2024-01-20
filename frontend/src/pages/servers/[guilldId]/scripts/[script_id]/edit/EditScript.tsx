@@ -1,6 +1,5 @@
 import { BotGuild, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
 import { useRef, useState } from "react";
-import { useSession } from "../../../../../../components/Session";
 import "./EditScript.css";
 import { AsyncOpButton } from "../../../../../../components/AsyncOpButton";
 import { debugMessageStore } from "../../../../../../misc/DebugMessages";
@@ -9,6 +8,7 @@ import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } f
 import { Box, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { ScriptingIde } from "../../../../../../components/ScriptIde";
 import { BlLink } from "../../../../../../components/BLLink";
+import { useSession } from "../../../../../../modules/session/useSession";
 
 export const scriptsContext = createFetchDataContext<ScriptsWithPlugins>();
 

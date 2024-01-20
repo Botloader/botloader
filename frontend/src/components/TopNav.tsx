@@ -1,10 +1,8 @@
 import { Link } from "react-router-dom";
 import { BuildConfig } from "../BuildConfig";
-import { useCurrentGuild } from "./GuildsProvider";
-import { useSession } from "./Session";
 import { userAvatarUrl } from "./Util";
 import { GuildIcon } from "./GuildIcon";
-import { AppBar } from "@mui/material";
+import { AppBar, Paper } from "@mui/material";
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -18,6 +16,9 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import { UseSideNavController } from "./SideNavManager";
 import { BlLink } from "./BLLink";
+import { Breadcrumbs } from "./BreadCrumbs";
+import { useSession } from "../modules/session/useSession";
+import { useCurrentGuild } from "../modules/guilds/CurrentGuild";
 
 export const TopBarNavPages = [{
     label: "Docs",
@@ -67,7 +68,7 @@ export function TopNav() {
 
     const drawerWidth = sideNavController.pageHasSideNav ? 250 : 0;
 
-    return (
+    return (<>
         <AppBar position="static"
             sx={{
                 width: { md: `calc(100% - ${drawerWidth}px)` },
@@ -192,5 +193,13 @@ export function TopNav() {
                 </Toolbar>
             </Container>
         </AppBar >
+        <Paper sx={{
+            padding: 1,
+            width: { md: `calc(100% - ${drawerWidth}px)` },
+            ml: { md: `${drawerWidth}px` },
+        }}>
+            <Breadcrumbs />
+        </Paper>
+    </>
     );
 }

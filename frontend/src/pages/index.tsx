@@ -1,4 +1,4 @@
-import { Outlet, RouteObject } from "react-router-dom"
+import { Outlet, useParams } from "react-router-dom"
 import { routes as serverRoutes } from "./servers"
 import { routes as pluginRoutes } from "./plugins"
 import { routes as userRoutes } from "./user"
@@ -9,10 +9,15 @@ import { TopNav } from "../components/TopNav"
 import { LandingPage } from "./Landing"
 import { NewsPage } from "./NewsPage"
 import { SamplesPage } from "./SamplesPage"
-import { SessionProvider } from "../components/Session"
-import { GuildsProvider } from "../components/GuildsProvider"
+import { GuildsProvider } from "../modules/guilds/GuildsProvider"
+import { BotloaderWebsocketProvider } from "../modules/websocket/WebsocketContext"
+import { SessionProvider } from "../modules/session/SessionContext"
+import { CurrentGuildProvider } from "../modules/guilds/CurrentGuild"
+import { GuildScriptsProvider } from "../modules/guilds/GuildScriptsProvider"
+import { OurRouteObject } from "../misc/ourRoute"
+import { MaybePluginProvider } from "../components/PluginProvider"
 
-export const routes: RouteObject[] = [
+export const routes: OurRouteObject[] = [
     {
         path: "/tos",
         element: <TosPage />,
@@ -26,29 +31,31 @@ export const routes: RouteObject[] = [
         children: [
             {
                 index: true,
+                handle: {
+                    breadCrumb: () => "Home"
+                },
                 element: <>
-                    <TopNav />
                     <LandingPage />
                 </>
             },
             {
                 path: "news",
+                handle: {
+                    breadCrumb: () => "News"
+                },
                 element: <>
-                    <TopNav />
                     <NewsPage />
                 </>,
             },
             {
                 path: "samples",
                 element: <>
-                    <TopNav />
                     <SamplesPage />
                 </>
             },
             {
                 path: "premium",
                 element: <>
-                    <TopNav />
                     TODO
                 </>
             },
@@ -62,6 +69,9 @@ export const routes: RouteObject[] = [
             },
             {
                 path: "/plugins",
+                handle: {
+                    breadCrumb: () => "Plugins"
+                },
                 children: pluginRoutes
             },
             {
@@ -73,9 +83,20 @@ export const routes: RouteObject[] = [
 ]
 
 function MainRoutesElement() {
+    let params = useParams();
+
     return <SessionProvider>
         <GuildsProvider>
-            <Outlet></Outlet>
+            <CurrentGuildProvider guildId={params.guildId}>
+                <BotloaderWebsocketProvider>
+                    <GuildScriptsProvider guildId={params.guildId}>
+                        <MaybePluginProvider pluginId={params.pluginId ? parseInt(params.pluginId) : undefined}>
+                            <TopNav />
+                            <Outlet></Outlet>
+                        </MaybePluginProvider>
+                    </GuildScriptsProvider>
+                </BotloaderWebsocketProvider>
+            </CurrentGuildProvider>
         </GuildsProvider>
     </SessionProvider>
 }

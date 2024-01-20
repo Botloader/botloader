@@ -1,16 +1,25 @@
-import { Outlet, RouteObject } from "react-router-dom";
-import { PluginProvider } from "../../../components/PluginProvider";
-import { TopNav } from "../../../components/TopNav";
+import { Outlet } from "react-router-dom";
+import { pluginContext } from "../../../components/PluginProvider";
 import { ViewPlugin, ViewPluginSource } from "./ViewPlugin";
+import { FetchDataGuard } from "../../../components/FetchData";
+import { OurRouteObject } from "../../../misc/ourRoute";
 
-export const routes: RouteObject[] = [
+export const routes: OurRouteObject[] = [
     {
         element: <>
-            <TopNav />
-            <PluginProvider>
+            <FetchDataGuard context={pluginContext}>
                 <Outlet />
-            </PluginProvider>
+            </FetchDataGuard>
         </>,
+        handle: {
+            breadCrumb: ({ pluginId }, { currentPlugin }) => {
+                if (currentPlugin?.id + "" === pluginId) {
+                    return currentPlugin?.name ?? ""
+                }
+
+                return pluginId ?? "unknown plugin"
+            }
+        },
         children: [
             {
                 index: true,

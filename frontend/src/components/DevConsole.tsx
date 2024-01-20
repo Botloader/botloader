@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { DebugMessage, debugMessageStore } from "../misc/DebugMessages";
-import { WebsocketSession } from "../misc/WebsocketController";
 import "./DevConsole.css";
+import { useBotloaderWebsocket } from "../modules/websocket/useBotloaderWebsocket";
 
 export function DevConsole({ guildId }: { guildId?: string }) {
     const [messages, setMessages] = useState<DebugMessage[]>([])
     const bottom = useRef<HTMLLIElement>(null);
-
+    const ws = useBotloaderWebsocket()
 
     useEffect(() => {
         if (guildId) {
             setMessages(debugMessageStore.getGuildMessages(guildId));
-            WebsocketSession.subscribeGuild(guildId);
+            ws.subscribeGuild(guildId);
         }
-    }, [guildId])
+    }, [ws, guildId])
 
     useEffect(() => {
         const key = guildId ?? "global";

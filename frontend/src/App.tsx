@@ -4,7 +4,7 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
-import './misc/WebsocketController';
+import './modules/websocket/WebsocketController';
 import { routes } from './pages';
 
 import '@fontsource/roboto/300.css';

@@ -4,6 +4,9 @@ import { UserPremiumPage } from "./Premium";
 export const routes: RouteObject[] = [
     {
         index: true,
+        handle: {
+            breadCrumb: () => <>Premium</>
+        },
         element: <UserPremiumPage />
     }
 ]

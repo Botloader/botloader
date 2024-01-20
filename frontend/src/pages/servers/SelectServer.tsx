@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { BotGuild } from "botloader-common";
-import { GuildsGuard, useGuilds } from "../../components/GuildsProvider"
+import { GuildsGuard, useGuilds } from "../../modules/guilds/GuildsProvider"
 import "./SelectServer.css"
 import { Alert, Button, Container, } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";

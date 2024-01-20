@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BlLink } from "../../../components/BLLink";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
-import { useSession } from "../../../components/Session";
+import { useSession } from "../../../modules/session/useSession";
 
 let scriptsContext = createFetchDataContext<ScriptPlugin[]>();
 

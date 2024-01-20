@@ -1,11 +1,14 @@
-import { RouteObject } from "react-router-dom";
 import { GuildHome, GuildSideNav } from "./GuildPage";
 import { Box } from "@mui/material";
 import { routes as editScriptRoutes } from "./scripts/[script_id]/edit";
+import { OurRouteObject } from "../../../misc/ourRoute";
 
-export const routes: RouteObject[] = [
+export const routes: OurRouteObject[] = [
     {
         index: true,
+        // handle: {
+        //     breadCrumb: () => "Home"
+        // },
         element: <>
             <Box sx={{ display: 'flex' }}>
 

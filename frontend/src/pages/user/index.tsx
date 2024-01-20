@@ -2,14 +2,17 @@ import { Outlet, RouteObject } from "react-router-dom";
 import { routes as generalRoutes } from "./general";
 import { routes as pluginRoutes } from "./plugins";
 import { routes as premiumRoutes } from "./premium";
-import { RequireLoggedInSession } from "../../components/Session";
-import { TopNav } from "../../components/TopNav";
 import { Box } from "@mui/material";
 import { SideNav } from "../../components/SideNav";
+import { RequireLoggedInSession } from "../../modules/session/RequireLoggedInSession";
 
 export const routes: RouteObject[] = [
     {
         element: <UserPages />,
+        handle: {
+            breadCrumb: () => <>User</>,
+            breadCrumbCosmeticOnly: true,
+        },
         children: [
             {
                 path: "general",
@@ -54,7 +57,6 @@ export function UserSideNav() {
 function UserPages() {
     return <>
         <RequireLoggedInSession>
-            <TopNav />
             <Box sx={{ display: 'flex', flexGrow: 1 }}>
                 <UserSideNav />
                 <Box

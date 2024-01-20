@@ -1,40 +1,52 @@
-import { Outlet, RouteObject, useParams } from "react-router-dom";
-import { TopNav } from "../../components/TopNav";
+import { Outlet } from "react-router-dom";
 import { SelectServerPage } from "./SelectServer";
-import { routes as serverIdRoutes } from "./[id]";
-import { RequireLoggedInSession } from "../../components/Session";
-import { CurrentGuildProvider, useCurrentGuild } from "../../components/GuildsProvider";
+import { routes as serverIdRoutes } from "./[guilldId]";
 import { BotGuild } from "botloader-common";
 import { BuildConfig } from "../../BuildConfig";
+import { OurRouteObject } from "../../misc/ourRoute";
+import { RequireLoggedInSession } from "../../modules/session/RequireLoggedInSession";
+import { useCurrentGuild } from "../../modules/guilds/CurrentGuild";
 
-export const routes: RouteObject[] = [
+export const routes: OurRouteObject[] = [
     {
-        index: true,
-        element: <>
-            <TopNav />
-            <SelectServerPage />
-        </>
-    },
-    {
-        path: ":guildId",
-        children: serverIdRoutes,
-        element: <>
-            <RequireLoggedInSession>
-                <GuildPages />
-            </RequireLoggedInSession>
-        </>,
+        handle: {
+            breadCrumb: () => "Servers"
+        },
+        children: [
+            {
+                index: true,
+                element: <>
+                    <SelectServerPage />
+                </>
+            },
+            {
+                path: ":guildId",
+                children: serverIdRoutes,
+                handle: {
+                    breadCrumb: ({ guildId }, { userGuilds }) => {
+                        let guild = userGuilds?.find(v => v.guild.id === guildId)
+                        if (guild) {
+                            return guild.guild.name
+                        } else {
+                            return guildId ?? ""
+                        }
+                    }
+                },
+                element: <>
+                    <RequireLoggedInSession>
+                        <GuildPages />
+                    </RequireLoggedInSession>
+                </>,
+            }]
     }
 ]
 
 function GuildPages() {
-    let { guildId } = useParams();
-
-    return <CurrentGuildProvider guildId={guildId}>
-        <TopNav />
+    return <>
         <GuildPagesWrapper>
             <Outlet />
         </GuildPagesWrapper>
-    </CurrentGuildProvider>
+    </>
 }
 
 

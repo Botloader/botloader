@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { User } from "botloader-common";
-import { BuildConfig } from "../BuildConfig";
-import { debugMessageStore } from "./DebugMessages";
-import { sessionManager } from "./SessionManager";
+import { BuildConfig } from "../../BuildConfig";
 
 export class BotloaderWS {
     ws?: WebSocket;
@@ -14,8 +12,8 @@ export class BotloaderWS {
     subQueue: string[] = [];
     activeSubs: string[] = [];
 
-    constructor(baseUrl: string, onLogMessage: (msg: LogItem) => void, token?: string) {
-        this.token = token;
+    constructor(baseUrl: string, onLogMessage: (msg: LogItem) => void, token: string | null) {
+        this.token = token ?? undefined;
         this.baseUrl = baseUrl;
         this.onLogMessage = onLogMessage;
         if (token) {
@@ -23,17 +21,17 @@ export class BotloaderWS {
         }
     }
 
-    setToken(token?: string) {
-        this.logToOutput("updated token", "Client");
-        this.token = token;
-        if (this.ws) {
-            this.ws.onclose = () => { };
-            this.ws.close();
-        }
-        if (token) {
-            this.open();
-        }
-    }
+    // setToken(token?: string) {
+    //     this.logToOutput("updated token", "Client");
+    //     this.token = token;
+    //     if (this.ws) {
+    //         this.ws.onclose = () => { };
+    //         this.ws.close();
+    //     }
+    //     if (token) {
+    //         this.open();
+    //     }
+    // }
 
     open() {
         let url = this.baseUrl + "/api/ws";
@@ -122,9 +120,13 @@ export class BotloaderWS {
             message: msg,
         });
     }
+
+    close() {
+        this.ws?.close()
+    }
 }
 
-type WsEventType = "AuthSuccess" | "SubscriptionsUpdated" | "ScriptLogMessage";
+// type WsEventType = "AuthSuccess" | "SubscriptionsUpdated" | "ScriptLogMessage";
 
 type WsEvent = WsEventAuthorized | WsEventSubscriptionsUpdated | WsEventScriptLogMessage;
 
@@ -144,7 +146,7 @@ interface WsEventScriptLogMessage {
     d: LogItem,
 }
 
-type WsCommandType = "Authorize" | "SubscribeLogs" | "UnSubscribeLogs";
+// type WsCommandType = "Authorize" | "SubscribeLogs" | "UnSubscribeLogs";
 
 type WsCommand = WsCommandAuthorize | WsCommandSubscribe | WsCommandSubscribe;
 
@@ -158,10 +160,10 @@ interface WsCommandSubscribe {
     d: string,
 }
 
-interface WsCommandUnSubscribe {
-    t: "UnSubscribeLogs"
-    d: string,
-}
+// interface WsCommandUnSubscribe {
+//     t: "UnSubscribeLogs"
+//     d: string,
+// }
 
 export interface LogItem {
     guild_id?: string,
@@ -181,39 +183,10 @@ export interface ScriptContext {
     line_col?: [number, number],
 }
 
-function getWsUrl() {
+export function getWsUrl() {
     if (BuildConfig.botloaderApiBase.startsWith("https")) {
         return BuildConfig.botloaderApiBase.replace("https", "wss")
     } else {
         return BuildConfig.botloaderApiBase.replace("http", "ws")
     }
 }
-
-export const WebsocketSession = new BotloaderWS(getWsUrl(), (item) => {
-    let context = "";
-    if (item.script_context) {
-        context += ` ${item.script_context.filename}`;
-        if (item.script_context.line_col) {
-            const [line, col] = item.script_context.line_col;
-            context += `:${line}:${col}`;
-        }
-    }
-
-    console.log(`[WS]:[${item.level} ${context}] ${item.message}`)
-    debugMessageStore.pushMessage({
-        guildId: item.guild_id,
-        level: item.level,
-        context: context,
-        message: item.message,
-    })
-});
-
-(() => {
-    sessionManager.subscribe((evt) => {
-        WebsocketSession.setToken(evt.apiClient.token);
-    })
-
-    if (sessionManager.session.apiClient.token) {
-        WebsocketSession.setToken(sessionManager.session.apiClient.token);
-    }
-})()

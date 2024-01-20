@@ -1,15 +1,15 @@
 import { Box, Button, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { BotGuild, ErrorCode, isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
-import { BlLink } from "../../components/BLLink";
-import { DevConsole } from "../../components/DevConsole";
-import { useFetchedDataBehindGuard } from "../../components/FetchData";
-import { GuildSelectionDialog } from "../../components/GuildSelectionDialog";
-import { useGuilds } from "../../components/GuildsProvider";
-import { pluginContext } from "../../components/PluginProvider";
-import { ScriptingIde } from "../../components/ScriptIde";
-import { useSession } from "../../components/Session";
-import { debugMessageStore } from "../../misc/DebugMessages";
+import { BlLink } from "../../../../components/BLLink";
+import { DevConsole } from "../../../../components/DevConsole";
+import { useFetchedDataBehindGuard } from "../../../../components/FetchData";
+import { GuildSelectionDialog } from "../../../../components/GuildSelectionDialog";
+import { useGuilds } from "../../../../modules/guilds/GuildsProvider";
+import { pluginContext } from "../../../../components/PluginProvider";
+import { ScriptingIde } from "../../../../components/ScriptIde";
+import { debugMessageStore } from "../../../../misc/DebugMessages";
+import { useSession } from "../../../../modules/session/useSession";
 
 export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) {
     const session = useSession();

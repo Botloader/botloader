@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
-import { useCurrentGuild } from "../../../components/GuildsProvider";
-import { useSession } from "../../../components/Session";
+import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, Script } from "botloader-common";
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { Navigate, useParams } from "react-router-dom";
 import { Panel } from "../../../components/Panel";
 import { SideNav } from "../../../components/SideNav";
 import { EditScriptPage } from "./scripts/[script_id]/edit/EditScript";
 import { Alert, Box, Paper, Stack, Switch, Typography } from "@mui/material";
-import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
+import { FetchDataGuard } from "../../../components/FetchData";
 import { BlLink } from "../../../components/BLLink";
 import { UseNotifications } from "../../../components/Notifications";
+import { useSession } from "../../../modules/session/useSession";
+import { useCurrentGuild } from "../../../modules/guilds/CurrentGuild";
+import { guildScriptsContext, useCurrentGuildScripts } from "../../../modules/guilds/GuildScriptsProvider";
 
 export function GuildSideNav() {
     const guild = useCurrentGuild();
@@ -20,7 +21,7 @@ export function GuildSideNav() {
             label: "Home",
             isNavLink: true,
             exact: true,
-            path: `/servers/${guild?.guild.id}/`,
+            path: `/servers/${guild?.guild.id}`,
         },
         // "scripts": {
         //     label: "Scripts",
@@ -48,18 +49,13 @@ export function EditGuildScript() {
     return <EditScriptPage guild={guild} scriptId={parseInt(scriptId!)}></EditScriptPage>
 }
 
-const scriptsContext = createFetchDataContext<ScriptsWithPlugins>();
-
 export function GuildHome() {
     const guild = useCurrentGuild()!;
-    const session = useSession();
 
     return <Stack spacing={2}>
         <Alert severity="warning">This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</Alert>
         <PremiumPanel guild={guild}></PremiumPanel>
-        <FetchDataGuarded context={scriptsContext} loader={async () => {
-            return await session.apiClient.getAllScriptsWithPlugins(guild.guild.id);
-        }}><GuildScripts guild={guild}></GuildScripts></FetchDataGuarded>
+        <FetchDataGuard context={guildScriptsContext}><GuildScripts guild={guild}></GuildScripts></FetchDataGuard>
     </Stack>
 }
 
@@ -127,46 +123,21 @@ function InnerGuildSettings(props: { guild: BotGuild, settings: GuildMetaConfig 
 }
 
 function GuildScripts(props: { guild: BotGuild }) {
-    const session = useSession();
     const createScriptInput = useRef<HTMLInputElement>(null);
     const [createError, setCreateError] = useState("");
     const [scriptCreated, setScriptCreated] = useState<Script | null>(null)
 
-    const { value: scripts, reload } = useFetchedDataBehindGuard(scriptsContext);
-    const pluginScripts = scripts.scripts.filter((v) => v.plugin_id !== null)
-    const normalScripts = scripts.scripts.filter((v) => v.plugin_id === null)
+    const { value: scripts, toggleScript, createScript, delScript } = useCurrentGuildScripts();
+    const pluginScripts = scripts!.scripts.filter((v) => v.plugin_id !== null)
+    const normalScripts = scripts!.scripts.filter((v) => v.plugin_id === null)
 
-    async function delScript(scriptId: number) {
-        let resp = await session.apiClient.delScript(props.guild.guild.id, scriptId);
-        if (!isErrorResponse(resp)) {
-            reload();
-        }
 
-        await session.apiClient.reloadGuildVm(props.guild.guild.id);
-    }
-
-    async function toggleScript(scriptId: number, enabled: boolean) {
-        let resp = await session.apiClient.updateScript(props.guild.guild.id, scriptId, {
-            enabled,
-        });
-        if (!isErrorResponse(resp)) {
-            await session.apiClient.reloadGuildVm(props.guild.guild.id);
-            reload();
-        }
-    }
-
-    async function createScript() {
+    async function submitCreateScript() {
         setCreateError("");
 
         let name = createScriptInput.current?.value;
         if (name && name.length > 0) {
-            console.log("Creating script, value:", createScriptInput.current?.value);
-            let resp = await session.apiClient.createScript(props.guild.guild.id, {
-                enabled: false,
-                name: name,
-                original_source: "",
-            })
-
+            let resp = await createScript(name)
             if (isErrorResponse(resp)) {
                 setCreateError(JSON.stringify(resp))
             } else {
@@ -180,7 +151,7 @@ function GuildScripts(props: { guild: BotGuild }) {
         <Paper sx={{ p: 1 }}>
             <div className="create-script">
                 <input type="text" ref={createScriptInput}></input>
-                <AsyncOpButton label="Create" onClick={createScript}></AsyncOpButton>
+                <AsyncOpButton label="Create" onClick={submitCreateScript}></AsyncOpButton>
             </div>
             {createError ? <p>Error creating script: <code>{createError}</code></p> : null}
             {scriptCreated ? <Navigate to={`/servers/${props.guild.guild.id}/scripts/${scriptCreated.id}/edit`}></Navigate> : null}
@@ -201,7 +172,7 @@ function GuildScripts(props: { guild: BotGuild }) {
             <Stack spacing={1}>
                 {pluginScripts.map(script => <ScriptItem key={script.id}
                     script={script}
-                    plugin={scripts.plugins.find((p) => p.id === script.plugin_id)}
+                    plugin={scripts!.plugins.find((p) => p.id === script.plugin_id)}
                     guildId={props.guild.guild.id}
                     toggleScript={toggleScript}
                     deleteScript={delScript} />)}
@@ -220,8 +191,7 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
     const [isToggling, setToggling] = useState(false);
     const session = useSession();
     const notifications = UseNotifications();
-    const { reload } = useFetchedDataBehindGuard(scriptsContext);
-
+    const { reload } = useCurrentGuildScripts();
 
     async function toggleWrapper(on: boolean) {
         setToggling(true);

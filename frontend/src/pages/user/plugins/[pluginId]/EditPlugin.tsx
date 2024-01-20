@@ -4,9 +4,8 @@ import { isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
 import { DisplayDateTime } from "../../../../components/DateTime";
 import { useFetchedDataBehindGuard } from "../../../../components/FetchData";
-import { GuildsGuard } from "../../../../components/GuildsProvider";
+import { GuildsGuard } from "../../../../modules/guilds/GuildsProvider";
 import { pluginContext } from "../../../../components/PluginProvider";
-import { useSession } from "../../../../components/Session";
 import * as React from 'react';
 import Button from '@mui/material/Button';
 import ListItem from '@mui/material/ListItem';
@@ -14,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import { BlLink } from "../../../../components/BLLink";
 import { UseNotifications } from "../../../../components/Notifications";
 import { AddPluginToServerButton } from "../../../../components/AddPluginToServer";
+import { useSession } from "../../../../modules/session/useSession";
 
 
 export function EditPluginPage() {

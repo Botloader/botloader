@@ -4,8 +4,7 @@ import { isErrorResponse, SessionMeta } from "botloader-common";
 import { useEffect, useState } from "react";
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { DisplayDateTime } from "../../../components/DateTime";
-import { useSession } from "../../../components/Session";
-import { sessionManager } from "../../../misc/SessionManager";
+import { useSession } from "../../../modules/session/useSession";
 
 export function UserGeneralPage() {
     const session = useSession();
@@ -26,7 +25,7 @@ export function UserGeneralPage() {
 
 
     async function doLogout() {
-        await sessionManager.logout();
+        await session.logOut();
     }
 
     return <Stack spacing={1}>
@@ -96,8 +95,10 @@ function CreateApiKeyComponent(props: CreateApiTokenProps) {
 }
 
 function Sessions({ sessions }: { sessions: SessionMeta[] }) {
+    const session = useSession();
+
     async function clearAllSessions() {
-        await sessionManager.logoutAllSessions();
+        await session.logOutAllUserSessions();
     }
 
     return <Card>

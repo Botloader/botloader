@@ -1,7 +1,6 @@
-import { createContext, useContext } from "react";
 import { ApiResult, BotGuild, isErrorResponse, UserGuild } from "botloader-common";
-import { useSession } from "./Session";
-import { createFetchDataContext, FetchData, FetchDataGuard, useFetchedData } from "./FetchData";
+import { createFetchDataContext, FetchData, FetchDataGuard, useFetchedData } from "../../components/FetchData";
+import { useSession } from "../session/useSession";
 
 export const GuildsContext = createFetchDataContext<LoadedGuilds>();
 
@@ -39,28 +38,10 @@ export function useGuilds() {
     return useFetchedData(GuildsContext).value
 }
 
-export const CurrentGuildContext = createContext<BotGuild | undefined>(undefined);
-
-export function CurrentGuildProvider(props: { guildId?: string, children: React.ReactNode }) {
-    let guilds = useGuilds();
-
-    let current = undefined;
-    if (guilds && props.guildId) {
-        current = guilds.all.find(g => g.guild.id === props.guildId);
-    }
-
-    return <CurrentGuildContext.Provider value={current}>{props.children}</CurrentGuildContext.Provider>
-}
-
-export function useCurrentGuild() {
-    return useContext(CurrentGuildContext);
-}
-
 interface LoadedGuilds {
     all: BotGuild[],
     hasAdmin: BotGuild[],
 }
-
 
 const permAdmin = BigInt("0x0000000008");
 const permManageServer = BigInt("0x0000000020");

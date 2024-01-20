@@ -2,8 +2,7 @@ import { Alert, Button, ButtonProps } from "@mui/material";
 import { isErrorResponse, PremiumSlot } from "botloader-common";
 import { useRef } from "react";
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
-import { GuildsGuard, useGuilds } from "../../../components/GuildsProvider";
-import { useSession } from "../../../components/Session";
+import { GuildsGuard, useGuilds } from "../../../modules/guilds/GuildsProvider";
 import * as React from 'react';
 import { styled } from '@mui/material/styles';
 import Card from '@mui/material/Card';
@@ -16,6 +15,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box } from "@mui/system";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
 import { UseNotifications } from "../../../components/Notifications";
+import { useSession } from "../../../modules/session/useSession";
 
 let slotsContext = createFetchDataContext<PremiumSlot[]>();
 
