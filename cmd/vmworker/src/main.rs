@@ -302,6 +302,9 @@ impl Worker {
 
         if let Some(current) = &self.current_state {
             // we were already running a vm for this guild, issue a restart command with the new scripts instead
+            // TODO: there is a possibility of a race condition here
+            // we could receive a "completed" event here we handle after this and since we send a ack back
+            // stuff could go wrong...
             let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
             self.write_message(WorkerMessage::Ack(req.seq)).await?;
             return Ok(ContinueState::Continue);
