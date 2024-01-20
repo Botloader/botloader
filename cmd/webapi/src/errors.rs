@@ -1,7 +1,7 @@
 use axum::{
-    body::{self, BoxBody},
-    http::{header, Response, StatusCode},
-    response::IntoResponse,
+    body::Body,
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
 };
 use serde_json::json;
 use validation::ValidationError;
@@ -65,7 +65,7 @@ impl ApiErrorResponse {
 }
 
 impl IntoResponse for ApiErrorResponse {
-    fn into_response(self) -> Response<BoxBody> {
+    fn into_response(self) -> Response {
         let (resp_code, err_code, extra) = self.public_desc();
 
         let body = json!({
@@ -78,7 +78,7 @@ impl IntoResponse for ApiErrorResponse {
         Response::builder()
             .status(resp_code)
             .header(header::CONTENT_TYPE, "application/json")
-            .body(body::boxed(body::Full::from(body)))
+            .body(Body::from(body))
             .unwrap()
     }
 }

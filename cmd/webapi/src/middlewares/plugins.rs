@@ -1,4 +1,5 @@
-use axum::{extract::Path, http::Request, middleware::Next, RequestPartsExt};
+use axum::{extract::Path, RequestPartsExt};
+use axum::{extract::Request, middleware::Next, response::Response};
 
 use common::plugin::Plugin;
 use tracing::error;
@@ -14,13 +15,7 @@ struct PluginPath {
     plugin_id: u64,
 }
 
-pub async fn plugin_middleware<B>(
-    request: Request<B>,
-    next: Next<B>,
-) -> Result<axum::response::Response, ApiErrorResponse>
-where
-    B: Send,
-{
+pub async fn plugin_middleware(request: Request, next: Next) -> Result<Response, ApiErrorResponse> {
     // running extractors requires a `axum::http::request::Parts`
     let (mut parts, body) = request.into_parts();
 

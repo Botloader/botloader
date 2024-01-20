@@ -115,7 +115,7 @@ async fn main() {
         // })
         // .layer_fn(f)
         .layer(axum::middleware::from_fn(
-            current_guild_injector_middleware::<_, CurrentSessionStore>,
+            current_guild_injector_middleware::<CurrentSessionStore>,
         ))
         .layer(axum::middleware::from_fn(
             require_current_guild_admin_middleware,
@@ -243,18 +243,14 @@ async fn main() {
 
     let app = public_routes
         .merge(authorized_routes)
-        .layer(common_middleware_stack.clone());
+        .layer(common_middleware_stack);
 
-    let make_service = app.into_make_service();
-
-    // run it with hyper on configured address
     info!("Starting hype on address: {}", conf.listen_addr);
-    let addr = conf.listen_addr.parse().unwrap();
-    axum::Server::bind(&addr)
-        .serve(make_service)
-        .with_graceful_shutdown(common::shutdown::wait_shutdown_signal())
+
+    let listener = tokio::net::TcpListener::bind(conf.listen_addr)
         .await
         .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 #[allow(dead_code)]
@@ -262,7 +258,7 @@ async fn todo_route() -> &'static str {
     "todo"
 }
 
-async fn handle_mw_err_internal_err(err: BoxError) -> impl IntoResponse {
+async fn handle_mw_err_internal_err(err: BoxError) -> ApiErrorResponse {
     error!("internal error occured: {}", err);
 
     ApiErrorResponse::InternalError

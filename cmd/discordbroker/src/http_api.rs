@@ -41,16 +41,15 @@ pub async fn run_http_server(
             name: "bl.broker.http_api_hits_total",
         });
 
-    let make_service = app.into_make_service();
+    // let make_service = app.into_make_service();
 
     // run it with hyper on configured address
     info!("Starting hype on address: {}", conf.http_api_listen_addr);
-    let addr = conf.http_api_listen_addr.parse().unwrap();
-    axum::Server::bind(&addr)
-        .serve(make_service)
-        .with_graceful_shutdown(common::shutdown::wait_shutdown_signal())
+
+    let listener = tokio::net::TcpListener::bind(conf.http_api_listen_addr)
         .await
         .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn handle_get_guild(

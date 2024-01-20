@@ -23,7 +23,7 @@ async-trait = { workspace = true }
 futures = "0.3"
 chrono = { workspace = true }
 tokio = { workspace = true }
-tower-http = { version = "0.2.0", features = ["trace", "set-header"] }
+tower-http = { version = "0.5.1", features = ["trace", "set-header"] }
 tower = "0.4"
 axum = { workspace = true }
 http-body = "0.4"
