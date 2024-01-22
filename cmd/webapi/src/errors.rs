@@ -40,6 +40,9 @@ pub enum ApiErrorResponse {
 
     #[error("Script is not a plugin")]
     ScriptNotAPlugin,
+
+    #[error("You're not an botloader admin")]
+    NotBlAdmin,
 }
 
 impl ApiErrorResponse {
@@ -60,6 +63,7 @@ impl ApiErrorResponse {
             Self::PluginNotFound => (StatusCode::BAD_REQUEST, 9, None),
             Self::GuildAlreadyHasPlugin => (StatusCode::BAD_REQUEST, 10, None),
             Self::ScriptNotAPlugin => (StatusCode::BAD_REQUEST, 11, None),
+            Self::NotBlAdmin => (StatusCode::FORBIDDEN, 12, None),
         }
     }
 }

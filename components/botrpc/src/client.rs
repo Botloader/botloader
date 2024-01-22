@@ -49,4 +49,29 @@ impl Client {
 
         Ok(stream.map(|item| item.map(Into::into)))
     }
+
+    pub async fn get_vm_worker_statuses(
+        &self,
+    ) -> Result<Vec<proto::VmWorkerStatus>, tonic::Status> {
+        let mut conn = self.get_conn();
+
+        let result = conn.vm_worker_status(proto::Empty {}).await?;
+
+        Ok(result.into_inner().workers)
+    }
+
+    pub async fn get_guild_status(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> Result<proto::GuildStatusResponse, tonic::Status> {
+        let mut conn = self.get_conn();
+
+        let result = conn
+            .guild_status(proto::GuildSpecifier {
+                guild_id: guild_id.get(),
+            })
+            .await?;
+
+        Ok(result.into_inner())
+    }
 }

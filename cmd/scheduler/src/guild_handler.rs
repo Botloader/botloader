@@ -3,14 +3,14 @@ use std::sync::{Arc, RwLock};
 use crate::{
     command_manager,
     scheduler::Store,
-    vm_session::{VmSession, VmSessionEvent},
+    vm_session::{VmSession, VmSessionEvent, VmSessionStatus},
 };
 use chrono::{DateTime, Utc};
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::LogSender;
 use stores::config::PremiumSlotTier;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument};
 use twilight_model::{
     gateway::event::DispatchEvent,
@@ -19,6 +19,7 @@ use twilight_model::{
 
 pub enum GuildCommand {
     BrokerEvent(GuildEvent),
+    Status(oneshot::Sender<Option<GuildStatus>>),
     ReloadScripts,
     PurgeCache,
     Shutdown,
@@ -188,6 +189,11 @@ impl GuildHandler {
                 panic!("shutdown should be handled by caller")
             }
             GuildCommand::PurgeCache => {}
+            GuildCommand::Status(resp) => {
+                let _ = resp.send(Some(GuildStatus {
+                    vm: self.scripts_session.get_status(),
+                }));
+            }
         }
     }
 
@@ -256,6 +262,7 @@ impl NextGuildAction {
                 GuildCommand::ReloadScripts => "GuildCommand(ReloadScripts)".to_owned(),
                 GuildCommand::PurgeCache => "GuildCommand(PurgeCache)".to_owned(),
                 GuildCommand::Shutdown => "GuildCommand(Shutdown)".to_owned(),
+                GuildCommand::Status(_) => "GuildCommand(Status)".to_owned(),
             },
         }
     }
@@ -271,4 +278,8 @@ pub enum NextTimerAction {
     None,
     Wait(DateTime<Utc>),
     Run,
+}
+
+pub struct GuildStatus {
+    pub vm: VmSessionStatus,
 }

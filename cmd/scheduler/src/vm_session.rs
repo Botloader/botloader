@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use crate::{
@@ -44,6 +44,10 @@ pub struct VmSession {
     force_load_scripts_next: bool,
     scripts: Vec<Script>,
     id_gen: u64,
+
+    last_claimed_worker_id: Option<u64>,
+    last_claimed_worker_at: Instant,
+    last_returned_worker_at: Instant,
 }
 
 impl VmSession {
@@ -78,6 +82,10 @@ impl VmSession {
             interval_timers_man: interval_timer_man,
             cmd_manager_handle,
             scheduled_tasks_man: tasks_man,
+
+            last_claimed_worker_id: None,
+            last_claimed_worker_at: Instant::now(),
+            last_returned_worker_at: Instant::now(),
         }
     }
 
@@ -91,6 +99,16 @@ impl VmSession {
         self.load_contribs().await;
     }
 
+    pub fn get_status(&self) -> VmSessionStatus {
+        VmSessionStatus {
+            current_claimed_worker: self.current_worker.as_ref().map(|v| v.worker_id),
+            claimed_worker_at: self.last_claimed_worker_at,
+            returned_worker_at: self.last_returned_worker_at,
+            last_claimed_worker: self.last_claimed_worker_id,
+            num_pending_acks: self.pending_acks.len(),
+        }
+    }
+
     #[instrument(skip(self, action), fields(guild_id = self.guild_id.get()))]
     pub async fn handle_action(&mut self, action: NextAction) -> Option<VmSessionEvent> {
         match action {
@@ -101,7 +119,6 @@ impl VmSession {
 
                 self.reset_contribs();
                 self.pending_acks.clear();
-                self.return_worker().await;
 
                 match reason {
                     scheduler_worker_rpc::ShutdownReason::TooManyInvalidRequests => {
@@ -304,6 +321,9 @@ impl VmSession {
                 if self.pending_acks.is_empty() {
                     if let Some(current) = self.current_worker.take() {
                         // return worker
+                        self.last_claimed_worker_id = Some(current.worker_id);
+                        self.last_returned_worker_at = Instant::now();
+
                         self.worker_pool.return_worker(current, false);
                     }
                 }
@@ -437,6 +457,7 @@ impl VmSession {
 
             info!(tier = worker.priority_index, "claimed new worker");
             self.current_worker = Some(worker);
+            self.last_claimed_worker_at = Instant::now();
 
             let res = if should_create_vm {
                 // new worker, reset acks and whatnot
@@ -489,6 +510,9 @@ impl VmSession {
 
     async fn broken_worker(&mut self) {
         if let Some(mut worker) = self.current_worker.take() {
+            self.last_claimed_worker_id = Some(worker.worker_id);
+            self.last_returned_worker_at = Instant::now();
+
             while let Ok(msg) = worker.rx.try_recv() {
                 self.handle_worker_msg(msg).await;
             }
@@ -496,16 +520,6 @@ impl VmSession {
             self.worker_pool.return_worker(worker, true);
             self.reset_contribs();
             self.pending_acks.clear();
-        }
-    }
-
-    async fn return_worker(&mut self) {
-        if let Some(mut worker) = self.current_worker.take() {
-            while let Ok(msg) = worker.rx.try_recv() {
-                self.handle_worker_msg(msg).await;
-            }
-
-            self.worker_pool.return_worker(worker, false);
         }
     }
 
@@ -614,4 +628,12 @@ enum ClaimWorkerResult {
     Reused,
     // We had to reload our VM
     Reloaded,
+}
+
+pub struct VmSessionStatus {
+    pub current_claimed_worker: Option<u64>,
+    pub last_claimed_worker: Option<u64>,
+    pub claimed_worker_at: Instant,
+    pub returned_worker_at: Instant,
+    pub num_pending_acks: usize,
 }

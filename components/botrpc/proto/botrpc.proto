@@ -4,6 +4,8 @@ package botrpc;
 service BotService {
   rpc ReloadVm(GuildScriptSpecifier) returns (Empty);
   rpc PurgeGuildCache(GuildScriptSpecifier) returns (Empty);
+  rpc VmWorkerStatus(Empty) returns (VmWorkerStatusResponse);
+  rpc GuildStatus(GuildSpecifier) returns (GuildStatusResponse);
   rpc StreamGuildLogs(GuildSpecifier) returns (stream GuildLogItem);
 }
 
@@ -46,4 +48,22 @@ enum LogLevel {
   WARN = 2;
   INFO = 3;
   CONSOLE_LOG = 4;
+}
+
+message VmWorkerStatusResponse { repeated VmWorkerStatus workers = 1; }
+
+message VmWorkerStatus {
+  uint32 worker_id = 1;
+  optional fixed64 currently_claimed_by_guild_id = 2;
+  optional fixed64 last_claimed_by_guild_id = 3;
+  uint64 claimed_last_ms_ago = 4;
+  uint64 returned_last_ms_ago = 5;
+}
+
+message GuildStatusResponse {
+  optional uint32 current_claimed_worker_id = 1;
+  optional uint32 last_claimed_worker_id = 2;
+  uint64 claimed_last_since_ms = 3;
+  uint64 returned_last_since_ms = 4;
+  uint32 pending_acks = 5;
 }
