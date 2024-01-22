@@ -3,7 +3,7 @@ FROM botloader-base as builder
 RUN cargo build --release --bin jobs
 
 #run
-FROM debian:bullseye AS runtime
+FROM debian:bookworm AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/jobs /usr/local/bin/botloader-jobs
 
