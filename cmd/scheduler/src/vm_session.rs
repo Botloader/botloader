@@ -136,34 +136,73 @@ impl VmSession {
                 self.broken_worker().await;
             }
             NextAction::CheckScheduledTasks => {
-                match self.ensure_claim_worker().await {
-                    ClaimWorkerResult::Reused => {
-                        let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
-                        for task in tasks {
-                            self.dispatch_scheduled_task(task).await;
-                        }
+                // Complicated logic to avoid runaway workers and duplicated runs
+                // TODO: should add some proper protection for duplicated runs to simplify this
+                if self.current_worker.is_some() {
+                    let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
+                    for task in tasks {
+                        self.dispatch_scheduled_task(task).await;
                     }
-                    ClaimWorkerResult::Reloaded => {
-                        // contribs was cleared, no tasks/timers to fire.
+                } else {
+                    match self.ensure_claim_worker().await {
+                        ClaimWorkerResult::Reused => {
+                            let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
+                            if tasks.is_empty() {
+                                if self.pending_acks.is_empty() {
+                                    self.return_worker();
+                                }
+                            } else {
+                                for task in tasks {
+                                    self.dispatch_scheduled_task(task).await;
+                                }
+                            }
+                        }
+                        ClaimWorkerResult::Reloaded => {
+                            // contribs was cleared, no tasks/timers to fire.
+                        }
                     }
                 }
             }
             NextAction::CheckIntervalTimers => {
-                match self.ensure_claim_worker().await {
-                    ClaimWorkerResult::Reused => {
-                        let timers = self.interval_timers_man.trigger_timers().await;
-                        for timer in timers {
-                            self.dispatch_interval_timer(timer).await;
-                        }
+                // Complicated logic to avoid runaway workers and duplicated runs
+                // TODO: should add some proper protection for duplicated runs to simplify this
+                if self.current_worker.is_some() {
+                    let timers = self.interval_timers_man.trigger_timers().await;
+                    for timer in timers {
+                        self.dispatch_interval_timer(timer).await;
                     }
-                    ClaimWorkerResult::Reloaded => {
-                        // contribs was cleared, no tasks/timers to fire.
+                } else {
+                    match self.ensure_claim_worker().await {
+                        ClaimWorkerResult::Reused => {
+                            let timers = self.interval_timers_man.trigger_timers().await;
+                            if timers.is_empty() {
+                                if self.pending_acks.is_empty() {
+                                    self.return_worker();
+                                }
+                            } else {
+                                for timer in timers {
+                                    self.dispatch_interval_timer(timer).await;
+                                }
+                            }
+                        }
+                        ClaimWorkerResult::Reloaded => {
+                            // contribs was cleared, no tasks/timers to fire.
+                        }
                     }
                 }
             }
         }
 
         None
+    }
+
+    fn return_worker(&mut self) {
+        if let Some(current) = self.current_worker.take() {
+            self.last_claimed_worker_id = Some(current.worker_id);
+            self.last_returned_worker_at = Instant::now();
+
+            self.worker_pool.return_worker(current, false);
+        }
     }
 
     pub async fn shutdown(&mut self) {
@@ -319,13 +358,7 @@ impl VmSession {
             WorkerMessage::ScriptsInit => todo!(),
             WorkerMessage::NonePending => {
                 if self.pending_acks.is_empty() {
-                    if let Some(current) = self.current_worker.take() {
-                        // return worker
-                        self.last_claimed_worker_id = Some(current.worker_id);
-                        self.last_returned_worker_at = Instant::now();
-
-                        self.worker_pool.return_worker(current, false);
-                    }
+                    self.return_worker();
                 }
             }
             WorkerMessage::TaskScheduled => {
