@@ -158,30 +158,51 @@ pub struct ExtraCommandOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub channel_types: Option<Vec<ChannelType>>,
-    // #[serde(default)]
-    // pub choices: Vec<OptionChoice>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub choices: Option<Vec<CommandOptionChoice>>,
 }
 
-// #[derive(Clone, Debug, Deserialize, Serialize, TS)]
-// #[ts(export)]
-// #[serde(rename_all = "camelCase")]
-// #[ts(export_to = "bindings/internal/CommandOptionChoice.ts")]
-// pub struct OptionChoice {
-//     name: String,
-//     value: String,
-// }
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/CommandOptionChoice.ts")]
+pub struct CommandOptionChoice {
+    name: String,
+    value: CommandOptionChoiceValue,
+}
 
-// pub enum ChoiceValue{
-//     String()
-// }
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[serde(untagged)]
+#[ts(export_to = "bindings/internal/CommandOptionChoiceValue.ts")]
+pub enum CommandOptionChoiceValue {
+    String(String),
+    Number(f64),
+}
 
-// impl From<OptionChoice> for twilight_model::application::command::CommandOptionChoice {
-//     fn from(v: OptionChoice) -> Self {
-//         Self {
+impl From<CommandOptionChoiceValue>
+    for twilight_model::application::command::CommandOptionChoiceValue
+{
+    fn from(value: CommandOptionChoiceValue) -> Self {
+        match value {
+            CommandOptionChoiceValue::String(s) => Self::String(s),
+            CommandOptionChoiceValue::Number(n) => Self::Number(n),
+        }
+    }
+}
 
-//         }
-//     }
-// }
+impl From<CommandOptionChoice> for twilight_model::application::command::CommandOptionChoice {
+    fn from(v: CommandOptionChoice) -> Self {
+        Self {
+            name: v.name,
+            name_localizations: None,
+            value: v.value.into(),
+        }
+    }
+}
 
 impl From<CommandOption> for twilight_model::application::command::CommandOption {
     fn from(v: CommandOption) -> Self {
@@ -199,7 +220,10 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 kind: twilight_model::application::command::CommandOptionType::String,
                 autocomplete: None,
                 channel_types: None,
-                choices: None,
+                choices: v
+                    .extra_options
+                    .choices
+                    .map(|iv| iv.into_iter().map(Into::into).collect()),
                 description_localizations: None,
                 max_length: None,
                 max_value: None,
@@ -223,7 +247,10 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                     .map(|v| CommandOptionValue::Integer(v as i64)),
                 autocomplete: None,
                 channel_types: None,
-                choices: None,
+                choices: v
+                    .extra_options
+                    .choices
+                    .map(|iv| iv.into_iter().map(Into::into).collect()),
                 description_localizations: None,
                 max_length: None,
                 min_length: None,
@@ -327,7 +354,10 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 max_value: v.extra_options.max_value.map(CommandOptionValue::Number),
                 autocomplete: None,
                 channel_types: None,
-                choices: None,
+                choices: v
+                    .extra_options
+                    .choices
+                    .map(|iv| iv.into_iter().map(Into::into).collect()),
                 description_localizations: None,
                 max_length: None,
                 min_length: None,

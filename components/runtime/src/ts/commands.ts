@@ -262,12 +262,19 @@ export namespace Commands {
     }
 
     export interface StringOption {
-        // choices?: OptionChoice<string>[],
+        /**
+         * A list of choices to present the user, up to 25 entries.
+         */
+        choices?: OptionChoice<string>[],
         // autocomplete?: AutocompleteProvider<string>,
     }
 
     export interface NumberOption {
-        // choices?: OptionChoice<number>[],
+        /**
+         * A list of choices to present the user, up to 25 entries.
+         */
+        choices?: OptionChoice<number>[],
+
         minValue?: number,
         maxValue?: number,
 
@@ -275,7 +282,11 @@ export namespace Commands {
     }
 
     export interface IntegerOption {
-        // choices?: OptionChoice<number>[],
+        /**
+         * A list of choices to present the user, up to 25 entries.
+         */
+        choices?: OptionChoice<number>[],
+
         minValue?: number,
         maxValue?: number,
 
