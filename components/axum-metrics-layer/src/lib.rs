@@ -1,45 +1,87 @@
-use axum::http::{Request, Response};
-use metrics::Counter;
-use std::task::{Context, Poll};
+use axum::{
+    extract::{MatchedPath, Request},
+    response::Response,
+};
+use futures::future::BoxFuture;
+use std::{
+    task::{Context, Poll},
+    time::Instant,
+};
 use tower::{Layer, Service};
 
 #[derive(Clone)]
 pub struct MetricsLayer {
-    pub name: &'static str,
+    pub name_prefix: &'static str,
 }
 
 impl<S> Layer<S> for MetricsLayer {
     type Service = MetricsMiddleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        let counter = metrics::counter!(self.name);
-        MetricsMiddleware { inner, counter }
+        MetricsMiddleware {
+            inner,
+            name_prefix: self.name_prefix,
+        }
     }
 }
 
 #[derive(Clone)]
 pub struct MetricsMiddleware<S> {
     pub inner: S,
-    counter: Counter,
+    name_prefix: &'static str,
 }
 
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for MetricsMiddleware<S>
+impl<S> Service<Request> for MetricsMiddleware<S>
 where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
+    S: Service<Request, Response = Response> + Send + 'static,
     S::Future: Send + 'static,
-    ReqBody: Send + 'static,
-    ResBody: Send + 'static,
 {
     type Response = S::Response;
     type Error = S::Error;
-    type Future = S::Future;
+    // `BoxFuture` is a type alias for `Pin<Box<dyn Future + Send + 'a>>`
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        self.counter.increment(1);
-        self.inner.call(req)
+    fn call(&mut self, req: Request) -> Self::Future {
+        let path = if let Some(path) = req.extensions().get::<MatchedPath>() {
+            path.as_str().to_owned()
+        } else {
+            "unknown".to_owned()
+        };
+
+        let method = req.method().to_string();
+
+        let counter_name = format!("{}.requests_total", self.name_prefix);
+        let latency_name = format!("{}.request_duration_seconds", self.name_prefix);
+
+        let future = self.inner.call(req);
+
+        let started = Instant::now();
+        Box::pin(async move {
+            let elapsed = started.elapsed();
+            let result = future.await;
+            let status_code = match &result {
+                Ok(resp) => resp.status().as_u16(),
+                Err(_) => 0,
+            };
+
+            let elapsed_seconds = elapsed.as_secs_f64();
+            metrics::counter!(counter_name,
+                "response_code" => status_code.to_string(),
+                "path" => path.clone(),
+                "method" => method.clone(),
+            )
+            .increment(1);
+            metrics::histogram!(latency_name,
+                "path" => path,
+                "method" => method
+            )
+            .record(elapsed_seconds);
+
+            result
+        })
     }
 }

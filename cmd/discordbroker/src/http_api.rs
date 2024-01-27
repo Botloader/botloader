@@ -90,7 +90,7 @@ pub async fn run_http_server(
             ready_tracker: ready,
         }))
         .layer(axum_metrics_layer::MetricsLayer {
-            name: "bl.broker.http_api_hits_total",
+            name_prefix: "bl.broker",
         });
 
     // let make_service = app.into_make_service();

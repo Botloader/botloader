@@ -9,3 +9,4 @@ edition = "2021"
 axum = { workspace = true }
 metrics = { workspace = true }
 tower = "0.4"
+futures = { workspace = true }

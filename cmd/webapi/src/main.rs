@@ -89,7 +89,10 @@ async fn main() {
     let require_auth_layer = session_layer.require_auth_layer();
     let client_cache = session_layer.oauth_api_client_cache.clone();
 
-    let common_middleware_stack = ServiceBuilder::new() // Process at most 100 requests concurrently
+    let common_middleware_stack = ServiceBuilder::new()
+        .layer(axum_metrics_layer::MetricsLayer {
+            name_prefix: "bl.webapi",
+        })
         .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
         .layer(Extension(ConfigData {
             oauth_client: oatuh_client,

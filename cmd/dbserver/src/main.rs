@@ -48,7 +48,7 @@ pub async fn run_http_server(conf: crate::BrokerConfig, postgres: Arc<Postgres>)
         // .layer(Extension(discord_state))
         .layer(Extension(postgres))
         .layer(axum_metrics_layer::MetricsLayer {
-            name: "bl.db.http_api_hits_total",
+            name_prefix: "bl.db",
         });
 
     // run it with hyper on configured address

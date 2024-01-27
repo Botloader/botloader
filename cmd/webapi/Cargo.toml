@@ -12,6 +12,7 @@ botrpc = { path = "../../components/botrpc" }
 guild-logger = { path = "../../components/guild-logger" }
 validation = { path = "../../components/validation" }
 common = { path = "../../components/common" }
+axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
 
 oauth2 = "4.1"
 anyhow = { workspace = true }
@@ -20,7 +21,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 clap = { workspace = true }
 async-trait = { workspace = true }
-futures = "0.3"
+futures = { workspace = true }
 chrono = { workspace = true }
 tokio = { workspace = true }
 tower-http = { version = "0.5.1", features = ["trace", "set-header"] }
