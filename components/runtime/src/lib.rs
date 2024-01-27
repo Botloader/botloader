@@ -291,6 +291,16 @@ pub enum RuntimeEvent {
     InvalidRequestsExceeded,
 }
 
+impl RuntimeEvent {
+    pub fn span_name(&self) -> &'static str {
+        match self {
+            RuntimeEvent::ScriptStarted(_) => "RuntimeEvent::ScriptStarted",
+            RuntimeEvent::NewTaskScheduled => "RuntimeEvent::NewTaskScheduled",
+            RuntimeEvent::InvalidRequestsExceeded => "RuntimeEvent::InvalidRequestsExceeded",
+        }
+    }
+}
+
 pub fn get_rt_ctx(state: &Rc<RefCell<OpState>>) -> RuntimeContext {
     let state = state.borrow();
     state.borrow::<RuntimeContext>().clone()

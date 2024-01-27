@@ -14,6 +14,26 @@ pub enum SchedulerMessage {
     Shutdown,
 }
 
+impl SchedulerMessage {
+    pub fn guild_id(&self) -> Option<Id<GuildMarker>> {
+        match self {
+            SchedulerMessage::Dispatch(_) => None,
+            SchedulerMessage::CreateScriptsVm(v) => Some(v.guild_id),
+            SchedulerMessage::Complete => None,
+            SchedulerMessage::Shutdown => None,
+        }
+    }
+
+    pub fn span_name(&self) -> &'static str {
+        match self {
+            SchedulerMessage::Dispatch(_) => "SchedulerMessage::Dispatch",
+            SchedulerMessage::CreateScriptsVm(_) => "SchedulerMessage::CreateScriptsVm",
+            SchedulerMessage::Complete => "SchedulerMessage::Complete",
+            SchedulerMessage::Shutdown => "SchedulerMessage::Shutdown",
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct CreateScriptsVmReq {
     pub seq: u64,

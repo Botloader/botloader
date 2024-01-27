@@ -6,7 +6,7 @@ use runtime::{CreateRuntimeContext, RuntimeEvent};
 use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
 use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
 use vm::vm::{CreateRt, VmCommand, VmEvent, VmShutdownHandle};
 
@@ -162,7 +162,7 @@ impl Worker {
                             info!("vm shut down: channel closed");
                             self.current_state = None;
 
-                             self.write_message(WorkerMessage::Shutdown(ShutdownReason::Other)).await.map(|_| ContinueState::Continue)
+                            self.write_message(WorkerMessage::Shutdown(ShutdownReason::Other)).await.map(|_| ContinueState::Continue)
                         }
                     }
                 }
@@ -197,6 +197,13 @@ impl Worker {
         self.wait_shutdown_current_vm().await;
     }
 
+    #[instrument(
+        skip(self, cmd),
+        fields(
+            guild_id = cmd.guild_id().or(self.current_guild_id()).map(|v| v.to_string()), 
+            message_type = cmd.span_name()
+        )
+    )]
     async fn handle_scheduler_cmd(
         &mut self,
         cmd: SchedulerMessage,
@@ -226,6 +233,13 @@ impl Worker {
         }
     }
 
+    #[instrument(
+        skip(self, evt),
+        fields(
+            guild_id = self.current_guild_id().map(|v| v.to_string()), 
+            evt = evt.span_name()
+        )
+    )]
     async fn handle_runtime_evt(&mut self, evt: RuntimeEvent) -> anyhow::Result<ContinueState> {
         match evt {
             RuntimeEvent::ScriptStarted(sm) => {
@@ -243,6 +257,13 @@ impl Worker {
         }
         Ok(ContinueState::Continue)
     }
+
+    #[instrument(
+        skip(self),
+        fields(
+            guild_id = self.current_guild_id().map(|v| v.to_string()), 
+        )
+    )]
     async fn handle_vm_evt(&mut self, evt: VmEvent) -> anyhow::Result<ContinueState> {
         match evt {
             VmEvent::Shutdown(reason) => {
@@ -370,6 +391,10 @@ impl Worker {
             current.scripts_vm.closed().await;
             self.current_state = None;
         }
+    }
+
+    fn current_guild_id(&self) -> Option<Id<GuildMarker>> {
+        self.current_state.as_ref().map(|v| v.guild_id)
     }
 }
 
