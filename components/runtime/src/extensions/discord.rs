@@ -27,7 +27,7 @@ use std::{
     time::{Duration, Instant},
 };
 use std::{cell::RefCell, rc::Rc};
-use tracing::warn;
+use tracing::{info, warn};
 use twilight_http::error::ErrorType;
 use twilight_http::request::AuditLogReason;
 use twilight_http::{
@@ -1123,6 +1123,39 @@ pub async fn op_discord_get_members(
         .map(|v| v.parse().map(Id::new_checked).ok().flatten())
         .collect::<Vec<_>>();
 
+    let valid_ids = ids.iter().filter(|v| v.is_some()).count();
+    if valid_ids > 2 {
+        info!("Fetching members through gateway");
+
+        let resp = rt_ctx
+            .bot_state
+            .get_guild_members(rt_ctx.guild_id, ids.iter().filter_map(|v| *v).collect())
+            .await?;
+
+        let mut ret = Vec::with_capacity(ids.len());
+        for id in ids {
+            match id {
+                Some(user_id) => ret.push(
+                    resp.iter()
+                        .find(|v| v.user.id == user_id)
+                        .cloned()
+                        .map(From::from),
+                ),
+                None => ret.push(None),
+            }
+        }
+
+        Ok(ret)
+    } else {
+        Ok(fetch_members_through_api(&state, &rt_ctx, ids).await?)
+    }
+}
+
+async fn fetch_members_through_api(
+    state: &Rc<RefCell<OpState>>,
+    rt_ctx: &RuntimeContext,
+    ids: Vec<Option<Id<UserMarker>>>,
+) -> Result<Vec<Option<runtime_models::internal::member::Member>>, AnyError> {
     let mut res = Vec::new();
     for item in ids {
         if let Some(id) = item {
@@ -1146,7 +1179,7 @@ pub async fn op_discord_get_members(
                             ..
                         },
                     ) {
-                        return Err(handle_discord_error(&state, err));
+                        return Err(handle_discord_error(state, err));
                     }
 
                     res.push(None);
