@@ -240,6 +240,11 @@ impl VmSession {
     pub async fn load_contribs(&mut self) {
         info!("loading contribs");
 
+        if self.scripts.is_empty() {
+            self.cmd_manager_handle
+                .send_no_scripts_enabled(self.guild_id);
+        }
+
         if self.current_worker.is_some() {
             if self.send_create_scripts_vm().await.is_err() {
                 self.broken_worker().await;
@@ -603,10 +608,8 @@ impl VmSession {
 
         self.scheduled_tasks_man.script_started(&evt);
 
-        self.cmd_manager_handle.send(command_manager::LoadedScript {
-            guild_id: self.guild_id,
-            meta: evt,
-        });
+        self.cmd_manager_handle
+            .send_loaded_script(self.guild_id, evt);
     }
 
     async fn update_db_contribs(

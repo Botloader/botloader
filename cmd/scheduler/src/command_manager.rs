@@ -20,19 +20,33 @@ use crate::scheduler;
 
 #[derive(Clone, Debug)]
 pub struct Handle {
-    send_loaded_script: mpsc::UnboundedSender<LoadedScript>,
+    send_loaded_script: mpsc::UnboundedSender<CommandManagerCommand>,
 }
 
 impl Handle {
-    pub fn send(&self, script: LoadedScript) {
-        self.send_loaded_script.send(script).ok();
+    pub fn send_loaded_script(&self, guild_id: Id<GuildMarker>, script: ScriptMeta) {
+        self.send_loaded_script
+            .send(CommandManagerCommand {
+                guild_id,
+                kind: CommandManagerCommandType::ScriptLoaded(script),
+            })
+            .ok();
+    }
+
+    pub fn send_no_scripts_enabled(&self, guild_id: Id<GuildMarker>) {
+        self.send_loaded_script
+            .send(CommandManagerCommand {
+                guild_id,
+                kind: CommandManagerCommandType::NoScriptsEnabled,
+            })
+            .ok();
     }
 }
 
 pub struct Manager {
     config_store: Arc<dyn scheduler::Store>,
     discord_config: Arc<DiscordConfig>,
-    rcv_loaded_script: mpsc::UnboundedReceiver<LoadedScript>,
+    rcv_commands: mpsc::UnboundedReceiver<CommandManagerCommand>,
     pending_checks: Vec<PendingCheckGroup>,
     guild_logger: LogSender,
 
@@ -50,7 +64,7 @@ pub fn create_manager_pair(
         Manager {
             config_store,
             discord_config,
-            rcv_loaded_script: rcv,
+            rcv_commands: rcv,
             pending_checks: Vec::new(),
             guild_logger,
             cached_commands: HashMap::new(),
@@ -69,11 +83,11 @@ impl Manager {
                 _ = ticker.tick() => {
                     self.handle_tick().await;
                 },
-                evt = self.rcv_loaded_script.recv() => {
+                evt = self.rcv_commands.recv() => {
                     if let Some(evt) = evt{
                         self.handle_evt(evt).await;
                     }else{
-                        info!("all receivers dead, shutting down contrib manager");
+                        info!("all receivers dead, shutting down command manager");
                         return;
                     }
                 },
@@ -81,31 +95,51 @@ impl Manager {
         }
     }
 
-    async fn handle_evt(&mut self, evt: LoadedScript) {
-        if let Some(item) = self
+    fn find_or_create_guild_check_group(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+    ) -> &mut PendingCheckGroup {
+        // We have to retrieve the index instead of the actual reference because the borrow checker will
+        // extend the lifetime of self.pending_checks to the return lifetime, throwing
+        // an error on the borrow in the other branch since we borrowed self.pending_checks in the condition, outside both branches.
+        if let Some(index) = self
             .pending_checks
-            .iter_mut()
-            .find(|e| e.guild_id == evt.guild_id)
+            .iter()
+            .enumerate()
+            .find_map(|(i, v)| (v.guild_id == guild_id).then_some(i))
         {
-            // guild queue already exists
-
-            // check if this script is already in the queue, and if so overwrite it
-            if let Some(qi) = item
-                .items
-                .iter_mut()
-                .find(|v| v.meta.script_id.0 == evt.meta.script_id.0)
-            {
-                *qi = evt
-            } else {
-                item.items.push(evt);
-            }
+            self.pending_checks.get_mut(index).unwrap()
         } else {
             // create a new guild queue
             self.pending_checks.push(PendingCheckGroup {
-                guild_id: evt.guild_id,
-                items: vec![evt],
+                guild_id,
+                items: Vec::new(),
                 started: Instant::now(),
-            })
+            });
+
+            self.pending_checks.last_mut().unwrap()
+        }
+    }
+
+    async fn handle_evt(&mut self, evt: CommandManagerCommand) {
+        let check_group = self.find_or_create_guild_check_group(evt.guild_id);
+
+        match evt.kind {
+            CommandManagerCommandType::NoScriptsEnabled => {
+                check_group.items.clear();
+            }
+            CommandManagerCommandType::ScriptLoaded(loaded) => {
+                // check if this script is already in the queue, and if so overwrite it
+                if let Some(queue_item) = check_group
+                    .items
+                    .iter_mut()
+                    .find(|v| v.script_id.0 == loaded.script_id.0)
+                {
+                    *queue_item = loaded
+                } else {
+                    check_group.items.push(loaded);
+                }
+            }
         }
     }
 
@@ -141,7 +175,12 @@ impl Manager {
                 error!(%err, "failed retrieving guild scripts");
             })?;
 
-        let merged = merge_script_commands(all_guild_scripts);
+        let enabled_guild_scripts = all_guild_scripts
+            .into_iter()
+            .filter(|v| v.enabled)
+            .collect::<Vec<_>>();
+
+        let merged = merge_script_commands(enabled_guild_scripts);
 
         let serialized = serde_json::to_string(&merged).unwrap();
         if let Some(current) = self.cached_commands.get(&guild_id) {
@@ -194,7 +233,7 @@ static GROUP_DESC_PLACEHOLDER: &str = "no description";
 struct PendingCheckGroup {
     guild_id: Id<GuildMarker>,
     started: Instant,
-    items: Vec<LoadedScript>,
+    items: Vec<ScriptMeta>,
 }
 
 pub fn to_twilight_commands(
@@ -454,7 +493,12 @@ fn merge_subgroups(dst: &mut TwilightCommandOption, src: TwilightCommandOption) 
     }
 }
 
-pub struct LoadedScript {
-    pub guild_id: Id<GuildMarker>,
-    pub meta: ScriptMeta,
+struct CommandManagerCommand {
+    guild_id: Id<GuildMarker>,
+    kind: CommandManagerCommandType,
+}
+
+enum CommandManagerCommandType {
+    ScriptLoaded(ScriptMeta),
+    NoScriptsEnabled,
 }
