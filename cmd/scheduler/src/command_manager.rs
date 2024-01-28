@@ -105,8 +105,7 @@ impl Manager {
         if let Some(index) = self
             .pending_checks
             .iter()
-            .enumerate()
-            .find_map(|(i, v)| (v.guild_id == guild_id).then_some(i))
+            .position(|v| v.guild_id == guild_id)
         {
             self.pending_checks.get_mut(index).unwrap()
         } else {
