@@ -4,7 +4,8 @@ import monaco from "monaco-editor";
 import { useBotloaderMonaco } from "./BotloaderSdk";
 
 const DEFAULT_EMPTY_SCRIPT_CONTENT =
-    `import {} from 'botloader';
+    `// import { Commands, Discord, HttpClient, Tasks } from 'botloader';
+import {} from 'botloader';
 
 // Type in the script content here
 // ctrl-s to save, changes will go live after that
@@ -12,6 +13,15 @@ const DEFAULT_EMPTY_SCRIPT_CONTENT =
 // You can find a lot of script examples in the support server
 // Docs are located at: https://botloader.io/docs/
 // There's also more in depth guides available at: https://botloader.io/book/
+
+// Example command:
+// script.createCommand(Commands.slashCommand("echo", "I respond with what you said")
+//     .addOptionString("what", "what to echo")
+//     .build(async (ctx, args) => {
+//         const what = args.what;
+//         await ctx.createFollowup(\`echo response: \${what}\`);
+//     })
+// )
 `
 
 export function ScriptEditor(props: {
