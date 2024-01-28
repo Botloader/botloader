@@ -5,6 +5,7 @@ export function BlLink(props: {
     to: string,
     skipClientRouting?: boolean
     newTab?: boolean
+    fullWidth?: boolean
 } & Pick<ButtonProps, "color" | "children" | "variant" | "sx" | "disabled">) {
     return <Button
         {...props}
@@ -12,6 +13,7 @@ export function BlLink(props: {
         reloadDocument={props.skipClientRouting}
         sx={{}}
         target={props.newTab ? "_blank" : undefined}
+        fullWidth={props.fullWidth}
     >
         {props.children}
     </Button >

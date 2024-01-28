@@ -46,9 +46,10 @@ export function ViewPluginSource() {
         isDiffEditor={false}
     >
         <Box p={1}>
-            <Typography>Viewing plugin</Typography>
-            <Chip variant="outlined" label={plugin.name} />
-            <BlLink to={`/plugins/${plugin.id}`}>Back</BlLink>
+            <Typography>Viewing plugin <Chip variant="outlined" label={plugin.name} /></Typography>
+
+            <Divider sx={{ mb: 1, mt: 1 }} />
+            <BlLink fullWidth to={`/plugins/${plugin.id}`}>Back to plugin page</BlLink>
             <Divider sx={{ mb: 1 }} />
         </Box>
     </ScriptingIde >

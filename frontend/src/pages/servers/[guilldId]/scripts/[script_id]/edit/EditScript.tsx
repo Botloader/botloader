@@ -5,7 +5,7 @@ import { AsyncOpButton } from "../../../../../../components/AsyncOpButton";
 import { debugMessageStore } from "../../../../../../misc/DebugMessages";
 import { DevConsole } from "../../../../../../components/DevConsole";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../../../../components/FetchData";
-import { Box, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Box, Chip, Divider, Switch, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { ScriptingIde } from "../../../../../../components/ScriptIde";
 import { BlLink } from "../../../../../../components/BLLink";
 import { useSession } from "../../../../../../modules/session/useSession";
@@ -124,10 +124,23 @@ function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) 
 
         >
             <Box p={1}>
-                <Typography>Editing script</Typography><Chip variant="outlined" label={props.script.name} />
-                <BlLink to={`/servers/${props.guild.guild.id}`}>Back</BlLink>
+                <Box display={"flex"} justifyContent={"space-around"} >
+                    <Chip variant="outlined" label={props.script.name + ".ts"} />
+                    <Switch checked={props.script.enabled} disabled={false} color={"success"} onChange={(evt) => {
+                        toggleScript(props.script.id, evt.target.checked)
+                    }} />
+                </Box>
+                {!props.script.enabled &&
+                    <Alert severity="warning" >This script is not enabled</Alert>
+                }
+
                 <Divider sx={{ mb: 1 }} />
-                <Typography>Diff mode</Typography>
+
+                <BlLink fullWidth to={`/servers/${props.guild.guild.id}`}>Back to server</BlLink>
+
+                <Divider sx={{ mb: 1 }} />
+
+                <Typography align="center">Diff mode</Typography>
                 <ToggleButtonGroup
                     color="primary"
                     value={diffSource === null ? "off" : diffSource}
@@ -140,22 +153,18 @@ function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) 
                         }
                     }}
                     aria-label="Diff mode"
+                    fullWidth
+                    size="small"
                 >
                     {props.script.plugin_id !== null ? <ToggleButton value="pluginPublished">Latest Plugin</ToggleButton> : null}
                     <ToggleButton value="unsaved">Saved</ToggleButton>
                     <ToggleButton value="off">Off</ToggleButton>
                 </ToggleButtonGroup>
                 <Divider sx={{ mb: 1 }} />
-                <Typography>Script is {props.script.enabled ? <span className="status-good">Enabled</span> : <span className="status-bad">Disabled</span>}</Typography>
-                {props.script.enabled ?
-                    <AsyncOpButton className="primary" label="Disable" onClick={() => toggleScript(props.script.id, false)}></AsyncOpButton>
-                    :
-                    <AsyncOpButton className="primary" label="Enable" onClick={() => toggleScript(props.script.id, true)}></AsyncOpButton>
-                }
-                <Divider sx={{ mb: 1 }} />
                 {isDirty ?
-                    <AsyncOpButton className="primary" label="Save" onClick={() => save(newSource.current)}></AsyncOpButton>
-                    : <p>No changes made</p>}
+                    <><Typography>Changes have been made <AsyncOpButton className="primary" label="Save" onClick={() => save(newSource.current)}></AsyncOpButton></Typography></>
+                    : <Typography>No changes made</Typography>}
+                <Divider sx={{ mb: 1 }} />
             </Box>
             <Box sx={{ overflowY: "auto" }}>
                 <DevConsole guildId={props.guild.guild.id} />

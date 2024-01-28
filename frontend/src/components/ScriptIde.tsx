@@ -15,8 +15,17 @@ type Props = {
 
 export function ScriptingIde(props: Props) {
     return <>
-        <Box sx={{ display: "flex", flexDirection: "row", flexGrow: 1 }}>
-            <Box sx={{ flexGrow: 1, marginRight: "300px" }}>
+        <Box sx={{ display: "flex", flexDirection: "row", alignContent: "stretch", flexGrow: 1 }}>
+            <Box
+                width={300}
+                display="flex"
+                flexDirection="column"
+                height={"0px"}
+                minHeight={"100%"}
+            >
+                {props.children}
+            </Box>
+            <Box sx={{ flexGrow: 1 }}>
                 <ScriptEditor
                     initialSource={props.initialSource}
                     onSave={props.onSave}
@@ -26,12 +35,6 @@ export function ScriptingIde(props: Props) {
                     onChange={props.onChange}
                     isReadOnly={props.isReadyOnly}
                 />
-            </Box>
-            <Box width={300} display="flex" flexDirection="column" position={"absolute"} top={69} bottom={0} right={0}>
-                {props.children}
-                {/* <Box sx={{ overflowY: "auto" }}>
-                    <DevConsole />
-                </Box> */}
             </Box>
         </Box >
     </>
