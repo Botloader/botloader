@@ -61,8 +61,10 @@ where
 
         let started = Instant::now();
         Box::pin(async move {
-            let elapsed = started.elapsed();
             let result = future.await;
+
+            let elapsed = started.elapsed();
+
             let status_code = match &result {
                 Ok(resp) => resp.status().as_u16(),
                 Err(_) => 0,
