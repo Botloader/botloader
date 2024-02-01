@@ -3636,6 +3636,7 @@ dependencies = [
 name = "runtime-models"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "dbrokerapi",
  "serde",
  "serde_json",

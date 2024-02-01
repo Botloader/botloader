@@ -4,6 +4,7 @@ use ts_rs::TS;
 use crate::{
     discord::{
         embed::Embed,
+        invite::{InviteTargetType, InviteTargetUser},
         message::{Attachment, MessageType, ReactionType},
     },
     internal::{member::Member, messages::UserMention, user::User},
@@ -117,5 +118,68 @@ impl From<twilight_model::gateway::payload::incoming::MessageUpdate> for EventMe
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             tts: v.tts,
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IEventInviteDelete")]
+#[ts(export_to = "bindings/internal/IEventInviteDelete.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventInviteDelete {
+    pub channel_id: String,
+    pub code: String,
+}
+
+impl From<twilight_model::gateway::payload::incoming::InviteDelete> for EventInviteDelete {
+    fn from(value: twilight_model::gateway::payload::incoming::InviteDelete) -> Self {
+        Self {
+            channel_id: value.channel_id.to_string(),
+            code: value.code,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IEventInviteCreate")]
+#[ts(export_to = "bindings/internal/IEventInviteCreate.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventInviteCreate {
+    pub channel_id: String,
+    pub code: String,
+    pub created_at: NotBigU64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inviter: Option<User>,
+    pub max_age: NotBigU64,
+    pub max_uses: NotBigU64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_user_type: Option<InviteTargetType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_user: Option<InviteTargetUser>,
+    pub temporary: bool,
+    pub uses: u8,
+}
+
+impl TryFrom<twilight_model::gateway::payload::incoming::InviteCreate> for EventInviteCreate {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        value: twilight_model::gateway::payload::incoming::InviteCreate,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            channel_id: value.channel_id.to_string(),
+            code: value.code,
+            created_at: ((value.created_at.as_micros() / 1000) as u64).into(),
+            inviter: value.inviter.map(Into::into),
+            max_age: value.max_age.into(),
+            max_uses: value.max_uses.into(),
+            target_user_type: if let Some(t) = value.target_user_type {
+                Some(t.try_into()?)
+            } else {
+                None
+            },
+            target_user: value.target_user.map(Into::into),
+            temporary: value.temporary,
+            uses: value.uses,
+        })
     }
 }

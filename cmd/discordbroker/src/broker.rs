@@ -310,6 +310,8 @@ impl Broker {
 
                 return;
             }
+            Event::InviteCreate(invite) => invite.guild_id,
+            Event::InviteDelete(invite) => invite.guild_id,
             _ => return,
         };
 

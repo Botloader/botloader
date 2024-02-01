@@ -16,6 +16,9 @@ const {
     op_bl_get_task_by_key,
     op_bl_get_all_tasks,
     op_discord_get_guild,
+    op_discord_get_invites,
+    op_discord_get_invite,
+    op_discord_delete_invite,
     op_discord_get_message,
     op_discord_get_messages,
     op_discord_create_message,
@@ -68,6 +71,8 @@ const {
     op_discord_get_reactions,
     op_discord_delete_all_reactions,
     op_discord_delete_all_reactions_for_emoji,
+    op_discord_get_channel_invites,
+    op_discord_create_channel_invite,
 } = Deno.core.ensureFastOps()
 
 export namespace OpWrappers {
@@ -141,6 +146,19 @@ export namespace OpWrappers {
     export async function getGuild(): Promise<Discord.Guild> {
         return op_discord_get_guild();
     }
+
+    export async function getInvites(): Promise<Internal.IInvite[]> {
+        return await op_discord_get_invites();
+    }
+
+    export async function getInvite(code: string, with_counts: boolean, with_expiration: boolean): Promise<Internal.IInvite> {
+        return await op_discord_get_invite(code, with_counts, with_expiration);
+    }
+
+    export async function deleteInvite(code: string): Promise<void> {
+        return await op_discord_delete_invite(code);
+    }
+
 
     export function getCurrentUser(): Internal.IUser {
         return Deno.core.ops.op_get_current_bot_user();
@@ -299,6 +317,19 @@ export namespace OpWrappers {
         return await op_discord_delete_channel_permission(
             channelId,
             [kind, id],
+        );
+    }
+
+    export async function getChannelInvites(channelId: string): Promise<Internal.IInvite[]> {
+        return await op_discord_get_channel_invites(
+            channelId,
+        );
+    }
+
+    export async function createChannelInvite(channelId: string, fields: Internal.ICreateInviteFields): Promise<Internal.IInvite> {
+        return await op_discord_create_channel_invite(
+            channelId,
+            fields,
         );
     }
 

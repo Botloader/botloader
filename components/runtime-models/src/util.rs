@@ -24,6 +24,12 @@ impl ts_rs::TS for NotBigU64 {
     }
 }
 
+impl From<u64> for NotBigU64 {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
 impl Display for NotBigU64 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))

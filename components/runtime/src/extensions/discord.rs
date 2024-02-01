@@ -11,6 +11,7 @@ use runtime_models::{
     internal::{
         channel::{CreateChannel, EditChannel},
         interactions::InteractionCallback,
+        invite::CreateInviteFields,
         member::{Ban, UpdateGuildMemberFields},
         messages::{
             Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
@@ -43,13 +44,16 @@ use twilight_model::{
 use vm::AnyError;
 
 use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
-use crate::{get_rt_ctx, RuntimeContext, RuntimeEvent};
+use crate::{get_rt_ctx, limits::RateLimiters, RuntimeContext, RuntimeEvent};
 
 deno_core::extension!(
     bl_discord,
     ops = [
         // guild
         op_discord_get_guild,
+        op_discord_get_invites,
+        op_discord_get_invite,
+        op_discord_delete_invite,
         // messages
         op_discord_get_message,
         op_discord_get_messages,
@@ -76,6 +80,8 @@ deno_core::extension!(
         op_discord_delete_channel,
         op_discord_update_channel_permission,
         op_discord_delete_channel_permission,
+        op_discord_get_channel_invites,
+        op_discord_create_channel_invite,
         // pins
         op_discord_get_channel_pins,
         op_discord_create_pin,
@@ -111,73 +117,6 @@ deno_core::extension!(
         // state.put::<Options>(options.options);
     },
 );
-
-// pub fn extension() -> Extension {
-//     Extension::builder("bl_discord")
-//         .ops(vec![babypwincesss
-//             // guild
-//             op_discord_get_guild::decl(),
-//             // messages
-//             op_discord_get_message::decl(),
-//             op_discord_get_messages::decl(),
-//             op_discord_create_message::decl(),
-//             op_discord_edit_message::decl(),
-//             op_discord_crosspost_message::decl(),
-//             op_discord_delete_message::decl(),
-//             op_discord_bulk_delete_messages::decl(),
-//             // Reactions
-//             op_discord_create_reaction::decl(),
-//             op_discord_delete_own_reaction::decl(),
-//             op_discord_delete_user_reaction::decl(),
-//             op_discord_get_reactions::decl(),
-//             op_discord_delete_all_reactions::decl(),
-//             op_discord_delete_all_reactions_for_emoji::decl(),
-//             // roles
-//             op_discord_get_role::decl(),
-//             op_discord_get_roles::decl(),
-//             // channels
-//             op_discord_get_channel::decl(),
-//             op_discord_get_channels::decl(),
-//             op_discord_create_channel::decl(),
-//             op_discord_edit_channel::decl(),
-//             op_discord_delete_channel::decl(),
-//             op_discord_update_channel_permission::decl(),
-//             op_discord_delete_channel_permission::decl(),
-//             // pins
-//             op_discord_get_channel_pins::decl(),
-//             op_discord_create_pin::decl(),
-//             op_discord_delete_pin::decl(),
-//             // invites
-//             // members
-//             op_discord_remove_member::decl(),
-//             op_discord_get_members::decl(),
-//             op_discord_update_member::decl(),
-//             op_discord_add_member_role::decl(),
-//             op_discord_remove_member_role::decl(),
-//             // interactions
-//             op_discord_interaction_callback::decl(),
-//             op_discord_interaction_get_original_response::decl(),
-//             op_discord_interaction_edit_original_response::decl(),
-//             op_discord_interaction_delete_original::decl(),
-//             op_discord_interaction_followup_message::decl(),
-//             op_discord_interaction_get_followup_message::decl(),
-//             op_discord_interaction_edit_followup_message::decl(),
-//             op_discord_interaction_delete_followup_message::decl(),
-//             // Bans
-//             op_discord_create_ban::decl(),
-//             op_discord_get_ban::decl(),
-//             op_discord_get_bans::decl(),
-//             op_discord_delete_ban::decl(),
-//             // misc
-//             op_discord_get_member_permissions::decl(),
-//         ])
-//         .state(move |state| {
-//             state.put(DiscordOpsState {
-//                 recent_bad_requests: VecDeque::new(),
-//             });
-//         })
-//         .build()
-// }
 
 struct DiscordOpsState {
     recent_bad_requests: VecDeque<Instant>,
@@ -281,6 +220,92 @@ pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, 
         Some(c) => Ok(c.into()),
         None => Err(anyhow::anyhow!("guild not in state")),
     }
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_get_invites(
+    state: Rc<RefCell<OpState>>,
+) -> Result<Vec<runtime_models::internal::invite::Invite>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    let resp = rt_ctx
+        .discord_config
+        .client
+        .guild_invites(rt_ctx.guild_id)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
+    resp.into_iter().map(TryInto::try_into).collect()
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_get_invite(
+    state: Rc<RefCell<OpState>>,
+    #[string] code: String,
+    with_counts: bool,
+    with_expiration: bool,
+) -> Result<runtime_models::internal::invite::Invite, AnyError> {
+    RateLimiters::discord_get_public_invite(&state).await;
+
+    let rt_ctx = get_rt_ctx(&state);
+
+    let mut req = rt_ctx.discord_config.client.invite(&code);
+    if with_counts {
+        req = req.with_counts();
+    }
+
+    if with_expiration {
+        req = req.with_expiration();
+    }
+
+    req.await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .try_into()
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_delete_invite(
+    state: Rc<RefCell<OpState>>,
+    #[string] code: String,
+) -> Result<(), AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // we need to make sure this invite comes from this guild
+    let invite = rt_ctx
+        .discord_config
+        .client
+        .invite(&code)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
+    let is_correct_guild = if let Some(guild) = invite.guild {
+        guild.id == rt_ctx.guild_id
+    } else {
+        false
+    };
+
+    // someone tried to be sneaky...
+    if !is_correct_guild {
+        return Err(anyhow!("This invite does not belong to your server."));
+    }
+
+    rt_ctx
+        .discord_config
+        .client
+        .delete_invite(&code)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
+
+    Ok(())
 }
 
 // Messages
@@ -1033,6 +1058,70 @@ pub async fn op_discord_delete_channel_permission(
     };
 
     Ok(())
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_get_channel_invites(
+    state: Rc<RefCell<OpState>>,
+    #[string] channel_id_str: String,
+) -> Result<Vec<runtime_models::internal::invite::Invite>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &channel_id_str).await?;
+
+    let rt_ctx = get_rt_ctx(&state);
+
+    let resp = rt_ctx
+        .discord_config
+        .client
+        .channel_invites(channel.id)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
+    resp.into_iter().map(TryInto::try_into).collect()
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_create_channel_invite(
+    state: Rc<RefCell<OpState>>,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] fields: CreateInviteFields,
+) -> Result<runtime_models::internal::invite::Invite, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+    let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    let mut req = rt_ctx.discord_config.client.create_invite(channel.id);
+
+    if let Some(max_age) = fields.max_age {
+        req = req.max_age(max_age)?;
+    }
+    if let Some(max_uses) = fields.max_uses {
+        req = req.max_uses(max_uses)?;
+    }
+    if let Some(temporary) = fields.temporary {
+        req = req.temporary(temporary);
+    }
+    if let Some(target_application_id) = fields.target_application_id {
+        req = req.target_application_id(target_application_id);
+    }
+    if let Some(target_user_id) = fields.target_user_id {
+        req = req.target_user_id(target_user_id);
+    }
+    if let Some(target_type) = fields.target_type {
+        req = req.target_type(target_type.into());
+    }
+    if let Some(unique) = fields.unique {
+        req = req.unique(unique);
+    }
+
+    req.await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .try_into()
 }
 
 // Pins
