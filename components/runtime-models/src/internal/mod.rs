@@ -4,6 +4,7 @@ pub mod events;
 pub mod httpclient;
 pub mod interaction;
 pub mod interactions;
+pub mod invite;
 pub mod member;
 pub mod messages;
 pub mod misc_op;

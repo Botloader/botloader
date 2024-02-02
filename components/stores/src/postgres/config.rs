@@ -201,7 +201,7 @@ impl crate::config::ConfigStore for Postgres {
                     original_source = COALESCE($3, guild_scripts.original_source),
                     enabled = COALESCE($4, guild_scripts.enabled),
                     contributes_commands = COALESCE($5, guild_scripts.contributes_commands),
-                    plugin_version_number = $6
+                    plugin_version_number = COALESCE($6, guild_scripts.plugin_version_number)
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
              contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;

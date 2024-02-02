@@ -4,8 +4,8 @@ use std::{
 };
 
 use deno_core::{
-    op, AsyncRefCell, AsyncResult, BufView, CancelFuture, CancelHandle, CancelTryFuture, Extension,
-    OpState, RcRef, Resource, ResourceId, WriteOutcome,
+    op2, AsyncRefCell, AsyncResult, BufView, CancelFuture, CancelHandle, CancelTryFuture, OpState,
+    RcRef, Resource, ResourceId, WriteOutcome,
 };
 use futures::Stream;
 use reqwest::Body;
@@ -19,16 +19,22 @@ use vm::AnyError;
 
 use crate::limits::RateLimiters;
 
-pub fn extension() -> Extension {
-    Extension::builder("bl_http")
-        .ops(vec![
-            op_bl_http_client_stream::decl(),
-            op_bl_http_request_send::decl(),
-        ])
-        .build()
-}
+deno_core::extension!(
+    bl_http,
+    ops = [op_bl_http_client_stream, op_bl_http_request_send,],
+);
 
-#[op]
+// pub fn extension() -> Extension {
+//     Extension::builder("bl_http")
+//         .ops(vec![
+//             op_bl_http_client_stream::decl(),
+//             op_bl_http_request_send::decl(),
+//         ])
+//         .build()
+// }
+
+#[op2(fast)]
+#[smi]
 pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<ResourceId, AnyError> {
     let (tx, rx) = mpsc::channel(2);
     let resource = RequestBodyResource {
@@ -40,10 +46,11 @@ pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<ResourceId, AnyEr
     crate::try_insert_resource_table(&mut state.resource_table, resource)
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_bl_http_request_send(
     state_rc: Rc<RefCell<OpState>>,
-    args: ClientHttpRequest,
+    #[serde] args: ClientHttpRequest,
 ) -> Result<ClientHttpResponse, AnyError> {
     RateLimiters::user_http(&state_rc).await;
 
@@ -80,7 +87,13 @@ pub async fn op_bl_http_request_send(
 
     // close the req body stream
     if let Some(rid) = args.body_resource_id {
-        state_rc.borrow_mut().resource_table.close(rid).ok();
+        if let Ok(r) = state_rc
+            .borrow_mut()
+            .resource_table
+            .take::<RequestBodyResource>(rid)
+        {
+            r.close()
+        };
     }
 
     handle_response(state_rc, res?)
@@ -110,12 +123,17 @@ fn handle_response(
             cancel: CancelHandle::default(),
         });
 
-    tokio::task::spawn_local(async move {
+    deno_core::unsync::spawn(async move {
         tokio::time::sleep(Duration::from_secs(30)).await;
         let mut borrowed = state_rc.borrow_mut();
         if borrowed.resource_table.has(rid) {
             info!(%rid, "closing resource");
-            borrowed.resource_table.close(rid).ok();
+            if let Ok(r) = borrowed
+                .resource_table
+                .take::<RequestReponseBodyResource>(rid)
+            {
+                r.close()
+            };
         }
     });
 

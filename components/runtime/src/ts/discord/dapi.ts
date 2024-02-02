@@ -1,7 +1,8 @@
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType } from '../generated/discord/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
+import { Invite } from './invite';
 import { Ban, Member } from './member';
 import { Message } from './message';
 import { Permissions } from './permissions';
@@ -26,6 +27,25 @@ export function getGuild(): Promise<Guild> {
     return OpWrappers.getGuild()
 }
 function editGuild() { }
+
+/**
+ * @returns A list of the invites on your server
+ */
+export async function getGuildInvites(): Promise<Invite[]> {
+    return (await OpWrappers.getInvites()).map(v => new Invite(v))
+}
+
+export async function getInvite(code: string, options?: {
+    withCounts?: boolean,
+    withExpiration?: boolean,
+}): Promise<Invite> {
+    let result = await OpWrappers.getInvite(code, options?.withCounts ?? false, options?.withExpiration ?? false)
+    return new Invite(result)
+}
+
+export async function deleteInvite(code: string): Promise<void> {
+    await OpWrappers.deleteInvite(code)
+}
 
 // Message functions
 export async function getMessage(channelId: string, messageId: string): Promise<Message> {
@@ -77,11 +97,14 @@ export interface InteractionCreateMessageFields extends CreateMessageFields {
     flags?: InteractionMessageFlags,
 }
 
+
 export interface InteractionMessageFlags {
     /**
      * Ephemeral messages can only be seen by the author of the interaction
      */
     ephemeral?: boolean,
+
+    suppressEmbeds?: boolean,
 }
 
 
@@ -255,6 +278,69 @@ export async function deleteChannelPermission(channelId: string, kind: Permissio
     return OpWrappers.deleteChannelPermission(channelId, kind, id);
 }
 
+export async function getChannelInvites(channelId: string): Promise<Invite[]> {
+    return (await OpWrappers.getChannelInvites(channelId)).map(v => new Invite(v))
+}
+
+export interface ICreateInviteFields {
+    /**
+     * Duration of invite in seconds before expiry, or 0 for never. between 0 and 604800 (7 days)
+     * 
+     * Default: 24 hours
+     */
+    maxAgeSeconds?: number;
+
+    /**
+     * Max number of uses or 0 for unlimited. between 0 and 100
+     * 
+     * Default: 0 (unlimited)
+     */
+    maxUses?: number;
+
+    /**
+     * Whether this invite only grants temporary membership
+     * 
+     * Default: false
+     */
+    temporary?: boolean;
+
+    /**
+     * If true, don't try to reuse a similar invite (useful for creating many unique one time use invites)
+     * 
+     * Default false
+     */
+    unique?: boolean;
+
+    /**
+     * The type of target for this voice channel invite
+     */
+    targetType?: InviteTargetType;
+
+    /**
+     * The id of the user whose stream to display for this invite, required if targetType is 'Stream', the user must be streaming in the channel
+     */
+    targetUserId?: string;
+
+    /**
+     * The id of the embedded application to open for this invite, required if targetType is 'EmbeddedApplication', the application must have the EMBEDDED flag
+     */
+    targetApplicationId?: string;
+}
+
+export async function createChannelInvite(channelId: string, fields: ICreateInviteFields): Promise<Invite> {
+    const result = await OpWrappers.createChannelInvite(channelId, {
+        max_age: fields.maxAgeSeconds,
+        max_uses: fields.maxUses,
+        temporary: fields.temporary,
+        target_application_id: fields.targetApplicationId,
+        target_user_id: fields.targetUserId,
+        target_type: fields.targetType,
+        unique: fields.unique,
+    })
+
+    return new Invite(result)
+}
+
 // Pins 
 export async function getPins(channelId: string): Promise<Message[]> {
     return (await OpWrappers.op_discord_get_channel_pins(channelId)).map(v => new Message(v));
@@ -265,12 +351,6 @@ export async function createPin(channelId: string, messageId: string): Promise<v
 export async function deletePin(channelId: string, messageId: string): Promise<void> {
     return OpWrappers.op_discord_delete_pin(channelId, messageId);
 }
-
-// Invite functions
-async function getInvite() { }
-async function getInvites() { }
-async function createInvite() { }
-async function deleteInvite() { }
 
 // Emoji functions
 async function getEmoji() { }

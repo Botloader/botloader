@@ -44,9 +44,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::spawn(dispatch_server::start_server(
         config.broker_rpc_listen_addr.clone(),
-        handle,
+        handle.clone(),
     ));
-    run_http_server(config, discord_state, ready.clone()).await;
+    run_http_server(config, discord_state, ready.clone(), handle).await;
 
     Ok(())
 }

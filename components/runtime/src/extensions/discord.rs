@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use deno_core::{error::custom_error, op, Extension, OpState};
+use deno_core::{error::custom_error, op2, OpState};
 use futures::TryFutureExt;
 use runtime_models::{
     discord::{
@@ -11,6 +11,7 @@ use runtime_models::{
     internal::{
         channel::{CreateChannel, EditChannel},
         interactions::InteractionCallback,
+        invite::CreateInviteFields,
         member::{Ban, UpdateGuildMemberFields},
         messages::{
             Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
@@ -27,7 +28,7 @@ use std::{
     time::{Duration, Instant},
 };
 use std::{cell::RefCell, rc::Rc};
-use tracing::warn;
+use tracing::{info, warn};
 use twilight_http::error::ErrorType;
 use twilight_http::request::AuditLogReason;
 use twilight_http::{
@@ -43,76 +44,79 @@ use twilight_model::{
 use vm::AnyError;
 
 use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
-use crate::{get_rt_ctx, RuntimeContext, RuntimeEvent};
+use crate::{get_rt_ctx, limits::RateLimiters, RuntimeContext, RuntimeEvent};
 
-pub fn extension() -> Extension {
-    Extension::builder("bl_discord")
-        .ops(vec![
-            // guild
-            op_discord_get_guild::decl(),
-            // messages
-            op_discord_get_message::decl(),
-            op_discord_get_messages::decl(),
-            op_discord_create_message::decl(),
-            op_discord_edit_message::decl(),
-            op_discord_crosspost_message::decl(),
-            op_discord_delete_message::decl(),
-            op_discord_bulk_delete_messages::decl(),
-            // Reactions
-            op_discord_create_reaction::decl(),
-            op_discord_delete_own_reaction::decl(),
-            op_discord_delete_user_reaction::decl(),
-            op_discord_get_reactions::decl(),
-            op_discord_delete_all_reactions::decl(),
-            op_discord_delete_all_reactions_for_emoji::decl(),
-            // roles
-            op_discord_get_role::decl(),
-            op_discord_get_roles::decl(),
-            // channels
-            op_discord_get_channel::decl(),
-            op_discord_get_channels::decl(),
-            op_discord_create_channel::decl(),
-            op_discord_edit_channel::decl(),
-            op_discord_delete_channel::decl(),
-            op_discord_update_channel_permission::decl(),
-            op_discord_delete_channel_permission::decl(),
-            // pins
-            op_discord_get_channel_pins::decl(),
-            op_discord_create_pin::decl(),
-            op_discord_delete_pin::decl(),
-            // invites
-            // members
-            op_discord_remove_member::decl(),
-            op_discord_get_members::decl(),
-            op_discord_update_member::decl(),
-            op_discord_add_member_role::decl(),
-            op_discord_remove_member_role::decl(),
-            // interactions
-            op_discord_interaction_callback::decl(),
-            op_discord_interaction_get_original_response::decl(),
-            op_discord_interaction_edit_original_response::decl(),
-            op_discord_interaction_delete_original::decl(),
-            op_discord_interaction_followup_message::decl(),
-            op_discord_interaction_get_followup_message::decl(),
-            op_discord_interaction_edit_followup_message::decl(),
-            op_discord_interaction_delete_followup_message::decl(),
-            // Bans
-            op_discord_create_ban::decl(),
-            op_discord_get_ban::decl(),
-            op_discord_get_bans::decl(),
-            op_discord_delete_ban::decl(),
-            // misc
-            op_discord_get_member_permissions::decl(),
-        ])
-        .state(move |state| {
-            state.put(DiscordOpsState {
-                recent_bad_requests: VecDeque::new(),
-            });
-
-            Ok(())
-        })
-        .build()
-}
+deno_core::extension!(
+    bl_discord,
+    ops = [
+        // guild
+        op_discord_get_guild,
+        op_discord_get_invites,
+        op_discord_get_invite,
+        op_discord_delete_invite,
+        // messages
+        op_discord_get_message,
+        op_discord_get_messages,
+        op_discord_create_message,
+        op_discord_edit_message,
+        op_discord_crosspost_message,
+        op_discord_delete_message,
+        op_discord_bulk_delete_messages,
+        // Reactions
+        op_discord_create_reaction,
+        op_discord_delete_own_reaction,
+        op_discord_delete_user_reaction,
+        op_discord_get_reactions,
+        op_discord_delete_all_reactions,
+        op_discord_delete_all_reactions_for_emoji,
+        // roles
+        op_discord_get_role,
+        op_discord_get_roles,
+        // channels
+        op_discord_get_channel,
+        op_discord_get_channels,
+        op_discord_create_channel,
+        op_discord_edit_channel,
+        op_discord_delete_channel,
+        op_discord_update_channel_permission,
+        op_discord_delete_channel_permission,
+        op_discord_get_channel_invites,
+        op_discord_create_channel_invite,
+        // pins
+        op_discord_get_channel_pins,
+        op_discord_create_pin,
+        op_discord_delete_pin,
+        // invites
+        // members
+        op_discord_remove_member,
+        op_discord_get_members,
+        op_discord_update_member,
+        op_discord_add_member_role,
+        op_discord_remove_member_role,
+        // interactions
+        op_discord_interaction_callback,
+        op_discord_interaction_get_original_response,
+        op_discord_interaction_edit_original_response,
+        op_discord_interaction_delete_original,
+        op_discord_interaction_followup_message,
+        op_discord_interaction_get_followup_message,
+        op_discord_interaction_edit_followup_message,
+        op_discord_interaction_delete_followup_message,
+        // Bans
+        op_discord_create_ban,
+        op_discord_get_ban,
+        op_discord_get_bans,
+        op_discord_delete_ban,
+        // misc
+        op_discord_get_member_permissions,
+    ],
+    state = |state| {
+        state.put(DiscordOpsState {
+            recent_bad_requests: VecDeque::new(),
+        });
+        // state.put::<Options>(options.options);
+    },
+);
 
 struct DiscordOpsState {
     recent_bad_requests: VecDeque<Instant>,
@@ -202,7 +206,8 @@ pub fn not_found_error(message: impl Into<Cow<'static, str>>) -> AnyError {
     custom_error("DiscordNotFoundError", message)
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -217,12 +222,99 @@ pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, 
     }
 }
 
+#[op2(async)]
+#[serde]
+pub async fn op_discord_get_invites(
+    state: Rc<RefCell<OpState>>,
+) -> Result<Vec<runtime_models::internal::invite::Invite>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    let resp = rt_ctx
+        .discord_config
+        .client
+        .guild_invites(rt_ctx.guild_id)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
+    resp.into_iter().map(TryInto::try_into).collect()
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_get_invite(
+    state: Rc<RefCell<OpState>>,
+    #[string] code: String,
+    with_counts: bool,
+    with_expiration: bool,
+) -> Result<runtime_models::internal::invite::Invite, AnyError> {
+    RateLimiters::discord_get_public_invite(&state).await;
+
+    let rt_ctx = get_rt_ctx(&state);
+
+    let mut req = rt_ctx.discord_config.client.invite(&code);
+    if with_counts {
+        req = req.with_counts();
+    }
+
+    if with_expiration {
+        req = req.with_expiration();
+    }
+
+    req.await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .try_into()
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_delete_invite(
+    state: Rc<RefCell<OpState>>,
+    #[string] code: String,
+) -> Result<(), AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    // we need to make sure this invite comes from this guild
+    let invite = rt_ctx
+        .discord_config
+        .client
+        .invite(&code)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
+    let is_correct_guild = if let Some(guild) = invite.guild {
+        guild.id == rt_ctx.guild_id
+    } else {
+        false
+    };
+
+    // someone tried to be sneaky...
+    if !is_correct_guild {
+        return Err(anyhow!("This invite does not belong to your server."));
+    }
+
+    rt_ctx
+        .discord_config
+        .client
+        .delete_invite(&code)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?;
+
+    Ok(())
+}
+
 // Messages
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_message(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
-    message_id: Id<MessageMarker>,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] message_id: Id<MessageMarker>,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -239,10 +331,11 @@ pub async fn op_discord_get_message(
         .into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_messages(
     state: Rc<RefCell<OpState>>,
-    args: OpGetMessages,
+    #[serde] args: OpGetMessages,
 ) -> Result<Vec<Message>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -288,10 +381,11 @@ pub async fn op_discord_get_messages(
     Ok(messages.into_iter().map(Into::into).collect())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_create_message(
     state: Rc<RefCell<OpState>>,
-    args: OpCreateChannelMessage,
+    #[serde] args: OpCreateChannelMessage,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -337,10 +431,11 @@ pub async fn op_discord_create_message(
         .into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_edit_message(
     state: Rc<RefCell<OpState>>,
-    args: OpEditChannelMessage,
+    #[serde] args: OpEditChannelMessage,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -381,11 +476,11 @@ pub async fn op_discord_edit_message(
         .into())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_crosspost_message(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
-    message_id: Id<MessageMarker>,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] message_id: Id<MessageMarker>,
 ) -> Result<(), AnyError> {
     let ctx = get_rt_ctx(&state);
     get_guild_channel(&state, &ctx, channel_id).await?;
@@ -399,10 +494,10 @@ pub async fn op_discord_crosspost_message(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_interaction_callback(
     state: Rc<RefCell<OpState>>,
-    args: InteractionCallback,
+    #[serde] args: InteractionCallback,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -419,10 +514,11 @@ pub async fn op_discord_interaction_callback(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_interaction_get_original_response(
     state: Rc<RefCell<OpState>>,
-    token: String,
+    #[string] token: String,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -436,10 +532,11 @@ pub async fn op_discord_interaction_get_original_response(
         .into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_interaction_edit_original_response(
     state: Rc<RefCell<OpState>>,
-    args: OpCreateFollowUpMessage,
+    #[serde] args: OpCreateFollowUpMessage,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -475,10 +572,10 @@ pub async fn op_discord_interaction_edit_original_response(
         .into())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_interaction_delete_original(
     state: Rc<RefCell<OpState>>,
-    token: String,
+    #[string] token: String,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -487,11 +584,12 @@ pub async fn op_discord_interaction_delete_original(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_interaction_get_followup_message(
     state: Rc<RefCell<OpState>>,
-    token: String,
-    id: Id<MessageMarker>,
+    #[string] token: String,
+    #[serde] id: Id<MessageMarker>,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -505,10 +603,11 @@ pub async fn op_discord_interaction_get_followup_message(
         .into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_interaction_followup_message(
     state: Rc<RefCell<OpState>>,
-    args: OpCreateFollowUpMessage,
+    #[serde] args: OpCreateFollowUpMessage,
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -556,11 +655,12 @@ pub async fn op_discord_interaction_followup_message(
         .into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_interaction_edit_followup_message(
     state: Rc<RefCell<OpState>>,
-    message_id: Id<MessageMarker>,
-    args: OpCreateFollowUpMessage,
+    #[serde] message_id: Id<MessageMarker>,
+    #[serde] args: OpCreateFollowUpMessage,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -593,11 +693,11 @@ pub async fn op_discord_interaction_edit_followup_message(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_interaction_delete_followup_message(
     state: Rc<RefCell<OpState>>,
-    token: String,
-    id: Id<MessageMarker>,
+    #[string] token: String,
+    #[serde] id: Id<MessageMarker>,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -609,10 +709,10 @@ pub async fn op_discord_interaction_delete_followup_message(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_message(
     state: Rc<RefCell<OpState>>,
-    args: OpDeleteMessage,
+    #[serde] args: OpDeleteMessage,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -629,10 +729,10 @@ pub async fn op_discord_delete_message(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_bulk_delete_messages(
     state: Rc<RefCell<OpState>>,
-    args: OpDeleteMessagesBulk,
+    #[serde] args: OpDeleteMessagesBulk,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -647,7 +747,7 @@ pub async fn op_discord_bulk_delete_messages(
     rt_ctx
         .discord_config
         .client
-        .delete_messages(channel.id, &message_ids)
+        .delete_messages(channel.id, &message_ids)?
         .await
         .map_err(|err| handle_discord_error(&state, err))?;
 
@@ -655,10 +755,11 @@ pub async fn op_discord_bulk_delete_messages(
 }
 
 // Roles
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_role(
     state: Rc<RefCell<OpState>>,
-    role_id: Id<RoleMarker>,
+    #[serde] role_id: Id<RoleMarker>,
 ) -> Result<runtime_models::discord::role::Role, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -668,7 +769,8 @@ pub async fn op_discord_get_role(
     }
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_roles(
     state: Rc<RefCell<OpState>>,
 ) -> Result<Vec<runtime_models::discord::role::Role>, AnyError> {
@@ -679,11 +781,11 @@ pub async fn op_discord_get_roles(
 }
 
 // Reactions
-#[op]
+#[op2(async)]
 pub async fn op_discord_create_reaction(
     state: Rc<RefCell<OpState>>,
-    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
-    emoji: SendEmoji,
+    #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    #[serde] emoji: SendEmoji,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -700,11 +802,11 @@ pub async fn op_discord_create_reaction(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_own_reaction(
     state: Rc<RefCell<OpState>>,
-    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
-    emoji: SendEmoji,
+    #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    #[serde] emoji: SendEmoji,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -721,11 +823,15 @@ pub async fn op_discord_delete_own_reaction(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_user_reaction(
     state: Rc<RefCell<OpState>>,
-    (channel_id, message_id, user_id): (Id<ChannelMarker>, Id<MessageMarker>, Id<UserMarker>),
-    emoji: SendEmoji,
+    #[serde] (channel_id, message_id, user_id): (
+        Id<ChannelMarker>,
+        Id<MessageMarker>,
+        Id<UserMarker>,
+    ),
+    #[serde] emoji: SendEmoji,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -742,11 +848,12 @@ pub async fn op_discord_delete_user_reaction(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_reactions(
     state: Rc<RefCell<OpState>>,
-    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
-    fields: GetReactionsFields,
+    #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    #[serde] fields: GetReactionsFields,
 ) -> Result<Vec<User>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -776,10 +883,10 @@ pub async fn op_discord_get_reactions(
         .collect())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_all_reactions(
     state: Rc<RefCell<OpState>>,
-    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -795,11 +902,11 @@ pub async fn op_discord_delete_all_reactions(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_all_reactions_for_emoji(
     state: Rc<RefCell<OpState>>,
-    (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
-    emoji: SendEmoji,
+    #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
+    #[serde] emoji: SendEmoji,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -816,10 +923,11 @@ pub async fn op_discord_delete_all_reactions_for_emoji(
 }
 
 // Channels
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_channel(
     state: Rc<RefCell<OpState>>,
-    channel_id_str: String,
+    #[string] channel_id_str: String,
 ) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -827,7 +935,8 @@ pub async fn op_discord_get_channel(
     Ok(channel.into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_channels(
     state: Rc<RefCell<OpState>>,
 ) -> Result<Vec<runtime_models::internal::channel::GuildChannel>, AnyError> {
@@ -837,11 +946,12 @@ pub async fn op_discord_get_channels(
     Ok(channels.into_iter().map(Into::into).collect())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_edit_channel(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
-    params: EditChannel,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] params: EditChannel,
 ) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -859,10 +969,11 @@ pub async fn op_discord_edit_channel(
         .into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_create_channel(
     state: Rc<RefCell<OpState>>,
-    params: CreateChannel,
+    #[serde] params: CreateChannel,
 ) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -880,10 +991,11 @@ pub async fn op_discord_create_channel(
         .into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_delete_channel(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
+    #[serde] channel_id: Id<ChannelMarker>,
 ) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -900,11 +1012,11 @@ pub async fn op_discord_delete_channel(
         .into())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_update_channel_permission(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
-    permission_overwrite: PermissionOverwrite,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] permission_overwrite: PermissionOverwrite,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -924,11 +1036,11 @@ pub async fn op_discord_update_channel_permission(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_channel_permission(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
-    (kind, overwrite_id): (PermissionOverwriteType, Id<GenericMarker>),
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] (kind, overwrite_id): (PermissionOverwriteType, Id<GenericMarker>),
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -948,11 +1060,76 @@ pub async fn op_discord_delete_channel_permission(
     Ok(())
 }
 
+#[op2(async)]
+#[serde]
+pub async fn op_discord_get_channel_invites(
+    state: Rc<RefCell<OpState>>,
+    #[string] channel_id_str: String,
+) -> Result<Vec<runtime_models::internal::invite::Invite>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+    let channel = parse_get_guild_channel(&state, &rt_ctx, &channel_id_str).await?;
+
+    let rt_ctx = get_rt_ctx(&state);
+
+    let resp = rt_ctx
+        .discord_config
+        .client
+        .channel_invites(channel.id)
+        .await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?;
+
+    resp.into_iter().map(TryInto::try_into).collect()
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_create_channel_invite(
+    state: Rc<RefCell<OpState>>,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] fields: CreateInviteFields,
+) -> Result<runtime_models::internal::invite::Invite, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+    let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
+
+    let mut req = rt_ctx.discord_config.client.create_invite(channel.id);
+
+    if let Some(max_age) = fields.max_age {
+        req = req.max_age(max_age)?;
+    }
+    if let Some(max_uses) = fields.max_uses {
+        req = req.max_uses(max_uses)?;
+    }
+    if let Some(temporary) = fields.temporary {
+        req = req.temporary(temporary);
+    }
+    if let Some(target_application_id) = fields.target_application_id {
+        req = req.target_application_id(target_application_id);
+    }
+    if let Some(target_user_id) = fields.target_user_id {
+        req = req.target_user_id(target_user_id);
+    }
+    if let Some(target_type) = fields.target_type {
+        req = req.target_type(target_type.into());
+    }
+    if let Some(unique) = fields.unique {
+        req = req.unique(unique);
+    }
+
+    req.await
+        .map_err(|err| handle_discord_error(&state, err))?
+        .model()
+        .await?
+        .try_into()
+}
+
 // Pins
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_channel_pins(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
+    #[serde] channel_id: Id<ChannelMarker>,
 ) -> Result<Vec<Message>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -971,11 +1148,11 @@ pub async fn op_discord_get_channel_pins(
     Ok(pins.into_iter().map(Into::into).collect())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_create_pin(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
-    message_id: Id<MessageMarker>,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] message_id: Id<MessageMarker>,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -992,11 +1169,11 @@ pub async fn op_discord_create_pin(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_pin(
     state: Rc<RefCell<OpState>>,
-    channel_id: Id<ChannelMarker>,
-    message_id: Id<MessageMarker>,
+    #[serde] channel_id: Id<ChannelMarker>,
+    #[serde] message_id: Id<MessageMarker>,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1014,10 +1191,11 @@ pub async fn op_discord_delete_pin(
 }
 
 // Members
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_members(
     state: Rc<RefCell<OpState>>,
-    user_ids: Vec<String>,
+    #[serde] user_ids: Vec<String>,
 ) -> Result<Vec<Option<runtime_models::internal::member::Member>>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1034,6 +1212,39 @@ pub async fn op_discord_get_members(
         .map(|v| v.parse().map(Id::new_checked).ok().flatten())
         .collect::<Vec<_>>();
 
+    let valid_ids = ids.iter().filter(|v| v.is_some()).count();
+    if valid_ids > 2 {
+        info!("Fetching members through gateway");
+
+        let resp = rt_ctx
+            .bot_state
+            .get_guild_members(rt_ctx.guild_id, ids.iter().filter_map(|v| *v).collect())
+            .await?;
+
+        let mut ret = Vec::with_capacity(ids.len());
+        for id in ids {
+            match id {
+                Some(user_id) => ret.push(
+                    resp.iter()
+                        .find(|v| v.user.id == user_id)
+                        .cloned()
+                        .map(From::from),
+                ),
+                None => ret.push(None),
+            }
+        }
+
+        Ok(ret)
+    } else {
+        Ok(fetch_members_through_api(&state, &rt_ctx, ids).await?)
+    }
+}
+
+async fn fetch_members_through_api(
+    state: &Rc<RefCell<OpState>>,
+    rt_ctx: &RuntimeContext,
+    ids: Vec<Option<Id<UserMarker>>>,
+) -> Result<Vec<Option<runtime_models::internal::member::Member>>, AnyError> {
     let mut res = Vec::new();
     for item in ids {
         if let Some(id) = item {
@@ -1057,7 +1268,7 @@ pub async fn op_discord_get_members(
                             ..
                         },
                     ) {
-                        return Err(handle_discord_error(&state, err));
+                        return Err(handle_discord_error(state, err));
                     }
 
                     res.push(None);
@@ -1071,11 +1282,11 @@ pub async fn op_discord_get_members(
     Ok(res)
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_add_member_role(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
-    role_id: Id<RoleMarker>,
+    #[serde] user_id: Id<UserMarker>,
+    #[serde] role_id: Id<RoleMarker>,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1089,11 +1300,11 @@ pub async fn op_discord_add_member_role(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_remove_member_role(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
-    role_id: Id<RoleMarker>,
+    #[serde] user_id: Id<UserMarker>,
+    #[serde] role_id: Id<RoleMarker>,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1107,11 +1318,12 @@ pub async fn op_discord_remove_member_role(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_update_member(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
-    fields: UpdateGuildMemberFields,
+    #[serde] user_id: Id<UserMarker>,
+    #[serde] fields: UpdateGuildMemberFields,
 ) -> Result<runtime_models::internal::member::Member, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
     let mut builder = rt_ctx
@@ -1155,11 +1367,11 @@ pub async fn op_discord_update_member(
 }
 
 // Bans
-#[op]
+#[op2(async)]
 pub async fn op_discord_create_ban(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
-    extras: CreateBanFields,
+    #[serde] user_id: Id<UserMarker>,
+    #[serde] extras: CreateBanFields,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1181,10 +1393,11 @@ pub async fn op_discord_create_ban(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_ban(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
+    #[serde] user_id: Id<UserMarker>,
 ) -> Result<Ban, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1200,7 +1413,8 @@ pub async fn op_discord_get_ban(
     Ok(result.into())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1216,11 +1430,11 @@ pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>
     Ok(result.into_iter().map(Into::into).collect())
 }
 
-#[op]
+#[op2(async)]
 pub async fn op_discord_delete_ban(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
-    extras: AuditLogExtras,
+    #[serde] user_id: Id<UserMarker>,
+    #[serde] extras: AuditLogExtras,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1239,11 +1453,11 @@ pub async fn op_discord_delete_ban(
 }
 
 // Other
-#[op]
+#[op2(async)]
 pub async fn op_discord_remove_member(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
-    extras: AuditLogExtras,
+    #[serde] user_id: Id<UserMarker>,
+    #[serde] extras: AuditLogExtras,
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
@@ -1261,11 +1475,12 @@ pub async fn op_discord_remove_member(
     Ok(())
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 pub async fn op_discord_get_member_permissions(
     state: Rc<RefCell<OpState>>,
-    user_id: Id<UserMarker>,
-    (roles, channel_id): (Option<Vec<Id<RoleMarker>>>, Option<Id<ChannelMarker>>),
+    #[serde] user_id: Id<UserMarker>,
+    #[serde] (roles, channel_id): (Option<Vec<Id<RoleMarker>>>, Option<Id<ChannelMarker>>),
 ) -> Result<(String, Option<String>), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 

@@ -1,0 +1,81 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands),\n                    plugin_version_number = COALESCE($6, guild_scripts.plugin_version_number)\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "original_source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "contributes_commands",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 6,
+        "name": "contributes_interval_timers",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 7,
+        "name": "plugin_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "plugin_auto_update",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "plugin_version_number",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text",
+        "Bool",
+        "Jsonb",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c000e2e1114fab3d4f26fc2f2b0db6bfca6788194e147c787c4b40be450d2b29"
+}

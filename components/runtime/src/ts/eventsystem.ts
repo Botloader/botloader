@@ -1,5 +1,5 @@
 import { Commands } from './commands';
-import { ComponentInteraction, ModalSubmitInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, guildChannelFromInternal, EventMessageReactionRemove, EventMessageReactionRemoveAll, IEventThreadDelete, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, Interaction, Member, Message, GuildChannel, SelectMenuInteraction, parseInteractionCustomId, ChannelType } from './discord/index';
+import { ComponentInteraction, ModalSubmitInteraction, EventMemberRemove, EventMessageDelete, EventMessageReactionAdd, guildChannelFromInternal, EventMessageReactionRemove, EventMessageReactionRemoveAll, IEventThreadDelete, EventMessageReactionRemoveAllEmoji, EventMessageUpdate, Interaction, Member, Message, GuildChannel, SelectMenuInteraction, parseInteractionCustomId, ChannelType, EventInviteCreate, EventInviteDelete } from './discord/index';
 import * as Internal from './generated/internal/index';
 
 export namespace EventSystem {
@@ -28,7 +28,8 @@ export namespace EventSystem {
     export function dispatchEvent(evt: DispatchEvent) {
         let data = evt.data;
         if (evt.name in converters) {
-            data = converters[evt.name as keyof typeof converters](evt.data);
+            const converter = converters[evt.name as keyof typeof converters]
+            data = converter!(evt.data);
         }
 
         if (evt.name === "BOTLOADER_COMPONENT_INTERACTION_CREATE") {
@@ -93,6 +94,9 @@ export namespace EventSystem {
         THREAD_CREATE: GuildChannel,
         THREAD_UPDATE: GuildChannel,
         THREAD_DELETE: IEventThreadDelete,
+
+        INVITE_CREATE: EventInviteCreate,
+        INVITE_DELETE: EventInviteDelete,
     }
 
 
@@ -226,12 +230,26 @@ export namespace EventSystem {
         }
     }
 
-    const converters = {
+    const converters: {
+        [key in keyof EventTypes]?: (v: any) => EventTypes[key];
+    } = {
         MESSAGE_CREATE: (v: Internal.IMessage) => new Message(v),
+        MESSAGE_UPDATE: (v: Internal.IEventMessageUpdate) => new EventMessageUpdate(v),
+
+        MESSAGE_REACTION_ADD: (v: Internal.IEventMessageReactionAdd) => new EventMessageReactionAdd(v),
+
         CHANNEL_CREATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
         CHANNEL_UPDATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
         CHANNEL_DELETE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
+
+        MEMBER_ADD: (v: Internal.IMember) => new Member(v),
+        MEMBER_UPDATE: (v: Internal.IMember) => new Member(v),
+        MEMBER_REMOVE: (v: Internal.IEventMemberRemove) => new EventMemberRemove(v),
+
         THREAD_CREATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
         THREAD_UPDATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
+
+        INVITE_CREATE: (v: Internal.IEventInviteCreate) => new EventInviteCreate(v),
+        INVITE_DELETE: (v: Internal.IEventInviteDelete) => new EventInviteDelete(v),
     }
 }

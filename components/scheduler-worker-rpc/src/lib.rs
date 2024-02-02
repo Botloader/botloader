@@ -14,6 +14,26 @@ pub enum SchedulerMessage {
     Shutdown,
 }
 
+impl SchedulerMessage {
+    pub fn guild_id(&self) -> Option<Id<GuildMarker>> {
+        match self {
+            SchedulerMessage::Dispatch(_) => None,
+            SchedulerMessage::CreateScriptsVm(v) => Some(v.guild_id),
+            SchedulerMessage::Complete => None,
+            SchedulerMessage::Shutdown => None,
+        }
+    }
+
+    pub fn span_name(&self) -> &'static str {
+        match self {
+            SchedulerMessage::Dispatch(_) => "SchedulerMessage::Dispatch",
+            SchedulerMessage::CreateScriptsVm(_) => "SchedulerMessage::CreateScriptsVm",
+            SchedulerMessage::Complete => "SchedulerMessage::Complete",
+            SchedulerMessage::Shutdown => "SchedulerMessage::Shutdown",
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct CreateScriptsVmReq {
     pub seq: u64,
@@ -40,6 +60,22 @@ pub enum WorkerMessage {
     GuildLog(guild_logger::LogEntry),
     Hello(u64),
     Metric(String, MetricEvent, HashMap<String, String>),
+}
+
+impl WorkerMessage {
+    pub fn name(&self) -> &'static str {
+        match self {
+            WorkerMessage::Ack(_) => "Ack",
+            WorkerMessage::Shutdown(_) => "Shutdown",
+            WorkerMessage::ScriptStarted(_) => "ScriptStarted",
+            WorkerMessage::ScriptsInit => "ScriptsInit",
+            WorkerMessage::NonePending => "NonePending",
+            WorkerMessage::TaskScheduled => "TaskScheduled",
+            WorkerMessage::GuildLog(_) => "GuildLog",
+            WorkerMessage::Hello(_) => "Hello",
+            WorkerMessage::Metric(_, _, _) => "Metric",
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]

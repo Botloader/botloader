@@ -3,9 +3,9 @@ import { BotGuild, isErrorResponse } from "botloader-common";
 import React from "react";
 import { useFetchedDataBehindGuard } from "./FetchData";
 import { GuildSelectionDialog } from "./GuildSelectionDialog";
-import { useGuilds } from "./GuildsProvider";
+import { useGuilds } from "../modules/guilds/GuildsProvider";
 import { pluginContext } from "./PluginProvider";
-import { useSession } from "./Session";
+import { useSession } from "../modules/session/useSession";
 
 export function AddPluginToServerButton() {
     const [open, setOpen] = React.useState(false);
@@ -29,7 +29,7 @@ export function AddPluginToServerButton() {
     };
 
     async function addToServer(guild: BotGuild) {
-        const resp = await session.apiClient.addPluginToGuild(plugin.id, guild.guild.id, { auto_update: true });
+        const resp = await session.apiClient.addPluginToGuild(plugin!.id, guild.guild.id, { auto_update: true });
         setAddingToServer(null);
         if (isErrorResponse(resp)) {
             setAddError(resp.response?.description ?? "unknown error");

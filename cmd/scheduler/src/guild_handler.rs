@@ -3,14 +3,14 @@ use std::sync::{Arc, RwLock};
 use crate::{
     command_manager,
     scheduler::Store,
-    vm_session::{VmSession, VmSessionEvent},
+    vm_session::{VmSession, VmSessionEvent, VmSessionStatus},
 };
 use chrono::{DateTime, Utc};
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::LogSender;
 use stores::config::PremiumSlotTier;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument};
 use twilight_model::{
     gateway::event::DispatchEvent,
@@ -19,6 +19,7 @@ use twilight_model::{
 
 pub enum GuildCommand {
     BrokerEvent(GuildEvent),
+    Status(oneshot::Sender<Option<GuildStatus>>),
     ReloadScripts,
     PurgeCache,
     Shutdown,
@@ -107,36 +108,54 @@ impl GuildHandler {
     }
 
     #[instrument(skip(self), fields(guild_id = self.guild_id.get()))]
-    async fn run(mut self) {
+    async fn setup(&mut self) {
         self.fetch_premium_tier().await;
         self.scripts_session.start().await;
+    }
+
+    async fn run(mut self) {
+        self.setup().await;
 
         while let Some(next) = self.next_event().await {
-            match next {
-                NextGuildAction::GuildCommand(GuildCommand::Shutdown) => {
-                    info!("got shutdown signal");
-                    break;
-                }
-                NextGuildAction::GuildCommand(cmd) => {
-                    self.handle_guild_command(cmd).await;
-                }
-                NextGuildAction::VmAction(action) => {
-                    if let Some(evt) = self.scripts_session.handle_action(action).await {
-                        match evt {
-                            crate::vm_session::VmSessionEvent::TooManyInvalidRequests => {
-                                let _ = self.scheduler_tx.send(evt);
-                                break;
-                            }
-                            crate::vm_session::VmSessionEvent::ForciblyShutdown => {
-                                let _ = self.scheduler_tx.send(evt);
-                                break;
-                            }
+            if !self.handle_next_action(next).await {
+                break;
+            }
+        }
+
+        self.shutdown().await;
+    }
+
+    #[instrument(skip(self), fields(guild_id = self.guild_id.get(), action = action.span_info()))]
+    async fn handle_next_action(&mut self, action: NextGuildAction) -> bool {
+        match action {
+            NextGuildAction::GuildCommand(GuildCommand::Shutdown) => {
+                info!("got shutdown signal");
+                return false;
+            }
+            NextGuildAction::GuildCommand(cmd) => {
+                self.handle_guild_command(cmd).await;
+            }
+            NextGuildAction::VmAction(action) => {
+                if let Some(evt) = self.scripts_session.handle_action(action).await {
+                    match evt {
+                        crate::vm_session::VmSessionEvent::TooManyInvalidRequests => {
+                            let _ = self.scheduler_tx.send(evt);
+                            return false;
+                        }
+                        crate::vm_session::VmSessionEvent::ForciblyShutdown => {
+                            let _ = self.scheduler_tx.send(evt);
+                            return false;
                         }
                     }
                 }
             }
         }
 
+        return true;
+    }
+
+    #[instrument(skip(self), fields(guild_id = self.guild_id.get()))]
+    async fn shutdown(&mut self) {
         info!("shutting down guild handler");
         self.scripts_session.shutdown().await;
     }
@@ -170,6 +189,11 @@ impl GuildHandler {
                 panic!("shutdown should be handled by caller")
             }
             GuildCommand::PurgeCache => {}
+            GuildCommand::Status(resp) => {
+                let _ = resp.send(Some(GuildStatus {
+                    vm: self.scripts_session.get_status(),
+                }));
+            }
         }
     }
 
@@ -218,6 +242,32 @@ enum NextGuildAction {
     GuildCommand(GuildCommand),
 }
 
+impl NextGuildAction {
+    fn span_info(&self) -> String {
+        match self {
+            NextGuildAction::VmAction(action) => match action {
+                crate::vm_session::NextAction::WorkerMessage(wm) => {
+                    let wm_name = wm.as_ref().map(|v| v.name()).unwrap_or("none");
+                    format!("VmAction(WorkerMessage({}))", wm_name)
+                }
+                crate::vm_session::NextAction::CheckScheduledTasks => {
+                    "VmAction(CheckScheduledTasks)".to_owned()
+                }
+                crate::vm_session::NextAction::CheckIntervalTimers => {
+                    "VmAction(CheckIntervalTimers)".to_owned()
+                }
+            },
+            NextGuildAction::GuildCommand(cmd) => match cmd {
+                GuildCommand::BrokerEvent(be) => format!("GuildCommand(BrokerEvent({}))", be.t),
+                GuildCommand::ReloadScripts => "GuildCommand(ReloadScripts)".to_owned(),
+                GuildCommand::PurgeCache => "GuildCommand(PurgeCache)".to_owned(),
+                GuildCommand::Shutdown => "GuildCommand(Shutdown)".to_owned(),
+                GuildCommand::Status(_) => "GuildCommand(Status)".to_owned(),
+            },
+        }
+    }
+}
+
 pub struct GuildHandle {
     pub guild_id: Id<GuildMarker>,
     pub rx: mpsc::UnboundedReceiver<VmSessionEvent>,
@@ -228,4 +278,8 @@ pub enum NextTimerAction {
     None,
     Wait(DateTime<Utc>),
     Run,
+}
+
+pub struct GuildStatus {
+    pub vm: VmSessionStatus,
 }

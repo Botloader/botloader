@@ -3,7 +3,7 @@ FROM botloader-base as builder
 RUN cargo build --release --bin dbserver
 
 #run
-FROM debian:bullseye AS runtime
+FROM debian:bookworm AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/dbserver /usr/local/bin/botloader-dbserver
 

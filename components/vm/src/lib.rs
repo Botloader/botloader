@@ -1,11 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
-use deno_core::{v8_set_flags, SourceMapGetter};
+use deno_core::{v8_set_flags, JsRuntime, SourceMapGetter};
 use stores::config::Script;
 use tscompiler::CompiledItem;
 use url::Url;
 
-pub mod error;
 pub mod moduleloader;
 pub mod vm;
 pub mod vmthread;
@@ -29,27 +28,14 @@ pub fn prepend_script_source_header(source: &str, script: Option<&Script>) -> St
     result
 }
 
-const SCRIPT_HEADER_NUM_LINES: u32 = 4;
-
-#[test]
-fn hmm() {
-    let res = gen_script_source_header(None);
-    assert!(res.lines().count() == 4);
-}
-
 fn gen_script_source_header(script: Option<&Script>) -> String {
     match script {
-        None => r#"
-        import {Script} from "/script";
-        const script = new Script(0, null);
-        "#
-        .to_string(),
+        None => {
+            r#"import {Script} from "/script"; const script = new Script(0, null);"#.to_string()
+        }
         Some(h) => {
             format!(
-                r#"
-                import {{Script}} from "/script";
-                const script = new Script({}, {});
-                "#,
+                r#"import {{Script}} from "/script";const script = new Script({}, {});"#,
                 h.id,
                 h.plugin_id
                     .map(|v| v.to_string())
@@ -90,7 +76,13 @@ pub struct ScriptState {
     pub script: Script,
     pub url: url::Url,
     pub state: ScriptLoadState,
-    pub compiled: CompiledItem,
+    pub compiled: Option<CompiledItem>,
+}
+
+impl ScriptState {
+    pub fn can_run(&self) -> bool {
+        matches!(self.state, ScriptLoadState::Unloaded) && self.compiled.is_some()
+    }
 }
 
 #[derive(Clone)]
@@ -98,15 +90,7 @@ pub enum ScriptLoadState {
     Unloaded,
     Loaded,
     Failed,
-}
-
-impl ScriptState {
-    fn get_original_line_col(&self, line_no: u32, col: u32) -> Option<(u32, u32)> {
-        self.compiled
-            .source_map
-            .lookup_token(line_no - SCRIPT_HEADER_NUM_LINES, col)
-            .map(|token| (token.get_src_line() + 1, token.get_src_col()))
-    }
+    FailedCompilation,
 }
 
 pub type ScriptsStateStoreHandle = Rc<RefCell<ScriptsStateStore>>;
@@ -131,29 +115,17 @@ impl ScriptsStateStore {
         self.scripts.clear();
     }
 
-    pub fn get_original_line_col(
-        &self,
-        res: &str,
-        line: u32,
-        col: u32,
-    ) -> Option<(String, u32, u32)> {
-        if let Some(script_load) = self.scripts.iter().find(|v| v.url.as_str() == res).cloned() {
-            if let Some((line, col)) = script_load.get_original_line_col(line, col) {
-                let excl_js = script_load.url.as_str().strip_suffix(".js").unwrap();
-
-                return Some((format!("{excl_js}.ts"), line, col));
-            }
-        }
-
-        None
-    }
-
     pub fn compile_add_script(&mut self, script: Script) -> Result<ScriptState, String> {
-        match tscompiler::compile_typescript(&script.original_source) {
+        let prefixed_source = prepend_script_source_header(&script.original_source, Some(&script));
+
+        match tscompiler::compile_typescript(
+            &prefixed_source,
+            script_url(&script, "ts").to_string(),
+        ) {
             Ok(compiled) => {
                 let item = ScriptState {
-                    compiled,
-                    url: script_url(&script),
+                    compiled: Some(compiled),
+                    url: script_url(&script, "js"),
                     script,
                     state: ScriptLoadState::Unloaded,
                 };
@@ -162,15 +134,19 @@ impl ScriptsStateStore {
 
                 Ok(item)
             }
-            Err(e) => Err(e),
-        }
-    }
+            Err(e) => {
+                let item = ScriptState {
+                    compiled: None,
+                    url: script_url(&script, "js"),
+                    script,
+                    state: ScriptLoadState::FailedCompilation,
+                };
 
-    pub fn is_failed_or_loaded(&self, script_id: u64) -> Option<bool> {
-        Some(matches!(
-            self.get_script(script_id)?.state,
-            ScriptLoadState::Failed | ScriptLoadState::Loaded
-        ))
+                self.scripts.push(item.clone());
+
+                Err(e)
+            }
+        }
     }
 
     pub fn set_state(&mut self, script_id: u64, new_state: ScriptLoadState) {
@@ -205,7 +181,9 @@ impl SourceMapGetter for ScriptStateStoreWrapper {
             .find(|v| v.url.as_str() == file_name)
             .cloned()
         {
-            return Some(script_load.compiled.source_map_raw.as_bytes().into());
+            if let Some(compiled) = script_load.compiled {
+                return Some(compiled.source_map_raw.as_bytes().into());
+            }
         }
 
         None
@@ -216,10 +194,32 @@ impl SourceMapGetter for ScriptStateStoreWrapper {
     }
 }
 
-fn script_url(script: &Script) -> Url {
+fn script_url(script: &Script, suffix: &str) -> Url {
     if let Some(plugin_id) = &script.plugin_id {
-        return Url::parse(&format!("file:///plugins/{}/{}.js", plugin_id, script.name)).unwrap();
+        return Url::parse(&format!(
+            "file:///plugins/{}/{}.{suffix}",
+            plugin_id, script.name
+        ))
+        .unwrap();
     }
 
-    return Url::parse(&format!("file:///guild_scripts/{}.js", script.name)).unwrap();
+    Url::parse(&format!("file:///guild_scripts/{}.{suffix}", script.name)).unwrap()
+}
+
+pub struct BlCoreOptions {
+    cloned_load_states: Rc<RefCell<ScriptsStateStore>>,
+}
+
+deno_core::extension!(bl_core,
+  js = ["src/botloader-core-rt.js",],
+  options = {
+    options: BlCoreOptions,
+  },
+  state = |state, options| {
+    state.put::<Rc<RefCell<ScriptsStateStore>>>(options.options.cloned_load_states);
+  },
+);
+
+pub fn init_v8_platform() {
+    JsRuntime::init_platform(None);
 }

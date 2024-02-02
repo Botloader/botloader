@@ -1,10 +1,7 @@
-use axum::{
-    body::{boxed, BoxBody},
-    http::{header, HeaderMap, HeaderValue, Method, Request, Response},
-};
+use axum::http::{header, HeaderMap, HeaderValue, Method};
+use axum::{body::Body, extract::Request, response::Response};
 use common::config::RunConfig;
 use futures::future::BoxFuture;
-use http_body::Empty;
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
 
@@ -30,26 +27,21 @@ pub struct CorsMiddleware<S> {
     run_config: RunConfig,
 }
 
-impl<S, ReqBody> Service<Request<ReqBody>> for CorsMiddleware<S>
+impl<S> Service<Request> for CorsMiddleware<S>
 where
-    S: Service<Request<ReqBody>, Response = Response<BoxBody>> + Clone + Send + 'static,
+    S: Service<Request, Response = Response> + Send + 'static,
     S::Future: Send + 'static,
-    ReqBody: Send + 'static,
 {
     type Response = S::Response;
     type Error = S::Error;
+    // `BoxFuture` is a type alias for `Pin<Box<dyn Future + Send + 'a>>`
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        // best practice is to clone the inner service like this
-        // see https://github.com/tower-rs/tower/issues/547 for details
-        let clone = self.inner.clone();
-        let mut inner = std::mem::replace(&mut self.inner, clone);
-
+    fn call(&mut self, req: Request) -> Self::Future {
         let prod_host_base = self.run_config.frontend_host_base.clone();
         let origin = req
             .headers()
@@ -62,7 +54,7 @@ where
 
         if matches!(req.method(), &Method::OPTIONS) {
             Box::pin(async move {
-                let mut resp = Response::new(boxed(Empty::new()));
+                let mut resp = Response::new(Body::empty());
 
                 if is_valid_origin {
                     insert_headers(&origin, resp.headers_mut());
@@ -71,8 +63,9 @@ where
                 Ok(resp)
             })
         } else {
+            let future = self.inner.call(req);
             Box::pin(async move {
-                match inner.call(req).await {
+                match future.await {
                     Ok(mut resp) => {
                         if is_valid_origin {
                             insert_headers(&origin, resp.headers_mut());

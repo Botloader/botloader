@@ -30,7 +30,7 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
         DispatchEvent::MemberAdd(m) => Some(DiscordDispatchEvent {
             name: "MEMBER_ADD",
             guild_id: m.guild_id,
-            data: serde_json::to_value(runtime_models::internal::member::Member::from(m.0))
+            data: serde_json::to_value(runtime_models::internal::member::Member::from(m.member))
                 .unwrap(),
         }),
         DispatchEvent::MemberUpdate(m) => Some(DiscordDispatchEvent {
@@ -153,6 +153,29 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
                 None
             }
         }
+        DispatchEvent::InviteCreate(invite) => Some(DiscordDispatchEvent {
+            guild_id: invite.guild_id,
+            name: "INVITE_CREATE",
+            data: serde_json::to_value(
+                runtime_models::internal::events::EventInviteCreate::try_from(*invite)
+                    .map_err(|err| {
+                        tracing::error!(
+                            "failed converting dispatch event InviteCreate event: {err:?}"
+                        );
+                    })
+                    .ok(),
+            )
+            .unwrap(),
+        }),
+        DispatchEvent::InviteDelete(invite) => Some(DiscordDispatchEvent {
+            guild_id: invite.guild_id,
+            name: "INVITE_DELETE",
+            data: serde_json::to_value(runtime_models::internal::events::EventInviteDelete::from(
+                invite,
+            ))
+            .unwrap(),
+        }),
+
         _ => None,
     }
 }

@@ -1,4 +1,4 @@
-FROM rust:1.67
+FROM rust:1.75
 
 RUN cargo install sqlx-cli
 

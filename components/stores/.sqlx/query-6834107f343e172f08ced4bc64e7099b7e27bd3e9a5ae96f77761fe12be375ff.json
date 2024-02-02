@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM discord_oauth_tokens WHERE user_id= $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6834107f343e172f08ced4bc64e7099b7e27bd3e9a5ae96f77761fe12be375ff"
+}

@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     sync::{atomic::AtomicBool, Arc},
     time::{Duration, Instant},
 };
@@ -9,14 +10,23 @@ use futures_util::StreamExt;
 use stores::config::ConfigStore;
 use tokio::{
     net::TcpStream,
-    sync::mpsc::{self},
+    sync::mpsc::{self, UnboundedSender},
 };
 use tracing::{error, info, warn};
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::{cluster::Events, Cluster, Event, Intents};
+use twilight_gateway::{
+    stream::{self, ShardEventStream},
+    Config, Event, Intents, MessageSender, Shard,
+};
+use twilight_http::Client;
+// use twilight_gateway::{cluster::Events, Cluster, stream, Event, Intents};
 use twilight_model::{
-    gateway::event::DispatchEvent,
-    id::{marker::GuildMarker, Id},
+    gateway::{event::DispatchEvent, payload::outgoing::RequestGuildMembers},
+    guild::Member,
+    id::{
+        marker::{GuildMarker, UserMarker},
+        Id,
+    },
 };
 
 pub async fn run_broker(
@@ -34,30 +44,31 @@ pub async fn run_broker(
         | Intents::GUILD_VOICE_STATES
         | Intents::GUILD_MESSAGES
         | Intents::GUILD_MESSAGE_REACTIONS;
+    let config = Config::new(token.clone(), intents);
 
-    let (cluster, events) = Cluster::new(token, intents).await?;
-    let cluster = Arc::new(cluster);
+    // let (cluster, events) = Cluster::new(token, intents).await?;
 
-    let cluster_spawn = cluster.clone();
-    tokio::spawn(async move {
-        cluster_spawn.up().await;
-    });
+    let client = Client::new(token.clone());
+    let shards = stream::create_recommended(&client, config, |_, builder| builder.build())
+        .await?
+        .collect::<Vec<_>>();
 
     let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
     let mut discord_manager = Broker {
-        _cluster: cluster,
         discord_state,
-        events,
         cmd_rx,
         stores,
         ready,
         connected_scheduler: None,
         queued_events: Vec::new(),
         scheduler_discconected_at: Instant::now(),
+        gateway_message_senders: shards.iter().map(|v| v.sender()).collect(),
+        nonce_counter: 0,
+        pending_guild_member_requests: Default::default(),
     };
 
-    tokio::spawn(async move { discord_manager.run().await });
+    tokio::spawn(async move { discord_manager.run(shards).await });
 
     Ok(cmd_tx)
 }
@@ -65,9 +76,7 @@ pub async fn run_broker(
 pub type BrokerHandle = mpsc::UnboundedSender<BrokerCommand>;
 
 struct Broker {
-    _cluster: Arc<Cluster>,
     discord_state: Arc<InMemoryCache>,
-    events: Events,
     cmd_rx: mpsc::UnboundedReceiver<BrokerCommand>,
 
     connected_scheduler: Option<TcpStream>,
@@ -75,17 +84,47 @@ struct Broker {
     scheduler_discconected_at: Instant,
     stores: Arc<dyn ConfigStore>,
     ready: Arc<AtomicBool>,
-    // scheduler_client: Option<BrokerSchedulerServiceClient>,
-    // scheduler_addr: String,
+    gateway_message_senders: Vec<MessageSender>,
+
+    nonce_counter: u64,
+
+    // map of pending guild member requests and their nonce
+    pending_guild_member_requests: HashMap<String, PendingChunkState>,
 }
 
 impl Broker {
-    pub async fn run(&mut self) {
+    pub async fn run(&mut self, mut shards: Vec<Shard>) {
+        let mut stream = ShardEventStream::new(shards.iter_mut());
+
+        // while let Some((shard, event)) = stream.next().await {
+        //     let event = match event {
+        //         Ok(event) => event,
+        //         Err(source) => {
+        //             tracing::warn!(?source, "error receiving event");
+
+        //             if source.is_fatal() {
+        //                 break;
+        //             }
+
+        //             continue;
+        //         }
+        //     };
+
+        //     tracing::debug!(?event, shard = ?shard.id(), "received event");
+        // }
+
         loop {
             tokio::select! {
-                evt = self.events.next() => match evt {
-                    Some((_shard_id, evt)) => {
-                        self.handle_event(evt).await;
+                evt = stream.next() => match evt {
+                    Some((_shard_id, evt)) => match evt{
+                        Ok(evt) => self.handle_event(evt).await,
+                        Err(err) => {
+                            error!(?err, "failed handling event");
+                            if err.is_fatal(){
+                                error!(?err, "fatal error occurred");
+                                break;
+                            }
+                        }
                     },
                     None => todo!(),
                 },
@@ -104,23 +143,26 @@ impl Broker {
                 self.connected_scheduler = Some(stream);
                 self.handle_new_scheduler_connected().await;
             }
+            BrokerCommand::RequestGuildMembers(req) => {
+                self.handle_request_guild_members(req).await;
+            }
         }
     }
 
     async fn handle_event(&mut self, evt: Event) {
         self.discord_state.update(&evt);
-        metrics::counter!("bl.broker.handled_events_total", 1);
+        metrics::counter!("bl.broker.handled_events_total").increment(1);
 
-        let guild_id = match &evt {
+        let forward_for_guild = match &evt {
             Event::Ready(_) => {
                 self.ready.store(true, std::sync::atomic::Ordering::SeqCst);
 
-                metrics::gauge!("bl.broker.connected_guilds_total", 0.0);
+                metrics::gauge!("bl.broker.connected_guilds_total").set(0.0);
                 info!("received ready!");
                 return;
             }
             Event::GuildDelete(g) => {
-                metrics::decrement_gauge!("bl.broker.connected_guilds_total", 1.0);
+                metrics::gauge!("bl.broker.connected_guilds_total").decrement(1.0);
 
                 if !g.unavailable {
                     let _ = self.stores.set_guild_left_status(g.id, true).await;
@@ -144,7 +186,7 @@ impl Broker {
                     })
                     .await;
 
-                metrics::increment_gauge!("bl.broker.connected_guilds_total", 1.0);
+                metrics::gauge!("bl.broker.connected_guilds_total").increment(1.0);
                 gc.id
             }
             Event::MemberAdd(m) => m.guild_id,
@@ -252,12 +294,31 @@ impl Broker {
                 }
             }
             Event::ThreadDelete(v) => v.guild_id,
+            Event::MemberChunk(chunk) => {
+                let nonce = chunk.nonce.clone().unwrap_or_default();
+                let Some(state) = self.pending_guild_member_requests.get_mut(&nonce) else {
+                    return;
+                };
+
+                state.received_chunks += 1;
+
+                let _ = state.response.send(chunk.members.clone());
+
+                if state.received_chunks >= chunk.chunk_count as u64 {
+                    self.pending_guild_member_requests.remove(&nonce);
+                }
+
+                return;
+            }
+            Event::InviteCreate(invite) => invite.guild_id,
+            Event::InviteDelete(invite) => invite.guild_id,
             _ => return,
         };
 
         if let Ok(dispatch) = DispatchEvent::try_from(evt) {
-            metrics::counter!("bl.broker.dispatched_events", 1);
-            self.dispatch_or_queue_event(guild_id, dispatch).await;
+            metrics::counter!("bl.broker.dispatched_events").increment(1);
+            self.dispatch_or_queue_event(forward_for_guild, dispatch)
+                .await;
         }
     }
 
@@ -308,6 +369,35 @@ impl Broker {
                 self.queued_events.push((guild_id, evt))
             }
         }
+    }
+
+    async fn handle_request_guild_members(&mut self, req: GuildMembersRequest) {
+        let destination_shard =
+            (req.guild_id.get() >> 22) % self.gateway_message_senders.len() as u64;
+
+        let nonce = self.next_nonce();
+
+        let sender = self
+            .gateway_message_senders
+            .get(destination_shard as usize)
+            .unwrap();
+
+        sender
+            .command(
+                &RequestGuildMembers::builder(req.guild_id)
+                    .nonce(nonce.to_string())
+                    .user_ids(req.user_ids)
+                    .unwrap(),
+            )
+            .unwrap();
+
+        self.pending_guild_member_requests.insert(
+            nonce.to_string(),
+            PendingChunkState {
+                response: req.response,
+                received_chunks: 0,
+            },
+        );
     }
 
     async fn dispatch_or_queue_event(&mut self, guild_id: Id<GuildMarker>, evt: DispatchEvent) {
@@ -367,8 +457,25 @@ impl Broker {
 
         Ok(())
     }
+
+    fn next_nonce(&mut self) -> u64 {
+        self.nonce_counter += 1;
+        self.nonce_counter
+    }
 }
 
 pub enum BrokerCommand {
     SchedulerConnected(TcpStream),
+    RequestGuildMembers(GuildMembersRequest),
+}
+
+pub struct GuildMembersRequest {
+    pub user_ids: Vec<Id<UserMarker>>,
+    pub guild_id: Id<GuildMarker>,
+    pub response: UnboundedSender<Vec<Member>>,
+}
+
+struct PendingChunkState {
+    received_chunks: u64,
+    response: UnboundedSender<Vec<Member>>,
 }

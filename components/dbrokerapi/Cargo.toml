@@ -6,10 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.0", features = ["macros"] }
-serde = {workspace = true}
-reqwest = { version = "0.11", features = ["json"]}
+serde = { workspace = true }
+reqwest = { version = "0.11", features = ["json"] }
 thiserror = "1.0"
-serde_json = {workspace = true}
+serde_json = { workspace = true }
 
-twilight-model = {workspace = true}
+twilight-model = { workspace = true }

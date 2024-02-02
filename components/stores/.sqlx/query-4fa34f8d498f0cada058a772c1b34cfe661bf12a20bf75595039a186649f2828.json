@@ -1,0 +1,104 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE is_published = true AND is_public = true\nORDER BY id ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "short_description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "long_description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_published",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_official",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "plugin_kind",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 8,
+        "name": "current_version_number",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "script_published_source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "script_published_version_updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "script_dev_source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "script_dev_version_updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "author_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 14,
+        "name": "is_public",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "4fa34f8d498f0cada058a772c1b34cfe661bf12a20bf75595039a186649f2828"
+}

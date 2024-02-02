@@ -2,7 +2,7 @@ use deno_core::{ModuleLoader, ModuleSource, ModuleType, ResolutionKind};
 use futures::future::ready;
 use url::Url;
 
-use crate::{prepend_script_source_header, ScriptLoadState, ScriptsStateStoreHandle};
+use crate::{ScriptLoadState, ScriptsStateStoreHandle};
 
 pub struct ModuleManager {
     pub module_map: Vec<ModuleEntry>,
@@ -17,11 +17,12 @@ impl ModuleManager {
         self.module_map
             .iter()
             .find(|e| e.specifier == *module_specifier)
-            .map(|e| ModuleSource {
-                code: e.source.as_bytes().into(),
-                module_url_found: module_specifier.to_string(),
-                module_url_specified: module_specifier.to_string(),
-                module_type: ModuleType::JavaScript,
+            .map(|e| {
+                ModuleSource::new(
+                    ModuleType::JavaScript,
+                    deno_core::ModuleSourceCode::Bytes(e.source.as_bytes().into()),
+                    &e.specifier,
+                )
             })
     }
 
@@ -35,17 +36,15 @@ impl ModuleManager {
             .iter_mut()
             .find(|v| &v.url == module_specifier)
         {
-            script.state = ScriptLoadState::Loaded;
+            if let Some(compiled) = &script.compiled {
+                script.state = ScriptLoadState::Loaded;
 
-            let source =
-                prepend_script_source_header(&script.compiled.output, Some(&script.script));
-
-            return Some(ModuleSource {
-                code: source.as_bytes().into(),
-                module_url_found: module_specifier.to_string(),
-                module_url_specified: module_specifier.to_string(),
-                module_type: ModuleType::JavaScript,
-            });
+                return Some(ModuleSource::new(
+                    ModuleType::JavaScript,
+                    deno_core::ModuleSourceCode::Bytes(compiled.output.as_bytes().into()),
+                    module_specifier,
+                ));
+            }
         }
 
         None
@@ -89,7 +88,7 @@ impl ModuleLoader for ModuleManager {
     fn load(
         &self,
         module_specifier: &deno_core::ModuleSpecifier,
-        _maybe_referrer: Option<deno_core::ModuleSpecifier>,
+        _maybe_referrer: Option<&deno_core::ModuleSpecifier>,
         _is_dyn_import: bool,
     ) -> std::pin::Pin<Box<deno_core::ModuleSourceFuture>> {
         // info!("loading module: {}", module_specifier.to_string());

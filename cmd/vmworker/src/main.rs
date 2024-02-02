@@ -6,7 +6,7 @@ use runtime::{CreateRuntimeContext, RuntimeEvent};
 use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
 use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
 use vm::vm::{CreateRt, VmCommand, VmEvent, VmShutdownHandle};
 
@@ -26,9 +26,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (scheduler_tx, scheduler_rx) =
         connect_scheduler("/tmp/botloader_scheduler_workers", config.worker_id).await;
 
-    metrics::set_boxed_recorder(Box::new(metrics_forwarder::MetricsForwarder {
+    metrics::set_global_recorder(metrics_forwarder::MetricsForwarder {
         tx: scheduler_tx.clone(),
-    }))
+    })
     .expect("set metrics recorder");
 
     let postgres_store = Arc::new(
@@ -52,6 +52,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let broker_client = dbrokerapi::state_client::Client::new(config.broker_api_addr);
+
+    vm::init_v8_platform();
 
     let worker = Worker::new(
         scheduler_rx,
@@ -160,7 +162,7 @@ impl Worker {
                             info!("vm shut down: channel closed");
                             self.current_state = None;
 
-                             self.write_message(WorkerMessage::Shutdown(ShutdownReason::Other)).await.map(|_| ContinueState::Continue)
+                            self.write_message(WorkerMessage::Shutdown(ShutdownReason::Other)).await.map(|_| ContinueState::Continue)
                         }
                     }
                 }
@@ -195,6 +197,13 @@ impl Worker {
         self.wait_shutdown_current_vm().await;
     }
 
+    #[instrument(
+        skip(self, cmd),
+        fields(
+            guild_id = cmd.guild_id().or(self.current_guild_id()).map(|v| v.to_string()), 
+            message_type = cmd.span_name()
+        )
+    )]
     async fn handle_scheduler_cmd(
         &mut self,
         cmd: SchedulerMessage,
@@ -224,6 +233,13 @@ impl Worker {
         }
     }
 
+    #[instrument(
+        skip(self, evt),
+        fields(
+            guild_id = self.current_guild_id().map(|v| v.to_string()), 
+            evt = evt.span_name()
+        )
+    )]
     async fn handle_runtime_evt(&mut self, evt: RuntimeEvent) -> anyhow::Result<ContinueState> {
         match evt {
             RuntimeEvent::ScriptStarted(sm) => {
@@ -241,6 +257,13 @@ impl Worker {
         }
         Ok(ContinueState::Continue)
     }
+
+    #[instrument(
+        skip(self),
+        fields(
+            guild_id = self.current_guild_id().map(|v| v.to_string()), 
+        )
+    )]
     async fn handle_vm_evt(&mut self, evt: VmEvent) -> anyhow::Result<ContinueState> {
         match evt {
             VmEvent::Shutdown(reason) => {
@@ -300,6 +323,9 @@ impl Worker {
 
         if let Some(current) = &self.current_state {
             // we were already running a vm for this guild, issue a restart command with the new scripts instead
+            // TODO: there is a possibility of a race condition here
+            // we could receive a "completed" event here we handle after this and since we send a ack back
+            // stuff could go wrong...
             let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
             self.write_message(WorkerMessage::Ack(req.seq)).await?;
             return Ok(ContinueState::Continue);
@@ -365,6 +391,10 @@ impl Worker {
             current.scripts_vm.closed().await;
             self.current_state = None;
         }
+    }
+
+    fn current_guild_id(&self) -> Option<Id<GuildMarker>> {
+        self.current_state.as_ref().map(|v| v.guild_id)
     }
 }
 

@@ -48,19 +48,16 @@ pub async fn run_http_server(conf: crate::BrokerConfig, postgres: Arc<Postgres>)
         // .layer(Extension(discord_state))
         .layer(Extension(postgres))
         .layer(axum_metrics_layer::MetricsLayer {
-            name: "bl.db.http_api_hits_total",
+            name_prefix: "bl.db",
         });
-
-    let make_service = app.into_make_service();
 
     // run it with hyper on configured address
     info!("Starting hype on address: {}", conf.http_api_listen_addr);
-    let addr = conf.http_api_listen_addr.parse().unwrap();
-    axum::Server::bind(&addr)
-        .serve(make_service)
-        .with_graceful_shutdown(common::shutdown::wait_shutdown_signal())
+
+    let listener = tokio::net::TcpListener::bind(conf.http_api_listen_addr)
         .await
         .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn handle_post_premium_slots_by_source(

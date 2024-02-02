@@ -10,6 +10,10 @@ import type { MessageType } from "../generated/discord/MessageType";
 import type { IEventMessageUpdate } from "../generated/internal/EventMessageUpdate";
 import type { IEventMessageReactionAdd } from "../generated/internal/EventMessageReactionAdd";
 import type { IEventMemberRemove } from "../generated/internal/EventMemberRemove";
+import type { IEventInviteCreate } from "../generated/internal/IEventInviteCreate";
+import type { IEventInviteDelete } from "../generated/internal/IEventInviteDelete";
+import type { IInviteTargetUser } from "../generated/discord/IInviteTargetUser";
+import type { InviteTargetType } from "../generated/discord/InviteTargetType";
 
 export class EventMessageReactionAdd {
     channelId: string;
@@ -81,5 +85,50 @@ export class EventMemberRemove {
     constructor(json: IEventMemberRemove) {
         this.guildId = json.guildId;
         this.user = new User(json.user);
+    }
+}
+
+export class EventInviteCreate {
+    channelId: string;
+    code: string;
+    createdAt: number;
+    inviter?: User;
+    maxAge: number;
+    maxUses: number;
+    targetUserType?: InviteTargetType;
+    targetUser?: IInviteTargetUser;
+    temporary: boolean;
+    uses: number;
+
+    /** 
+    * @internal 
+    */
+    constructor(json: IEventInviteCreate) {
+        this.channelId = json.channelId
+        this.code = json.code
+        this.createdAt = json.createdAt
+        this.inviter = json.inviter && new User(json.inviter)
+        this.maxAge = json.maxAge
+        this.maxUses = json.maxUses
+        this.targetUserType = json.targetUserType
+        this.targetUser = json.targetUser
+        this.temporary = json.temporary
+        this.uses = json.uses
+    }
+}
+
+
+
+export class EventInviteDelete {
+    channelId: string;
+    code: string;
+
+
+    /** 
+    * @internal 
+    */
+    constructor(json: IEventInviteDelete) {
+        this.channelId = json.channelId
+        this.code = json.code
     }
 }

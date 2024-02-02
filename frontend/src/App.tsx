@@ -1,10 +1,11 @@
 import React from 'react';
 import './App.css';
 import {
-  BrowserRouter as Router,
+  createBrowserRouter,
+  RouterProvider,
 } from "react-router-dom";
-import './misc/WebsocketController';
-import { RoutesElement } from './Routes';
+import './modules/websocket/WebsocketController';
+import { routes } from './pages';
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -22,15 +23,15 @@ const darkTheme = createTheme({
   },
 });
 
+const router = createBrowserRouter(routes)
+
 function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Notifications>
         <SideNavStateController>
-          <Router >
-            <RoutesElement />
-          </Router>
+          <RouterProvider router={router} />
         </SideNavStateController>
       </Notifications>
     </ThemeProvider>

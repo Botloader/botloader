@@ -78,7 +78,7 @@ fn compile_folder(path: &Path) -> Vec<String> {
     fs::create_dir_all(&target_dir).unwrap();
 
     for (name, file) in loaded_files {
-        let output = compile_typescript(&file).unwrap();
+        let output = compile_typescript(&file, format!("{}.ts", file)).unwrap();
         fs::write(target_dir.join(format!("{name}.js")), output.output).unwrap();
         result.push(relative_path.join(name).to_string_lossy().into_owned());
     }

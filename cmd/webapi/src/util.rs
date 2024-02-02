@@ -1,17 +1,16 @@
 use axum::{
-    body::{self, BoxBody},
-    http::{Response, StatusCode},
-    response::IntoResponse,
+    body::Body,
+    http::StatusCode,
+    response::{IntoResponse, Response},
 };
-use http_body::Empty;
 
 pub struct EmptyResponse;
 
 impl IntoResponse for EmptyResponse {
-    fn into_response(self) -> axum::http::Response<BoxBody> {
+    fn into_response(self) -> Response {
         Response::builder()
             .status(StatusCode::NO_CONTENT)
-            .body(body::boxed(Empty::new()))
+            .body(Body::empty())
             .unwrap()
     }
 }

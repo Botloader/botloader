@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "faf28d6116d9dadf33e57b5dc3b7b56e57b7323fd9fb5e4596865bdfc4b0bc75"
+}

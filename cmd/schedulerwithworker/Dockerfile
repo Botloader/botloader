@@ -4,7 +4,7 @@ RUN cargo build --release --bin scheduler
 RUN cargo build --release --bin vmworker
 
 #run
-FROM debian:bullseye AS runtime
+FROM debian:bookworm AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/scheduler /usr/local/bin/botloader-scheduler
 COPY --from=builder /app/target/release/vmworker /usr/local/bin/botloader-vmworker

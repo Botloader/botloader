@@ -64,7 +64,11 @@ ratelimits! {
     // number of guild http requests per second
     user_http => [1, 2, 2],
     // number of task operations per second
-    task_ops => [1, 2, 3]
+    task_ops => [1, 2, 3],
+
+    // number of times we can fetch a public discord invite,
+    // needed because this endpoint is not guild scoped
+    discord_get_public_invite => [1, 1, 1]
 }
 
 // max total amount of bucket storage used on a guild

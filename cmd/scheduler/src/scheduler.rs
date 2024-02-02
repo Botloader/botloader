@@ -8,14 +8,15 @@ use std::{
 
 use crate::{
     command_manager,
-    guild_handler::{GuildCommand, GuildHandle, GuildHandler},
+    guild_handler::{GuildCommand, GuildHandle, GuildHandler, GuildStatus},
     vm_session::VmSessionEvent,
+    vmworkerpool::WorkerStatus,
 };
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::{GuildEvent, HelloData};
 use guild_logger::LogEntry;
 use std::future::Future;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tracing::info;
 use twilight_model::{
     gateway::event::DispatchEvent,
@@ -30,6 +31,8 @@ pub enum SchedulerCommand {
     Shutdown,
     ReloadGuildScripts(Id<GuildMarker>),
     PurgeGuildCache(Id<GuildMarker>),
+    WorkerStatus(oneshot::Sender<Vec<WorkerStatus>>),
+    GuildStatus(Id<GuildMarker>, oneshot::Sender<Option<GuildStatus>>),
 }
 
 pub struct Scheduler {
@@ -275,6 +278,19 @@ impl Scheduler {
                         let _ = tx.send(GuildCommand::PurgeCache);
                     }
                 }
+            }
+            SchedulerCommand::WorkerStatus(req) => {
+                let statuses = self.worker_pool.worker_statuses();
+                let _ = req.send(statuses);
+            }
+            SchedulerCommand::GuildStatus(guild_id, resp) => {
+                if let Some(g) = self.guilds.get(&guild_id) {
+                    if let Some(tx) = &g.tx {
+                        let _ = tx.send(GuildCommand::Status(resp));
+                        return;
+                    }
+                }
+                let _ = resp.send(None);
             }
         }
     }

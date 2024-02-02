@@ -3,6 +3,7 @@ pub mod component;
 pub mod embed;
 pub mod events;
 pub mod guild;
+pub mod invite;
 pub mod member;
 pub mod message;
 pub mod role;

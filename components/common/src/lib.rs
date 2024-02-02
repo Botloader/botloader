@@ -2,7 +2,7 @@ use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
 use metrics_exporter_prometheus::PrometheusBuilder;
-use opentelemetry::{sdk::Resource, KeyValue};
+use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
 use tracing::{info, Level};
 use tracing_subscriber::filter::Targets;
@@ -33,7 +33,7 @@ pub fn setup_metrics(metrics_listen_addr: &str) {
         .build()
         .unwrap();
 
-    metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
+    metrics::set_global_recorder(recorder).unwrap();
 
     info!("exposing metrics at {}", metrics_listen_addr);
     tokio::spawn(exporter);
@@ -67,12 +67,9 @@ pub fn setup_tracing_otlp(url: &str, service_name: String) {
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(otlp_exporter)
-        .with_trace_config(
-            opentelemetry::sdk::trace::config().with_resource(Resource::new(vec![KeyValue::new(
-                "service.name",
-                service_name,
-            )])),
-        )
+        .with_trace_config(opentelemetry_sdk::trace::config().with_resource(
+            opentelemetry_sdk::Resource::new(vec![KeyValue::new("service.name", service_name)]),
+        ))
         .install_simple()
         .expect("valid tracing config");
 

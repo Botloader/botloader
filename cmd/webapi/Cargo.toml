@@ -5,32 +5,32 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies] 
-stores = {path="../../components/stores"}
-discordoauthwrapper = {path="../../components/discordoauthwrapper"}
-botrpc = {path="../../components/botrpc"}
-guild-logger = {path="../../components/guild-logger"}
-validation = {path="../../components/validation"}
-common = {path="../../components/common"}
+[dependencies]
+stores = { path = "../../components/stores" }
+discordoauthwrapper = { path = "../../components/discordoauthwrapper" }
+botrpc = { path = "../../components/botrpc" }
+guild-logger = { path = "../../components/guild-logger" }
+validation = { path = "../../components/validation" }
+common = { path = "../../components/common" }
+axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
 
 oauth2 = "4.1"
-anyhow = {workspace = true}
+anyhow = { workspace = true }
 thiserror = "1.0"
-serde = {workspace = true}
-serde_json = {workspace = true}
-clap = {workspace = true}
-async-trait = {workspace = true}
-futures= "0.3"
-chrono = {workspace = true}
-tokio = {workspace = true}
-tower-http = { version = "0.2.0", features = ["trace", "set-header"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true }
+tower-http = { version = "0.5.1", features = ["trace", "set-header"] }
 tower = "0.4"
-axum = {workspace = true}
-http-body = "0.4"
-tonic = {workspace = true}
+axum = { workspace = true }
+tonic = { workspace = true }
 
-tracing = {workspace = true}
-tracing-log = "0.1"
+tracing = { workspace = true }
+tracing-log = { workspace = true }
 
-twilight-http = {workspace = true}
-twilight-model = {workspace = true}
+twilight-http = { workspace = true }
+twilight-model = { workspace = true }

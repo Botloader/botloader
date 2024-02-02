@@ -15,8 +15,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::{
     channel::message::{
-        allowed_mentions::ParseTypes as TwilightParseTypes,
-        AllowedMentions as TwilightAllowedMentions,
+        AllowedMentions as TwilightAllowedMentions, MentionType as TwilightParseTypes,
     },
     id::Id,
 };

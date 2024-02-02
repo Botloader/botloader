@@ -1,1 +1,1 @@
-Deno.core.initializeAsyncOps();
+// Deno.core.initializeAsyncOps();

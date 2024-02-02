@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use crate::{
@@ -44,6 +44,10 @@ pub struct VmSession {
     force_load_scripts_next: bool,
     scripts: Vec<Script>,
     id_gen: u64,
+
+    last_claimed_worker_id: Option<u64>,
+    last_claimed_worker_at: Instant,
+    last_returned_worker_at: Instant,
 }
 
 impl VmSession {
@@ -78,6 +82,10 @@ impl VmSession {
             interval_timers_man: interval_timer_man,
             cmd_manager_handle,
             scheduled_tasks_man: tasks_man,
+
+            last_claimed_worker_id: None,
+            last_claimed_worker_at: Instant::now(),
+            last_returned_worker_at: Instant::now(),
         }
     }
 
@@ -89,6 +97,16 @@ impl VmSession {
     pub async fn start(&mut self) {
         self.try_retry_load_guild_scripts().await;
         self.load_contribs().await;
+    }
+
+    pub fn get_status(&self) -> VmSessionStatus {
+        VmSessionStatus {
+            current_claimed_worker: self.current_worker.as_ref().map(|v| v.worker_id),
+            claimed_worker_at: self.last_claimed_worker_at,
+            returned_worker_at: self.last_returned_worker_at,
+            last_claimed_worker: self.last_claimed_worker_id,
+            num_pending_acks: self.pending_acks.len(),
+        }
     }
 
     #[instrument(skip(self, action), fields(guild_id = self.guild_id.get()))]
@@ -118,34 +136,73 @@ impl VmSession {
                 self.broken_worker().await;
             }
             NextAction::CheckScheduledTasks => {
-                match self.ensure_claim_worker().await {
-                    ClaimWorkerResult::Reused => {
-                        let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
-                        for task in tasks {
-                            self.dispatch_scheduled_task(task).await;
-                        }
+                // Complicated logic to avoid runaway workers and duplicated runs
+                // TODO: should add some proper protection for duplicated runs to simplify this
+                if self.current_worker.is_some() {
+                    let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
+                    for task in tasks {
+                        self.dispatch_scheduled_task(task).await;
                     }
-                    ClaimWorkerResult::Reloaded => {
-                        // contribs was cleared, no tasks/timers to fire.
+                } else {
+                    match self.ensure_claim_worker().await {
+                        ClaimWorkerResult::Reused => {
+                            let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
+                            if tasks.is_empty() {
+                                if self.pending_acks.is_empty() {
+                                    self.return_worker();
+                                }
+                            } else {
+                                for task in tasks {
+                                    self.dispatch_scheduled_task(task).await;
+                                }
+                            }
+                        }
+                        ClaimWorkerResult::Reloaded => {
+                            // contribs was cleared, no tasks/timers to fire.
+                        }
                     }
                 }
             }
             NextAction::CheckIntervalTimers => {
-                match self.ensure_claim_worker().await {
-                    ClaimWorkerResult::Reused => {
-                        let timers = self.interval_timers_man.trigger_timers().await;
-                        for timer in timers {
-                            self.dispatch_interval_timer(timer).await;
-                        }
+                // Complicated logic to avoid runaway workers and duplicated runs
+                // TODO: should add some proper protection for duplicated runs to simplify this
+                if self.current_worker.is_some() {
+                    let timers = self.interval_timers_man.trigger_timers().await;
+                    for timer in timers {
+                        self.dispatch_interval_timer(timer).await;
                     }
-                    ClaimWorkerResult::Reloaded => {
-                        // contribs was cleared, no tasks/timers to fire.
+                } else {
+                    match self.ensure_claim_worker().await {
+                        ClaimWorkerResult::Reused => {
+                            let timers = self.interval_timers_man.trigger_timers().await;
+                            if timers.is_empty() {
+                                if self.pending_acks.is_empty() {
+                                    self.return_worker();
+                                }
+                            } else {
+                                for timer in timers {
+                                    self.dispatch_interval_timer(timer).await;
+                                }
+                            }
+                        }
+                        ClaimWorkerResult::Reloaded => {
+                            // contribs was cleared, no tasks/timers to fire.
+                        }
                     }
                 }
             }
         }
 
         None
+    }
+
+    fn return_worker(&mut self) {
+        if let Some(current) = self.current_worker.take() {
+            self.last_claimed_worker_id = Some(current.worker_id);
+            self.last_returned_worker_at = Instant::now();
+
+            self.worker_pool.return_worker(current, false);
+        }
     }
 
     pub async fn shutdown(&mut self) {
@@ -182,6 +239,11 @@ impl VmSession {
 
     pub async fn load_contribs(&mut self) {
         info!("loading contribs");
+
+        if self.scripts.is_empty() {
+            self.cmd_manager_handle
+                .send_no_scripts_enabled(self.guild_id);
+        }
 
         if self.current_worker.is_some() {
             if self.send_create_scripts_vm().await.is_err() {
@@ -301,10 +363,7 @@ impl VmSession {
             WorkerMessage::ScriptsInit => todo!(),
             WorkerMessage::NonePending => {
                 if self.pending_acks.is_empty() {
-                    if let Some(current) = self.current_worker.take() {
-                        // return worker
-                        self.worker_pool.return_worker(current, false);
-                    }
+                    self.return_worker();
                 }
             }
             WorkerMessage::TaskScheduled => {
@@ -318,20 +377,13 @@ impl VmSession {
                 unreachable!();
             }
             WorkerMessage::Shutdown(_) => {
-                // handled in parent
-                unreachable!();
+                // handled in caller
             }
             WorkerMessage::Metric(name, m, labels) => self.handle_metric(name, m, labels),
         }
     }
 
     fn handle_metric(&mut self, name: String, m: MetricEvent, labels: HashMap<String, String>) {
-        let recorder = if let Some(rec) = metrics::try_recorder() {
-            rec
-        } else {
-            return;
-        };
-
         let mut labels = labels
             .into_iter()
             .map(|(k, v)| metrics::Label::new(k, v))
@@ -339,18 +391,16 @@ impl VmSession {
 
         labels.push(metrics::Label::new("guild_id", self.guild_id.to_string()));
 
-        let key = metrics::Key::from_parts(name, labels);
-
         match m {
             MetricEvent::Gauge(action) => {
-                let handle = recorder.register_gauge(&key);
+                let handle = metrics::gauge!(name, labels);
                 match action {
                     scheduler_worker_rpc::GaugeEvent::Set(v) => handle.set(v),
                     scheduler_worker_rpc::GaugeEvent::Incr(v) => handle.increment(v),
                 }
             }
             MetricEvent::Counter(action) => {
-                let handle = recorder.register_counter(&key);
+                let handle = metrics::counter!(name, labels);
 
                 match action {
                     scheduler_worker_rpc::CounterEvent::Incr(v) => handle.increment(v),
@@ -445,6 +495,7 @@ impl VmSession {
 
             info!(tier = worker.priority_index, "claimed new worker");
             self.current_worker = Some(worker);
+            self.last_claimed_worker_at = Instant::now();
 
             let res = if should_create_vm {
                 // new worker, reset acks and whatnot
@@ -497,6 +548,9 @@ impl VmSession {
 
     async fn broken_worker(&mut self) {
         if let Some(mut worker) = self.current_worker.take() {
+            self.last_claimed_worker_id = Some(worker.worker_id);
+            self.last_returned_worker_at = Instant::now();
+
             while let Ok(msg) = worker.rx.try_recv() {
                 self.handle_worker_msg(msg).await;
             }
@@ -554,10 +608,8 @@ impl VmSession {
 
         self.scheduled_tasks_man.script_started(&evt);
 
-        self.cmd_manager_handle.send(command_manager::LoadedScript {
-            guild_id: self.guild_id,
-            meta: evt,
-        });
+        self.cmd_manager_handle
+            .send_loaded_script(self.guild_id, evt);
     }
 
     async fn update_db_contribs(
@@ -612,4 +664,12 @@ enum ClaimWorkerResult {
     Reused,
     // We had to reload our VM
     Reloaded,
+}
+
+pub struct VmSessionStatus {
+    pub current_claimed_worker: Option<u64>,
+    pub last_claimed_worker: Option<u64>,
+    pub claimed_worker_at: Instant,
+    pub returned_worker_at: Instant,
+    pub num_pending_acks: usize,
 }

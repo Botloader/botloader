@@ -14,7 +14,7 @@ impl Recorder for MetricsForwarder {
         &self,
         _key: metrics::KeyName,
         _unit: Option<metrics::Unit>,
-        _description: &'static str,
+        _description: metrics::SharedString,
     ) {
     }
 
@@ -22,7 +22,7 @@ impl Recorder for MetricsForwarder {
         &self,
         _key: metrics::KeyName,
         _unit: Option<metrics::Unit>,
-        _description: &'static str,
+        _description: metrics::SharedString,
     ) {
     }
 
@@ -30,21 +30,68 @@ impl Recorder for MetricsForwarder {
         &self,
         _key: metrics::KeyName,
         _unit: Option<metrics::Unit>,
-        _description: &'static str,
+        _description: metrics::SharedString,
     ) {
     }
 
-    fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {
+    fn register_counter(
+        &self,
+        key: &metrics::Key,
+        _metadata: &metrics::Metadata<'_>,
+    ) -> metrics::Counter {
         metrics::Counter::from_arc(Arc::new(Metric::new(self.tx.clone(), key)))
     }
 
-    fn register_gauge(&self, key: &metrics::Key) -> metrics::Gauge {
+    fn register_gauge(
+        &self,
+        key: &metrics::Key,
+        _metadata: &metrics::Metadata<'_>,
+    ) -> metrics::Gauge {
         metrics::Gauge::from_arc(Arc::new(Metric::new(self.tx.clone(), key)))
     }
 
-    fn register_histogram(&self, _key: &metrics::Key) -> metrics::Histogram {
+    fn register_histogram(
+        &self,
+        _key: &metrics::Key,
+        _metadata: &metrics::Metadata<'_>,
+    ) -> metrics::Histogram {
         metrics::Histogram::noop()
     }
+    // fn describe_counter(
+    //     &self,
+    //     _key: metrics::KeyName,
+    //     _unit: Option<metrics::Unit>,
+    //     _description: &'static str,
+    // ) {
+    // }
+
+    // fn describe_gauge(
+    //     &self,
+    //     _key: metrics::KeyName,
+    //     _unit: Option<metrics::Unit>,
+    //     _description: &'static str,
+    // ) {
+    // }
+
+    // fn describe_histogram(
+    //     &self,
+    //     _key: metrics::KeyName,
+    //     _unit: Option<metrics::Unit>,
+    //     _description: &'static str,
+    // ) {
+    // }
+
+    // fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {
+    //     metrics::Counter::from_arc(Arc::new(Metric::new(self.tx.clone(), key)))
+    // }
+
+    // fn register_gauge(&self, key: &metrics::Key) -> metrics::Gauge {
+    //     metrics::Gauge::from_arc(Arc::new(Metric::new(self.tx.clone(), key)))
+    // }
+
+    // fn register_histogram(&self, _key: &metrics::Key) -> metrics::Histogram {
+    //     metrics::Histogram::noop()
+    // }
 }
 
 struct Metric {

@@ -28,9 +28,32 @@ struct PoolInner {
     worker_id_gen: u64,
 
     pending_starts: HashMap<u64, PendingWorkerHandle>,
+    claimed_workers: [VecDeque<ClaimedWorker>; MAX_PREMIUM_SLOT_TIER + 1],
 
     pools: [Vec<WorkerHandle>; MAX_PREMIUM_SLOT_TIER + 1],
-    req_queues: [VecDeque<oneshot::Sender<WorkerHandle>>; MAX_PREMIUM_SLOT_TIER + 1],
+    req_queues: [VecDeque<QueuedWorkerRequest>; MAX_PREMIUM_SLOT_TIER + 1],
+}
+
+impl PoolInner {
+    fn tracking_remove_claimed_worker(&mut self, priority_index: usize, worker_id: u64) {
+        if let Some(index) = self.claimed_workers[priority_index]
+            .iter()
+            .enumerate()
+            .find_map(|(i, v)| {
+                if v.worker_id == worker_id {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+        {
+            self.claimed_workers[priority_index].remove(index);
+        }
+    }
+
+    fn track_claimed_worker(&mut self, claim: ClaimedWorker) {
+        self.claimed_workers[claim.priority_index].push_back(claim);
+    }
 }
 
 #[derive(Clone)]
@@ -44,6 +67,7 @@ impl VmWorkerPool {
         Self {
             inner: Arc::new(Mutex::new(PoolInner {
                 pools: Default::default(),
+                claimed_workers: Default::default(),
                 req_queues: Default::default(),
                 worker_id_gen: 1,
                 pending_starts: HashMap::new(),
@@ -89,8 +113,10 @@ impl VmWorkerPool {
                     .map(|(i, _)| i);
 
                 if let Some(pref_worker) = pref_worker {
-                    metrics::decrement_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
-                    return pool.remove(pref_worker);
+                    metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => i.to_string()).decrement(1.0);
+                    let worker = pool.remove(pref_worker);
+                    w.track_claimed_worker(ClaimedWorker::new_claim(guild_id, &worker));
+                    return worker;
                 }
 
                 if i == 0 {
@@ -116,8 +142,10 @@ impl VmWorkerPool {
                 }
 
                 if let Some(can) = candidate {
-                    metrics::decrement_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
-                    return pool.remove(can);
+                    metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => i.to_string()).decrement(1.0);
+                    let worker = pool.remove(can);
+                    w.track_claimed_worker(ClaimedWorker::new_claim(guild_id, &worker));
+                    return worker;
                 }
 
                 if i == 0 {
@@ -130,7 +158,7 @@ impl VmWorkerPool {
             // no available workers, queue the request
             let (tx, rx) = oneshot::channel();
             let queue = &mut w.req_queues[priority_index];
-            queue.push_back(tx);
+            queue.push_back(QueuedWorkerRequest { guild_id, tx });
             rx
         };
 
@@ -149,7 +177,12 @@ impl VmWorkerPool {
         let elapsed = worker.returned_at - worker.claimed_at;
         if let Some(guild_id) = worker.last_active_guild {
             let micros = elapsed.as_micros() as u64;
-            counter!("bl.worker.claimed_microseconds_total", micros, "guild_id" => guild_id.get().to_string());
+            counter!("bl.worker.claimed_microseconds_total", "guild_id" => guild_id.get().to_string()).increment(micros);
+        }
+
+        {
+            let mut w = self.inner.lock().unwrap();
+            w.tracking_remove_claimed_worker(worker.priority_index, worker.worker_id);
         }
 
         if broken {
@@ -157,7 +190,7 @@ impl VmWorkerPool {
                 "returned broken worker to the pool: {:?}",
                 worker.last_active_guild
             );
-            metrics::counter!("bl.scheduler.broken_workers_total", 1);
+            metrics::counter!("bl.scheduler.broken_workers_total").increment(1);
             self.spawn_worker(worker.priority_index);
         } else {
             info!(
@@ -176,10 +209,14 @@ impl VmWorkerPool {
         let mut i = MAX_PREMIUM_SLOT_TIER;
         loop {
             let queue = &mut w.req_queues[i];
-            if let Some(tx) = queue.pop_front() {
-                if tx.send(worker).is_err() {
+            if let Some(req) = queue.pop_front() {
+                let claim = ClaimedWorker::new_claim(req.guild_id, &worker);
+
+                if req.tx.send(worker).is_err() {
                     panic!("worker request dropped")
                 }
+
+                w.track_claimed_worker(claim);
 
                 return;
             }
@@ -192,7 +229,7 @@ impl VmWorkerPool {
         }
 
         // no pending worker requests
-        metrics::increment_gauge!("bl.scheduler.workerpool_available_workers", 1.0);
+        metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => worker.priority_index.to_string()).increment(1.0);
         w.pools[worker.priority_index].push(worker);
     }
 
@@ -239,8 +276,42 @@ impl VmWorkerPool {
             self.add_worker_to_pool(full);
         }
     }
+
+    pub fn worker_statuses(&self) -> Vec<WorkerStatus> {
+        let w = self.inner.lock().unwrap();
+
+        let mut result = Vec::with_capacity(20);
+        for pool in w.pools.iter() {
+            for worker in pool.iter() {
+                result.push(WorkerStatus {
+                    worker_id: worker.worker_id,
+                    claimed_last: worker.claimed_at,
+                    returned_last: worker.returned_at,
+                    priority_index: worker.priority_index,
+                    claimed_last_by: worker.last_active_guild,
+                    currently_claimed_by: None,
+                });
+            }
+        }
+
+        for pool in &w.claimed_workers {
+            for claim in pool {
+                result.push(WorkerStatus {
+                    worker_id: claim.worker_id,
+                    claimed_last: claim.claimed_at,
+                    returned_last: claim.returned_last,
+                    priority_index: claim.priority_index,
+                    claimed_last_by: None,
+                    currently_claimed_by: Some(claim.guild_id),
+                })
+            }
+        }
+
+        result
+    }
 }
 
+#[derive(Debug)]
 pub struct WorkerHandle {
     pub child: Child,
     pub tx: UnboundedSender<scheduler_worker_rpc::SchedulerMessage>,
@@ -256,6 +327,26 @@ impl WorkerHandle {
     fn claim(&mut self, guild_id: Id<GuildMarker>) {
         self.last_active_guild = Some(guild_id);
         self.claimed_at = Instant::now();
+    }
+}
+
+pub struct ClaimedWorker {
+    pub worker_id: u64,
+    pub guild_id: Id<GuildMarker>,
+    pub claimed_at: Instant,
+    pub returned_last: Instant,
+    pub priority_index: usize,
+}
+
+impl ClaimedWorker {
+    pub fn new_claim(guild_id: Id<GuildMarker>, worker: &WorkerHandle) -> Self {
+        ClaimedWorker {
+            claimed_at: Instant::now(),
+            guild_id,
+            priority_index: worker.priority_index,
+            returned_last: worker.returned_at,
+            worker_id: worker.worker_id,
+        }
     }
 }
 
@@ -301,4 +392,18 @@ fn premium_tier_index(tier: Option<PremiumSlotTier>) -> usize {
         Some(PremiumSlotTier::Lite) => 1,
         Some(PremiumSlotTier::Premium) => 2,
     }
+}
+
+struct QueuedWorkerRequest {
+    guild_id: Id<GuildMarker>,
+    tx: oneshot::Sender<WorkerHandle>,
+}
+
+pub struct WorkerStatus {
+    pub worker_id: u64,
+    pub priority_index: usize,
+    pub currently_claimed_by: Option<Id<GuildMarker>>,
+    pub claimed_last_by: Option<Id<GuildMarker>>,
+    pub claimed_last: Instant,
+    pub returned_last: Instant,
 }

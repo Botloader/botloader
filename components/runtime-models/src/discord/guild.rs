@@ -55,7 +55,7 @@ impl From<&CachedGuild> for Guild {
     fn from(v: &CachedGuild) -> Self {
         Self {
             afk_channel_id: v.afk_channel_id().as_ref().map(ToString::to_string),
-            afk_timeout: NotBigU64(v.afk_timeout()),
+            afk_timeout: NotBigU64(v.afk_timeout().get() as u64),
             application_id: v.application_id().as_ref().map(ToString::to_string),
             banner: v.banner().map(ToString::to_string),
             default_message_notifications: v.default_message_notifications().into(),

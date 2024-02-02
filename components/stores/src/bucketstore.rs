@@ -115,6 +115,7 @@ pub enum SortedOrder {
     Descending,
 }
 
+#[derive(Debug)]
 pub struct Entry {
     pub bucket: String,
     pub key: String,
@@ -122,6 +123,7 @@ pub struct Entry {
     pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+#[derive(Debug)]
 pub enum StoreValue {
     Json(serde_json::Value),
     Float(f64),

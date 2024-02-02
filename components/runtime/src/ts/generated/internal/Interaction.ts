@@ -3,4 +3,7 @@ import type { CommandInteraction } from "./CommandInteraction";
 import type { IModalInteraction } from "./IModalInteraction";
 import type { MessageComponentInteraction } from "./MessageComponentInteraction";
 
-export type Interaction = { kind: "Command" } & CommandInteraction | { kind: "MessageComponent" } & MessageComponentInteraction | { kind: "ModalSubmit" } & IModalInteraction;
+export type Interaction =
+  | { "kind": "Command" } & CommandInteraction
+  | { "kind": "MessageComponent" } & MessageComponentInteraction
+  | { "kind": "ModalSubmit" } & IModalInteraction;

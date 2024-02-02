@@ -1,7 +1,7 @@
 ####################################
 # Build book
 ####################################
-FROM debian:bullseye as build-book
+FROM debian:bookworm as build-book
 
 RUN apt-get update
 RUN apt-get install -y curl

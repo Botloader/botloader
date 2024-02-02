@@ -3,7 +3,7 @@ FROM botloader-base as builder
 RUN cargo build --release --bin discordbroker
 
 #run
-FROM debian:bullseye AS runtime
+FROM debian:bookworm AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/discordbroker /usr/local/bin/botloader-discordbroker
 

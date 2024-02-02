@@ -1,4 +1,6 @@
-use axum::{extract::Path, http::Request, middleware::Next, RequestPartsExt};
+use axum::{
+    extract::Path, extract::Request, middleware::Next, response::Response, RequestPartsExt,
+};
 
 use tracing::{error, Instrument};
 use twilight_model::{
@@ -18,13 +20,12 @@ struct GuildPath {
     guild: u64,
 }
 
-pub async fn current_guild_injector_middleware<B, ST>(
-    request: Request<B>,
-    next: Next<B>,
-) -> Result<axum::response::Response, ApiErrorResponse>
+pub async fn current_guild_injector_middleware<ST>(
+    request: Request,
+    next: Next,
+) -> Result<Response, ApiErrorResponse>
 where
     ST: SessionStore + Send + Sync + 'static,
-    B: Send,
 {
     // running extractors requires a `axum::http::request::Parts`
     let (mut parts, body) = request.into_parts();
@@ -67,13 +68,10 @@ async fn fetch_guild<ST: SessionStore + Send + 'static>(
     Ok(user_guilds.into_iter().find(|e| e.id == guild_id))
 }
 
-pub async fn require_current_guild_admin_middleware<B>(
-    request: Request<B>,
-    next: Next<B>,
-) -> Result<axum::response::Response, ApiErrorResponse>
-where
-    B: Send,
-{
+pub async fn require_current_guild_admin_middleware(
+    request: Request,
+    next: Next,
+) -> Result<Response, ApiErrorResponse> {
     let current_guild = request
         .extensions()
         .get::<CurrentUserGuild>()

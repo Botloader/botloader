@@ -1,8 +1,8 @@
 import { isErrorResponse, NewsItem } from "botloader-common";
 import { useEffect, useState } from "react"
 import { Panel } from "../components/Panel";
-import { useSession } from "../components/Session";
 import ReactMarkdown from 'react-markdown'
+import { useSession } from "../modules/session/useSession";
 
 export function NewsPage() {
     const session = useSession();

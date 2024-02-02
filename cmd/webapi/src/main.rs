@@ -22,8 +22,8 @@ mod routes;
 mod util;
 
 use crate::middlewares::{
-    plugins::plugin_middleware, require_current_guild_admin_middleware, CorsLayer, NoSession,
-    OptionalSession, SessionLayer,
+    bl_admin_only::bl_admin_only_mw, plugins::plugin_middleware,
+    require_current_guild_admin_middleware, CorsLayer, NoSession, OptionalSession, SessionLayer,
 };
 use crate::{errors::ApiErrorResponse, middlewares::current_guild_injector_middleware};
 
@@ -89,7 +89,10 @@ async fn main() {
     let require_auth_layer = session_layer.require_auth_layer();
     let client_cache = session_layer.oauth_api_client_cache.clone();
 
-    let common_middleware_stack = ServiceBuilder::new() // Process at most 100 requests concurrently
+    let common_middleware_stack = ServiceBuilder::new()
+        .layer(axum_metrics_layer::MetricsLayer {
+            name_prefix: "bl.webapi",
+        })
         .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
         .layer(Extension(ConfigData {
             oauth_client: oatuh_client,
@@ -109,23 +112,23 @@ async fn main() {
         });
 
     let auth_guild_mw_stack = ServiceBuilder::new()
-        // .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
-        // .layer(CurrentGuildLayer {
-        //     session_store: session_store.clone(),
-        // })
-        // .layer_fn(f)
         .layer(axum::middleware::from_fn(
-            current_guild_injector_middleware::<_, CurrentSessionStore>,
+            current_guild_injector_middleware::<CurrentSessionStore>,
         ))
         .layer(axum::middleware::from_fn(
             require_current_guild_admin_middleware,
         ));
 
-    let authorized_api_guild_routes = Router::new()
+    let authorized_admin_routes = Router::new()
+        .route("/vm_workers", get(routes::admin::get_worker_statuses))
         .route(
-            "/reload_vm",
-            post(routes::vm::reload_guild_vm::<CurrentSessionStore>),
+            "/guild/:guild_id/status",
+            get(routes::admin::get_guild_status),
         )
+        .layer(axum::middleware::from_fn(bl_admin_only_mw));
+
+    let authorized_api_guild_routes = Router::new()
+        .route("/reload_vm", post(routes::vm::reload_guild_vm))
         .route(
             "/settings",
             get(routes::guilds::get_guild_settings::<CurrentSessionStore>),
@@ -157,6 +160,7 @@ async fn main() {
     let authorized_api_routes =
         Router::new()
             .nest("/guilds/:guild", authorized_api_guild_routes)
+            .nest("/admin", authorized_admin_routes)
             .route(
                 "/guilds",
                 get(routes::guilds::list_user_guilds_route::<
@@ -246,18 +250,14 @@ async fn main() {
 
     let app = public_routes
         .merge(authorized_routes)
-        .layer(common_middleware_stack.clone());
+        .layer(common_middleware_stack);
 
-    let make_service = app.into_make_service();
-
-    // run it with hyper on configured address
     info!("Starting hype on address: {}", conf.listen_addr);
-    let addr = conf.listen_addr.parse().unwrap();
-    axum::Server::bind(&addr)
-        .serve(make_service)
-        .with_graceful_shutdown(common::shutdown::wait_shutdown_signal())
+
+    let listener = tokio::net::TcpListener::bind(conf.listen_addr)
         .await
         .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 #[allow(dead_code)]
@@ -265,7 +265,7 @@ async fn todo_route() -> &'static str {
     "todo"
 }
 
-async fn handle_mw_err_internal_err(err: BoxError) -> impl IntoResponse {
+async fn handle_mw_err_internal_err(err: BoxError) -> ApiErrorResponse {
     error!("internal error occured: {}", err);
 
     ApiErrorResponse::InternalError
