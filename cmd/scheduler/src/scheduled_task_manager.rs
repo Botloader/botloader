@@ -2,7 +2,7 @@ use std::{ops::Add, sync::Arc};
 
 use chrono::{DateTime, Utc};
 use runtime_models::internal::script::ScriptMeta;
-use stores::timers::ScheduledTask;
+use stores::timers::{ScheduledTask, TaskBucket};
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
 
@@ -16,7 +16,8 @@ pub struct Manager {
     // inner: none if no tasks remaining
     next_task_time: Option<Option<DateTime<Utc>>>,
     pending: Vec<u64>,
-    task_names: Vec<String>,
+
+    active_task_buckets: Vec<TaskBucket>,
 }
 
 impl Manager {
@@ -26,7 +27,7 @@ impl Manager {
             guild_id,
             next_task_time: None,
             pending: Vec::new(),
-            task_names: Vec::new(),
+            active_task_buckets: Vec::new(),
         }
     }
 
@@ -38,7 +39,7 @@ impl Manager {
         // fetch
         match self
             .storage
-            .get_next_task_time(self.guild_id, &self.pending, &self.task_names)
+            .get_next_task_time(self.guild_id, &self.pending, &self.active_task_buckets)
             .await
         {
             Ok(v) => {
@@ -69,7 +70,12 @@ impl Manager {
         // trigger some tasks
         match self
             .storage
-            .get_triggered_tasks(self.guild_id, Utc::now(), &self.pending, &self.task_names)
+            .get_triggered_tasks(
+                self.guild_id,
+                Utc::now(),
+                &self.pending,
+                &self.active_task_buckets,
+            )
             .await
         {
             Ok(v) => {
@@ -131,15 +137,18 @@ impl Manager {
     }
 
     pub fn clear_task_names(&mut self) {
-        self.task_names.clear();
+        self.active_task_buckets.clear();
     }
 
     pub fn script_started(&mut self, meta: &ScriptMeta) {
-        for name in &meta.task_names {
-            if self.task_names.contains(name) {
+        for script_task_bucket in &meta.task_buckets {
+            let task_bucket: TaskBucket = script_task_bucket.clone().into();
+
+            if self.active_task_buckets.contains(&task_bucket) {
                 continue;
             }
-            self.task_names.push(name.clone());
+
+            self.active_task_buckets.push(task_bucket);
         }
 
         self.clear_next();

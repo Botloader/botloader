@@ -100,7 +100,7 @@ impl Manager {
         info!("initialzing {} timers", timers.len());
         let all_guild_timers = self
             .storage
-            .get_all_interval_timers(self.guild_id)
+            .get_all_guild_interval_timers(self.guild_id)
             .await
             .unwrap();
 
@@ -170,6 +170,7 @@ impl Manager {
                     last_run,
                     interval: script_timer.interval,
                     name: script_timer.name,
+                    plugin_id: script_timer.plugin_id,
                 },
             )
             .await?;

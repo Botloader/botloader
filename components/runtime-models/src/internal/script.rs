@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{discord::channel::ChannelType, util::NotBigU64};
+use crate::{
+    discord::channel::ChannelType,
+    util::{NotBigU64, PluginId},
+};
 
 use super::interaction::CommandType;
 
@@ -13,10 +16,29 @@ pub struct ScriptMeta {
     pub description: String,
     #[ts(type = "number")]
     pub script_id: NotBigU64,
+    pub plugin_id: Option<PluginId>,
     pub commands: Vec<Command>,
     pub command_groups: Vec<CommandGroup>,
     pub interval_timers: Vec<IntervalTimer>,
-    pub task_names: Vec<String>,
+    pub task_buckets: Vec<TaskBucketId>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/ScriptTaskBucketId.ts")]
+pub struct TaskBucketId {
+    pub name: String,
+    pub plugin_id: Option<PluginId>,
+}
+
+impl From<TaskBucketId> for stores::timers::TaskBucket {
+    fn from(value: TaskBucketId) -> Self {
+        Self {
+            name: value.name,
+            plugin_id: value.plugin_id.map(|v| v.0),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]

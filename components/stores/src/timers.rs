@@ -5,15 +5,26 @@ use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Debug, Error)]
 pub enum TimerStoreError {
-    #[error("inner error occured: {0}")]
+    #[error("inner error occurred: {0}")]
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
 pub type TimerStoreResult<T> = Result<T, TimerStoreError>;
 
+pub struct GetGuildTasksFilter {
+    pub scope: ScopeSelector,
+    pub namespace: Option<String>,
+}
+
+pub enum ScopeSelector {
+    All,
+    Guild,
+    Plugin(u64),
+}
+
 #[async_trait::async_trait]
 pub trait TimerStore: Send + Sync {
-    async fn get_all_interval_timers(
+    async fn get_all_guild_interval_timers(
         &self,
         guild_id: Id<GuildMarker>,
     ) -> TimerStoreResult<Vec<IntervalTimer>>;
@@ -26,7 +37,7 @@ pub trait TimerStore: Send + Sync {
     async fn del_interval_timer(
         &self,
         guild_id: Id<GuildMarker>,
-        script_id: u64,
+        plugin_id: Option<u64>,
         timer_name: String,
     ) -> TimerStoreResult<bool>;
 
@@ -52,10 +63,10 @@ pub trait TimerStore: Send + Sync {
         name: String,
         key: String,
     ) -> TimerStoreResult<Option<ScheduledTask>>;
-    async fn get_tasks(
+    async fn get_guild_tasks(
         &self,
         guild_id: Id<GuildMarker>,
-        name: Option<String>,
+        filter: GetGuildTasksFilter,
         id_after: u64,
         limit: usize,
     ) -> TimerStoreResult<Vec<ScheduledTask>>;
@@ -63,19 +74,21 @@ pub trait TimerStore: Send + Sync {
     /// Delete a task by the global unique ID
     async fn del_task_by_id(&self, guild_id: Id<GuildMarker>, id: u64) -> TimerStoreResult<u64>;
 
-    /// Delete one or more tasks by their (guild_id, name) unique key
+    /// Delete one or more tasks by their (guild_id, plugin_id, name) and unique key
     /// (does nothing to key = null tasks)
     async fn del_task_by_key(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: String,
         key: String,
     ) -> TimerStoreResult<u64>;
 
-    /// Delete all tasks on a guild, optionally filtered by name
+    /// Delete all tasks on a guild, optionally filtered by name and plugin
     async fn del_all_tasks(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: Option<String>,
     ) -> TimerStoreResult<u64>;
 
@@ -95,7 +108,7 @@ pub trait TimerStore: Send + Sync {
         &self,
         guild_id: Id<GuildMarker>,
         ignore_ids: &[u64],
-        names: &[String],
+        buckets: &[TaskBucket],
     ) -> TimerStoreResult<Option<DateTime<Utc>>>;
 
     async fn get_triggered_tasks(
@@ -103,7 +116,7 @@ pub trait TimerStore: Send + Sync {
         guild_id: Id<GuildMarker>,
         t: DateTime<Utc>,
         ignore_ids: &[u64],
-        names: &[String],
+        buckets: &[TaskBucket],
     ) -> TimerStoreResult<Vec<ScheduledTask>>;
 
     async fn delete_guild_timer_data(&self, guild_id: Id<GuildMarker>) -> TimerStoreResult<()>;
@@ -114,7 +127,8 @@ pub struct IntervalTimer {
     pub name: String,
     pub interval: IntervalType,
     pub last_run: DateTime<Utc>,
-    pub script_id: u64,
+    // pub script_id: u64,
+    pub plugin_id: Option<u64>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -127,9 +141,16 @@ pub enum IntervalType {
 pub struct ScheduledTask {
     pub id: u64,
     pub name: String,
+    pub plugin_id: Option<u64>,
 
     pub unique_key: Option<String>,
 
     pub data: serde_json::Value,
     pub execute_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TaskBucket {
+    pub name: String,
+    pub plugin_id: Option<u64>,
 }

@@ -5,4 +5,5 @@ export interface OpStorageBucketList {
   keyPattern?: string;
   after?: string;
   limit?: number;
+  pluginId: string | null;
 }

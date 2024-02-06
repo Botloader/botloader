@@ -2,12 +2,14 @@
 import type { Command } from "./Command";
 import type { CommandGroup } from "./CommandGroup";
 import type { IntervalTimer } from "./IntervalTimer";
+import type { TaskBucketId } from "./ScriptTaskBucketId";
 
 export interface ScriptMeta {
   description: string;
   scriptId: number;
+  pluginId: string | null;
   commands: Array<Command>;
   commandGroups: Array<CommandGroup>;
   intervalTimers: Array<IntervalTimer>;
-  taskNames: Array<string>;
+  taskBuckets: Array<TaskBucketId>;
 }

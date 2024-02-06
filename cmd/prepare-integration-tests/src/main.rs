@@ -1,6 +1,7 @@
+use std::ops::Add;
 use std::{num::NonZeroU64, path::PathBuf};
 
-use stores::config::{ConfigStore, CreateScript};
+use stores::config::{ConfigStore, CreateScript, CreateUpdatePremiumSlotBySource};
 use stores::postgres::Postgres;
 use tracing::info;
 use twilight_model::id::Id;
@@ -15,6 +16,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("preparing scripts..");
 
     let config_store = Postgres::new_with_url(&config.database_url).await?;
+    let premium_slot: stores::config::PremiumSlot = config_store
+        .create_update_premium_slot_by_source(CreateUpdatePremiumSlotBySource {
+            expires_at: chrono::Utc::now().add(chrono::Duration::days(100)),
+            manage_url: String::new(),
+            message: "testing".to_owned(),
+            source: "testing".to_owned(),
+            source_id: "testing".to_owned(),
+            title: "testing".to_owned(),
+            state: stores::config::PremiumSlotState::Active,
+            tier: stores::config::PremiumSlotTier::Premium,
+            user_id: Some(Id::new(1)),
+        })
+        .await
+        .unwrap();
+    config_store
+        .update_premium_slot_attachment(Id::new(1), premium_slot.id, Some(guild_id))
+        .await
+        .unwrap();
 
     let compiled_filter_regex = config.filter.map(|v| regex::Regex::new(&v).unwrap());
 

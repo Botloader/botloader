@@ -588,6 +588,7 @@ impl VmSession {
             .iter()
             .map(|v| stores::config::IntervalTimerContrib {
                 name: v.name.clone(),
+                plugin_id: evt.plugin_id.map(|v| v.0),
                 interval: match &v.interval {
                     runtime_models::internal::script::IntervalType::Cron(c) => {
                         stores::timers::IntervalType::Cron(c.clone())

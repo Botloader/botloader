@@ -3,6 +3,7 @@
 export interface ScheduledTask {
   id: number;
   namespace: string;
+  pluginId: string | null;
   key?: string;
   executeAt: number;
   data: unknown;

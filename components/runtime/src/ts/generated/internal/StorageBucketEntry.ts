@@ -2,6 +2,7 @@
 import type { OpStorageBucketValue } from "./StorageBucketValue";
 
 export interface OpStorageBucketEntry {
+  pluginId: string | null;
   bucketName: string;
   key: string;
   value: OpStorageBucketValue;

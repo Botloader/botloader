@@ -35,6 +35,7 @@ pub trait BucketStore: Send + Sync {
         ttl: Option<Duration>,
     ) -> StoreResult<Entry>;
 
+    #[allow(clippy::too_many_arguments)]
     async fn set_if(
         &self,
         guild_id: Id<GuildMarker>,
@@ -119,6 +120,7 @@ pub enum SortedOrder {
 pub struct Entry {
     pub bucket: String,
     pub key: String,
+    pub plugin_id: Option<u64>,
     pub value: StoreValue,
     pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }

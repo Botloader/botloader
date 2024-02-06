@@ -16,21 +16,22 @@ import { ComponentInteraction, SelectMenuInteraction, ModalSubmitInteraction } f
 export class Script {
     readonly scriptId: number;
     readonly description: string;
-    readonly pluginId: number | null;
+    readonly pluginId: string | null;
 
     private events = new EventSystem.Muxer();
     private commandSystem = new Commands.System();
     private intervalTimers: IntervalTimerListener[] = [];
     private storageBuckets: Storage.Bucket<unknown>[] = [];
-    private taskHandlerNames: string[] = [];
+    private taskHandlers: Internal.TaskBucketId[] = [];
     private commands: Commands.Command[] = [];
 
     private runCalled = false;
+    private customStorageScope?: CustomScope;
 
     /**
      * @internal
      */
-    constructor(id: number, pluginId: number | null) {
+    constructor(id: number, pluginId: string | null) {
         this.description = `script id ${id}`;
         this.scriptId = id;
         this.pluginId = pluginId;
@@ -47,11 +48,23 @@ export class Script {
         EventSystem.commandSystem.addCommand(command);
     }
 
+    private storagePluginId() {
+        if (this.customStorageScope) {
+            if (this.customStorageScope.kind === "Guild") {
+                return null
+            } else {
+                return this.customStorageScope.pluginId
+            }
+        } else {
+            return this.pluginId
+        }
+    }
+
     /**
      * @deprecated use {@link createStorageJson}
      */
     createGuildStorageJson<T>(namespace: string) {
-        let bucket = new Storage.JsonBucket<T>(namespace);
+        let bucket = new Storage.JsonBucket<T>(namespace, this.storagePluginId());
         this.storageBuckets.push(bucket);
 
         return bucket;
@@ -72,7 +85,7 @@ export class Script {
      *
      */
     createStorageJson<T>(namespace: string) {
-        let bucket = new Storage.JsonBucket<T>(namespace);
+        let bucket = new Storage.JsonBucket<T>(namespace, this.storagePluginId());
         this.storageBuckets.push(bucket);
 
         return bucket;
@@ -82,7 +95,7 @@ export class Script {
      * @deprecated use {@łink createStorageNumber}
      */
     createGuildStorageNumber(namespace: string) {
-        let bucket = new Storage.NumberBucket(namespace);
+        let bucket = new Storage.NumberBucket(namespace, this.storagePluginId());
         this.storageBuckets.push(bucket);
 
         return bucket;
@@ -99,7 +112,7 @@ export class Script {
      * See {@link createStorageJson} for more general info on storage buckets
      */
     createStorageNumber(namespace: string) {
-        let bucket = new Storage.NumberBucket(namespace);
+        let bucket = new Storage.NumberBucket(namespace, this.storagePluginId());
         this.storageBuckets.push(bucket);
 
         return bucket;
@@ -116,7 +129,7 @@ export class Script {
      */
     createStorageVarJson<T>(key: string, options?: StorageVarExtraOptions) {
         const namespace = options?.namespace ?? "bl:vars_json";
-        return new Storage.JsonVar<T>(namespace, key);
+        return new Storage.JsonVar<T>(namespace, key, this.storagePluginId());
     }
 
     /**
@@ -130,7 +143,7 @@ export class Script {
      */
     createStorageVarNumber(key: string, options?: StorageVarExtraOptions) {
         const namespace = options?.namespace ?? "bl:vars_number";
-        return new Storage.NumberVar(namespace, key);
+        return new Storage.NumberVar(namespace, key, this.storagePluginId());
     }
 
 
@@ -142,6 +155,8 @@ export class Script {
      * @param namespace The task namespace to handle tasks from
      * @param cb The callback function to run, with the type of the data passed to the task when scheduled
      * 
+     * @deprecated Use {@link createTaskBucket} instead.
+     * 
      * @example ```ts
      * interface Data{
      *     key: string,
@@ -152,15 +167,53 @@ export class Script {
      * ```
      */
     async onTask<T>(namespace: string, cb: (task: Tasks.Task<T>) => any) {
-        this.taskHandlerNames.push(namespace);
+        this.taskHandlers.push({
+            name: namespace,
+            pluginId: null,
+        });
 
         this.events.on("BOTLOADER_SCHEDULED_TASK_FIRED", async (evt) => {
-            if (evt.namespace === namespace) {
+            if (evt.namespace === namespace && evt.pluginId == null) {
                 await cb({
                     ...evt,
+                    pluginId: evt.pluginId,
                     data: evt.data as T,
                 });
             }
+        })
+    }
+
+    createTaskBucket<T = undefined>(
+        options: {
+            name: string,
+            customScope?: CustomScope,
+        },
+        cb: (task: Tasks.Task<T>) => any
+    ) {
+        const pluginId = options.customScope
+            ? options.customScope.kind === "Guild"
+                ? null
+                : options.customScope.pluginId
+            : this.pluginId
+
+        this.taskHandlers.push({
+            name: options.name,
+            pluginId: pluginId,
+        });
+
+        this.events.on("BOTLOADER_SCHEDULED_TASK_FIRED", async (evt) => {
+            if (evt.namespace === options.name && (evt.pluginId?.toString() ?? null) === pluginId) {
+                await cb({
+                    ...evt,
+                    pluginId: pluginId,
+                    data: evt.data as T,
+                });
+            }
+        })
+
+        return new Tasks.TaskBucket<T>({
+            name: options.name,
+            pluginId,
         })
     }
 
@@ -253,7 +306,8 @@ export class Script {
             commandGroups: groups,
             scriptId: this.scriptId,
             intervalTimers: this.intervalTimers.map(inner => inner.timer),
-            taskNames: this.taskHandlerNames,
+            taskBuckets: this.taskHandlers,
+            pluginId: this.pluginId,
         });
 
         EventSystem.registerEventMuxer(this.events);
@@ -366,4 +420,11 @@ interface IntervalTimerListener {
 
 interface StorageVarExtraOptions {
     namespace?: string,
+}
+
+export type CustomScope = {
+    kind: "Guild"
+} | {
+    kind: "Plugin",
+    pluginId: string
 }

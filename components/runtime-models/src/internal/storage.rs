@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use stores::bucketstore::{self, SetCondition};
 use ts_rs::TS;
 
-use crate::util::NotBigU64;
+use crate::util::{NotBigU64, PluginId};
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -50,6 +50,8 @@ pub struct OpStorageBucketSetValue {
     #[serde(default)]
     #[ts(optional)]
     pub ttl: Option<u32>,
+
+    pub plugin_id: Option<PluginId>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -64,6 +66,8 @@ pub struct OpStorageBucketSetIf {
     #[ts(optional)]
     pub ttl: Option<u32>,
     pub cond: OpStorageBucketSetCondition,
+
+    pub plugin_id: Option<PluginId>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -73,6 +77,8 @@ pub struct OpStorageBucketSetIf {
 pub struct OpStorageBucketEntryId {
     pub bucket_name: String,
     pub key: String,
+
+    pub plugin_id: Option<PluginId>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -90,6 +96,8 @@ pub struct OpStorageBucketList {
     #[serde(default)]
     #[ts(optional)]
     pub limit: Option<u32>,
+
+    pub plugin_id: Option<PluginId>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -115,6 +123,7 @@ impl From<OpStorageBucketListOrder> for bucketstore::SortedOrder {
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketSortedList {
     pub bucket_name: String,
+    pub plugin_id: Option<PluginId>,
 
     #[serde(default)]
     #[ts(optional)]
@@ -134,6 +143,8 @@ pub struct OpStorageBucketSortedList {
 pub struct OpStorageBucketIncr {
     pub bucket_name: String,
     pub key: String,
+    pub plugin_id: Option<PluginId>,
+
     pub amount: f64,
 }
 
@@ -142,6 +153,7 @@ pub struct OpStorageBucketIncr {
 #[ts(export_to = "bindings/internal/StorageBucketEntry.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketEntry {
+    plugin_id: Option<PluginId>,
     bucket_name: String,
     key: String,
     value: OpStorageBucketValue,
@@ -151,6 +163,7 @@ pub struct OpStorageBucketEntry {
 impl From<bucketstore::Entry> for OpStorageBucketEntry {
     fn from(v: bucketstore::Entry) -> Self {
         Self {
+            plugin_id: v.plugin_id.map(PluginId),
             bucket_name: v.bucket,
             key: v.key,
             value: v.value.into(),

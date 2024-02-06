@@ -2,7 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use chrono::TimeZone;
 use deno_core::{op2, OpState};
-use runtime_models::internal::tasks::{CreateScheduledTask, ScheduledTask};
+use runtime_models::{
+    internal::tasks::{CreateScheduledTask, GetGuildTasksFilter, ScheduledTask},
+    util::PluginId,
+};
 use vm::AnyError;
 
 use crate::{get_rt_ctx, limits::RateLimiters, RuntimeEvent};
@@ -19,21 +22,6 @@ deno_core::extension!(
         op_bl_get_all_tasks,
     ],
 );
-
-// pub fn extension() -> Extension {
-//     Extension::builder("bl_tasks")
-//         .ops(vec![
-//             // botloader stuff
-//             op_bl_schedule_task::decl(),
-//             op_bl_del_task::decl(),
-//             op_bl_del_task_by_key::decl(),
-//             op_bl_del_all_tasks::decl(),
-//             op_bl_get_task::decl(),
-//             op_bl_get_task_by_key::decl(),
-//             op_bl_get_all_tasks::decl(),
-//         ])
-//         .build()
-// }
 
 #[op2(async)]
 #[serde]
@@ -71,6 +59,7 @@ async fn op_bl_schedule_task(
         .timer_store
         .create_task(
             rt_ctx.guild_id,
+            opts.plugin_id.map(Into::into),
             opts.namespace,
             opts.unique_key,
             opts.data,
@@ -102,6 +91,7 @@ async fn op_bl_del_task(
 #[op2(async)]
 async fn op_bl_del_task_by_key(
     state: Rc<RefCell<OpState>>,
+    #[serde] plugin_id: Option<PluginId>,
     #[string] name: String,
     #[string] key: String,
 ) -> Result<bool, AnyError> {
@@ -110,7 +100,7 @@ async fn op_bl_del_task_by_key(
 
     let del = rt_ctx
         .timer_store
-        .del_task_by_key(rt_ctx.guild_id, name, key)
+        .del_task_by_key(rt_ctx.guild_id, plugin_id.map(Into::into), name, key)
         .await?;
 
     Ok(del > 0)
@@ -120,6 +110,7 @@ async fn op_bl_del_task_by_key(
 #[number]
 async fn op_bl_del_all_tasks(
     state: Rc<RefCell<OpState>>,
+    #[serde] plugin_id: Option<PluginId>,
     #[string] name: String,
 ) -> Result<u64, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
@@ -128,7 +119,7 @@ async fn op_bl_del_all_tasks(
 
     let del = rt_ctx
         .timer_store
-        .del_all_tasks(rt_ctx.guild_id, Some(name))
+        .del_all_tasks(rt_ctx.guild_id, plugin_id.map(Into::into), Some(name))
         .await?;
     Ok(del)
 }
@@ -154,6 +145,7 @@ async fn op_bl_get_task(
 #[serde]
 async fn op_bl_get_task_by_key(
     state: Rc<RefCell<OpState>>,
+    #[serde] plugin_id: Option<PluginId>,
     #[string] name: String,
     #[string] key: String,
 ) -> Result<Option<ScheduledTask>, AnyError> {
@@ -162,7 +154,7 @@ async fn op_bl_get_task_by_key(
 
     Ok(rt_ctx
         .timer_store
-        .get_task_by_key(rt_ctx.guild_id, name, key)
+        .get_task_by_key(rt_ctx.guild_id, plugin_id.map(Into::into), name, key)
         .await?
         .map(Into::into))
 }
@@ -171,7 +163,7 @@ async fn op_bl_get_task_by_key(
 #[serde]
 async fn op_bl_get_all_tasks(
     state: Rc<RefCell<OpState>>,
-    #[string] name: Option<String>,
+    #[serde] filter: GetGuildTasksFilter,
     #[number] after_id: u64,
 ) -> Result<Vec<ScheduledTask>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
@@ -179,7 +171,7 @@ async fn op_bl_get_all_tasks(
 
     Ok(rt_ctx
         .timer_store
-        .get_tasks(rt_ctx.guild_id, name, after_id, 25)
+        .get_guild_tasks(rt_ctx.guild_id, filter.into(), after_id, 25)
         .await?
         .into_iter()
         .map(Into::into)

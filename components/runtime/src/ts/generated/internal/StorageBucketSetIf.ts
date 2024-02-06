@@ -8,4 +8,5 @@ export interface OpStorageBucketSetIf {
   value: OpStorageBucketValue;
   ttl?: number;
   cond: OpStorageBucketSetCondition;
+  pluginId: string | null;
 }
