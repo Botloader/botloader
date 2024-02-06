@@ -61,7 +61,7 @@ export namespace Storage {
         /**
          * This entry belongs to the specified plugin
          */
-        plugin_id: string | null,
+        pluginId: string | null,
 
         /**
          * The bucket this entry was in
@@ -117,7 +117,7 @@ export namespace Storage {
             }
 
             return {
-                plugin_id: entry.pluginId?.toString() ?? null,
+                pluginId: entry.pluginId,
                 bucket: this.name,
                 key: entry.key,
                 value: val,
