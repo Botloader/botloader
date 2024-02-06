@@ -64,7 +64,7 @@ ratelimits! {
     // number of guild http requests per second
     user_http => [1, 2, 2],
     // number of task operations per second
-    task_ops => [1, 2, 3],
+    task_ops => [1, 2, 10],
 
     // number of times we can fetch a public discord invite,
     // needed because this endpoint is not guild scoped

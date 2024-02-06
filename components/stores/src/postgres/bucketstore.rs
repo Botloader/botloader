@@ -19,10 +19,11 @@ impl crate::bucketstore::BucketStore for Postgres {
     ) -> StoreResult<Option<Entry>> {
         let res = sqlx::query_as!(
             DbEntry,
-            "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, \
-             value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND \
-             (expires_at IS NULL OR expires_at > now());",
+            "SELECT guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
+             value_json, value_float FROM bucket_store WHERE guild_id = $1 AND plugin_id = $2 AND \
+             bucket = $3 AND key = $4 AND (expires_at IS NULL OR expires_at > now());",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             bucket,
             key,
         )
@@ -54,15 +55,16 @@ impl crate::bucketstore::BucketStore for Postgres {
 
         let res = sqlx::query_as!(
             DbEntry,
-            "INSERT INTO bucket_store 
-                     (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, \
-             value_float)
-                     VALUES 
-                     ($1,         $2,    $3,   now(),      now(),      $4,         $5,         $6) 
-                     ON CONFLICT (guild_id, bucket, key) DO UPDATE SET
+            "INSERT INTO bucket_store
+                     (guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
+             value_json, value_float)
+                     VALUES
+                     ($1,         $2,        $3,   $4,     now(),    now(),      $5,            \
+             $6,  $7)
+                     ON CONFLICT (guild_id, plugin_id, bucket, key) DO UPDATE SET
                      created_at = CASE
                         WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < \
-             now() 
+             now()
                         THEN now()
                         ELSE bucket_store.created_at
                         END,
@@ -70,9 +72,10 @@ impl crate::bucketstore::BucketStore for Postgres {
                      expires_at = excluded.expires_at,
                      value_json = excluded.value_json,
                      value_float = excluded.value_float
-                     RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, \
-             value_json, value_float;",
+                     RETURNING guild_id, plugin_id, bucket, key, created_at, updated_at, \
+             expires_at, value_json, value_float;",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             bucket,
             key,
             expires_at,
@@ -111,14 +114,15 @@ impl crate::bucketstore::BucketStore for Postgres {
                     DbEntry,
                     "UPDATE bucket_store SET
                      updated_at = now(),
-                     expires_at = $4,
-                     value_json = $5,
-                     value_float = $6
-                     WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND
+                     expires_at = $5,
+                     value_json = $6,
+                     value_float = $7
+                     WHERE guild_id = $1 AND plugin_id = $2 AND bucket = $3 AND key = $4 AND
                      (expires_at IS NULL OR expires_at > now())
-                     RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, \
-                     value_json, value_float;",
+                     RETURNING guild_id, plugin_id, bucket, key, created_at, updated_at, \
+                     expires_at, value_json, value_float;",
                     guild_id.get() as i64,
+                    plugin_id.unwrap_or(0) as i64,
                     bucket,
                     key,
                     expires_at,
@@ -131,21 +135,22 @@ impl crate::bucketstore::BucketStore for Postgres {
             SetCondition::IfNotExists => {
                 sqlx::query_as!(
                     DbEntry,
-                    "INSERT INTO bucket_store 
-                    (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, \
-                     value_float)
-                    VALUES 
-                    ($1,         $2,    $3,   now(),      now(),      $4,         $5,         $6) 
-                    ON CONFLICT (guild_id, bucket, key) DO UPDATE SET
+                    "INSERT INTO bucket_store
+                    (guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
+                     value_json, value_float)
+                    VALUES
+                    ($1, $2, $3, $4, now(), now(), $5, $6, $7)
+                    ON CONFLICT (guild_id, plugin_id, bucket, key) DO UPDATE SET
                     created_at = now(),
                     updated_at = now(),
                     expires_at = excluded.expires_at,
                     value_json = excluded.value_json,
-                    value_float = excluded.value_float WHERE 
+                    value_float = excluded.value_float WHERE
                     (bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now())
-                    RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, \
-                     value_json, value_float;",
+                    RETURNING guild_id, plugin_id, bucket, key, created_at, updated_at, \
+                     expires_at, value_json, value_float;",
                     guild_id.get() as i64,
+                    plugin_id.unwrap_or(0) as i64,
                     bucket,
                     key,
                     expires_at,
@@ -169,10 +174,11 @@ impl crate::bucketstore::BucketStore for Postgres {
     ) -> StoreResult<Option<Entry>> {
         let res = sqlx::query_as!(
             DbEntry,
-            "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND \
-             (expires_at IS NULL OR expires_at > now()) RETURNING guild_id, bucket, key, \
-             created_at, updated_at, expires_at, value_json, value_float;",
+            "DELETE FROM bucket_store WHERE guild_id = $1 AND plugin_id = $2 AND bucket = $3 AND \
+             key = $4 AND (expires_at IS NULL OR expires_at > now()) RETURNING guild_id, \
+             plugin_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             bucket,
             key,
         )
@@ -190,9 +196,10 @@ impl crate::bucketstore::BucketStore for Postgres {
         key_pattern: String,
     ) -> StoreResult<u64> {
         let res = sqlx::query!(
-            "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 AND \
-             (expires_at IS NULL OR expires_at > now());",
+            "DELETE FROM bucket_store WHERE guild_id = $1 AND plugin_id = $2 AND bucket = $3 AND \
+             key ILIKE $4 AND (expires_at IS NULL OR expires_at > now());",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             bucket,
             key_pattern,
         )
@@ -213,11 +220,12 @@ impl crate::bucketstore::BucketStore for Postgres {
     ) -> StoreResult<Vec<Entry>> {
         let res = sqlx::query_as!(
             DbEntry,
-            "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, \
-             value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE $3 \
-             AND key > $4 AND (expires_at IS NULL OR expires_at > now()) ORDER BY (guild_id, \
-             bucket, key) LIMIT $5;",
+            "SELECT guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
+             value_json, value_float FROM bucket_store WHERE guild_id = $1 AND plugin_id = $2 AND \
+             bucket = $3 AND key ILIKE $4 AND key > $5 AND (expires_at IS NULL OR expires_at > \
+             now()) ORDER BY (guild_id, bucket, key) LIMIT $6;",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             bucket,
             key_pattern,
             after,
@@ -237,9 +245,10 @@ impl crate::bucketstore::BucketStore for Postgres {
         key_pattern: String,
     ) -> StoreResult<u64> {
         let res = sqlx::query!(
-            "SELECT count(*) FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key ILIKE \
-             $3 AND (expires_at IS NULL OR expires_at > now());",
+            "SELECT count(*) FROM bucket_store WHERE guild_id = $1 AND plugin_id = $2 AND bucket \
+             = $3 AND key ILIKE $4 AND (expires_at IS NULL OR expires_at > now());",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             bucket,
             key_pattern,
         )
@@ -272,13 +281,14 @@ impl crate::bucketstore::BucketStore for Postgres {
     ) -> StoreResult<Entry> {
         let res = sqlx::query_as!(
             DbEntry,
-            "INSERT INTO bucket_store 
-         (guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)
-         VALUES 
-         ($1,         $2,    $3,   now(),      now(),      null,         null,         $4) 
-         ON CONFLICT (guild_id, bucket, key) DO UPDATE SET
+            "INSERT INTO bucket_store
+         (guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, value_json, \
+             value_float)
+         VALUES
+         ($1, $2, $3, $4, now(), now(), null, null, $5)
+         ON CONFLICT (guild_id, plugin_id, bucket, key) DO UPDATE SET
          created_at = CASE
-            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() 
+            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now()
             THEN now()
             ELSE bucket_store.created_at
             END,
@@ -286,13 +296,14 @@ impl crate::bucketstore::BucketStore for Postgres {
          expires_at = excluded.expires_at,
          value_json = excluded.value_json,
          value_float = CASE
-            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now() 
+            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now()
             THEN excluded.value_float
             ELSE excluded.value_float + bucket_store.value_float
             END
-         RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, \
-             value_float;",
+         RETURNING guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
+             value_json, value_float;",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             bucket,
             key,
             incr_by,
@@ -315,11 +326,12 @@ impl crate::bucketstore::BucketStore for Postgres {
             SortedOrder::Ascending => {
                 sqlx::query_as!(
                     DbEntry,
-                    "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, \
-                     value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = \
-                     $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float ASC, \
-                     updated_at ASC LIMIT $3 OFFSET $4;",
+                    "SELECT guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
+                     value_json, value_float FROM bucket_store WHERE guild_id = $1 AND plugin_id \
+                     = $2 AND bucket = $3 AND (expires_at IS NULL OR expires_at > now()) ORDER BY \
+                     value_float ASC, updated_at ASC LIMIT $4 OFFSET $5;",
                     guild_id.get() as i64,
+                    plugin_id.unwrap_or(0) as i64,
                     bucket,
                     limit as i64,
                     offset as i64,
@@ -330,11 +342,12 @@ impl crate::bucketstore::BucketStore for Postgres {
             SortedOrder::Descending => {
                 sqlx::query_as!(
                     DbEntry,
-                    "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, \
-                     value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = \
-                     $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float DESC, \
-                     updated_at DESC LIMIT $3 OFFSET $4;",
+                    "SELECT guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
+                     value_json, value_float FROM bucket_store WHERE guild_id = $1 AND plugin_id \
+                     = $2 AND bucket = $3 AND (expires_at IS NULL OR expires_at > now()) ORDER BY \
+                     value_float DESC, updated_at DESC LIMIT $4 OFFSET $5;",
                     guild_id.get() as i64,
+                    plugin_id.unwrap_or(0) as i64,
                     bucket,
                     limit as i64,
                     offset as i64,
@@ -362,6 +375,7 @@ impl crate::bucketstore::BucketStore for Postgres {
 #[allow(dead_code)]
 pub struct DbEntry {
     guild_id: i64,
+    plugin_id: i64,
     bucket: String,
     key: String,
     created_at: DateTime<Utc>,
@@ -375,6 +389,7 @@ impl From<DbEntry> for Entry {
     fn from(v: DbEntry) -> Self {
         Self {
             bucket: v.bucket,
+            plugin_id: (v.plugin_id > 0).then_some(v.plugin_id as u64),
             key: v.key,
             expires_at: v.expires_at,
             value: if let Some(fv) = v.value_float {

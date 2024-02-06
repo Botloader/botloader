@@ -212,6 +212,7 @@ pub struct ScriptContributes {
 pub struct IntervalTimerContrib {
     pub name: String,
     pub interval: crate::timers::IntervalType,
+    pub plugin_id: Option<u64>,
 }
 
 /// A guilds config, for storing core botloader settings

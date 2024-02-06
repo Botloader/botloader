@@ -6,4 +6,5 @@ export interface OpStorageBucketSetValue {
   key: string;
   value: OpStorageBucketValue;
   ttl?: number;
+  pluginId: string | null;
 }

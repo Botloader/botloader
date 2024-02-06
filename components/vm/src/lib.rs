@@ -38,7 +38,7 @@ fn gen_script_source_header(script: Option<&Script>) -> String {
                 r#"import {{Script}} from "/script";const script = new Script({}, {});"#,
                 h.id,
                 h.plugin_id
-                    .map(|v| v.to_string())
+                    .map(|v| format!("'{v}'"))
                     .unwrap_or("null".to_string()),
             )
         }

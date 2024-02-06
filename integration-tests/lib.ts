@@ -37,6 +37,20 @@ export function assertExpected(expected: any, actual: any) {
     }
 }
 
+export async function assertExpectError(f: () => any) {
+    let gotError = false
+    try {
+        await f()
+    } catch (error) {
+        gotError = true
+        console.log("Got expecte error", error)
+    }
+
+    if (!gotError) {
+        throw new Error("Did not get expected error")
+    }
+}
+
 let run_tracker = script.createGuildStorageJson("lib_run_tests");
 
 export async function runOnce(name: string, cb: () => any) {

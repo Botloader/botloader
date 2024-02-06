@@ -110,24 +110,24 @@ export namespace OpWrappers {
             return op_bl_del_task(taskId)
         }
 
-        export function delTaskByKey(name: string, key: string): Promise<boolean> {
-            return op_bl_del_task_by_key(name, key)
+        export function delTaskByKey(pluginId: string | null, name: string, key: string): Promise<boolean> {
+            return op_bl_del_task_by_key(pluginId, name, key)
         }
 
-        export function delAllTasks(name: string): Promise<number> {
-            return op_bl_del_all_tasks(name)
+        export function delAllTasks(pluginId: string | null, name: string): Promise<number> {
+            return op_bl_del_all_tasks(pluginId, name)
         }
 
         export function getTask(taskId: number): Promise<Internal.ScheduledTask | null> {
             return op_bl_get_task(taskId)
         }
 
-        export function getTaskByKey(name: string, key: string): Promise<Internal.ScheduledTask | null> {
-            return op_bl_get_task_by_key(name, key)
+        export function getTaskByKey(pluginId: string | null, name: string, key: string): Promise<Internal.ScheduledTask | null> {
+            return op_bl_get_task_by_key(pluginId, name, key)
         }
 
-        export function getAllTasks(name: string | undefined, after_id: number): Promise<Internal.ScheduledTask[]> {
-            return op_bl_get_all_tasks(name, after_id)
+        export function getAllTasks(filter: Internal.GetGuildTasksFilter, after_id: number): Promise<Internal.ScheduledTask[]> {
+            return op_bl_get_all_tasks(filter, after_id)
         }
     }
 
@@ -407,16 +407,16 @@ export namespace OpWrappers {
         return await op_botloader_bucket_storage_del(opts);
     }
 
-    export async function bucketStorageDelMany(bucketName: string, keyPattern: string): Promise<number> {
-        return await op_botloader_bucket_storage_del_many(bucketName, keyPattern);
+    export async function bucketStorageDelMany(pluginId: string | null, bucketName: string, keyPattern: string): Promise<number> {
+        return await op_botloader_bucket_storage_del_many(pluginId, bucketName, keyPattern);
     }
 
     export async function bucketStorageList(opts: Internal.OpStorageBucketList): Promise<Internal.OpStorageBucketEntry[]> {
         return await op_botloader_bucket_storage_list(opts);
     }
 
-    export async function bucketStorageCount(bucketName: string, keyPattern: string): Promise<number> {
-        return await op_botloader_bucket_storage_count(bucketName, keyPattern);
+    export async function bucketStorageCount(pluginId: string | null, bucketName: string, keyPattern: string): Promise<number> {
+        return await op_botloader_bucket_storage_count(pluginId, bucketName, keyPattern);
     }
 
     export async function bucketStorageIncr(opts: Internal.OpStorageBucketIncr): Promise<Internal.OpStorageBucketEntry> {

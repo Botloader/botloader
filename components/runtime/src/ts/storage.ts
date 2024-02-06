@@ -59,6 +59,11 @@ export namespace Storage {
 
     export interface Entry<T> {
         /**
+         * This entry belongs to the specified plugin
+         */
+        plugin_id: string | null,
+
+        /**
          * The bucket this entry was in
          */
         bucket: string,
@@ -88,20 +93,19 @@ export namespace Storage {
      * @typeParam T - The type of values stored in this bucket
      */
     export abstract class Bucket<T>{
+        pluginId: string | null;
+
         name: string;
 
         /**
-         * Create a new storage bucket.
+         * This constructor is unstable, you should use the related script methods.
          * 
-         * @remark this bucket should be registered with your script or plugin (example: `script.registerStorageBucket(...)`),.
-         * 
-         * @param name The name of the bucket. Note that this is not unique across your scripts and
-         * the same name in one script will have the same values as in another and is perfectly safe.
+         * @internal
          */
-        constructor(name: string) {
+        constructor(name: string, pluginId: string | null) {
             this.name = name;
+            this.pluginId = pluginId ?? null;
         }
-
 
         protected abstract intoInternalValue(v: T): Internal.OpStorageBucketValue;
         protected abstract fromInternalValue(v: Internal.OpStorageBucketValue): T | undefined;
@@ -113,6 +117,7 @@ export namespace Storage {
             }
 
             return {
+                plugin_id: entry.pluginId?.toString() ?? null,
                 bucket: this.name,
                 key: entry.key,
                 value: val,
@@ -138,6 +143,7 @@ export namespace Storage {
          */
         async set(key: string, value: T, options?: SetValueOptions) {
             return this.entryFromInternal(await OpWrappers.bucketStorageSet({
+                pluginId: this.pluginId,
                 bucketName: this.name,
                 key: key,
                 value: this.intoInternalValue(value),
@@ -158,6 +164,7 @@ export namespace Storage {
          */
         async setIf(key: string, value: T, cond: "IfExists" | "IfNotExists", options?: SetValueOptions) {
             return this.entryFromInternalOptional(await OpWrappers.bucketStorageSetIf({
+                pluginId: this.pluginId,
                 bucketName: this.name,
                 key,
                 value: this.intoInternalValue(value),
@@ -174,6 +181,7 @@ export namespace Storage {
          */
         async get(key: string) {
             return this.entryFromInternalOptional(await OpWrappers.bucketStorageGet({
+                pluginId: this.pluginId,
                 bucketName: this.name,
                 key: key,
             }));
@@ -187,6 +195,7 @@ export namespace Storage {
          */
         async delete(key: string) {
             return this.entryFromInternalOptional(await OpWrappers.bucketStorageDel({
+                pluginId: this.pluginId,
                 bucketName: this.name,
                 key: key,
             }));
@@ -206,7 +215,7 @@ export namespace Storage {
          * @returns Number of deleted entries
          */
         async deleteAll(keyPattern?: string) {
-            return OpWrappers.bucketStorageDelMany(this.name, keyPattern || "%");
+            return OpWrappers.bucketStorageDelMany(this.pluginId, this.name, keyPattern || "%");
         }
 
 
@@ -218,6 +227,7 @@ export namespace Storage {
          */
         async list(options: ListOptions) {
             const res = await OpWrappers.bucketStorageList({
+                pluginId: this.pluginId,
                 bucketName: this.name,
                 after: options.after,
                 keyPattern: options.keyPattern,
@@ -240,7 +250,7 @@ export namespace Storage {
          * @returns Number of entries
          */
         async count(keyPattern?: string) {
-            return OpWrappers.bucketStorageCount(this.name, keyPattern || "%");
+            return OpWrappers.bucketStorageCount(this.pluginId, this.name, keyPattern || "%");
         }
     }
 
@@ -275,6 +285,7 @@ export namespace Storage {
          */
         async incr(key: string, amount: number) {
             return this.entryFromInternal(await OpWrappers.bucketStorageIncr({
+                pluginId: this.pluginId,
                 bucketName: this.name,
                 key: key,
                 amount: amount,
@@ -289,6 +300,7 @@ export namespace Storage {
          */
         async sortedList(order: "Ascending" | "Descending", options?: SortedListOptions) {
             const res = await OpWrappers.bucketStorageSortedList({
+                pluginId: this.pluginId,
                 bucketName: this.name,
                 limit: options?.limit,
                 offset: options?.offset,
@@ -333,6 +345,9 @@ export namespace Storage {
         bucket: Bucket<T>;
         key: string;
 
+        /**
+         * @internal
+         */
         constructor(b: Bucket<T>, key: string) {
             this.key = key;
             this.bucket = b;
@@ -386,12 +401,16 @@ export namespace Storage {
     export class NumberVar extends Var<number> {
         bucket: NumberBucket;
 
-        constructor(namespace: string, key: string) {
-            const bucket = new NumberBucket(namespace);
+        /**
+         * This constructor is unstable, you should use the related script methods.
+         * 
+         * @internal
+         */
+        constructor(namespace: string, key: string, pluginId: string | null,) {
+            const bucket = new NumberBucket(namespace, pluginId);
             super(bucket, key);
             this.bucket = bucket;
         }
-
 
         /**
          * Atomically increments the value stored at key. If the entry did not exist beforehand a new one is created and set to `amount`
@@ -407,8 +426,13 @@ export namespace Storage {
     export class JsonVar<T> extends Var<T> {
         bucket: JsonBucket<T>;
 
-        constructor(namespace: string, key: string) {
-            const bucket = new JsonBucket<T>(namespace);
+        /**
+         * This constructor is unstable, you should use the related script methods.
+         * 
+         * @internal
+         */
+        constructor(namespace: string, key: string, pluginId: string | null) {
+            const bucket = new JsonBucket<T>(namespace, pluginId);
             super(bucket, key);
             this.bucket = bucket;
         }

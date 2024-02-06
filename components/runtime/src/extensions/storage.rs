@@ -2,9 +2,13 @@ use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use anyhow::anyhow;
 use deno_core::{op2, OpState};
-use runtime_models::internal::storage::{
-    OpStorageBucketEntry, OpStorageBucketEntryId, OpStorageBucketIncr, OpStorageBucketList,
-    OpStorageBucketSetIf, OpStorageBucketSetValue, OpStorageBucketSortedList, OpStorageBucketValue,
+use runtime_models::{
+    internal::storage::{
+        OpStorageBucketEntry, OpStorageBucketEntryId, OpStorageBucketIncr, OpStorageBucketList,
+        OpStorageBucketSetIf, OpStorageBucketSetValue, OpStorageBucketSortedList,
+        OpStorageBucketValue,
+    },
+    util::PluginId,
 };
 use tracing::{info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
@@ -85,6 +89,7 @@ pub async fn op_botloader_bucket_storage_set(
         .bucket_store
         .set(
             rt_ctx.guild_id,
+            args.plugin_id.map(Into::into),
             args.bucket_name,
             args.key,
             args.value.into(),
@@ -114,6 +119,7 @@ pub async fn op_botloader_bucket_storage_set_if(
         .bucket_store
         .set_if(
             rt_ctx.guild_id,
+            args.plugin_id.map(Into::into),
             args.bucket_name,
             args.key,
             args.value.into(),
@@ -138,7 +144,12 @@ pub async fn op_botloader_bucket_storage_get(
 
     let entry = rt_ctx
         .bucket_store
-        .get(rt_ctx.guild_id, args.bucket_name, args.key)
+        .get(
+            rt_ctx.guild_id,
+            args.plugin_id.map(Into::into),
+            args.bucket_name,
+            args.key,
+        )
         .await?;
 
     Ok(entry.map(Into::into))
@@ -157,7 +168,12 @@ pub async fn op_botloader_bucket_storage_del(
 
     let entry = rt_ctx
         .bucket_store
-        .del(rt_ctx.guild_id, args.bucket_name, args.key)
+        .del(
+            rt_ctx.guild_id,
+            args.plugin_id.map(Into::into),
+            args.bucket_name,
+            args.key,
+        )
         .await?;
 
     if entry.is_some() {
@@ -175,6 +191,7 @@ pub async fn op_botloader_bucket_storage_del(
 #[number]
 pub async fn op_botloader_bucket_storage_del_many(
     state: Rc<RefCell<OpState>>,
+    #[serde] plugin_id: Option<PluginId>,
     #[string] bucket_name: String,
     #[string] key_pattern: String,
 ) -> Result<u64, AnyError> {
@@ -185,7 +202,12 @@ pub async fn op_botloader_bucket_storage_del_many(
 
     let res = rt_ctx
         .bucket_store
-        .del_many(rt_ctx.guild_id, bucket_name, key_pattern)
+        .del_many(
+            rt_ctx.guild_id,
+            plugin_id.map(Into::into),
+            bucket_name,
+            key_pattern,
+        )
         .await?;
 
     if res > 0 {
@@ -224,6 +246,7 @@ pub async fn op_botloader_bucket_storage_list(
         .bucket_store
         .get_many(
             rt_ctx.guild_id,
+            args.plugin_id.map(Into::into),
             args.bucket_name,
             args.key_pattern.unwrap_or_else(|| "%".to_string()),
             args.after.unwrap_or_default(),
@@ -238,6 +261,7 @@ pub async fn op_botloader_bucket_storage_list(
 #[number]
 pub async fn op_botloader_bucket_storage_count(
     state: Rc<RefCell<OpState>>,
+    #[serde] plugin_id: Option<PluginId>,
     #[string] bucket_name: String,
     #[string] key_pattern: String,
 ) -> Result<u64, AnyError> {
@@ -248,7 +272,12 @@ pub async fn op_botloader_bucket_storage_count(
 
     let res = rt_ctx
         .bucket_store
-        .count(rt_ctx.guild_id, bucket_name, key_pattern)
+        .count(
+            rt_ctx.guild_id,
+            plugin_id.map(Into::into),
+            bucket_name,
+            key_pattern,
+        )
         .await?;
 
     Ok(res)
@@ -270,7 +299,13 @@ pub async fn op_botloader_bucket_storage_incr(
 
     let entry = rt_ctx
         .bucket_store
-        .incr(rt_ctx.guild_id, args.bucket_name, args.key, args.amount)
+        .incr(
+            rt_ctx.guild_id,
+            args.plugin_id.map(Into::into),
+            args.bucket_name,
+            args.key,
+            args.amount,
+        )
         .await?;
 
     Ok(entry.into())
@@ -301,6 +336,7 @@ pub async fn op_botloader_bucket_storage_sorted_list(
         .bucket_store
         .sorted_entries(
             rt_ctx.guild_id,
+            args.plugin_id.map(Into::into),
             args.bucket_name,
             args.order.into(),
             args.offset.unwrap_or_default(),
@@ -372,9 +408,11 @@ async fn check_validate_storage_usage(
 
         let used = used_storage?;
         if used >= limit {
+            info!("completed a storage check, hit limit");
             storage_ctx.hit_limit = true;
             Err(anyhow!("hit storage limit, delete some entries"))
         } else {
+            info!("completed a storage check, clear");
             storage_ctx.requests_until_limit_check = 10;
             Ok(())
         }

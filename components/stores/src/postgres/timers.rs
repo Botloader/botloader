@@ -1,7 +1,8 @@
 use std::convert::TryFrom;
 
 use crate::timers::{
-    IntervalTimer, IntervalType, ScheduledTask, TimerStoreError, TimerStoreResult,
+    GetGuildTasksFilter, IntervalTimer, IntervalType, ScheduledTask, ScopeSelector, TaskBucket,
+    TimerStoreError, TimerStoreResult,
 };
 
 use super::Postgres;
@@ -29,13 +30,13 @@ impl From<sqlx::Error> for TimerStoreError {
 
 #[async_trait]
 impl crate::timers::TimerStore for Postgres {
-    async fn get_all_interval_timers(
+    async fn get_all_guild_interval_timers(
         &self,
         guild_id: Id<GuildMarker>,
     ) -> TimerStoreResult<Vec<IntervalTimer>> {
         let res = sqlx::query_as!(
             DbIntervalTimer,
-            "SELECT guild_id, script_id, timer_name, interval_minutes, interval_cron, \
+            "SELECT guild_id, plugin_id, timer_name, interval_minutes, interval_cron, \
              last_run_at, created_at, updated_at
             FROM interval_timers WHERE guild_id=$1;",
             guild_id.get() as i64,
@@ -62,20 +63,20 @@ impl crate::timers::TimerStore for Postgres {
         let res = sqlx::query_as!(
             DbIntervalTimer,
             "
-            INSERT INTO interval_timers (guild_id, script_id, timer_name, interval_minutes, \
+            INSERT INTO interval_timers (guild_id, plugin_id, timer_name, interval_minutes, \
              interval_cron, last_run_at, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, now(), now())
-            ON CONFLICT (guild_id, script_id, timer_name)
+            ON CONFLICT (guild_id, plugin_id, timer_name)
             DO UPDATE SET
             interval_minutes = $4,
             interval_cron = $5,
             last_run_at = $6,
             updated_at = now()
-            RETURNING guild_id, script_id, timer_name, interval_minutes, interval_cron, \
+            RETURNING guild_id, plugin_id, timer_name, interval_minutes, interval_cron, \
              last_run_at, created_at, updated_at;
              ",
             guild_id.get() as i64,
-            timer.script_id as i64,
+            timer.plugin_id.unwrap_or(0) as i64,
             timer.name,
             interval_minutes,
             interval_cron,
@@ -90,13 +91,13 @@ impl crate::timers::TimerStore for Postgres {
     async fn del_interval_timer(
         &self,
         guild_id: Id<GuildMarker>,
-        script_id: u64,
+        plugin_id: Option<u64>,
         timer_name: String,
     ) -> TimerStoreResult<bool> {
         let res = sqlx::query!(
-            "DELETE FROM interval_timers WHERE guild_id=$1 AND script_id=$2 AND timer_name=$3",
+            "DELETE FROM interval_timers WHERE guild_id=$1 AND plugin_id=$2 AND timer_name=$3",
             guild_id.get() as i64,
-            script_id as i64,
+            plugin_id.unwrap_or(0) as i64,
             timer_name
         )
         .execute(&self.pool)
@@ -108,6 +109,7 @@ impl crate::timers::TimerStore for Postgres {
     async fn create_task(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: String,
         unique_key: Option<String>,
         data: serde_json::Value,
@@ -115,13 +117,15 @@ impl crate::timers::TimerStore for Postgres {
     ) -> TimerStoreResult<ScheduledTask> {
         let res = sqlx::query_as!(
             DbScheduledTask,
-            "INSERT INTO scheduled_tasks (guild_id, name, unique_key, value, exec_at) VALUES($1, \
-             $2, $3, $4, $5)
-            ON CONFLICT (guild_id, name, unique_key) WHERE unique_key IS NOT NULL DO UPDATE SET
+            "INSERT INTO scheduled_tasks (guild_id, plugin_id, name, unique_key, value, exec_at) \
+             VALUES($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (guild_id, plugin_id, name, unique_key) WHERE unique_key IS NOT NULL DO \
+             UPDATE SET
             value = excluded.value,
             exec_at = excluded.exec_at
-            RETURNING id, guild_id, name, unique_key, value, exec_at",
+            RETURNING id, guild_id, plugin_id, name, unique_key, value, exec_at",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             name,
             unique_key,
             data,
@@ -140,8 +144,8 @@ impl crate::timers::TimerStore for Postgres {
     ) -> TimerStoreResult<Option<ScheduledTask>> {
         let res = sqlx::query_as!(
             DbScheduledTask,
-            "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE \
-             guild_id = $1 AND id = $2",
+            "SELECT id, guild_id, plugin_id, name, unique_key, value, exec_at FROM \
+             scheduled_tasks WHERE guild_id = $1 AND id = $2",
             guild_id.get() as i64,
             id as i64,
         )
@@ -153,14 +157,17 @@ impl crate::timers::TimerStore for Postgres {
     async fn get_task_by_key(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: String,
         key: String,
     ) -> TimerStoreResult<Option<ScheduledTask>> {
         let res = sqlx::query_as!(
             DbScheduledTask,
-            "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE \
-             guild_id = $1 AND name = $2 AND unique_key = $3",
+            "SELECT id, guild_id, plugin_id, name, unique_key, value, exec_at FROM \
+             scheduled_tasks WHERE guild_id = $1 AND plugin_id = $2 AND name = $3 AND unique_key \
+             = $4",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             name,
             key,
         )
@@ -170,24 +177,47 @@ impl crate::timers::TimerStore for Postgres {
         Ok(res.map(Into::into))
     }
 
-    async fn get_tasks(
+    async fn get_guild_tasks(
         &self,
         guild_id: Id<GuildMarker>,
-        name: Option<String>,
+        filter: GetGuildTasksFilter,
         id_after: u64,
         limit: usize,
     ) -> TimerStoreResult<Vec<ScheduledTask>> {
-        let res = sqlx::query_as!(
-            DbScheduledTask,
-            "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE \
-             guild_id = $1 AND (name = $2 OR $2 IS NULL) AND id > $3 ORDER BY ID ASC LIMIT $4",
-            guild_id.get() as i64,
-            name,
-            id_after as i64,
-            limit as i64,
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        let filter_plugin = match filter.scope {
+            ScopeSelector::All => None,
+            ScopeSelector::Guild => Some(0),
+            ScopeSelector::Plugin(p) => Some(p),
+        };
+
+        let res = if let Some(plugin_id) = filter_plugin {
+            sqlx::query_as!(
+                DbScheduledTask,
+                "SELECT id, guild_id, plugin_id, name, unique_key, value, exec_at FROM \
+                 scheduled_tasks WHERE guild_id = $1 AND plugin_id = $2 AND (name = $3 OR $3 IS \
+                 NULL) AND id > $4 ORDER BY ID ASC LIMIT $5",
+                guild_id.get() as i64,
+                plugin_id as i64,
+                filter.namespace,
+                id_after as i64,
+                limit as i64,
+            )
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            sqlx::query_as!(
+                DbScheduledTask,
+                "SELECT id, guild_id, plugin_id, name, unique_key, value, exec_at FROM \
+                 scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL) AND id > $3 \
+                 ORDER BY ID ASC LIMIT $4",
+                guild_id.get() as i64,
+                filter.namespace,
+                id_after as i64,
+                limit as i64,
+            )
+            .fetch_all(&self.pool)
+            .await?
+        };
 
         Ok(res.into_iter().map(Into::into).collect())
     }
@@ -205,17 +235,18 @@ impl crate::timers::TimerStore for Postgres {
         Ok(res.rows_affected())
     }
 
-    /// Delete one or more tasks by their (guild_id, name) unique key
-    /// (does nothing to key = null tasks)
     async fn del_task_by_key(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: String,
         key: String,
     ) -> TimerStoreResult<u64> {
         let res = sqlx::query!(
-            "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND name = $2 AND unique_key = $3",
+            "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND plugin_id = $2 AND name = $3 AND \
+             unique_key = $4",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             name,
             key
         )
@@ -229,11 +260,14 @@ impl crate::timers::TimerStore for Postgres {
     async fn del_all_tasks(
         &self,
         guild_id: Id<GuildMarker>,
+        plugin_id: Option<u64>,
         name: Option<String>,
     ) -> TimerStoreResult<u64> {
         let res = sqlx::query!(
-            "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL )",
+            "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND plugin_id = $2 AND (name = $3 OR \
+             $3 IS NULL )",
             guild_id.get() as i64,
+            plugin_id.unwrap_or(0) as i64,
             name,
         )
         .execute(&self.pool)
@@ -246,13 +280,27 @@ impl crate::timers::TimerStore for Postgres {
         &self,
         guild_id: Id<GuildMarker>,
         ignore_ids: &[u64],
-        names: &[String],
+        names: &[TaskBucket],
     ) -> TimerStoreResult<Option<DateTime<Utc>>> {
+        // This was a pretty fun rabbit hole to go down
+        // The problem is that postgres' multidimensional array support is trash.
+        // If i were to ask you what would the result of:
+        // ARRAY[1,2] = ANY (ARRAY[ARRAY[1,2], ARRAY[3,4]])
+        // You would be a fool to say "true", this is actually invalid because ANY just does not care about dimensions.
+        //
+        // in fact, as i discovered, THERE IS NO WAY TO CHECK IF AN ARRAY IS CONTAINED IN A MULTI DIMENSIONAL ARRAY.
+        //
+        // So to work around this shitty flaw, just concat the nested array to a string, shitty but works for now.
+        let name_plugin_filter = names
+            .iter()
+            .map(|v| format!("{}_{}", v.plugin_id.unwrap_or(0), v.name))
+            .collect::<Vec<_>>();
+
         let res = sqlx::query!(
-            "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = ANY($2::TEXT[]) \
-             AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
+            "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND plugin_id || '_' || name \
+             = ANY($2::text[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
             guild_id.get() as i64,
-            names,
+            &name_plugin_filter,
             &ignore_ids.iter().map(|v| *v as i64).collect::<Vec<_>>(),
         )
         .fetch_optional(&self.pool)
@@ -260,21 +308,28 @@ impl crate::timers::TimerStore for Postgres {
 
         Ok(res.map(|v| v.exec_at))
     }
+
     async fn get_triggered_tasks(
         &self,
         guild_id: Id<GuildMarker>,
         t: DateTime<Utc>,
         ignore_ids: &[u64],
-        names: &[String],
+        names: &[TaskBucket],
     ) -> TimerStoreResult<Vec<ScheduledTask>> {
+        // Working around postgres limitation, see the comment in get_next_task_time for an explanation
+        let name_plugin_filter = names
+            .iter()
+            .map(|v| format!("{}_{}", v.plugin_id.unwrap_or(0), v.name))
+            .collect::<Vec<_>>();
+
         let res = sqlx::query_as!(
             DbScheduledTask,
-            "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE \
-             guild_id = $1 AND exec_at < $2 AND name = ANY($3::TEXT[]) AND (NOT id = ANY \
-             ($4::BIGINT[]))",
+            "SELECT id, guild_id, plugin_id, name, unique_key, value, exec_at FROM \
+             scheduled_tasks WHERE guild_id = $1 AND exec_at < $2 AND plugin_id || '_' || name = \
+             ANY($3::text[]) AND (NOT id = ANY ($4::BIGINT[]))",
             guild_id.get() as i64,
             t,
-            names,
+            &name_plugin_filter,
             &ignore_ids.iter().map(|v| *v as i64).collect::<Vec<_>>(),
         )
         .fetch_all(&self.pool)
@@ -316,8 +371,7 @@ impl crate::timers::TimerStore for Postgres {
 struct DbIntervalTimer {
     #[allow(dead_code)]
     guild_id: i64,
-    #[allow(dead_code)]
-    script_id: i64,
+    plugin_id: i64,
     timer_name: String,
     interval_minutes: Option<i32>,
     interval_cron: Option<String>,
@@ -344,7 +398,7 @@ impl TryFrom<DbIntervalTimer> for IntervalTimer {
             name: value.timer_name,
             last_run: value.last_run_at,
             interval: interval_type,
-            script_id: value.script_id as u64,
+            plugin_id: (value.plugin_id > 0).then_some(value.plugin_id as u64),
         })
     }
 }
@@ -353,6 +407,7 @@ struct DbScheduledTask {
     id: i64,
     #[allow(dead_code)]
     guild_id: i64,
+    plugin_id: i64,
     name: String,
     unique_key: Option<String>,
     value: serde_json::Value,
@@ -363,6 +418,7 @@ impl From<DbScheduledTask> for ScheduledTask {
     fn from(v: DbScheduledTask) -> Self {
         Self {
             id: v.id as u64,
+            plugin_id: (v.plugin_id > 0).then_some(v.plugin_id as u64),
             name: v.name,
             unique_key: v.unique_key,
             data: v.value,

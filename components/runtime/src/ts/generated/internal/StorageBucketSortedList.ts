@@ -3,6 +3,7 @@ import type { OpStorageBucketListOrder } from "./StorageBucketListOrder";
 
 export interface OpStorageBucketSortedList {
   bucketName: string;
+  pluginId: string | null;
   offset?: number;
   limit?: number;
   order: OpStorageBucketListOrder;
