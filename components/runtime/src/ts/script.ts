@@ -202,7 +202,7 @@ export class Script {
         });
 
         this.events.on("BOTLOADER_SCHEDULED_TASK_FIRED", async (evt) => {
-            if (evt.namespace === options.name && (evt.pluginId?.toString() ?? null) === pluginId) {
+            if (evt.namespace === options.name && evt.pluginId === pluginId) {
                 await cb({
                     ...evt,
                     pluginId: pluginId,
