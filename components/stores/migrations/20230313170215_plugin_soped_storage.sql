@@ -3,7 +3,7 @@
 --
 -- scheduled_tasks
 ALTER TABLE scheduled_tasks
-    ADD COLUMN plugin_id bigint NOT NULL;
+    ADD COLUMN plugin_id bigint NOT NULL DEFAULT 0;
 
 DROP INDEX scheduled_tasks_unique_key_idx;
 
@@ -18,7 +18,7 @@ ALTER TABLE interval_timers RENAME COLUMN script_id TO plugin_id;
 
 -- bucket_store
 ALTER TABLE bucket_store
-    ADD COLUMN plugin_id bigint NOT NULL;
+    ADD COLUMN plugin_id bigint NOT NULL DEFAULT 0;
 
 ALTER TABLE bucket_store
     DROP CONSTRAINT bucket_store_pkey;
