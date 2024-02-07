@@ -16,11 +16,20 @@ pub enum Error {
     NoNextTime,
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct TimerId(Option<u64>, String);
+
+impl TimerId {
+    pub fn new(plugin_id: Option<u64>, name: String) -> Self {
+        TimerId(plugin_id, name)
+    }
+}
+
 pub struct Manager {
     storage: Arc<dyn scheduler::Store>,
     guild_id: Id<GuildMarker>,
-    loaded_intervals: HashMap<String, WrappedIntervalTimer>,
-    pending: Vec<String>,
+    loaded_intervals: HashMap<TimerId, WrappedIntervalTimer>,
+    pending: Vec<TimerId>,
 }
 
 impl Manager {
@@ -61,7 +70,8 @@ impl Manager {
             // we need to trigger some timers
             let triggered = self.get_triggered_timers(now);
             for t in &triggered {
-                self.pending.push(t.inner.name.clone())
+                self.pending
+                    .push(TimerId(t.inner.plugin_id, t.inner.name.clone()))
             }
             triggered.into_iter().map(|v| v.inner).collect()
         } else {
@@ -69,12 +79,12 @@ impl Manager {
         }
     }
 
-    pub async fn timer_ack(&mut self, timer: String) {
+    pub async fn timer_ack(&mut self, timer: &TimerId) {
         if let Some(index) =
             self.pending
                 .iter()
                 .enumerate()
-                .find_map(|(i, v)| if *v == timer { Some(i) } else { None })
+                .find_map(|(i, v)| if v == timer { Some(i) } else { None })
         {
             self.pending.swap_remove(index);
             self.update_next_run(Utc::now(), timer).await;
@@ -129,8 +139,8 @@ impl Manager {
             .collect::<Vec<_>>()
     }
 
-    async fn update_next_run(&mut self, t: DateTime<Utc>, name: String) {
-        let timer = if let Some(timer) = self.loaded_intervals.get_mut(&name) {
+    async fn update_next_run(&mut self, t: DateTime<Utc>, timer_id: &TimerId) {
+        let timer = if let Some(timer) = self.loaded_intervals.get_mut(timer_id) {
             timer
         } else {
             return;
@@ -177,8 +187,10 @@ impl Manager {
 
         match wrap_timer(timer) {
             Ok(wrapped) => {
-                self.loaded_intervals
-                    .insert(wrapped.inner.name.clone(), wrapped);
+                self.loaded_intervals.insert(
+                    TimerId(wrapped.inner.plugin_id, wrapped.inner.name.clone()),
+                    wrapped,
+                );
             }
             Err(err) => tracing::error!(?err, "failed wrapping timer"),
         };
