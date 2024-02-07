@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now()) RETURNING guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
+  "query": "SELECT guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND plugin_id = $2 AND bucket = $3 AND (expires_at IS NULL OR expires_at > now()) ORDER BY value_float ASC, updated_at ASC LIMIT $4 OFFSET $5;",
   "describe": {
     "columns": [
       {
@@ -10,36 +10,41 @@
       },
       {
         "ordinal": 1,
+        "name": "plugin_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
         "name": "bucket",
         "type_info": "Text"
       },
       {
-        "ordinal": 2,
+        "ordinal": 3,
         "name": "key",
         "type_info": "Text"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "expires_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "value_json",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "value_float",
         "type_info": "Float8"
       }
@@ -47,11 +52,14 @@
     "parameters": {
       "Left": [
         "Int8",
+        "Int8",
         "Text",
-        "Text"
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -62,5 +70,5 @@
       true
     ]
   },
-  "hash": "14bec92d44510808303ebece4eb897a05aaa455ac880f6ea39c63c0801e9c0f4"
+  "hash": "4b20d9c03d1159776838d2af5286ad12df0bc75b71fbf0e9fdabb0bd8aee4750"
 }

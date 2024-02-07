@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM scheduled_tasks WHERE guild_id = $1 AND plugin_id = $2 AND name = $3 AND unique_key = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "749c598d03c6f8027e0213b14b630f0629add4e95db7920d11071b569244c1a2"
+}

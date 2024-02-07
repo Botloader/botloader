@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, guild_id, plugin_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND exec_at < $2 AND plugin_id || '_' || name = ANY($3::text[]) AND (NOT id = ANY ($4::BIGINT[]))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "plugin_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "unique_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "value",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 6,
+        "name": "exec_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Timestamptz",
+        "TextArray",
+        "Int8Array"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "4951c9cb23a3109b04ad512b744c6d4fb442ed242d6813ea646783784c9edabe"
+}

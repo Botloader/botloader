@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = ANY($2::TEXT[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
+  "query": "SELECT exec_at FROM scheduled_tasks WHERE guild_id = $1 AND plugin_id || '_' || name = ANY($2::text[]) AND (NOT id = ANY ($3::BIGINT[])) ORDER BY exec_at ASC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -20,5 +20,5 @@
       false
     ]
   },
-  "hash": "0a2a8cbd6594d3624e972813d114f25a386090a4b4eb82e26c8b6adee94ecf68"
+  "hash": "d7e76694410b149d5f8ced42a401967eed6a861f2a820b7eff8ad7cf188da542"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT guild_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float FROM bucket_store WHERE guild_id = $1 AND bucket = $2 AND key = $3 AND (expires_at IS NULL OR expires_at > now());",
+  "query": "DELETE FROM bucket_store WHERE guild_id = $1 AND plugin_id = $2 AND bucket = $3 AND key = $4 AND (expires_at IS NULL OR expires_at > now()) RETURNING guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
   "describe": {
     "columns": [
       {
@@ -10,42 +10,48 @@
       },
       {
         "ordinal": 1,
+        "name": "plugin_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
         "name": "bucket",
         "type_info": "Text"
       },
       {
-        "ordinal": 2,
+        "ordinal": 3,
         "name": "key",
         "type_info": "Text"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "expires_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "value_json",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "value_float",
         "type_info": "Float8"
       }
     ],
     "parameters": {
       "Left": [
+        "Int8",
         "Int8",
         "Text",
         "Text"
@@ -57,10 +63,11 @@
       false,
       false,
       false,
+      false,
       true,
       true,
       true
     ]
   },
-  "hash": "0b53c6ad030a9a0353c25d88165bce7c455f35a5903595111bb425291e73dfef"
+  "hash": "77a38773012336614a6792d685f611ef156f3086dc5a12ab5ee469b3c5fbd569"
 }

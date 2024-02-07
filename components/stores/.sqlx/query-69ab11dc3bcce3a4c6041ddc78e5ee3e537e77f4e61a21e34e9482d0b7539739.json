@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO interval_timers (guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at)\n            VALUES ($1, $2, $3, $4, $5, $6, now(), now())\n            ON CONFLICT (guild_id, script_id, timer_name)\n            DO UPDATE SET\n            interval_minutes = $4,\n            interval_cron = $5,\n            last_run_at = $6,\n            updated_at = now()\n            RETURNING guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at;\n             ",
+  "query": "\n            INSERT INTO interval_timers (guild_id, plugin_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at)\n            VALUES ($1, $2, $3, $4, $5, $6, now(), now())\n            ON CONFLICT (guild_id, plugin_id, timer_name)\n            DO UPDATE SET\n            interval_minutes = $4,\n            interval_cron = $5,\n            last_run_at = $6,\n            updated_at = now()\n            RETURNING guild_id, plugin_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at;\n             ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "script_id",
+        "name": "plugin_id",
         "type_info": "Int8"
       },
       {
@@ -65,5 +65,5 @@
       false
     ]
   },
-  "hash": "864ba8b588f98715d33c9d76a95c3af7b3df12f9318103dbad8842ce466e50f6"
+  "hash": "69ab11dc3bcce3a4c6041ddc78e5ee3e537e77f4e61a21e34e9482d0b7539739"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT guild_id, script_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at\n            FROM interval_timers WHERE guild_id=$1;",
+  "query": "SELECT guild_id, plugin_id, timer_name, interval_minutes, interval_cron, last_run_at, created_at, updated_at\n            FROM interval_timers WHERE guild_id=$1;",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "script_id",
+        "name": "plugin_id",
         "type_info": "Int8"
       },
       {
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "805a6ca5f730cd917cb58890ecd9a22acf0a694f86a0c563b0e22dd70c4a976e"
+  "hash": "f758a1d64a45f290ffd3608f68fe96e4035c0bf18bd8c3f129b79e1cc4434680"
 }

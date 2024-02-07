@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO bucket_store\n         (guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float)\n         VALUES\n         ($1, $2, $3, $4, now(), now(), null, null, $5)\n         ON CONFLICT (guild_id, plugin_id, bucket, key) DO UPDATE SET\n         created_at = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now()\n            THEN now()\n            ELSE bucket_store.created_at\n            END,\n         updated_at = now(),\n         expires_at = excluded.expires_at,\n         value_json = excluded.value_json,\n         value_float = CASE\n            WHEN bucket_store.expires_at IS NOT NULL AND bucket_store.expires_at < now()\n            THEN excluded.value_float\n            ELSE excluded.value_float + bucket_store.value_float\n            END\n         RETURNING guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, value_json, value_float;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "plugin_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "bucket",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "value_json",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
+        "name": "value_float",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text",
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "e64342cc3b29b05d87e23d51b394f7154222a155ee3d8cc6acca7d0618f0f709"
+}

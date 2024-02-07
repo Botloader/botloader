@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, guild_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND name = $2 AND unique_key = $3",
+  "query": "SELECT id, guild_id, plugin_id, name, unique_key, value, exec_at FROM scheduled_tasks WHERE guild_id = $1 AND (name = $2 OR $2 IS NULL) AND id > $3 ORDER BY ID ASC LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -15,21 +15,26 @@
       },
       {
         "ordinal": 2,
+        "name": "plugin_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
         "name": "name",
         "type_info": "Text"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "unique_key",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "value",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "exec_at",
         "type_info": "Timestamptz"
       }
@@ -38,10 +43,12 @@
       "Left": [
         "Int8",
         "Text",
-        "Text"
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -50,5 +57,5 @@
       false
     ]
   },
-  "hash": "0fb83131d557439fd5c1f683a6d135c43a9be1efd845080b98d7e44036c2701f"
+  "hash": "5a0a17a305b149e8921381797e39e42b542a7a60163164dd52495d64772e8216"
 }

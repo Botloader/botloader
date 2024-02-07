@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM interval_timers WHERE guild_id=$1 AND script_id=$2 AND timer_name=$3",
+  "query": "DELETE FROM interval_timers WHERE guild_id=$1 AND plugin_id=$2 AND timer_name=$3",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "c11f85f6ff6d6cdd9067a4ef90c6f1ddda734cab189c8276f4551f5e959b71ee"
+  "hash": "d5e27beaa107efb13c9822415898ceb1df3dc9d9ec775ee5d325506eed17b8f0"
 }
