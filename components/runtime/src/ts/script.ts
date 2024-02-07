@@ -37,6 +37,10 @@ export class Script {
         this.pluginId = pluginId;
     }
 
+    setCustomStorageScope(scope: CustomScope) {
+        this.customStorageScope = scope
+    }
+
     /**
      * Creates or updates a command 
      * 
