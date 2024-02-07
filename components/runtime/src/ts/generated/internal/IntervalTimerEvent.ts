@@ -2,4 +2,5 @@
 
 export interface IntervalTimerEvent {
   name: string;
+  pluginId: string | null;
 }

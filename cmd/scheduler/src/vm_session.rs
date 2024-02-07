@@ -7,14 +7,15 @@ use std::{
 use crate::{
     command_manager,
     guild_handler::PremiumTierState,
-    interval_timer_manager, scheduled_task_manager,
+    interval_timer_manager::{self, TimerId},
+    scheduled_task_manager,
     scheduler::Store,
     vmworkerpool::{WorkerHandle, WorkerRetrieved},
 };
 use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::GuildEvent;
 use guild_logger::{entry::CreateLogEntry, GuildLogSender};
-use runtime_models::internal::script::ScriptMeta;
+use runtime_models::{internal::script::ScriptMeta, util::PluginId};
 use scheduler_worker_rpc::{
     CreateScriptsVmReq, MetricEvent, SchedulerMessage, VmDispatchEvent, WorkerMessage,
 };
@@ -350,8 +351,8 @@ impl VmSession {
                         PendingAck::ScheduledTask(t_id) => {
                             self.scheduled_tasks_man.ack_triggered_task(t_id).await;
                         }
-                        PendingAck::IntervalTimer(name) => {
-                            self.interval_timers_man.timer_ack(name).await;
+                        PendingAck::IntervalTimer(timer) => {
+                            self.interval_timers_man.timer_ack(&timer).await;
                         }
                         PendingAck::Restart => {}
                     }
@@ -432,13 +433,14 @@ impl VmSession {
         info!("dispatching interval timer");
         let evt = runtime_models::internal::timers::IntervalTimerEvent {
             name: timer.name.clone(),
+            plugin_id: timer.plugin_id.map(PluginId),
         };
 
         let serialized = serde_json::to_value(&evt).unwrap();
         self.dispatch_worker_evt(
             "BOTLOADER_INTERVAL_TIMER_FIRED".to_string(),
             serialized,
-            PendingAck::IntervalTimer(timer.name),
+            PendingAck::IntervalTimer(TimerId::new(timer.plugin_id, timer.name)),
         )
         .await;
     }
@@ -656,7 +658,7 @@ pub enum VmSessionEvent {
 pub enum PendingAck {
     Dispatch(Option<oneshot::Sender<()>>),
     ScheduledTask(u64),
-    IntervalTimer(String),
+    IntervalTimer(TimerId),
     Restart,
 }
 

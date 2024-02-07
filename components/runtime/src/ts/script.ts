@@ -316,7 +316,9 @@ export class Script {
     }
 
     private async handleIntervalEvent(evt: Internal.IntervalTimerEvent) {
-        const timer = this.intervalTimers.find(timer => timer.timer.name === evt.name);
+        const timer = this.intervalTimers.find(
+            timer => timer.timer.name === evt.name && this.pluginId === evt.pluginId
+        );
         if (timer) {
             await timer.callback();
         }
