@@ -12,7 +12,7 @@ export function Breadcrumbs() {
         // first get rid of any matches that don't have handle and crumb
         .filter((match) => Boolean(match.handle?.breadCrumb));
 
-    const guilds = useGuilds()
+    const guilds = useGuilds().value
     const scripts = useFetchedData(guildScriptsContext)
     const currentPlugin = useFetchedData(pluginContext)
 

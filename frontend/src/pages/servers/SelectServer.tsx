@@ -20,7 +20,7 @@ function InnerPage() {
             return [[], []];
         }
 
-        const guildsAdmins = guilds.hasAdmin;
+        const guildsAdmins = guilds.value?.hasAdmin ?? [];
         const joinedHasAdmin = guildsAdmins.filter(g => g.connected);
         const notJoinedHasAdmin = guildsAdmins.filter(g => !g.connected);
 

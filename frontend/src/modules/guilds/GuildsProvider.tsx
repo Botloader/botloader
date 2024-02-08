@@ -35,7 +35,7 @@ export function GuildsGuard({ children }: { children: React.ReactNode }) {
 }
 
 export function useGuilds() {
-    return useFetchedData(GuildsContext).value
+    return useFetchedData(GuildsContext)
 }
 
 interface LoadedGuilds {

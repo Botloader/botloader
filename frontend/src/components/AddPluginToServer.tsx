@@ -57,7 +57,7 @@ export function AddPluginToServerButton() {
         <GuildSelectionDialog
             open={open}
             onClose={handleClose}
-            guilds={guilds?.hasAdmin.filter((v) => v.connected) || []}
+            guilds={guilds.value?.hasAdmin.filter((v) => v.connected) || []}
         />
         <Snackbar open={Boolean(addedToServer)} autoHideDuration={6000} onClose={() => setAddedToServer(null)}>
             <Alert onClose={() => setAddedToServer(null)} severity="success" sx={{ width: '100%' }}>

@@ -1,6 +1,7 @@
 import { ApiResult, isErrorResponse } from "botloader-common";
 import { createContext, ReactNode, useCallback, useContext, useEffect } from "react";
 import { useState } from "react";
+import { Loading } from "./Loading";
 
 // the returned data from the hook
 //
@@ -152,7 +153,7 @@ export function useFetchedDataBehindGuard<T>(context: React.Context<FetchDataHoo
 export function FetchDataGuard<T>(props: { context: React.Context<FetchDataHook<T>>, children: ReactNode }) {
     let hook = useFetchedData(props.context);
     if (hook.loading || hook.waiting) {
-        return <p>Loading</p>
+        return <Loading />
     }
 
     if (hook.value) {

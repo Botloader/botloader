@@ -21,7 +21,7 @@ export function GuildSideNav() {
             label: "Home",
             isNavLink: true,
             exact: true,
-            path: `/servers/${guild?.guild.id}`,
+            path: `/servers/${guild?.value?.guild.id}`,
         },
         // "scripts": {
         //     label: "Scripts",
@@ -44,9 +44,8 @@ export function EditGuildScript() {
     const guild = useCurrentGuild()!;
 
     let { scriptId } = useParams();
-    console.log(scriptId);
 
-    return <EditScriptPage guild={guild} scriptId={parseInt(scriptId!)}></EditScriptPage>
+    return <EditScriptPage guild={guild!.value!} scriptId={parseInt(scriptId!)}></EditScriptPage>
 }
 
 export function GuildHome() {
@@ -54,9 +53,9 @@ export function GuildHome() {
 
     return <Stack spacing={2}>
         <Alert severity="warning">This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</Alert>
-        <PremiumPanel guild={guild}></PremiumPanel>
-        <FetchDataGuard context={guildScriptsContext}><GuildScripts guild={guild}></GuildScripts></FetchDataGuard>
-    </Stack>
+        <PremiumPanel guild={guild!.value!}></PremiumPanel>
+        <FetchDataGuard context={guildScriptsContext}><GuildScripts guild={guild!.value!}></GuildScripts></FetchDataGuard>
+    </Stack >
 }
 
 function PremiumPanel(props: { guild: BotGuild }) {

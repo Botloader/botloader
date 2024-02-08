@@ -74,7 +74,7 @@ function PremiumSlotComponent(props: { slot: PremiumSlot }) {
     const expiresAt = new Date(Date.parse(props.slot.expires_at));
 
     const attachedGuild = props.slot.attached_guild_id ?
-        guilds?.all.find(v => v.guild.id === props.slot.attached_guild_id)?.guild.name ?? props.slot.attached_guild_id
+        guilds?.value?.all.find(v => v.guild.id === props.slot.attached_guild_id)?.guild.name ?? props.slot.attached_guild_id
         : "None"
 
 
@@ -130,7 +130,7 @@ function PremiumSlotComponent(props: { slot: PremiumSlot }) {
                 <div className="premium-slot-change-guild">
                     <select ref={changeGuildRef}>
                         <option value="none">none</option>
-                        {guilds.all.filter((v) => v.connected)
+                        {guilds.value?.all.filter((v) => v.connected)
                             .map(v => <option defaultValue={props.slot.attached_guild_id ?? undefined} key={v.guild.id} value={v.guild.id + ""}>{v.guild.name}</option>)}
                     </select>
                     <AsyncOpButton label="Save" onClick={saveNewServer}></AsyncOpButton>

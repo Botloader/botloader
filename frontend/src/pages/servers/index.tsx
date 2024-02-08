@@ -6,6 +6,7 @@ import { BuildConfig } from "../../BuildConfig";
 import { OurRouteObject } from "../../misc/ourRoute";
 import { RequireLoggedInSession } from "../../modules/session/RequireLoggedInSession";
 import { useCurrentGuild } from "../../modules/guilds/CurrentGuild";
+import { Loading } from "../../components/Loading";
 
 export const routes: OurRouteObject[] = [
     {
@@ -53,14 +54,18 @@ function GuildPages() {
 
 export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
     let guild = useCurrentGuild();
-    if (guild) {
-        if (guild.connected) {
+    if (guild?.loading) {
+        return <Loading />
+    }
+
+    if (guild?.value) {
+        if (guild.value.connected) {
             return <>
                 {children}
             </>
         } else {
             return <div className="page-wrapper">
-                <InviteGuildPage guild={guild} />
+                <InviteGuildPage guild={guild.value} />
             </div>
         }
     } else {

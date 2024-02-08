@@ -182,7 +182,7 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
         <GuildSelectionDialog
             open={testGuildSelectionOpen}
             onClose={selectTestGuild}
-            guilds={guilds?.hasAdmin.filter((v) => v.connected) ?? []}
+            guilds={guilds?.value?.hasAdmin.filter((v) => v.connected) ?? []}
         />
     </ScriptingIde >
 }

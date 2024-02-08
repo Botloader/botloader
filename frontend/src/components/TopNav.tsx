@@ -167,10 +167,10 @@ export function TopNav() {
                     </Box>
 
                     <Box sx={{ flexGrow: 0 }}>
-                        {currentGuild ?
+                        {currentGuild?.value ?
                             <Tooltip title="Change server" >
                                 <IconButton component={Link} to="/servers">
-                                    <GuildIcon size={40} guild={currentGuild.guild}></GuildIcon>
+                                    <GuildIcon size={40} guild={currentGuild?.value?.guild}></GuildIcon>
                                 </IconButton>
                             </Tooltip>
                             : session.user ?
