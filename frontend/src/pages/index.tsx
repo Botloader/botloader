@@ -9,9 +9,7 @@ import { TopNav } from "../components/TopNav"
 import { LandingPage } from "./Landing"
 import { NewsPage } from "./NewsPage"
 import { SamplesPage } from "./SamplesPage"
-import { GuildsProvider } from "../modules/guilds/GuildsProvider"
 import { BotloaderWebsocketProvider } from "../modules/websocket/WebsocketContext"
-import { SessionProvider } from "../modules/session/SessionContext"
 import { CurrentGuildProvider } from "../modules/guilds/CurrentGuild"
 import { GuildScriptsProvider } from "../modules/guilds/GuildScriptsProvider"
 import { OurRouteObject } from "../misc/ourRoute"
@@ -85,18 +83,15 @@ export const routes: OurRouteObject[] = [
 function MainRoutesElement() {
     let params = useParams();
 
-    return <SessionProvider>
-        <GuildsProvider>
-            <CurrentGuildProvider guildId={params.guildId}>
-                <BotloaderWebsocketProvider>
-                    <GuildScriptsProvider guildId={params.guildId}>
-                        <MaybePluginProvider pluginId={params.pluginId ? parseInt(params.pluginId) : undefined}>
-                            <TopNav />
-                            <Outlet></Outlet>
-                        </MaybePluginProvider>
-                    </GuildScriptsProvider>
-                </BotloaderWebsocketProvider>
-            </CurrentGuildProvider>
-        </GuildsProvider>
-    </SessionProvider>
+    return <CurrentGuildProvider guildId={params.guildId}>
+        <BotloaderWebsocketProvider>
+            <GuildScriptsProvider guildId={params.guildId}>
+                <MaybePluginProvider pluginId={params.pluginId ? parseInt(params.pluginId) : undefined}>
+                    <TopNav />
+                    <Outlet></Outlet>
+                </MaybePluginProvider>
+            </GuildScriptsProvider>
+        </BotloaderWebsocketProvider>
+    </CurrentGuildProvider>
+
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import Editor, { DiffEditor } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import { useBotloaderMonaco } from "./BotloaderSdk";
+import { Loading } from "./Loading";
 
 const DEFAULT_EMPTY_SCRIPT_CONTENT =
     `// import { Commands, Discord, HttpClient, Tasks } from 'botloader';
@@ -102,7 +103,7 @@ export function ScriptEditor(props: {
     }
 
     if (!blSdkInit) {
-        return <>Loading...</>
+        return <Loading />
     }
 
     if (props.isDiffEditor) {

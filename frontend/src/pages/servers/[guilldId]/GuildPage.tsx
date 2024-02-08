@@ -12,6 +12,7 @@ import { UseNotifications } from "../../../components/Notifications";
 import { useSession } from "../../../modules/session/useSession";
 import { useCurrentGuild } from "../../../modules/guilds/CurrentGuild";
 import { guildScriptsContext, useCurrentGuildScripts } from "../../../modules/guilds/GuildScriptsProvider";
+import { Loading } from "../../../components/Loading";
 
 export function GuildSideNav() {
     const guild = useCurrentGuild();
@@ -53,22 +54,23 @@ export function GuildHome() {
 
     return <Stack spacing={2}>
         <Alert severity="warning">This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</Alert>
-        <PremiumPanel guild={guild!.value!}></PremiumPanel>
+        <PremiumPanel guildId={guild!.value!.guild!.id!}></PremiumPanel>
         <FetchDataGuard context={guildScriptsContext}><GuildScripts guild={guild!.value!}></GuildScripts></FetchDataGuard>
     </Stack >
 }
 
-function PremiumPanel(props: { guild: BotGuild }) {
+function PremiumPanel(props: { guildId: string }) {
     const [slots, setSlots] = useState<GuildPremiumSlot[] | undefined | null>(undefined);
     const session = useSession();
 
     useEffect(() => {
-        loadConfig();
+        loadConfig(props.guildId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props, session])
+    }, [props.guildId, session])
 
-    async function loadConfig() {
-        let resp = await session.apiClient.getGuildPremiumSlots(props.guild.guild.id);
+
+    async function loadConfig(guildId: string) {
+        let resp = await session.apiClient.getGuildPremiumSlots(guildId);
         if (isErrorResponse(resp)) {
             setSlots(null);
         } else {
@@ -81,7 +83,7 @@ function PremiumPanel(props: { guild: BotGuild }) {
         <Typography variant="h4">Premium/Lite</Typography>
         <Paper sx={{ p: 1 }}>
             {slots === null ? <p>Failed loading slots</p>
-                : slots === undefined ? <p>Loading...</p>
+                : slots === undefined ? <Loading />
                     : slots.length > 0 ? slots.map(v => <div className="guild-premium-slots" key={v.id}>{v.tier} by <code>{v.user_id}</code></div>)
                         : <p>This server is on the free plan</p>}
         </Paper>

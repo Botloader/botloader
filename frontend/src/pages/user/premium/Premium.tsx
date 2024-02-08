@@ -16,6 +16,7 @@ import { Box } from "@mui/system";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
 import { UseNotifications } from "../../../components/Notifications";
 import { useSession } from "../../../modules/session/useSession";
+import { Loading } from "../../../components/Loading";
 
 let slotsContext = createFetchDataContext<PremiumSlot[]>();
 
@@ -48,7 +49,7 @@ export function InnerPage() {
         <GuildsGuard>
             <Box display="flex" mt={1} gap={1} flexWrap="wrap">
                 {slots === undefined ?
-                    <p>Loading...</p> :
+                    <Loading /> :
                     slots === null ? <p>failed fetching slots, refresh the page to try again...</p> :
                         slots.map(v => <PremiumSlotComponent key={v.id} slot={v}></PremiumSlotComponent>)
                 }

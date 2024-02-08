@@ -54,7 +54,7 @@ function GuildPages() {
 
 export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
     let guild = useCurrentGuild();
-    if (guild?.loading) {
+    if (guild?.loading || guild?.waiting) {
         return <Loading />
     }
 

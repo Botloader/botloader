@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Panel } from "../components/Panel";
 import ReactMarkdown from 'react-markdown'
 import { useSession } from "../modules/session/useSession";
+import { Loading } from "../components/Loading";
 
 export function NewsPage() {
     const session = useSession();
@@ -22,7 +23,7 @@ export function NewsPage() {
     }, [session])
 
     return <>
-        {news === undefined ? <p>Loading...</p>
+        {news === undefined ? <Loading />
             : news === null ? <p>Failed fetching news... :(</p>
                 : news.map(item_ => <NewsItemComponent key={item_.message_id} item={item_}></NewsItemComponent>)
         }

@@ -1,13 +1,14 @@
-import { ApiResult, BotGuild, isErrorResponse, UserGuild } from "botloader-common";
+import { BotGuild, isErrorResponse, UserGuild } from "botloader-common";
 import { createFetchDataContext, FetchData, FetchDataGuard, useFetchedData } from "../../components/FetchData";
 import { useSession } from "../session/useSession";
+import { useCallback } from "react";
 
 export const GuildsContext = createFetchDataContext<LoadedGuilds>();
 
 export function GuildsProvider({ children }: { children: React.ReactNode }) {
     const session = useSession();
 
-    async function fetch(): Promise<ApiResult<LoadedGuilds> | undefined> {
+    const fetch = useCallback(async () => {
         if (!session.user) {
             return undefined
         }
@@ -23,9 +24,9 @@ export function GuildsProvider({ children }: { children: React.ReactNode }) {
             all: resp.guilds,
             hasAdmin: adminGuilds,
         }
-    }
+    }, [session])
 
-    return <FetchData loader={fetch} context={GuildsContext}>
+    return <FetchData loader={fetch} context={GuildsContext} debugName="guilds">
         {children}
     </FetchData>
 }

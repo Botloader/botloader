@@ -40,7 +40,8 @@ export type SetData<T> = T | ((cur: T | null) => T);
 // This Component/Context provider loads a remote resource returning the current load state with
 // methods to update and reload the resource
 export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResult<T>>(
-    loader: () => Promise<T | undefined>
+    loader: () => Promise<T | undefined>,
+    debugName?: string,
 ): FetchDataHook<U> {
 
     let [result, setResult] = useState<{ state: "loading" | "loaded" | "waiting", value: U | null, error: Error | null }>({
@@ -85,9 +86,9 @@ export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResu
     }, [loader]);
 
     useEffect(() => {
-        console.log("called reload");
+        console.log("called reload: ", debugName);
         load();
-    }, [load]);
+    }, [load, debugName]);
 
     return {
         reload: load,
@@ -115,12 +116,13 @@ export function useFetchData<T, U extends ResolvedApiResult<T> = ResolvedApiResu
     };
 }
 
-export function FetchDataGuarded<T>({ loader, context, children }: {
+export function FetchDataGuarded<T>({ loader, context, children, debugName }: {
     loader: () => Promise<T>,
     context: React.Context<FetchDataHook<ResolvedApiResult<T>>>,
+    debugName?: string,
     children: ReactNode
 }) {
-    let hook = useFetchData(loader);
+    let hook = useFetchData(loader, debugName);
 
     return <context.Provider value={hook}>
         <FetchDataGuard context={context}>
@@ -129,12 +131,13 @@ export function FetchDataGuarded<T>({ loader, context, children }: {
     </context.Provider>
 }
 
-export function FetchData<T>({ loader, context, children }: {
+export function FetchData<T>({ loader, context, children, debugName }: {
     loader: () => Promise<T | undefined>,
     context: React.Context<FetchDataHook<ResolvedApiResult<T>>>,
+    debugName?: string,
     children: ReactNode
 }) {
-    let hook = useFetchData(loader);
+    let hook = useFetchData(loader, debugName);
 
     return <context.Provider value={hook}>
         {children}

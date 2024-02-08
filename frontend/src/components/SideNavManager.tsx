@@ -5,7 +5,7 @@ export function SideNavStateController({ children }: { children: React.ReactNode
     const [openInstances, setOpenInstances] = useState(0);
 
     function modOpenInstances(n: number) {
-        console.log("modified");
+        console.log("sidebar modified", n);
         setOpenInstances((current) => current + n);
     }
 

@@ -2,6 +2,7 @@ import { ApiResult, Script, ScriptsWithPlugins, isErrorResponse } from "botloade
 import { FetchData, FetchDataHookNotBehindGuard, createFetchDataContext, useFetchedData } from "../../components/FetchData";
 import { useSession } from "../session/useSession";
 import { useParams } from "react-router-dom";
+import { useCallback } from "react";
 
 export const guildScriptsContext = createFetchDataContext<ScriptsWithPlugins>();
 
@@ -14,13 +15,23 @@ type GuildScriptsHook = {
 export function GuildScriptsProvider({ children, guildId }: { guildId?: string, children: React.ReactNode }) {
     const session = useSession()
 
+    const fetch = useCallback(async () => {
+        if (!guildId) {
+            throw new Error("guildId not set")
+        }
+
+        return await session.apiClient.getAllScriptsWithPlugins(guildId);
+    }, [session, guildId])
+
     if (!guildId || !session.user) {
         return <>{children}</>
     }
 
-    return <FetchData context={guildScriptsContext} loader={async () => {
-        return await session.apiClient.getAllScriptsWithPlugins(guildId);
-    }}>
+    return <FetchData
+        context={guildScriptsContext}
+        loader={fetch}
+        debugName="guild_scripts"
+    >
         {children}
     </FetchData>
 }
