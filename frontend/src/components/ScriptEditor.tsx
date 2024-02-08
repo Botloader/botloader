@@ -71,6 +71,7 @@ export function ScriptEditor(props: {
         // here is another way to get monaco instance
         // you can also store it in `useRef` for further usage
         monacoRef.current = editor;
+
     }
 
     function handleEditorDidMountDiff(editor: monaco.editor.IStandaloneDiffEditor) {
@@ -118,8 +119,8 @@ export function ScriptEditor(props: {
             onMount={handleEditorDidMountDiff}
             options={{ readOnly: props.isReadOnly }}
             key="diff-editor"
-            keepCurrentOriginalModel={true}
-            keepCurrentModifiedModel={true}
+            keepCurrentOriginalModel={false}
+            keepCurrentModifiedModel={false}
         />
 
     } else {
