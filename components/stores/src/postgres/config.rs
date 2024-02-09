@@ -29,7 +29,7 @@ impl Postgres {
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
              contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
-             FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
+             FROM guild_scripts WHERE guild_id = $1 AND name = $2 AND plugin_id IS NULL;",
             guild_id.get() as i64,
             script_name
         )

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use stores::config::{ConfigStore, CreateScript, Script, UpdateScript};
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
-use validation::validate;
+use validation::{validate, ValidationError};
 
 use crate::{
     errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, ApiResult, CurrentConfigStore,
@@ -95,6 +95,17 @@ pub async fn create_guild_script(
 
     if let Err(verr) = validate(&cs) {
         return Err(ApiErrorResponse::ValidationFailed(verr));
+    }
+
+    if config_store
+        .get_script(current_guild.id, cs.name.clone())
+        .await
+        .is_ok()
+    {
+        return Err(ApiErrorResponse::ValidationFailed(vec![ValidationError {
+            field: "name".to_string(),
+            msg: "Name already taken".to_string(),
+        }]));
     }
 
     let script = config_store
@@ -188,7 +199,7 @@ pub async fn update_script_plugin(
         })?;
 
     let Some(plugin_id) = script.plugin_id else {
-        return Err(ApiErrorResponse::ScriptNotAPlugin)
+        return Err(ApiErrorResponse::ScriptNotAPlugin);
     };
 
     let plugin = fetch_plugin(&config_store, plugin_id).await?;

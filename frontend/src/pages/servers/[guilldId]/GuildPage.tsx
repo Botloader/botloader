@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Panel } from "../../../components/Panel";
 import { SideNav } from "../../../components/SideNav";
 import { EditScriptPage } from "./scripts/[script_id]/edit/EditScript";
-import { Alert, Box, Button, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
+import { Alert, AlertTitle, Box, Button, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
 import { FetchDataGuard } from "../../../components/FetchData";
 import { BlLink } from "../../../components/BLLink";
 import { UseNotifications } from "../../../components/Notifications";
@@ -141,7 +141,12 @@ function GuildScripts(props: { guild: BotGuild }) {
         if (name && name.length > 0) {
             let resp = await createScript(name)
             if (isErrorResponse(resp)) {
-                setCreateError(JSON.stringify(resp))
+                const nameError = resp.getFieldError("name")
+                if (nameError) {
+                    setCreateError(nameError)
+                } else {
+                    setCreateError(JSON.stringify(resp))
+                }
             } else {
                 navigate(`/servers/${props.guild.guild.id}/scripts/${resp.id}/edit`)
             }
@@ -151,9 +156,11 @@ function GuildScripts(props: { guild: BotGuild }) {
     return <>
         <Typography variant="h4">Create a new script</Typography>
         <Paper sx={{ p: 1 }}>
+            {isCreating && <Loading />}
             <form onSubmit={(evt) => {
                 evt.preventDefault()
                 if (!isCreating) {
+                    setCreating(true)
                     submitCreateScript().finally(() => setCreating(false))
                 }
             }}>
@@ -162,7 +169,7 @@ function GuildScripts(props: { guild: BotGuild }) {
                     <Button type="submit" disabled={isCreating}>Create</Button>
                 </Stack>
             </form>
-            {createError ? <p>Error creating script: <code>{createError}</code></p> : null}
+            {createError && <Alert severity="error"><AlertTitle>Error creating script</AlertTitle>{createError}</Alert>}
         </Paper >
         <Typography variant="h4" sx={{ ml: 1, mb: 1 }}>Scripts</Typography>
         <Paper>
