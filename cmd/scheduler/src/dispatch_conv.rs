@@ -175,6 +175,14 @@ pub fn discord_event_to_dispatch(evt: DispatchEvent) -> Option<DiscordDispatchEv
             ))
             .unwrap(),
         }),
+        DispatchEvent::VoiceStateUpdate(update) => Some(DiscordDispatchEvent {
+            guild_id: update.guild_id.unwrap(),
+            name: "VOICE_STATE_UPDATE",
+            data: serde_json::to_value(
+                runtime_models::internal::events::EventVoiceStateUpdate::try_from(*update).ok()?,
+            )
+            .unwrap(),
+        }),
 
         _ => None,
     }

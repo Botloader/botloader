@@ -14,6 +14,7 @@ import type { IEventInviteCreate } from "../generated/internal/IEventInviteCreat
 import type { IEventInviteDelete } from "../generated/internal/IEventInviteDelete";
 import type { IInviteTargetUser } from "../generated/discord/IInviteTargetUser";
 import type { InviteTargetType } from "../generated/discord/InviteTargetType";
+import type { IEventVoiceStateUpdate } from "../generated/internal/IEventVoiceStateUpdate";
 
 export class EventMessageReactionAdd {
     channelId: string;
@@ -130,5 +131,41 @@ export class EventInviteDelete {
     constructor(json: IEventInviteDelete) {
         this.channelId = json.channelId
         this.code = json.code
+    }
+}
+
+export class EventVoiceStateUpdate {
+    channelId: string | null;
+    deaf: boolean;
+    member?: Member;
+    mute: boolean;
+    selfDeaf: boolean;
+    selfMute: boolean;
+    selfStream: boolean;
+    selfVideo: boolean;
+    sessionId: string;
+    suppress: boolean;
+    userId: string;
+    requestToSpeakTimestamp: number | null;
+
+    /** 
+    * @internal 
+    */
+    constructor(json: IEventVoiceStateUpdate) {
+        this.channelId = json.channelId
+        this.deaf = json.deaf
+        this.mute = json.mute
+        this.selfDeaf = json.selfDeaf
+        this.selfMute = json.selfMute
+        this.selfStream = json.selfStream
+        this.selfVideo = json.selfVideo
+        this.sessionId = json.sessionId
+        this.suppress = json.suppress
+        this.userId = json.userId
+        this.requestToSpeakTimestamp = json.requestToSpeakTimestamp
+
+        if (json.member) {
+            this.member = new Member(json.member)
+        }
     }
 }

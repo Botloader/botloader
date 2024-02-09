@@ -271,6 +271,7 @@ export class Script {
     on(eventType: "MEMBER_ADD", cb: (evt: EventSystem.EventTypes["MEMBER_ADD"]) => void): void;
     on(eventType: "MEMBER_UPDATE", cb: (evt: EventSystem.EventTypes["MEMBER_UPDATE"]) => void): void;
     on(eventType: "MEMBER_REMOVE", cb: (evt: EventSystem.EventTypes["MEMBER_REMOVE"]) => void): void;
+    on(eventType: "VOICE_STATE_UPDATE", cb: (evt: EventSystem.EventTypes["VOICE_STATE_UPDATE"]) => void): void;
     on(eventType: "MESSAGE_REACTION_ADD", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_ADD"]) => void): void;
     on(eventType: "MESSAGE_REACTION_REMOVE", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE"]) => void): void;
     on(eventType: "MESSAGE_REACTION_REMOVE_ALL", cb: (evt: EventSystem.EventTypes["MESSAGE_REACTION_REMOVE_ALL"]) => void): void;

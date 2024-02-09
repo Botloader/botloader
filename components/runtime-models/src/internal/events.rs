@@ -183,3 +183,58 @@ impl TryFrom<twilight_model::gateway::payload::incoming::InviteCreate> for Event
         })
     }
 }
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IEventVoiceStateUpdate")]
+#[ts(export_to = "bindings/internal/IEventVoiceStateUpdate.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventVoiceStateUpdate {
+    pub channel_id: Option<String>,
+    pub deaf: bool,
+    pub guild_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub member: Option<Member>,
+    pub mute: bool,
+    pub self_deaf: bool,
+    pub self_mute: bool,
+    #[serde(default)]
+    pub self_stream: bool,
+    pub self_video: bool,
+    pub session_id: String,
+    pub suppress: bool,
+    pub user_id: String,
+    pub request_to_speak_timestamp: Option<NotBigU64>,
+}
+
+impl TryFrom<twilight_model::gateway::payload::incoming::VoiceStateUpdate>
+    for EventVoiceStateUpdate
+{
+    type Error = anyhow::Error;
+
+    fn try_from(
+        value: twilight_model::gateway::payload::incoming::VoiceStateUpdate,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            channel_id: value.0.channel_id.map(|v| v.to_string()),
+            deaf: value.0.deaf,
+            guild_id: value
+                .0
+                .guild_id
+                .map(|v| v.to_string())
+                .ok_or(anyhow::anyhow!("guild_id is None"))?,
+            member: value.0.member.map(Into::into),
+            mute: value.0.mute,
+            self_deaf: value.0.self_deaf,
+            self_mute: value.0.self_mute,
+            self_stream: value.0.self_stream,
+            self_video: value.0.self_video,
+            session_id: value.0.session_id,
+            suppress: value.0.suppress,
+            user_id: value.0.user_id.to_string(),
+            request_to_speak_timestamp: value
+                .0
+                .request_to_speak_timestamp
+                .map(|v| ((v.as_micros() / 1000) as u64).into()),
+        })
+    }
+}

@@ -312,6 +312,13 @@ impl Broker {
             }
             Event::InviteCreate(invite) => invite.guild_id,
             Event::InviteDelete(invite) => invite.guild_id,
+            Event::VoiceStateUpdate(update) => {
+                if let Some(guild_id) = update.guild_id {
+                    guild_id
+                } else {
+                    return;
+                }
+            }
             _ => return,
         };
 
