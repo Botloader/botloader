@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, Script } from "botloader-common";
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
-import { Navigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Panel } from "../../../components/Panel";
 import { SideNav } from "../../../components/SideNav";
 import { EditScriptPage } from "./scripts/[script_id]/edit/EditScript";
-import { Alert, Box, Paper, Stack, Switch, Typography } from "@mui/material";
+import { Alert, Box, Button, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
 import { FetchDataGuard } from "../../../components/FetchData";
 import { BlLink } from "../../../components/BLLink";
 import { UseNotifications } from "../../../components/Notifications";
@@ -126,7 +126,8 @@ function InnerGuildSettings(props: { guild: BotGuild, settings: GuildMetaConfig 
 function GuildScripts(props: { guild: BotGuild }) {
     const createScriptInput = useRef<HTMLInputElement>(null);
     const [createError, setCreateError] = useState("");
-    const [scriptCreated, setScriptCreated] = useState<Script | null>(null)
+    const [isCreating, setCreating] = useState<boolean>(false)
+    const navigate = useNavigate()
 
     const { value: scripts, toggleScript, createScript, delScript } = useCurrentGuildScripts();
     const pluginScripts = scripts!.scripts.filter((v) => v.plugin_id !== null)
@@ -142,7 +143,7 @@ function GuildScripts(props: { guild: BotGuild }) {
             if (isErrorResponse(resp)) {
                 setCreateError(JSON.stringify(resp))
             } else {
-                setScriptCreated(resp);
+                navigate(`/servers/${props.guild.guild.id}/scripts/${resp.id}/edit`)
             }
         }
     }
@@ -150,12 +151,18 @@ function GuildScripts(props: { guild: BotGuild }) {
     return <>
         <Typography variant="h4">Create a new script</Typography>
         <Paper sx={{ p: 1 }}>
-            <div className="create-script">
-                <input type="text" ref={createScriptInput}></input>
-                <AsyncOpButton label="Create" onClick={submitCreateScript}></AsyncOpButton>
-            </div>
+            <form onSubmit={(evt) => {
+                evt.preventDefault()
+                if (!isCreating) {
+                    submitCreateScript().finally(() => setCreating(false))
+                }
+            }}>
+                <Stack direction={"row"}>
+                    <TextField label="Name" inputRef={createScriptInput} />
+                    <Button type="submit" disabled={isCreating}>Create</Button>
+                </Stack>
+            </form>
             {createError ? <p>Error creating script: <code>{createError}</code></p> : null}
-            {scriptCreated ? <Navigate to={`/servers/${props.guild.guild.id}/scripts/${scriptCreated.id}/edit`}></Navigate> : null}
         </Paper >
         <Typography variant="h4" sx={{ ml: 1, mb: 1 }}>Scripts</Typography>
         <Paper>
