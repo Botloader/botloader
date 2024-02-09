@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number FROM guild_scripts WHERE guild_id = $1 AND name = $2;",
+  "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number FROM guild_scripts WHERE guild_id = $1 AND name = $2 AND plugin_id IS NULL;",
   "describe": {
     "columns": [
       {
@@ -73,5 +73,5 @@
       true
     ]
   },
-  "hash": "737c35c9bc5ea5b44f6134330981927efb5db9b519ad5cc2263e06d0a5d06f58"
+  "hash": "dc8301f54c6b3a73a2fc1b479cdd3dd4ee1f43c1a052075c65339f696f53ec6e"
 }
