@@ -12,7 +12,7 @@ export namespace Tasks {
     /**
      * Create a new scheduled task.
      * 
-     * @deprecated does not support plugins
+     * @deprecated Deprecated in favor of new task bucket API. See {@link Script.createTaskBucket}
      * 
      * @param namespace The namespace for this task, register a handler for the namespace using {@link Script.registerTaskHandler}
      * @param execute_at When to execute this task
@@ -83,7 +83,7 @@ export namespace Tasks {
      * Delete a task by its namespaced unique key
      * @returns true if found and deleted, false otherwise
      * 
-     * @deprecated does not support plugins
+     * @deprecated Deprecated in favor of new task bucket API. See {@link Script.createTaskBucket}
      */
     export async function deleteByKey(namespace: string, key: string): Promise<boolean> {
         return OpWrappers.tasks.delTaskByKey(null, namespace, key);
@@ -93,7 +93,7 @@ export namespace Tasks {
      * Delete all tasks within a namespace
      * @returns the number of tasks deleted
      * 
-     * @deprecated does not support plugins
+     * @deprecated Deprecated in favor of new task bucket API. See {@link Script.createTaskBucket}
      */
     export async function deleteNamespace(namespace: string): Promise<number> {
         return OpWrappers.tasks.delAllTasks(null, namespace);
@@ -114,7 +114,7 @@ export namespace Tasks {
      * Retrieve a task by its namespaced unique key
      * @returns Either the task if found, or undefined  
      * 
-     * @deprecated does not support plugins
+     * @deprecated Deprecated in favor of new task bucket API. See {@link Script.createTaskBucket}
      */
     export async function getByKey(namespace: string, key: string): Promise<ScheduledTask | undefined> {
         const task = await OpWrappers.tasks.getTaskByKey(null, namespace, key) ?? undefined;
