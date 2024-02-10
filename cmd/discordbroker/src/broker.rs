@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use dbrokerapi::broker_scheduler_rpc::{HelloData, RawDiscordEvent};
+use dbrokerapi::broker_scheduler_rpc::{self, BrokerEvent, DiscordEventData, HelloData};
 use futures_util::StreamExt;
 
 use stores::config::ConfigStore;
@@ -27,6 +27,7 @@ use twilight_model::{
         marker::{GuildMarker, UserMarker},
         Id,
     },
+    voice::VoiceState,
 };
 
 pub async fn run_broker(
@@ -62,7 +63,7 @@ pub async fn run_broker(
         ready,
         connected_scheduler: None,
         queued_events: Vec::new(),
-        scheduler_discconected_at: Instant::now(),
+        scheduler_disconnected_at: Instant::now(),
         gateway_message_senders: shards.iter().map(|v| v.sender()).collect(),
         nonce_counter: 0,
         pending_guild_member_requests: Default::default(),
@@ -80,8 +81,8 @@ struct Broker {
     cmd_rx: mpsc::UnboundedReceiver<BrokerCommand>,
 
     connected_scheduler: Option<TcpStream>,
-    queued_events: Vec<(Id<GuildMarker>, DispatchEvent)>,
-    scheduler_discconected_at: Instant,
+    queued_events: Vec<(Id<GuildMarker>, BrokerEvent)>,
+    scheduler_disconnected_at: Instant,
     stores: Arc<dyn ConfigStore>,
     ready: Arc<AtomicBool>,
     gateway_message_senders: Vec<MessageSender>,
@@ -95,23 +96,6 @@ struct Broker {
 impl Broker {
     pub async fn run(&mut self, mut shards: Vec<Shard>) {
         let mut stream = ShardEventStream::new(shards.iter_mut());
-
-        // while let Some((shard, event)) = stream.next().await {
-        //     let event = match event {
-        //         Ok(event) => event,
-        //         Err(source) => {
-        //             tracing::warn!(?source, "error receiving event");
-
-        //             if source.is_fatal() {
-        //                 break;
-        //             }
-
-        //             continue;
-        //         }
-        //     };
-
-        //     tracing::debug!(?event, shard = ?shard.id(), "received event");
-        // }
 
         loop {
             tokio::select! {
@@ -150,16 +134,14 @@ impl Broker {
     }
 
     async fn handle_event(&mut self, evt: Event) {
-        self.discord_state.update(&evt);
         metrics::counter!("bl.broker.handled_events_total").increment(1);
 
-        let forward_for_guild = match &evt {
+        match &evt {
             Event::Ready(_) => {
                 self.ready.store(true, std::sync::atomic::Ordering::SeqCst);
 
                 metrics::gauge!("bl.broker.connected_guilds_total").set(0.0);
                 info!("received ready!");
-                return;
             }
             Event::GuildDelete(g) => {
                 metrics::gauge!("bl.broker.connected_guilds_total").decrement(1.0);
@@ -167,8 +149,6 @@ impl Broker {
                 if !g.unavailable {
                     let _ = self.stores.set_guild_left_status(g.id, true).await;
                 }
-
-                g.id
             }
             Event::GuildCreate(gc) => {
                 let _ = self
@@ -187,113 +167,7 @@ impl Broker {
                     .await;
 
                 metrics::gauge!("bl.broker.connected_guilds_total").increment(1.0);
-                gc.id
             }
-            Event::MemberAdd(m) => m.guild_id,
-            Event::MemberRemove(m) => m.guild_id,
-            Event::MemberUpdate(m) => m.guild_id,
-            Event::MessageCreate(m) => {
-                if let Some(guild_id) = m.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::MessageDelete(m) => {
-                if let Some(guild_id) = m.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::MessageDeleteBulk(m) => {
-                if let Some(guild_id) = m.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::MessageUpdate(m) => {
-                if let Some(guild_id) = m.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-
-            Event::ReactionAdd(r) => {
-                if let Some(guild_id) = r.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ReactionRemove(r) => {
-                if let Some(guild_id) = r.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ReactionRemoveAll(r) => {
-                if let Some(guild_id) = r.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ReactionRemoveEmoji(r) => {
-                r.guild_id
-                // if let Some(guild_id) = r.guild_id {
-                //     guild_id
-                // } else {
-                //     return;
-                // }
-            }
-
-            Event::InteractionCreate(i) => {
-                if let Some(guild_id) = i.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ChannelCreate(v) => {
-                if let Some(guild_id) = v.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ChannelUpdate(v) => {
-                if let Some(guild_id) = v.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ChannelDelete(v) => {
-                if let Some(guild_id) = v.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ThreadCreate(v) => {
-                if let Some(guild_id) = v.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ThreadUpdate(v) => {
-                if let Some(guild_id) = v.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            Event::ThreadDelete(v) => v.guild_id,
             Event::MemberChunk(chunk) => {
                 let nonce = chunk.nonce.clone().unwrap_or_default();
                 let Some(state) = self.pending_guild_member_requests.get_mut(&nonce) else {
@@ -307,26 +181,24 @@ impl Broker {
                 if state.received_chunks >= chunk.chunk_count as u64 {
                     self.pending_guild_member_requests.remove(&nonce);
                 }
-
-                return;
             }
-            Event::InviteCreate(invite) => invite.guild_id,
-            Event::InviteDelete(invite) => invite.guild_id,
-            Event::VoiceStateUpdate(update) => {
-                if let Some(guild_id) = update.guild_id {
-                    guild_id
-                } else {
-                    return;
-                }
-            }
-            _ => return,
+            _ => {}
         };
 
-        if let Ok(dispatch) = DispatchEvent::try_from(evt) {
-            metrics::counter!("bl.broker.dispatched_events").increment(1);
-            self.dispatch_or_queue_event(forward_for_guild, dispatch)
+        if let Ok(dispatch) = DispatchEvent::try_from(evt.clone()) {
+            if let Some(broker_event) = self.prepare_dispatch_event(dispatch) {
+                self.dispatch_or_queue_event(
+                    broker_event.guild_id,
+                    BrokerEvent::DiscordEvent(broker_event),
+                )
                 .await;
+
+                metrics::counter!("bl.broker.dispatched_events").increment(1);
+            }
         }
+
+        // This is done last as we need the old state on certain events (voice_state_update)
+        self.discord_state.update(&evt);
     }
 
     async fn handle_new_scheduler_connected(&mut self) {
@@ -338,11 +210,9 @@ impl Broker {
             .map(|v| v.id())
             .collect::<Vec<_>>();
         if self
-            .send_event(dbrokerapi::broker_scheduler_rpc::BrokerEvent::Hello(
-                HelloData {
-                    connected_guilds: guilds,
-                },
-            ))
+            .send_event(&broker_scheduler_rpc::BrokerEvent::Hello(HelloData {
+                connected_guilds: guilds,
+            }))
             .await
             .is_err()
         {
@@ -354,23 +224,14 @@ impl Broker {
         let old_queued = std::mem::take(&mut self.queued_events);
         for (guild_id, evt) in old_queued.into_iter() {
             if self.connected_scheduler.is_some() {
-                let v = serde_json::to_value(&evt).unwrap();
+                // let prepared = self.prepare_dispatch_event(guild_id, &evt);
+                // let v = serde_json::to_value(&evt).unwrap();
 
-                if self
-                    .send_event(dbrokerapi::broker_scheduler_rpc::BrokerEvent::DiscordEvent(
-                        RawDiscordEvent {
-                            event: v,
-                            guild_id,
-                            t: evt.kind().name().unwrap().to_string(),
-                        },
-                    ))
-                    .await
-                    .is_err()
-                {
+                if self.send_event(&evt).await.is_err() {
                     // connection dead, re-queue
                     self.queued_events.push((guild_id, evt));
                     self.connected_scheduler = None;
-                    self.scheduler_discconected_at = Instant::now();
+                    self.scheduler_disconnected_at = Instant::now();
                 }
             } else {
                 self.queued_events.push((guild_id, evt))
@@ -407,23 +268,18 @@ impl Broker {
         );
     }
 
-    async fn dispatch_or_queue_event(&mut self, guild_id: Id<GuildMarker>, evt: DispatchEvent) {
+    async fn dispatch_or_queue_event(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        evt: broker_scheduler_rpc::BrokerEvent,
+    ) {
         if self.connected_scheduler.is_some() {
             info!("dispatching event");
-            let v = serde_json::to_value(&evt).unwrap();
-            if self
-                .send_event(dbrokerapi::broker_scheduler_rpc::BrokerEvent::DiscordEvent(
-                    RawDiscordEvent {
-                        event: v,
-                        guild_id,
-                        t: evt.kind().name().unwrap().to_string(),
-                    },
-                ))
-                .await
-                .is_err()
-            {
+
+            // let prepared = self.prepare_dispatch_event(evt);
+            if self.send_event(&evt).await.is_err() {
                 self.connected_scheduler = None;
-                self.scheduler_discconected_at = Instant::now();
+                self.scheduler_disconnected_at = Instant::now();
                 self.queue_event(guild_id, evt);
 
                 error!("Scheduler disconnected, started queueing events");
@@ -434,8 +290,97 @@ impl Broker {
         }
     }
 
-    fn queue_event(&mut self, guild_id: Id<GuildMarker>, evt: DispatchEvent) {
-        if Instant::elapsed(&self.scheduler_discconected_at) > Duration::from_secs(60) {
+    fn prepare_dispatch_event(
+        &mut self,
+        evt: DispatchEvent,
+    ) -> Option<broker_scheduler_rpc::DiscordEvent> {
+        let event_t = evt.kind().name().unwrap().to_string();
+
+        let (guild_id, data) = match evt {
+            DispatchEvent::GuildDelete(g) => (g.id, DiscordEventData::GuildDelete(g)),
+            DispatchEvent::GuildCreate(gc) => (gc.id, DiscordEventData::GuildCreate(gc)),
+
+            DispatchEvent::MemberAdd(m) => (m.guild_id, DiscordEventData::MemberAdd(m)),
+            DispatchEvent::MemberRemove(m) => (m.guild_id, DiscordEventData::MemberRemove(m)),
+            DispatchEvent::MemberUpdate(m) => (m.guild_id, DiscordEventData::MemberUpdate(m)),
+
+            DispatchEvent::MessageCreate(m) => (m.guild_id?, DiscordEventData::MessageCreate(m)),
+            DispatchEvent::MessageDelete(m) => (m.guild_id?, DiscordEventData::MessageDelete(m)),
+            DispatchEvent::MessageDeleteBulk(m) => {
+                (m.guild_id?, DiscordEventData::MessageDeleteBulk(m))
+            }
+            DispatchEvent::MessageUpdate(m) => (m.guild_id?, DiscordEventData::MessageUpdate(m)),
+
+            DispatchEvent::ReactionAdd(r) => (r.guild_id?, DiscordEventData::ReactionAdd(r)),
+            DispatchEvent::ReactionRemove(r) => (r.guild_id?, DiscordEventData::ReactionRemove(r)),
+            DispatchEvent::ReactionRemoveAll(r) => {
+                (r.guild_id?, DiscordEventData::ReactionRemoveAll(r))
+            }
+            DispatchEvent::ReactionRemoveEmoji(r) => {
+                (r.guild_id, DiscordEventData::ReactionRemoveEmoji(r))
+            }
+
+            DispatchEvent::InteractionCreate(i) => {
+                (i.guild_id?, DiscordEventData::InteractionCreate(i))
+            }
+            DispatchEvent::ChannelCreate(v) => (v.guild_id?, DiscordEventData::ChannelCreate(v)),
+            DispatchEvent::ChannelUpdate(v) => (v.guild_id?, DiscordEventData::ChannelUpdate(v)),
+            DispatchEvent::ChannelDelete(v) => (v.guild_id?, DiscordEventData::ChannelDelete(v)),
+
+            DispatchEvent::ThreadCreate(v) => (v.guild_id?, DiscordEventData::ThreadCreate(v)),
+            DispatchEvent::ThreadUpdate(v) => (v.guild_id?, DiscordEventData::ThreadUpdate(v)),
+            DispatchEvent::ThreadDelete(v) => (v.guild_id, DiscordEventData::ThreadDelete(v)),
+
+            DispatchEvent::InviteCreate(invite) => {
+                (invite.guild_id, DiscordEventData::InviteCreate(invite))
+            }
+            DispatchEvent::InviteDelete(invite) => {
+                (invite.guild_id, DiscordEventData::InviteDelete(invite))
+            }
+            DispatchEvent::VoiceStateUpdate(update) => {
+                let guild_id = update.guild_id?;
+
+                let old_state = self
+                    .discord_state
+                    .voice_state(update.user_id, guild_id)
+                    .map(|v| {
+                        Box::new(VoiceState {
+                            channel_id: Some(v.channel_id()),
+                            guild_id: Some(guild_id),
+                            deaf: v.deaf(),
+                            member: None,
+                            mute: v.mute(),
+                            self_deaf: v.self_deaf(),
+                            self_mute: v.self_mute(),
+                            self_stream: v.self_stream(),
+                            self_video: v.self_video(),
+                            session_id: v.session_id().to_owned(),
+                            suppress: v.suppress(),
+                            user_id: v.user_id(),
+                            request_to_speak_timestamp: v.request_to_speak_timestamp(),
+                        })
+                    });
+
+                (
+                    guild_id,
+                    DiscordEventData::VoiceStateUpdate {
+                        event: update,
+                        old_state,
+                    },
+                )
+            }
+
+            _ => return None,
+        };
+        Some(broker_scheduler_rpc::DiscordEvent {
+            t: event_t,
+            guild_id,
+            event: data,
+        })
+    }
+
+    fn queue_event(&mut self, guild_id: Id<GuildMarker>, evt: BrokerEvent) {
+        if Instant::elapsed(&self.scheduler_disconnected_at) > Duration::from_secs(60) {
             warn!("event queue too old, expired, clearing");
             self.queued_events = Vec::new();
             return;
@@ -444,10 +389,7 @@ impl Broker {
         self.queued_events.push((guild_id, evt));
     }
 
-    async fn send_event(
-        &mut self,
-        evt: dbrokerapi::broker_scheduler_rpc::BrokerEvent,
-    ) -> std::io::Result<()> {
+    async fn send_event(&mut self, evt: &broker_scheduler_rpc::BrokerEvent) -> std::io::Result<()> {
         if let Some(connected) = &mut self.connected_scheduler {
             simpleproto::write_message(&evt, connected).await?;
             self.wait_for_ack().await?;
@@ -458,7 +400,7 @@ impl Broker {
 
     async fn wait_for_ack(&mut self) -> std::io::Result<()> {
         if let Some(connected) = &mut self.connected_scheduler {
-            let _msg: dbrokerapi::broker_scheduler_rpc::SchedulerEvent =
+            let _msg: broker_scheduler_rpc::SchedulerEvent =
                 simpleproto::read_message(connected).await?;
         }
 

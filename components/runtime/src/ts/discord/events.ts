@@ -15,6 +15,7 @@ import type { IEventInviteDelete } from "../generated/internal/IEventInviteDelet
 import type { IInviteTargetUser } from "../generated/discord/IInviteTargetUser";
 import type { InviteTargetType } from "../generated/discord/InviteTargetType";
 import type { IEventVoiceStateUpdate } from "../generated/internal/IEventVoiceStateUpdate";
+import type { IVoiceState } from "../generated/internal/IVoiceState";
 
 export class EventMessageReactionAdd {
     channelId: string;
@@ -134,7 +135,7 @@ export class EventInviteDelete {
     }
 }
 
-export class EventVoiceStateUpdate {
+export class VoiceState {
     channelId: string | null;
     deaf: boolean;
     member?: Member;
@@ -151,7 +152,7 @@ export class EventVoiceStateUpdate {
     /** 
     * @internal 
     */
-    constructor(json: IEventVoiceStateUpdate) {
+    constructor(json: IVoiceState) {
         this.channelId = json.channelId
         this.deaf = json.deaf
         this.mute = json.mute
@@ -166,6 +167,22 @@ export class EventVoiceStateUpdate {
 
         if (json.member) {
             this.member = new Member(json.member)
+        }
+    }
+}
+
+export class EventVoiceStateUpdate extends VoiceState {
+    oldState?: VoiceState
+
+    /** 
+    * @internal 
+    */
+    constructor(json: IEventVoiceStateUpdate) {
+        super(json.new)
+
+        if (json.old) {
+            this.oldState = new VoiceState(json.old)
+            this.oldState.member = this.member
         }
     }
 }

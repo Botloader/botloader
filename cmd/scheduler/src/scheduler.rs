@@ -13,21 +13,18 @@ use crate::{
     vmworkerpool::WorkerStatus,
 };
 use common::DiscordConfig;
-use dbrokerapi::broker_scheduler_rpc::{GuildEvent, HelloData};
+use dbrokerapi::broker_scheduler_rpc::{DiscordEvent, DiscordEventData, HelloData};
 use guild_logger::LogEntry;
 use std::future::Future;
 use tokio::sync::{mpsc, oneshot};
 use tracing::info;
-use twilight_model::{
-    gateway::event::DispatchEvent,
-    id::{marker::GuildMarker, Id},
-};
+use twilight_model::id::{marker::GuildMarker, Id};
 
 pub enum SchedulerCommand {
     BrokerConnected,
     BrokerDisconnected,
     BrokerHello(HelloData),
-    DiscordEvent(GuildEvent),
+    DiscordEvent(DiscordEvent),
     Shutdown,
     ReloadGuildScripts(Id<GuildMarker>),
     PurgeGuildCache(Id<GuildMarker>),
@@ -38,7 +35,7 @@ pub enum SchedulerCommand {
 pub struct Scheduler {
     guilds: HashMap<Id<GuildMarker>, GuildHandle>,
     cmd_rx: mpsc::UnboundedReceiver<SchedulerCommand>,
-    queued_events: Vec<GuildEvent>,
+    queued_events: Vec<DiscordEvent>,
     pending_starts: Vec<Id<GuildMarker>>,
     stores: Arc<dyn Store>,
     logger: guild_logger::LogSender,
@@ -240,7 +237,7 @@ impl Scheduler {
                     return;
                 }
 
-                if let DispatchEvent::GuildDelete(_) = *evt.event {
+                if let DiscordEventData::GuildDelete(_) = evt.event {
                     if let Some(worker) = self.guilds.get_mut(&evt.guild_id) {
                         // this will signal the worker to shut down
                         if let Some(tx) = worker.tx.take() {
@@ -295,7 +292,7 @@ impl Scheduler {
         }
     }
 
-    fn send_or_queue_broker_evt(&mut self, evt: GuildEvent) {
+    fn send_or_queue_broker_evt(&mut self, evt: DiscordEvent) {
         let worker = self.get_or_start_guild(evt.guild_id);
 
         if let Some(tx) = &worker.tx {

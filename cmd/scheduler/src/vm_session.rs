@@ -13,7 +13,7 @@ use crate::{
     vmworkerpool::{WorkerHandle, WorkerRetrieved},
 };
 use common::DiscordConfig;
-use dbrokerapi::broker_scheduler_rpc::GuildEvent;
+use dbrokerapi::broker_scheduler_rpc::DiscordEvent;
 use guild_logger::{entry::CreateLogEntry, GuildLogSender};
 use runtime_models::{internal::script::ScriptMeta, util::PluginId};
 use scheduler_worker_rpc::{
@@ -445,10 +445,14 @@ impl VmSession {
         .await;
     }
 
-    pub async fn send_discord_guild_event(&mut self, evt: GuildEvent) {
-        if let Some(evt) = crate::dispatch_conv::discord_event_to_dispatch(*evt.event) {
-            self.dispatch_worker_evt(evt.name.to_string(), evt.data, PendingAck::Dispatch(None))
-                .await;
+    pub async fn send_discord_guild_event(&mut self, evt: DiscordEvent) {
+        if let Some(converted_evt) = crate::dispatch_conv::discord_event_to_dispatch(evt) {
+            self.dispatch_worker_evt(
+                converted_evt.name.to_string(),
+                converted_evt.data,
+                PendingAck::Dispatch(None),
+            )
+            .await;
         }
     }
 

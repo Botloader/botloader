@@ -51,13 +51,10 @@ impl BrokerConn {
                         return Ok(());
                     }
                 }
-                BrokerEvent::DiscordEvent(devt) => {
-                    let decoded =
-                        dbrokerapi::broker_scheduler_rpc::GuildEvent::try_from(devt).unwrap();
-
+                BrokerEvent::DiscordEvent(evt) => {
                     if self
                         .scheduler_tx
-                        .send(SchedulerCommand::DiscordEvent(decoded))
+                        .send(SchedulerCommand::DiscordEvent(evt))
                         .is_err()
                     {
                         // return, close the connection, the broker will add it back to the queue

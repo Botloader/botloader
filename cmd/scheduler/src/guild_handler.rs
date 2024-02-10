@@ -7,18 +7,15 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use common::DiscordConfig;
-use dbrokerapi::broker_scheduler_rpc::GuildEvent;
+use dbrokerapi::broker_scheduler_rpc::{DiscordEvent, DiscordEventData};
 use guild_logger::LogSender;
 use stores::config::PremiumSlotTier;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument};
-use twilight_model::{
-    gateway::event::DispatchEvent,
-    id::{marker::GuildMarker, Id},
-};
+use twilight_model::id::{marker::GuildMarker, Id};
 
 pub enum GuildCommand {
-    BrokerEvent(GuildEvent),
+    BrokerEvent(DiscordEvent),
     Status(oneshot::Sender<Option<GuildStatus>>),
     ReloadScripts,
     PurgeCache,
@@ -224,10 +221,10 @@ impl GuildHandler {
         *w = PremiumTierState::Fetched(highest_tier);
     }
 
-    async fn handle_broker_event(&mut self, evt: GuildEvent) {
-        match &*evt.event {
-            DispatchEvent::GuildCreate(_) => {}
-            DispatchEvent::GuildDelete(_) => {
+    async fn handle_broker_event(&mut self, evt: DiscordEvent) {
+        match &evt.event {
+            DiscordEventData::GuildCreate(_) => {}
+            DiscordEventData::GuildDelete(_) => {
                 unreachable!("this event should not be forwarded to the guild worker");
             }
             _ => {
