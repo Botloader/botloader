@@ -10,6 +10,7 @@ use runtime_models::{
     },
     internal::{
         channel::{CreateChannel, EditChannel},
+        events::VoiceState,
         interactions::InteractionCallback,
         invite::CreateInviteFields,
         member::{Ban, UpdateGuildMemberFields},
@@ -82,6 +83,8 @@ deno_core::extension!(
         op_discord_delete_channel_permission,
         op_discord_get_channel_invites,
         op_discord_create_channel_invite,
+        // voice
+        op_discord_get_voice_states,
         // pins
         op_discord_get_channel_pins,
         op_discord_create_pin,
@@ -306,6 +309,24 @@ pub async fn op_discord_delete_invite(
         .map_err(|err| handle_discord_error(&state, err))?;
 
     Ok(())
+}
+
+#[op2(async)]
+#[serde]
+pub async fn op_discord_get_voice_states(
+    state: Rc<RefCell<OpState>>,
+) -> Result<Vec<VoiceState>, AnyError> {
+    let rt_ctx = get_rt_ctx(&state);
+
+    let voice_states = rt_ctx
+        .bot_state
+        .get_guild_voice_states(rt_ctx.guild_id)
+        .await?;
+
+    Ok(voice_states
+        .into_iter()
+        .filter_map(|v| v.try_into().ok())
+        .collect())
 }
 
 // Messages

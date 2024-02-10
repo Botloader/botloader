@@ -20,6 +20,7 @@ use twilight_model::{
     channel::Channel,
     guild::{Member, Role},
     id::Id,
+    voice::VoiceState,
 };
 
 use crate::broker::{BrokerHandle, GuildMembersRequest};
@@ -75,6 +76,10 @@ pub async fn run_http_server(
     let app = Router::new()
         // .route("/guilds/:guild_id/stream_events", get(handle_stream_events))
         .route("/guilds/:guild_id", get(handle_get_guild))
+        .route(
+            "/guilds/:guild_id/voice_states",
+            get(handle_get_guild_voice_states),
+        )
         .route("/guilds/:guild_id/channels", get(handle_get_channels))
         .route(
             "/guilds/:guild_id/channels/:channel_id",
@@ -115,6 +120,42 @@ async fn handle_get_guild(
     }
 
     Err(ApiError::GuildNotFound)
+}
+
+async fn handle_get_guild_voice_states(
+    Path(guild_id_u): Path<u64>,
+    State(state): State<RouterState>,
+) -> ApiResult<Json<Vec<VoiceState>>> {
+    let guild_id = Id::new_checked(guild_id_u).ok_or(ApiError::BadGuildId)?;
+
+    let Some(users) = state.discord_state.guild_voice_states(guild_id) else {
+        return Err(ApiError::GuildNotFound);
+    };
+
+    let mut result: Vec<VoiceState> = Vec::with_capacity(users.len());
+    for user in users.iter() {
+        let Some(voice_state) = state.discord_state.voice_state(*user, guild_id) else {
+            continue;
+        };
+
+        result.push(VoiceState {
+            channel_id: Some(voice_state.channel_id()),
+            guild_id: Some(guild_id),
+            deaf: voice_state.deaf(),
+            member: None,
+            mute: voice_state.mute(),
+            self_deaf: voice_state.self_deaf(),
+            self_mute: voice_state.self_mute(),
+            self_stream: voice_state.self_stream(),
+            self_video: voice_state.self_video(),
+            session_id: voice_state.session_id().to_owned(),
+            suppress: voice_state.suppress(),
+            user_id: voice_state.user_id(),
+            request_to_speak_timestamp: voice_state.request_to_speak_timestamp(),
+        });
+    }
+
+    Ok(Json(result))
 }
 
 async fn handle_get_channel(

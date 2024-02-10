@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use twilight_model::guild::Member;
 use twilight_model::id::marker::{ChannelMarker, GuildMarker, RoleMarker, UserMarker};
 use twilight_model::id::Id;
+use twilight_model::voice::VoiceState;
 use twilight_model::{channel::Channel, guild::Role};
 
 #[derive(Clone)]
@@ -57,6 +58,19 @@ impl Client {
         self.get_option(format!("{}/guilds/{}", self.server_addr, guild_id))
             .await
     }
+
+    pub async fn get_guild_voice_states(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> ApiResult<Vec<VoiceState>> {
+        self.get_option(format!(
+            "{}/guilds/{}/voice_states",
+            self.server_addr, guild_id
+        ))
+        .await
+        .map(|v| v.unwrap_or_default())
+    }
+
     pub async fn get_channel(
         &self,
         guild_id: Id<GuildMarker>,

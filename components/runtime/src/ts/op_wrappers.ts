@@ -1,5 +1,6 @@
 import * as Internal from "./generated/internal/index";
 import * as Discord from './generated/discord/index';
+import { VoiceState } from "./discord/events";
 
 // This file contains op wrappers
 // They are used internally and you should NEVER use them in your own scripts
@@ -46,6 +47,7 @@ const {
     op_discord_get_channel_pins: _op_discord_get_channel_pins,
     op_discord_create_pin: _op_discord_create_pin,
     op_discord_delete_pin: _op_discord_delete_pin,
+    op_discord_get_voice_states,
     op_discord_get_members,
     op_discord_update_member,
     op_discord_add_member_role,
@@ -351,6 +353,10 @@ export namespace OpWrappers {
             channelId,
             messageId,
         );
+    }
+
+    export async function getVoiceStates(): Promise<VoiceState[]> {
+        return await op_discord_get_voice_states();
     }
 
     // Members

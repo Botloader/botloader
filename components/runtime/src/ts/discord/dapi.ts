@@ -2,6 +2,7 @@ import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionO
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, guildChannelFromInternal } from './channel';
+import { VoiceState } from './events';
 import { Invite } from './invite';
 import { Ban, Member } from './member';
 import { Message } from './message';
@@ -276,6 +277,10 @@ export async function editChannelPermission(channelId: string, overwrite: IPermi
 
 export async function deleteChannelPermission(channelId: string, kind: PermissionOverwriteType, id: string): Promise<void> {
     return OpWrappers.deleteChannelPermission(channelId, kind, id);
+}
+
+export async function getVoiceStates(): Promise<VoiceState[]> {
+    return OpWrappers.getVoiceStates()
 }
 
 export async function getChannelInvites(channelId: string): Promise<Invite[]> {
