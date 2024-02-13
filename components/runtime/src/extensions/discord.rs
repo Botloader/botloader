@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use chrono::TimeZone;
 use deno_core::{error::custom_error, op2, OpState};
 use futures::TryFutureExt;
 use runtime_models::{
@@ -9,7 +10,11 @@ use runtime_models::{
         util::AuditLogExtras,
     },
     internal::{
-        channel::{CreateChannel, EditChannel},
+        channel::{
+            CreateChannel, CreateForumThread, CreateThread, CreateThreadFromMessage, EditChannel,
+            ForumThreadResponse, GuildChannel, ListThreadMembersRequest, ListThreadsRequest,
+            ThreadMember, ThreadsListing, UpdateThread,
+        },
         events::VoiceState,
         interactions::InteractionCallback,
         invite::CreateInviteFields,
@@ -21,6 +26,7 @@ use runtime_models::{
         misc_op::{CreateBanFields, GetReactionsFields},
         user::User,
     },
+    ops::{handle_async_op, EasyOpsASync, EasyOpsHandlerASync},
 };
 use std::{
     borrow::Cow,
@@ -36,7 +42,7 @@ use twilight_http::{
     api_error::{ApiError, GeneralApiError},
     response::StatusCode,
 };
-use twilight_model::id::marker::{GenericMarker, MessageMarker, RoleMarker};
+use twilight_model::id::marker::{GenericMarker, MessageMarker, RoleMarker, TagMarker};
 use twilight_model::id::Id;
 use twilight_model::{
     guild::Permissions,
@@ -44,25 +50,25 @@ use twilight_model::{
 };
 use vm::AnyError;
 
-use super::{get_guild_channel, parse_get_guild_channel, parse_str_snowflake_id};
+use super::{get_guild_channel, parse_discord_id, parse_get_guild_channel, parse_str_snowflake_id};
 use crate::{get_rt_ctx, limits::RateLimiters, RuntimeContext, RuntimeEvent};
 
 deno_core::extension!(
     bl_discord,
     ops = [
         // guild
-        op_discord_get_guild,
+        // op_discord_get_guild,
         op_discord_get_invites,
         op_discord_get_invite,
         op_discord_delete_invite,
         // messages
-        op_discord_get_message,
-        op_discord_get_messages,
-        op_discord_create_message,
-        op_discord_edit_message,
-        op_discord_crosspost_message,
-        op_discord_delete_message,
-        op_discord_bulk_delete_messages,
+        // op_discord_get_message,
+        // op_discord_get_messages,
+        // op_discord_create_message,
+        // op_discord_edit_message,
+        // op_discord_crosspost_message,
+        // op_discord_delete_message,
+        // op_discord_bulk_delete_messages,
         // Reactions
         op_discord_create_reaction,
         op_discord_delete_own_reaction,
@@ -112,6 +118,7 @@ deno_core::extension!(
         op_discord_delete_ban,
         // misc
         op_discord_get_member_permissions,
+        op_easyops_async,
     ],
     state = |state| {
         state.put(DiscordOpsState {
@@ -211,19 +218,601 @@ pub fn not_found_error(message: impl Into<Cow<'static, str>>) -> AnyError {
 
 #[op2(async)]
 #[serde]
-pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, AnyError> {
-    let rt_ctx = get_rt_ctx(&state);
+pub async fn op_easyops_async(
+    state: Rc<RefCell<OpState>>,
+    #[serde] op: EasyOpsASync,
+) -> Result<serde_json::Value, AnyError> {
+    let handler = EasyOpsHandler { state };
+    handle_async_op(&handler, op).await
+}
 
-    match rt_ctx
-        .bot_state
-        .get_guild(rt_ctx.guild_id)
-        .map_err(|err| anyhow::anyhow!("error calling state api: {}", err))
-        .await?
-    {
-        Some(c) => Ok(c.into()),
-        None => Err(anyhow::anyhow!("guild not in state")),
+struct EasyOpsHandler {
+    state: Rc<RefCell<OpState>>,
+}
+
+impl EasyOpsHandlerASync for EasyOpsHandler {
+    async fn discord_get_guild(&self, _arg: ()) -> Result<Guild, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        match rt_ctx
+            .bot_state
+            .get_guild(rt_ctx.guild_id)
+            .map_err(|err| anyhow::anyhow!("error calling state api: {}", err))
+            .await?
+        {
+            Some(c) => Ok(c.into()),
+            None => Err(anyhow::anyhow!("guild not in state")),
+        }
+    }
+
+    async fn discord_get_message(
+        &self,
+        (channel_id_raw, message_id_raw): (String, String),
+    ) -> Result<Message, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &channel_id_raw).await?;
+        let message_id = parse_discord_id(&message_id_raw)?;
+
+        Ok(rt_ctx
+            .discord_config
+            .client
+            .message(channel.id, message_id)
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_get_messages(
+        &self,
+        args: OpGetMessages,
+    ) -> Result<Vec<Message>, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
+
+        let limit = if let Some(limit) = args.limit {
+            limit.clamp(1, 100)
+        } else {
+            50
+        };
+
+        let req = rt_ctx
+            .discord_config
+            .client
+            .channel_messages(channel.id)
+            .limit(limit as u16)?;
+
+        let res = if let Some(before) = args.before {
+            let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
+                id
+            } else {
+                return Err(anyhow::anyhow!("invalid 'before' message id"));
+            };
+
+            req.before(message_id).await
+        } else if let Some(after) = args.after {
+            let message_id = if let Some(id) = Id::new_checked(after.parse()?) {
+                id
+            } else {
+                return Err(anyhow::anyhow!("invalid 'after' message id"));
+            };
+
+            req.after(message_id).await
+        } else {
+            req.await
+        };
+
+        let messages = res
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?;
+
+        Ok(messages.into_iter().map(Into::into).collect())
+    }
+
+    async fn discord_create_message(
+        &self,
+        args: OpCreateChannelMessage,
+    ) -> Result<Message, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
+
+        let maybe_embeds = args
+            .fields
+            .embeds
+            .unwrap_or_default()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
+
+        let components = args
+            .fields
+            .components
+            .unwrap_or_default()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
+
+        let mut mc = rt_ctx
+            .discord_config
+            .client
+            .create_message(channel.id)
+            .embeds(&maybe_embeds)?
+            .components(&components)?;
+
+        if let Some(content) = &args.fields.content {
+            mc = mc.content(content)?
+        }
+
+        let mentions = args.fields.allowed_mentions.map(Into::into);
+        if mentions.is_some() {
+            mc = mc.allowed_mentions(mentions.as_ref());
+        }
+
+        Ok(mc
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_edit_message(
+        &self,
+        args: OpEditChannelMessage,
+    ) -> Result<Message, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
+        let message_id = parse_str_snowflake_id(&args.message_id)?;
+
+        let maybe_embeds = args
+            .fields
+            .embeds
+            .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+
+        let components = args
+            .fields
+            .components
+            .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+
+        let mut mc = rt_ctx
+            .discord_config
+            .client
+            .update_message(channel.id, message_id.cast())
+            .content(args.fields.content.as_deref())?
+            .components(components.as_deref())?;
+
+        if let Some(embeds) = &maybe_embeds {
+            mc = mc.embeds(Some(embeds))?;
+        }
+
+        let mentions = args.fields.allowed_mentions.map(Into::into);
+        if mentions.is_some() {
+            mc = mc.allowed_mentions(mentions.as_ref());
+        }
+
+        Ok(mc
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_crosspost_message(
+        &self,
+        (channel_id_raw, message_id_raw): (String, String),
+    ) -> Result<(), anyhow::Error> {
+        let ctx = get_rt_ctx(&self.state);
+        let channel = parse_get_guild_channel(&self.state, &ctx, &channel_id_raw).await?;
+
+        ctx.discord_config
+            .client
+            .crosspost_message(channel.id, parse_discord_id(&message_id_raw)?)
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?;
+
+        Ok(())
+    }
+
+    async fn discord_delete_message(&self, args: OpDeleteMessage) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
+        let message_id = parse_str_snowflake_id(&args.message_id)?;
+
+        rt_ctx
+            .discord_config
+            .client
+            .delete_message(channel.id, message_id.cast())
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?;
+
+        Ok(())
+    }
+
+    async fn discord_bulk_delete_messages(
+        &self,
+        args: OpDeleteMessagesBulk,
+    ) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
+        let message_ids = args
+            .message_ids
+            .iter()
+            .filter_map(|v| parse_str_snowflake_id(v).ok())
+            .map(|v| v.cast())
+            .collect::<Vec<_>>();
+
+        rt_ctx
+            .discord_config
+            .client
+            .delete_messages(channel.id, &message_ids)?
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?;
+
+        Ok(())
+    }
+
+    async fn discord_start_thread_from_message(
+        &self,
+        arg: CreateThreadFromMessage,
+    ) -> Result<GuildChannel, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+        let message_id = parse_discord_id(&arg.message_id)?;
+
+        let mut req = rt_ctx
+            .discord_config
+            .client
+            .create_thread_from_message(channel.id, message_id, &arg.name)?;
+
+        if let Some(auto_archive) = arg.auto_archive_duration_seconds {
+            req = req.auto_archive_duration(
+                twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
+            )
+        }
+
+        Ok(req
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_start_thread_without_message(
+        &self,
+        arg: CreateThread,
+    ) -> Result<GuildChannel, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+
+        let mut req =
+            rt_ctx
+                .discord_config
+                .client
+                .create_thread(channel.id, &arg.name, arg.kind.into())?;
+
+        if let Some(auto_archive) = arg.auto_archive_duration_minutes {
+            req = req.auto_archive_duration(
+                twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
+            )
+        }
+
+        if let Some(invitable) = arg.invitable {
+            req = req.invitable(invitable);
+        }
+
+        Ok(req
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_start_forum_thread(
+        &self,
+        arg: CreateForumThread,
+    ) -> Result<ForumThreadResponse, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+
+        let mut req = rt_ctx
+            .discord_config
+            .client
+            .create_forum_thread(channel.id, &arg.name);
+
+        if let Some(auto_archive) = arg.auto_archive_duration_minutes {
+            req = req.auto_archive_duration(
+                twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
+            )
+        }
+
+        let maybe_tags: Option<Vec<Id<TagMarker>>> = arg.tag_ids.map(|v| {
+            v.into_iter()
+                .filter_map(|string_id| parse_discord_id(&string_id).ok())
+                .collect()
+        });
+
+        if let Some(tags) = &maybe_tags {
+            req = req.applied_tags(tags);
+        }
+
+        // Can't find ratelimit usage
+        // if let Some(ratelimit) = arg.rate_limit_per_user{
+        //     req = req.
+        // }
+
+        let mut req = req.message();
+
+        let embeds = arg
+            .message
+            .embeds
+            .unwrap_or_default()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
+
+        if !embeds.is_empty() {
+            req = req.embeds(&embeds)?;
+        }
+
+        let components = arg
+            .message
+            .components
+            .unwrap_or_default()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
+
+        if !components.is_empty() {
+            req = req.components(&components)?;
+        }
+
+        if let Some(content) = &arg.message.content {
+            req = req.content(content)?;
+        }
+
+        let mentions = arg.message.allowed_mentions.map(Into::into);
+        if mentions.is_some() {
+            req = req.allowed_mentions(mentions.as_ref());
+        }
+
+        let result = req
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?;
+
+        Ok(ForumThreadResponse {
+            message: result.message.into(),
+            channel: result.channel.into(),
+        })
+    }
+
+    async fn discord_add_thread_member(
+        &self,
+        (channel_id_raw, user_id_raw): (String, String),
+    ) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &channel_id_raw).await?;
+        let user_id: Id<UserMarker> = parse_discord_id(&user_id_raw)?;
+
+        rt_ctx
+            .discord_config
+            .client
+            .add_thread_member(channel.id, user_id)
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?;
+
+        Ok(())
+    }
+
+    async fn discord_remove_thread_member(
+        &self,
+        (channel_id_raw, user_id_raw): (String, String),
+    ) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &channel_id_raw).await?;
+        let user_id: Id<UserMarker> = parse_discord_id(&user_id_raw)?;
+
+        rt_ctx
+            .discord_config
+            .client
+            .remove_thread_member(channel.id, user_id)
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?;
+
+        todo!()
+    }
+
+    async fn discord_list_thread_members(
+        &self,
+        args: ListThreadMembersRequest,
+    ) -> Result<Vec<ThreadMember>, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
+
+        let mut req = rt_ctx.discord_config.client.thread_members(channel.id);
+        if let Some(limit) = args.limit {
+            req = req.limit(limit)?;
+        }
+        if let Some(after) = args.after_user_id {
+            req = req.after(parse_discord_id(&after)?);
+        }
+        if let Some(with_member) = args.with_member {
+            req = req.with_member(with_member);
+        }
+
+        Ok(req
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .models()
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
+
+    async fn discord_list_active_threads(&self, _arg: ()) -> Result<ThreadsListing, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        Ok(rt_ctx
+            .discord_config
+            .client
+            .active_threads(rt_ctx.guild_id)
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_list_public_archived_threads(
+        &self,
+        arg: ListThreadsRequest,
+    ) -> Result<ThreadsListing, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+
+        let mut threads_request = rt_ctx
+            .discord_config
+            .client
+            .public_archived_threads(channel.id);
+
+        let before_str = arg
+            .before
+            .map(|v| {
+                chrono::Utc
+                    .timestamp_millis_opt(v.0 as i64)
+                    .single()
+                    .ok_or(anyhow!("bad 'before' timestamp"))
+                    .map(|ts| ts.to_rfc3339())
+            })
+            .transpose()?;
+
+        if let Some(before_str) = &before_str {
+            threads_request = threads_request.before(before_str);
+        }
+
+        Ok(threads_request
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_list_private_archived_threads(
+        &self,
+        arg: ListThreadsRequest,
+    ) -> Result<ThreadsListing, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+
+        let mut threads_request = rt_ctx
+            .discord_config
+            .client
+            .private_archived_threads(channel.id);
+
+        let before_str = arg
+            .before
+            .map(|v| {
+                chrono::Utc
+                    .timestamp_millis_opt(v.0 as i64)
+                    .single()
+                    .ok_or(anyhow!("bad 'before' timestamp"))
+                    .map(|ts| ts.to_rfc3339())
+            })
+            .transpose()?;
+
+        if let Some(before_str) = &before_str {
+            threads_request = threads_request.before(before_str);
+        }
+
+        Ok(threads_request
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
+    }
+
+    async fn discord_edit_thread(&self, arg: UpdateThread) -> Result<GuildChannel, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+
+        let mut req = rt_ctx.discord_config.client.update_thread(channel.id);
+
+        let maybe_tags: Option<Vec<Id<TagMarker>>> = arg.tag_ids.map(|v| {
+            v.into_iter()
+                .filter_map(|string_id| parse_discord_id(&string_id).ok())
+                .collect()
+        });
+
+        if let Some(tags) = &maybe_tags {
+            req = req.applied_tags(Some(tags));
+        }
+
+        if let Some(archived) = arg.archived {
+            req = req.archived(archived);
+        }
+
+        if let Some(auto_archive_duration_minutes) = arg.auto_archive_duration_minutes {
+            req = req.auto_archive_duration(auto_archive_duration_minutes.into())
+        }
+
+        if let Some(invitable) = arg.invitable {
+            req = req.invitable(invitable)
+        }
+
+        if let Some(locked) = arg.locked {
+            req = req.locked(locked)
+        }
+
+        if let Some(name) = &arg.name {
+            req = req.name(name)?;
+        }
+
+        if let Some(rate_limit_per_user) = &arg.rate_limit_per_user {
+            req = req.rate_limit_per_user(*rate_limit_per_user)?;
+        }
+
+        Ok(req
+            .await
+            .map_err(|err| handle_discord_error(&self.state, err))?
+            .model()
+            .await?
+            .into())
     }
 }
+
+// #[op2(async)]
+// #[serde]
+// pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, AnyError> {
+//     let rt_ctx = get_rt_ctx(&state);
+
+//     match rt_ctx
+//         .bot_state
+//         .get_guild(rt_ctx.guild_id)
+//         .map_err(|err| anyhow::anyhow!("error calling state api: {}", err))
+//         .await?
+//     {
+//         Some(c) => Ok(c.into()),
+//         None => Err(anyhow::anyhow!("guild not in state")),
+//     }
+// }
 
 #[op2(async)]
 #[serde]
@@ -330,190 +919,190 @@ pub async fn op_discord_get_voice_states(
 }
 
 // Messages
-#[op2(async)]
-#[serde]
-pub async fn op_discord_get_message(
-    state: Rc<RefCell<OpState>>,
-    #[serde] channel_id: Id<ChannelMarker>,
-    #[serde] message_id: Id<MessageMarker>,
-) -> Result<Message, AnyError> {
-    let rt_ctx = get_rt_ctx(&state);
+// #[op2(async)]
+// #[serde]
+// pub async fn op_discord_get_message(
+//     state: Rc<RefCell<OpState>>,
+//     #[serde] channel_id: Id<ChannelMarker>,
+//     #[serde] message_id: Id<MessageMarker>,
+// ) -> Result<Message, AnyError> {
+//     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
+//     let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    Ok(rt_ctx
-        .discord_config
-        .client
-        .message(channel.id, message_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into())
-}
+//     Ok(rt_ctx
+//         .discord_config
+//         .client
+//         .message(channel.id, message_id)
+//         .await
+//         .map_err(|err| handle_discord_error(&state, err))?
+//         .model()
+//         .await?
+//         .into())
+// }
 
-#[op2(async)]
-#[serde]
-pub async fn op_discord_get_messages(
-    state: Rc<RefCell<OpState>>,
-    #[serde] args: OpGetMessages,
-) -> Result<Vec<Message>, AnyError> {
-    let rt_ctx = get_rt_ctx(&state);
+// #[op2(async)]
+// #[serde]
+// pub async fn op_discord_get_messages(
+//     state: Rc<RefCell<OpState>>,
+//     #[serde] args: OpGetMessages,
+// ) -> Result<Vec<Message>, AnyError> {
+//     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
+//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
 
-    let limit = if let Some(limit) = args.limit {
-        limit.clamp(1, 100)
-    } else {
-        50
-    };
+//     let limit = if let Some(limit) = args.limit {
+//         limit.clamp(1, 100)
+//     } else {
+//         50
+//     };
 
-    let req = rt_ctx
-        .discord_config
-        .client
-        .channel_messages(channel.id)
-        .limit(limit as u16)?;
+//     let req = rt_ctx
+//         .discord_config
+//         .client
+//         .channel_messages(channel.id)
+//         .limit(limit as u16)?;
 
-    let res = if let Some(before) = args.before {
-        let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
-            id
-        } else {
-            return Err(anyhow::anyhow!("invalid 'before' message id"));
-        };
+//     let res = if let Some(before) = args.before {
+//         let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
+//             id
+//         } else {
+//             return Err(anyhow::anyhow!("invalid 'before' message id"));
+//         };
 
-        req.before(message_id).await
-    } else if let Some(after) = args.after {
-        let message_id = if let Some(id) = Id::new_checked(after.parse()?) {
-            id
-        } else {
-            return Err(anyhow::anyhow!("invalid 'after' message id"));
-        };
+//         req.before(message_id).await
+//     } else if let Some(after) = args.after {
+//         let message_id = if let Some(id) = Id::new_checked(after.parse()?) {
+//             id
+//         } else {
+//             return Err(anyhow::anyhow!("invalid 'after' message id"));
+//         };
 
-        req.after(message_id).await
-    } else {
-        req.await
-    };
+//         req.after(message_id).await
+//     } else {
+//         req.await
+//     };
 
-    let messages = res
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
+//     let messages = res
+//         .map_err(|err| handle_discord_error(&state, err))?
+//         .model()
+//         .await?;
 
-    Ok(messages.into_iter().map(Into::into).collect())
-}
+//     Ok(messages.into_iter().map(Into::into).collect())
+// }
 
-#[op2(async)]
-#[serde]
-pub async fn op_discord_create_message(
-    state: Rc<RefCell<OpState>>,
-    #[serde] args: OpCreateChannelMessage,
-) -> Result<Message, AnyError> {
-    let rt_ctx = get_rt_ctx(&state);
+// #[op2(async)]
+// #[serde]
+// pub async fn op_discord_create_message(
+//     state: Rc<RefCell<OpState>>,
+//     #[serde] args: OpCreateChannelMessage,
+// ) -> Result<Message, AnyError> {
+//     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
+//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
 
-    let maybe_embeds = args
-        .fields
-        .embeds
-        .unwrap_or_default()
-        .into_iter()
-        .map(Into::into)
-        .collect::<Vec<_>>();
+//     let maybe_embeds = args
+//         .fields
+//         .embeds
+//         .unwrap_or_default()
+//         .into_iter()
+//         .map(Into::into)
+//         .collect::<Vec<_>>();
 
-    let components = args
-        .fields
-        .components
-        .unwrap_or_default()
-        .into_iter()
-        .map(Into::into)
-        .collect::<Vec<_>>();
+//     let components = args
+//         .fields
+//         .components
+//         .unwrap_or_default()
+//         .into_iter()
+//         .map(Into::into)
+//         .collect::<Vec<_>>();
 
-    let mut mc = rt_ctx
-        .discord_config
-        .client
-        .create_message(channel.id)
-        .embeds(&maybe_embeds)?
-        .components(&components)?;
+//     let mut mc = rt_ctx
+//         .discord_config
+//         .client
+//         .create_message(channel.id)
+//         .embeds(&maybe_embeds)?
+//         .components(&components)?;
 
-    if let Some(content) = &args.fields.content {
-        mc = mc.content(content)?
-    }
+//     if let Some(content) = &args.fields.content {
+//         mc = mc.content(content)?
+//     }
 
-    let mentions = args.fields.allowed_mentions.map(Into::into);
-    if mentions.is_some() {
-        mc = mc.allowed_mentions(mentions.as_ref());
-    }
+//     let mentions = args.fields.allowed_mentions.map(Into::into);
+//     if mentions.is_some() {
+//         mc = mc.allowed_mentions(mentions.as_ref());
+//     }
 
-    Ok(mc
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into())
-}
+//     Ok(mc
+//         .await
+//         .map_err(|err| handle_discord_error(&state, err))?
+//         .model()
+//         .await?
+//         .into())
+// }
 
-#[op2(async)]
-#[serde]
-pub async fn op_discord_edit_message(
-    state: Rc<RefCell<OpState>>,
-    #[serde] args: OpEditChannelMessage,
-) -> Result<Message, AnyError> {
-    let rt_ctx = get_rt_ctx(&state);
+// #[op2(async)]
+// #[serde]
+// pub async fn op_discord_edit_message(
+//     state: Rc<RefCell<OpState>>,
+//     #[serde] args: OpEditChannelMessage,
+// ) -> Result<Message, AnyError> {
+//     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-    let message_id = parse_str_snowflake_id(&args.message_id)?;
+//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
+//     let message_id = parse_str_snowflake_id(&args.message_id)?;
 
-    let maybe_embeds = args
-        .fields
-        .embeds
-        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+//     let maybe_embeds = args
+//         .fields
+//         .embeds
+//         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-    let components = args
-        .fields
-        .components
-        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+//     let components = args
+//         .fields
+//         .components
+//         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-    let mut mc = rt_ctx
-        .discord_config
-        .client
-        .update_message(channel.id, message_id.cast())
-        .content(args.fields.content.as_deref())?
-        .components(components.as_deref())?;
+//     let mut mc = rt_ctx
+//         .discord_config
+//         .client
+//         .update_message(channel.id, message_id.cast())
+//         .content(args.fields.content.as_deref())?
+//         .components(components.as_deref())?;
 
-    if let Some(embeds) = &maybe_embeds {
-        mc = mc.embeds(Some(embeds))?;
-    }
+//     if let Some(embeds) = &maybe_embeds {
+//         mc = mc.embeds(Some(embeds))?;
+//     }
 
-    let mentions = args.fields.allowed_mentions.map(Into::into);
-    if mentions.is_some() {
-        mc = mc.allowed_mentions(mentions.as_ref());
-    }
+//     let mentions = args.fields.allowed_mentions.map(Into::into);
+//     if mentions.is_some() {
+//         mc = mc.allowed_mentions(mentions.as_ref());
+//     }
 
-    Ok(mc
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into())
-}
+//     Ok(mc
+//         .await
+//         .map_err(|err| handle_discord_error(&state, err))?
+//         .model()
+//         .await?
+//         .into())
+// }
 
-#[op2(async)]
-pub async fn op_discord_crosspost_message(
-    state: Rc<RefCell<OpState>>,
-    #[serde] channel_id: Id<ChannelMarker>,
-    #[serde] message_id: Id<MessageMarker>,
-) -> Result<(), AnyError> {
-    let ctx = get_rt_ctx(&state);
-    get_guild_channel(&state, &ctx, channel_id).await?;
+// #[op2(async)]
+// pub async fn op_discord_crosspost_message(
+//     state: Rc<RefCell<OpState>>,
+//     #[serde] channel_id: Id<ChannelMarker>,
+//     #[serde] message_id: Id<MessageMarker>,
+// ) -> Result<(), AnyError> {
+//     let ctx = get_rt_ctx(&state);
+//     get_guild_channel(&state, &ctx, channel_id).await?;
 
-    ctx.discord_config
-        .client
-        .crosspost_message(channel_id, message_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+//     ctx.discord_config
+//         .client
+//         .crosspost_message(channel_id, message_id)
+//         .await
+//         .map_err(|err| handle_discord_error(&state, err))?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 #[op2(async)]
 pub async fn op_discord_interaction_callback(
@@ -730,50 +1319,50 @@ pub async fn op_discord_interaction_delete_followup_message(
     Ok(())
 }
 
-#[op2(async)]
-pub async fn op_discord_delete_message(
-    state: Rc<RefCell<OpState>>,
-    #[serde] args: OpDeleteMessage,
-) -> Result<(), AnyError> {
-    let rt_ctx = get_rt_ctx(&state);
+// #[op2(async)]
+// pub async fn op_discord_delete_message(
+//     state: Rc<RefCell<OpState>>,
+//     #[serde] args: OpDeleteMessage,
+// ) -> Result<(), AnyError> {
+//     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-    let message_id = parse_str_snowflake_id(&args.message_id)?;
+//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
+//     let message_id = parse_str_snowflake_id(&args.message_id)?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .delete_message(channel.id, message_id.cast())
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+//     rt_ctx
+//         .discord_config
+//         .client
+//         .delete_message(channel.id, message_id.cast())
+//         .await
+//         .map_err(|err| handle_discord_error(&state, err))?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[op2(async)]
-pub async fn op_discord_bulk_delete_messages(
-    state: Rc<RefCell<OpState>>,
-    #[serde] args: OpDeleteMessagesBulk,
-) -> Result<(), AnyError> {
-    let rt_ctx = get_rt_ctx(&state);
+// #[op2(async)]
+// pub async fn op_discord_bulk_delete_messages(
+//     state: Rc<RefCell<OpState>>,
+//     #[serde] args: OpDeleteMessagesBulk,
+// ) -> Result<(), AnyError> {
+//     let rt_ctx = get_rt_ctx(&state);
 
-    let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-    let message_ids = args
-        .message_ids
-        .iter()
-        .filter_map(|v| parse_str_snowflake_id(v).ok())
-        .map(|v| v.cast())
-        .collect::<Vec<_>>();
+//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
+//     let message_ids = args
+//         .message_ids
+//         .iter()
+//         .filter_map(|v| parse_str_snowflake_id(v).ok())
+//         .map(|v| v.cast())
+//         .collect::<Vec<_>>();
 
-    rt_ctx
-        .discord_config
-        .client
-        .delete_messages(channel.id, &message_ids)?
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+//     rt_ctx
+//         .discord_config
+//         .client
+//         .delete_messages(channel.id, &message_ids)?
+//         .await
+//         .map_err(|err| handle_discord_error(&state, err))?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 // Roles
 #[op2(async)]

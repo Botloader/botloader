@@ -16,17 +16,17 @@ const {
     op_bl_get_task,
     op_bl_get_task_by_key,
     op_bl_get_all_tasks,
-    op_discord_get_guild,
+    // op_discord_get_guild,
     op_discord_get_invites,
     op_discord_get_invite,
     op_discord_delete_invite,
-    op_discord_get_message,
-    op_discord_get_messages,
-    op_discord_create_message,
-    op_discord_crosspost_message,
-    op_discord_edit_message,
-    op_discord_delete_message,
-    op_discord_bulk_delete_messages,
+    // op_discord_get_message,
+    // op_discord_get_messages,
+    // op_discord_create_message,
+    // op_discord_crosspost_message,
+    // op_discord_edit_message,
+    // op_discord_delete_message,
+    // op_discord_bulk_delete_messages,
     op_discord_interaction_callback,
     op_discord_interaction_get_followup_message,
     op_discord_interaction_followup_message,
@@ -75,6 +75,7 @@ const {
     op_discord_delete_all_reactions_for_emoji,
     op_discord_get_channel_invites,
     op_discord_create_channel_invite,
+    op_easyops_async,
 } = Deno.core.ensureFastOps()
 
 export namespace OpWrappers {
@@ -145,9 +146,13 @@ export namespace OpWrappers {
         );
     }
 
-    export async function getGuild(): Promise<Discord.Guild> {
-        return op_discord_get_guild();
+    export async function callAsyncOp<T extends Internal.EasyOpsASync>(call: T): Promise<Internal.EasyOpsReturnTypesASync[T["kind"]]> {
+        return await op_easyops_async(call)
     }
+
+    // export async function getGuild(): Promise<Discord.Guild> {
+    //     return op_discord_get_guild();
+    // }
 
     export async function getInvites(): Promise<Internal.IInvite[]> {
         return await op_discord_get_invites();
@@ -171,48 +176,48 @@ export namespace OpWrappers {
     }
 
     // Messages
-    export async function getMessage(channelId: string, messageId: string): Promise<Internal.IMessage> {
-        return await op_discord_get_message(
-            channelId,
-            messageId,
-        );
-    }
+    // export async function getMessage(channelId: string, messageId: string): Promise<Internal.IMessage> {
+    //     return await op_discord_get_message(
+    //         channelId,
+    //         messageId,
+    //     );
+    // }
 
-    export async function getMessages(args: Internal.OpGetMessages): Promise<Internal.IMessage[]> {
-        return await op_discord_get_messages(
-            args
-        );
-    }
+    // export async function getMessages(args: Internal.OpGetMessages): Promise<Internal.IMessage[]> {
+    //     return await op_discord_get_messages(
+    //         args
+    //     );
+    // }
 
-    export async function createChannelMessage(args: Internal.OpCreateChannelMessage): Promise<Internal.IMessage> {
-        return await op_discord_create_message(
-            args
-        );
-    }
+    // export async function createChannelMessage(args: Internal.OpCreateChannelMessage): Promise<Internal.IMessage> {
+    //     return await op_discord_create_message(
+    //         args
+    //     );
+    // }
 
-    export async function crosspostChannelMessage(channelId: string, messageId: string): Promise<void> {
-        return await op_discord_crosspost_message(
-            channelId,
-            messageId
-        );
-    }
+    // export async function crosspostChannelMessage(channelId: string, messageId: string): Promise<void> {
+    //     return await op_discord_crosspost_message(
+    //         channelId,
+    //         messageId
+    //     );
+    // }
 
-    export async function editChannelMessage(args: Internal.OpEditChannelMessage): Promise<Internal.IMessage> {
-        return await op_discord_edit_message(
-            args
-        );
-    }
+    // export async function editChannelMessage(args: Internal.OpEditChannelMessage): Promise<Internal.IMessage> {
+    //     return await op_discord_edit_message(
+    //         args
+    //     );
+    // }
 
-    export async function deleteChannelMessage(args: Internal.OpDeleteMessage): Promise<void> {
-        await op_discord_delete_message(
-            args
-        );
-    }
-    export async function deleteChannelMessagesBulk(args: Internal.OpDeleteMessagesBulk): Promise<void> {
-        await op_discord_bulk_delete_messages(
-            args
-        );
-    }
+    // export async function deleteChannelMessage(args: Internal.OpDeleteMessage): Promise<void> {
+    //     await op_discord_delete_message(
+    //         args
+    //     );
+    // }
+    // export async function deleteChannelMessagesBulk(args: Internal.OpDeleteMessagesBulk): Promise<void> {
+    //     await op_discord_bulk_delete_messages(
+    //         args
+    //     );
+    // }
 
     // Interactions
     export async function interactionCallback(args: Internal.InteractionCallback): Promise<void> {
@@ -470,3 +475,4 @@ export namespace OpWrappers {
         return op_discord_delete_all_reactions_for_emoji([channelId, messageId], emoji)
     }
 }
+

@@ -14,7 +14,7 @@ import type { INewsThread } from "../generated/internal/NewsThread";
 import type { ITextChannel } from "../generated/internal/TextChannel";
 import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
 import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
-import { getPins } from "./dapi";
+import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, createForumThread, createStandaloneThread, createThreadFromMessage, editChannel, editThread, getPins } from "./dapi";
 
 export type GuildChannel =
     | CategoryChannel
@@ -47,10 +47,20 @@ export function guildChannelFromInternal(json: InternalGuildChannel): GuildChann
     }
 }
 
+export function threadChannelFromInternal(json: InternalGuildChannel): Thread {
+    const channel = guildChannelFromInternal(json)
+    if (channel.isThread()) {
+        return channel
+    } else {
+        throw new Error(`Channel is not thread: id: ${json.id}, kind: ${json.kind}`)
+    }
+}
+
 export abstract class BaseChannel {
     id: string;
     kind: ChannelType;
     name: string;
+    permissionOverwrites: IPermissionOverwrite[];
 
     /**
      * @internal
@@ -63,6 +73,13 @@ export abstract class BaseChannel {
         } else {
             this.name = ""
         }
+
+        if ('permissionOverwrites' in json) {
+            this.permissionOverwrites = json.permissionOverwrites
+        } else {
+            this.permissionOverwrites = []
+        }
+
     }
 
     isCategoryChannel(): this is CategoryChannel {
@@ -81,6 +98,10 @@ export abstract class BaseChannel {
         return this instanceof PublicThread;
     }
 
+    isThread(): this is Thread {
+        return this instanceof Thread;
+    }
+
     isTextChannel(): this is TextChannel {
         return this instanceof TextChannel;
     }
@@ -90,7 +111,7 @@ export abstract class BaseChannel {
     }
 
     isAnyThread(): this is (NewsThread | PrivateThread | PublicThread) {
-        return this.isNewsThread() || this.isPrivateThread() || this.isPublicThread();
+        return this.isThread()
     }
 
     pins() {
@@ -100,69 +121,8 @@ export abstract class BaseChannel {
 
 export class UnknownChannel extends BaseChannel { }
 
-export class PrivateThread extends BaseChannel {
-    kind: "PrivateThread" = "PrivateThread";
-    defaultAutoArchiveDurationMinutes: number | null;
-    invitable: boolean | null;
-    member: SelfThreadMember | null;
-    memberCount: number;
-    messageCount: number;
-    ownerId: string | null;
-    parentId: string | null;
-    permissionOverwrites: IPermissionOverwrite[];
-    rateLimitPerUser: number | null;
-    threadMetadata: ThreadMetadata;
-
-    /**
-     * @internal
-     */
-    constructor(json: IPrivateThread) {
-        super(json);
-
-        this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes;
-        this.invitable = json.invitable;
-        this.member = json.member ? new SelfThreadMember(json.member) : null;
-        this.memberCount = json.memberCount;
-        this.messageCount = json.messageCount;
-        this.ownerId = json.ownerId;
-        this.parentId = json.parentId;
-        this.permissionOverwrites = json.permissionOverwrites;
-        this.rateLimitPerUser = json.rateLimitPerUser;
-        this.threadMetadata = json.threadMetadata;
-    }
-}
-
-export class PublicThread extends BaseChannel {
-    kind: "PublicThread" = "PublicThread";
-    defaultAutoArchiveDurationMinutes: number | null;
-    member: SelfThreadMember | null;
-    memberCount: number;
-    messageCount: number;
-    ownerId: string | null;
-    parentId: string | null;
-    rateLimitPerUser: number | null;
-    threadMetadata: ThreadMetadata;
-
-    /**
-     * @internal
-     */
-    constructor(json: IPublicThread) {
-        super(json);
-
-        this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes;
-        this.member = json.member ? new SelfThreadMember(json.member) : null;
-        this.memberCount = json.memberCount;
-        this.messageCount = json.messageCount;
-        this.ownerId = json.ownerId;
-        this.parentId = json.parentId;
-        this.rateLimitPerUser = json.rateLimitPerUser;
-        this.threadMetadata = json.threadMetadata;
-    }
-}
-
 export class CategoryChannel extends BaseChannel {
     kind: "Category" = "Category";
-    permissionOverwrites: IPermissionOverwrite[];
     position: number;
 
     /**
@@ -171,7 +131,6 @@ export class CategoryChannel extends BaseChannel {
     constructor(json: ICategoryChannel) {
         super(json);
 
-        this.permissionOverwrites = json.permissionOverwrites;
         this.position = json.position;
     }
 }
@@ -181,7 +140,6 @@ export class TextChannel extends BaseChannel {
     lastPinTimestamp: number | null;
     nsfw: boolean;
     parentId: string | null;
-    permissionOverwrites: IPermissionOverwrite[];
     position: number;
     rateLimitPerUser: number | null;
     topic: string | null;
@@ -196,16 +154,48 @@ export class TextChannel extends BaseChannel {
         this.lastPinTimestamp = json.lastPinTimestamp;
         this.nsfw = json.nsfw;
         this.parentId = json.parentId;
-        this.permissionOverwrites = json.permissionOverwrites;
         this.position = json.position;
         this.rateLimitPerUser = json.rateLimitPerUser;
         this.topic = json.topic;
     }
+
+    createForumThread(fields: Omit<ICreateForumThread, "channelId">) {
+        if (this.kind !== "Forum") {
+            throw new Error(`This channel is not a forum: ${this.id}`)
+        }
+
+        return createForumThread({
+            ...fields,
+            channelId: this.id,
+        })
+    }
+
+    createStandaloneThread(fields: Omit<ICreateStandaloneThread, "channelId">) {
+        if (this.kind === "Forum") {
+            throw new Error(`This channel is a forum: ${this.id}`)
+        }
+
+        return createStandaloneThread({
+            ...fields,
+            channelId: this.id,
+        })
+    }
+
+    createThreadFromMessage(fields: Omit<ICreateThreadFromMessage, "channelId">) {
+        if (this.kind === "Forum") {
+            throw new Error(`This channel is a forum: ${this.id}`)
+        }
+
+        return createThreadFromMessage({
+            ...fields,
+            channelId: this.id
+        })
+    }
 }
 
-export class NewsThread extends BaseChannel {
+export abstract class Thread extends BaseChannel {
     defaultAutoArchiveDurationMinutes: number | null;
-    kind: "NewsThread" = "NewsThread";
+    kind: "NewsThread" | "PrivateThread" | "PublicThread";
     member: SelfThreadMember | null;
     memberCount: number;
     messageCount: number;
@@ -214,29 +204,93 @@ export class NewsThread extends BaseChannel {
     rateLimitPerUser: number | null;
     threadMetadata: ThreadMetadata;
 
+    constructor(json: IPrivateThread | INewsThread | IPublicThread) {
+        super(json)
+
+        this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes
+        this.kind = json.kind
+        this.member = json.member
+        this.memberCount = json.memberCount
+        this.messageCount = json.messageCount
+        this.ownerId = json.ownerId
+        this.parentId = json.parentId
+        this.rateLimitPerUser = json.rateLimitPerUser
+        this.threadMetadata = json.threadMetadata
+    }
+
+    async edit(fields: Omit<IEditThread, "channelId">): Promise<Thread> {
+        return await editThread({
+            ...fields,
+            channelId: this.id,
+        })
+    }
+
+    archive() {
+        return this.edit({
+            archived: true,
+        })
+    }
+
+    unArchive() {
+        return this.edit({
+            archived: false,
+        })
+    }
+
+    lock() {
+        return this.edit({
+            locked: true,
+        })
+    }
+
+    unlock() {
+        return this.edit({
+            locked: false,
+        })
+    }
+}
+
+
+export class PrivateThread extends Thread {
+    kind: "PrivateThread" = "PrivateThread";
+    invitable: boolean | null;
+
+    /**
+     * @internal
+     */
+    constructor(json: IPrivateThread) {
+        super(json);
+
+        this.invitable = json.invitable;
+    }
+}
+
+export class PublicThread extends Thread {
+    kind: "PublicThread" = "PublicThread";
+
+    /**
+     * @internal
+     */
+    constructor(json: IPublicThread) {
+        super(json);
+    }
+}
+
+export class NewsThread extends BaseChannel {
+    kind: "NewsThread" = "NewsThread";
+
     /**
      * @internal
      */
     constructor(json: INewsThread) {
         super(json);
-
-        this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes;
-        this.kind = json.kind;
-        this.member = json.member ? new SelfThreadMember(json.member) : null;
-        this.memberCount = json.memberCount;
-        this.messageCount = json.messageCount;
-        this.ownerId = json.ownerId;
-        this.parentId = json.parentId;
-        this.rateLimitPerUser = json.rateLimitPerUser;
-        this.threadMetadata = json.threadMetadata;
     }
-
 }
+
 export class VoiceChannel extends BaseChannel {
     bitrate: number;
     kind: "Voice" | "StageVoice";
     parentId: string | null;
-    permissionOverwrites: IPermissionOverwrite[];
     position: number;
     rtcRegion: string | null;
     userLimit: number | null;
@@ -251,7 +305,6 @@ export class VoiceChannel extends BaseChannel {
         this.bitrate = json.bitrate;
         this.kind = json.kind;
         this.parentId = json.parentId;
-        this.permissionOverwrites = json.permissionOverwrites;
         this.position = json.position;
         this.rtcRegion = json.rtcRegion;
         this.userLimit = json.userLimit;

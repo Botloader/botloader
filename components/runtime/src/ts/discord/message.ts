@@ -1,5 +1,5 @@
 import { User } from "./user";
-import { CreateMessageFields, createPin, deleteMessage, deletePin, editMessage, getCurrentGuildId } from "./dapi";
+import { CreateMessageFields, ICreateThreadFromMessage, createPin, createThreadFromMessage, deleteMessage, deletePin, editMessage, getCurrentGuildId } from "./dapi";
 
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
@@ -92,6 +92,14 @@ export class Message {
 
     edit(fields: CreateMessageFields) {
         return editMessage(this.channelId, this.id, fields);
+    }
+
+    createThread(fields: Omit<ICreateThreadFromMessage, "messageId" | "channelId">) {
+        return createThreadFromMessage({
+            ...fields,
+            channelId: this.channelId,
+            messageId: this.id,
+        })
     }
 }
 
