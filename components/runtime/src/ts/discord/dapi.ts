@@ -767,19 +767,22 @@ export async function getThreadMembers(options: IListThreadMembers): Promise<Thr
 
 export interface IThreadsListing {
     hasMore?: boolean;
+    /**
+     * This only includes the bot member, if you you want to list all the members in a thread, see {@link getThreadMembers}
+     */
     members: ThreadMember[];
     // TODO: only thread channels
     threads: GuildChannel[];
 }
 
-export async function getActiveThread(): Promise<IThreadsListing> {
+export async function getActiveThreads(): Promise<Omit<IThreadsListing, "hasMore">> {
     let resp = await OpWrappers.callAsyncOp({
         kind: "discord_list_active_threads",
         arg: null,
     })
 
     return {
-        hasMore: resp.hasMore,
+        // hasMore: resp.hasMore,
         members: resp.members.map(v => new ThreadMember(v)),
         threads: resp.threads.map(v => guildChannelFromInternal(v))
     }

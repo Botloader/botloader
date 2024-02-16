@@ -3,6 +3,6 @@
 export interface ICreateThreadFromMessage {
   channelId: string;
   messageId: string;
-  autoArchiveDurationSeconds?: number;
+  autoArchiveDurationMinutes?: number;
   name: string;
 }

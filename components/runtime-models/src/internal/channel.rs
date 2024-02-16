@@ -662,7 +662,7 @@ pub struct CreateThreadFromMessage {
     pub message_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub auto_archive_duration_seconds: Option<u16>,
+    pub auto_archive_duration_minutes: Option<u16>,
     pub name: String,
 }
 

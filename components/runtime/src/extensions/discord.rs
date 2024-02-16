@@ -474,7 +474,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             .client
             .create_thread_from_message(channel.id, message_id, &arg.name)?;
 
-        if let Some(auto_archive) = arg.auto_archive_duration_seconds {
+        if let Some(auto_archive) = arg.auto_archive_duration_minutes {
             req = req.auto_archive_duration(
                 twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
             )
@@ -634,7 +634,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             .await
             .map_err(|err| handle_discord_error(&self.state, err))?;
 
-        todo!()
+        Ok(())
     }
 
     async fn discord_list_thread_members(
