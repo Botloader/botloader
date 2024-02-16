@@ -85,8 +85,12 @@ export function ScriptEditor(props: {
 
     let isSaving = false;
     async function save() {
-        await monacoRef.current?.getAction('editor.action.formatDocument')?.run()
-        const value = monacoRef.current?.getValue() || "";
+        if (!monacoRef.current) {
+            return
+        }
+
+        await monacoRef.current.getAction('editor.action.formatDocument')?.run()
+        const value = monacoRef.current.getValue();
         let innerIsDirty = value !== props.initialSource
 
         if (!innerIsDirty || isSaving) {
