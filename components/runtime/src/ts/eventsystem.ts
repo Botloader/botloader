@@ -19,7 +19,12 @@ import {
     parseInteractionCustomId,
     EventInviteCreate,
     EventInviteDelete,
-    EventVoiceStateUpdate
+    EventVoiceStateUpdate,
+    ThreadMember,
+    EventThreadListSync,
+    EventThreadMembersUpdate,
+    threadChannelFromInternal,
+    Thread
 } from './discord/index';
 import * as Internal from './generated/internal/index';
 
@@ -114,9 +119,13 @@ export namespace EventSystem {
         CHANNEL_CREATE: GuildChannel,
         CHANNEL_UPDATE: GuildChannel,
         CHANNEL_DELETE: GuildChannel,
-        THREAD_CREATE: GuildChannel,
-        THREAD_UPDATE: GuildChannel,
+
+        THREAD_CREATE: Thread,
+        THREAD_UPDATE: Thread,
         THREAD_DELETE: IEventThreadDelete,
+        THREAD_LIST_SYNC: EventThreadListSync,
+        THREAD_MEMBER_UPDATE: ThreadMember,
+        THREAD_MEMBERS_UPDATE: EventThreadMembersUpdate,
 
         INVITE_CREATE: EventInviteCreate,
         INVITE_DELETE: EventInviteDelete,
@@ -271,8 +280,12 @@ export namespace EventSystem {
 
         VOICE_STATE_UPDATE: (v: Internal.IEventVoiceStateUpdate) => new EventVoiceStateUpdate(v),
 
-        THREAD_CREATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
-        THREAD_UPDATE: (v: Internal.InternalGuildChannel) => guildChannelFromInternal(v),
+        THREAD_CREATE: (v: Internal.InternalGuildChannel) => threadChannelFromInternal(v),
+        THREAD_UPDATE: (v: Internal.InternalGuildChannel) => threadChannelFromInternal(v),
+
+        THREAD_LIST_SYNC: (v: Internal.IEventThreadListSync) => new EventThreadListSync(v),
+        THREAD_MEMBER_UPDATE: (v: Internal.IThreadMember) => new ThreadMember(v),
+        THREAD_MEMBERS_UPDATE: (v: Internal.IEventThreadMembersUpdate) => new EventThreadMembersUpdate(v),
 
         INVITE_CREATE: (v: Internal.IEventInviteCreate) => new EventInviteCreate(v),
         INVITE_DELETE: (v: Internal.IEventInviteDelete) => new EventInviteDelete(v),

@@ -9,6 +9,8 @@ use crate::{
     util::NotBigU64,
 };
 
+use super::messages::{Message, OpCreateMessageFields};
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[serde(untagged)]
 #[ts(export, rename = "InternalGuildChannel")]
@@ -491,6 +493,38 @@ impl EditChannel {
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(
     export,
+    rename = "IUpdateThread",
+    export_to = "bindings/internal/IUpdateThread.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateThread {
+    pub channel_id: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag_ids: Option<Vec<String>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub archived: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_archive_duration_minutes: Option<u16>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitable: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub locked: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rate_limit_per_user: Option<u16>,
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
     rename = "ICreateChannel",
     export_to = "bindings/internal/ICreateChannel.ts"
 )]
@@ -596,4 +630,127 @@ impl CreateChannel {
 
         Ok(req)
     }
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "ICreateThread",
+    export_to = "bindings/internal/ICreateThread.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateThread {
+    pub channel_id: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_archive_duration_minutes: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitable: Option<bool>,
+    pub kind: ChannelType,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "ICreateThreadFromMessage",
+    export_to = "bindings/internal/ICreateThreadFromMessage.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateThreadFromMessage {
+    pub channel_id: String,
+    pub message_id: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_archive_duration_minutes: Option<u16>,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "ICreateForumThread",
+    export_to = "bindings/internal/ICreateForumThread.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateForumThread {
+    pub channel_id: String,
+    pub name: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag_ids: Option<Vec<String>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_archive_duration_minutes: Option<u16>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rate_limit_per_user: Option<u16>,
+
+    pub message: OpCreateMessageFields,
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IThreadsListing",
+    export_to = "bindings/internal/IThreadsListing.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ThreadsListing {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub has_more: Option<bool>,
+    pub members: Vec<ThreadMember>,
+    pub threads: Vec<GuildChannel>,
+}
+
+impl From<twilight_model::channel::thread::ThreadsListing> for ThreadsListing {
+    fn from(value: twilight_model::channel::thread::ThreadsListing) -> Self {
+        Self {
+            has_more: value.has_more,
+            members: value.members.into_iter().map(Into::into).collect(),
+            threads: value.threads.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "IListThreadsRequest",
+    export_to = "bindings/internal/IListThreadsRequest.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ListThreadsRequest {
+    pub channel_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub before: Option<NotBigU64>,
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "IListThreadMembersRequest",
+    export_to = "bindings/internal/IListThreadMembersRequest.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ListThreadMembersRequest {
+    pub channel_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after_user_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub with_member: Option<bool>,
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IForumThreadResponse",
+    export_to = "bindings/internal/IForumThreadResponse.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ForumThreadResponse {
+    pub message: Message,
+    pub channel: GuildChannel,
 }

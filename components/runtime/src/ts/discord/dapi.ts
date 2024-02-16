@@ -1,7 +1,8 @@
 import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
-import { GuildChannel, guildChannelFromInternal } from './channel';
+import { GuildChannel, Thread, ThreadMember, guildChannelFromInternal, threadChannelFromInternal } from './channel';
+import type { AutoArchiveMinutes } from './channel';
 import { VoiceState } from './events';
 import { Invite } from './invite';
 import { Ban, Member } from './member';
@@ -25,8 +26,12 @@ export function getCurrentGuildId(): string {
 
 // Guild functions
 export function getGuild(): Promise<Guild> {
-    return OpWrappers.getGuild()
+    return OpWrappers.callAsyncOp({
+        kind: "discord_get_guild",
+        arg: null,
+    })
 }
+
 function editGuild() { }
 
 /**
@@ -50,7 +55,10 @@ export async function deleteInvite(code: string): Promise<void> {
 
 // Message functions
 export async function getMessage(channelId: string, messageId: string): Promise<Message> {
-    return new Message(await OpWrappers.getMessage(channelId, messageId));
+    return new Message(await OpWrappers.callAsyncOp({
+        kind: "discord_get_message",
+        arg: [channelId, messageId],
+    }));
 }
 
 export interface GetMessagesOptions {
@@ -70,11 +78,14 @@ export interface GetMessagesOptions {
 }
 
 export async function getMessages(channelId: string, options?: GetMessagesOptions): Promise<Message[]> {
-    return (await OpWrappers.getMessages({
-        channelId,
-        after: options?.after,
-        before: options?.before,
-        limit: options?.limit,
+    return (await OpWrappers.callAsyncOp({
+        kind: "discord_get_messages",
+        arg: {
+            channelId,
+            after: options?.after,
+            before: options?.before,
+            limit: options?.limit,
+        }
     })).map(v => new Message(v));
 }
 
@@ -160,34 +171,49 @@ export type MentionParseTypes = "Everyone" | "Roles" | "Users";
 
 export async function createMessage(channelId: string, fields: CreateMessageFields): Promise<Message> {
 
-    return new Message(await OpWrappers.createChannelMessage({
-        channelId,
-        fields: toOpMessageFields(fields),
+    return new Message(await OpWrappers.callAsyncOp({
+        kind: "discord_create_message",
+        arg: {
+            channelId,
+            fields: toOpMessageFields(fields),
+        }
     }));
 }
 export async function editMessage(channelId: string, messageId: string, fields: CreateMessageFields): Promise<Message> {
-    return new Message(await OpWrappers.editChannelMessage({
-        channelId,
-        messageId,
-        fields: toOpMessageFields(fields),
+    return new Message(await OpWrappers.callAsyncOp({
+        kind: "discord_edit_message",
+        arg: {
+            channelId,
+            messageId,
+            fields: toOpMessageFields(fields),
+        }
     }));
 }
 
 export async function crosspostMessage(channelId: string, messageId: string): Promise<void> {
-    return OpWrappers.crosspostChannelMessage(channelId, messageId);
+    await OpWrappers.callAsyncOp({
+        kind: "discord_crosspost_message",
+        arg: [channelId, messageId]
+    });
 }
 
-export function deleteMessage(channelId: string, messageId: string): Promise<void> {
-    return OpWrappers.deleteChannelMessage({
-        channelId,
-        messageId,
+export async function deleteMessage(channelId: string, messageId: string): Promise<void> {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_delete_message",
+        arg: {
+            channelId,
+            messageId,
+        }
     })
 }
 
-export function bulkDeleteMessages(channelId: string, ...messageIds: string[]): Promise<void> {
-    return OpWrappers.deleteChannelMessagesBulk({
-        channelId,
-        messageIds,
+export async function bulkDeleteMessages(channelId: string, ...messageIds: string[]): Promise<void> {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_bulk_delete_messages",
+        arg: {
+            channelId,
+            messageIds,
+        }
     })
 }
 
@@ -618,4 +644,263 @@ export async function editInteractionOriginalResponse(token: string, fields: Int
 
 export async function deleteInteractionOriginalResponse(token: string): Promise<void> {
     return OpWrappers.deleteInteractionOriginal(token);
+}
+
+export interface ICreateStandaloneThread {
+    /**
+     * The channel the thread is in
+     */
+    channelId: string;
+
+    /**
+     * 1-100 characters long name for the thread
+     */
+    name: string;
+
+    kind: "NewsThread" | "PublicThread" | "PrivateThread";
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
+    autoArchiveDurationMinutes?: AutoArchiveMinutes;
+
+    /**
+     * Whether non-moderators can add other non-moderators to a thread; only available when creating a private thread
+     */
+    invitable?: boolean;
+}
+
+export async function createStandaloneThread(create: ICreateStandaloneThread): Promise<Thread> {
+    return threadChannelFromInternal(await OpWrappers.callAsyncOp({
+        kind: "discord_start_thread_without_message",
+        arg: create,
+    }))
+}
+
+export interface ICreateThreadFromMessage {
+    /**
+     * The channel the thread is in
+     */
+    channelId: string;
+
+    /**
+     * Message to start the thread on
+     */
+    messageId: string;
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
+    autoArchiveDurationMinutes?: AutoArchiveMinutes;
+
+    /**
+     * 1-100 characters long name for the thread
+     */
+    name: string;
+}
+
+export async function createThreadFromMessage(create: ICreateThreadFromMessage): Promise<Thread> {
+    return threadChannelFromInternal(await OpWrappers.callAsyncOp({
+        kind: "discord_start_thread_from_message",
+        arg: create,
+    }))
+}
+
+export interface ICreateForumThread {
+    /**
+     * The channel the thread is in, has to be of type forum
+     */
+    channelId: string;
+
+    /**
+     * 1-100 characters long name for the thread
+     */
+    name: string;
+
+    /**
+     * Tags to assign to the thread
+     */
+    tagIds?: string[];
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
+    autoArchiveDurationMinutes?: AutoArchiveMinutes;
+
+
+    /**
+     * The starting message to be created in the thread
+     */
+    message: CreateMessageFields;
+}
+
+export async function createForumThread(create: ICreateForumThread): Promise<{ thread: Thread; message: Message; }> {
+    const opArg = {
+        ...create,
+        message: toOpMessageFields(create.message),
+    }
+
+    const thread = await OpWrappers.callAsyncOp({
+        kind: "discord_start_forum_thread",
+        arg: opArg,
+    })
+
+    return {
+        thread: threadChannelFromInternal(thread.channel),
+        message: new Message(thread.message)
+    }
+}
+
+export interface IEditThread {
+    /**
+     * The id of the thread to edit
+     */
+    channelId: string;
+
+    tagIds?: string[];
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
+    autoArchiveDurationMinutes?: AutoArchiveMinutes;
+
+
+    /**
+     * Whether non-moderators can add other non-moderators to a thread; only available on private threads
+     */
+    invitable?: boolean;
+
+    /**
+     * 1-100 long name for the thread
+     */
+    name?: string;
+
+    rateLimitPerUser?: number;
+
+    /**
+     * Whether the thread is locked; when a thread is locked, only users with MANAGE_THREADS can unarchive it
+     */
+    locked?: boolean,
+
+    archived?: boolean,
+}
+
+export async function editThread(fields: IEditThread): Promise<Thread> {
+    return threadChannelFromInternal(await OpWrappers.callAsyncOp({
+        kind: "discord_edit_thread",
+        arg: fields,
+    }))
+}
+
+export async function addThreadMember(channelId: string, userId: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_add_thread_member",
+        arg: [channelId, userId]
+    })
+}
+
+export async function removeThreadMember(channelId: string, userId: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_remove_thread_member",
+        arg: [channelId, userId]
+    })
+}
+
+
+
+// discord_list_thread_members
+export interface IListThreadMembers {
+    /**
+     * The thread id
+     */
+    channelId: string;
+
+    /**
+     * Get thread members after this user ID, used for pagination.
+     */
+    afterUserId?: string;
+
+    /**
+     * Max number of thread members to return (1-100). Defaults to 100.
+     */
+    limit?: number;
+
+    /**
+     * Whether to include a guild member object for each thread member
+     */
+    withMember?: boolean;
+}
+
+export async function getThreadMembers(options: IListThreadMembers): Promise<ThreadMember[]> {
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_list_thread_members",
+        arg: options,
+    })
+
+    return resp.map(v => new ThreadMember(v))
+}
+
+export interface IThreadsListing {
+    /**
+     * Whether there are potentially additional threads that could be returned on a subsequent call
+     */
+    hasMore?: boolean;
+
+    /**
+     * This only includes the bot member, if you you want to list all the members in a thread, see {@link getThreadMembers}
+     */
+    members: ThreadMember[];
+
+    threads: Thread[];
+}
+
+export async function getActiveThreads(): Promise<Omit<IThreadsListing, "hasMore">> {
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_list_active_threads",
+        arg: null,
+    })
+
+    return {
+        // hasMore: resp.hasMore,
+        members: resp.members.map(v => new ThreadMember(v)),
+        threads: resp.threads.map(v => threadChannelFromInternal(v))
+    }
+}
+
+export interface IListThreads {
+    /**
+     * Channel to return threads from
+     */
+    channelId: string;
+
+    /**
+     * Unix timestamp in milliseconds to returns threads before, used for pagination. 
+     */
+    before?: number;
+}
+
+export async function getPublicArchivedThreads(options: IListThreads): Promise<IThreadsListing> {
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_list_public_archived_threads",
+        arg: options,
+    })
+
+    return {
+        hasMore: resp.hasMore,
+        members: resp.members.map(v => new ThreadMember(v)),
+        threads: resp.threads.map(v => threadChannelFromInternal(v))
+    }
+}
+
+export async function getPrivateArchivedThreads(options: IListThreads): Promise<IThreadsListing> {
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_list_private_archived_threads",
+        arg: options,
+    })
+
+    return {
+        hasMore: resp.hasMore,
+        members: resp.members.map(v => new ThreadMember(v)),
+        threads: resp.threads.map(v => threadChannelFromInternal(v))
+    }
 }

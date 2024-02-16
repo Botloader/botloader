@@ -16,6 +16,9 @@ import type { IInviteTargetUser } from "../generated/discord/IInviteTargetUser";
 import type { InviteTargetType } from "../generated/discord/InviteTargetType";
 import type { IEventVoiceStateUpdate } from "../generated/internal/IEventVoiceStateUpdate";
 import type { IVoiceState } from "../generated/internal/IVoiceState";
+import { IEventThreadListSync } from "../generated/internal/IEventThreadListSync";
+import { Thread, ThreadMember, threadChannelFromInternal } from "./channel";
+import { IEventThreadMembersUpdate } from "../generated/internal/IEventThreadMembersUpdate";
 
 export class EventMessageReactionAdd {
     channelId: string;
@@ -184,5 +187,41 @@ export class EventVoiceStateUpdate extends VoiceState {
             this.oldState = new VoiceState(json.old)
             this.oldState.member = this.member
         }
+    }
+}
+
+export class EventThreadListSync {
+    channelIds: string[];
+
+    members: ThreadMember[];
+    threads: Thread[];
+
+
+    /** 
+    * @internal 
+    */
+    constructor(json: IEventThreadListSync) {
+        this.channelIds = json.channelIds
+
+        this.members = json.members.map(v => new ThreadMember(v))
+        this.threads = json.threads.map(v => threadChannelFromInternal(v))
+    }
+}
+
+export class EventThreadMembersUpdate {
+    id: string;
+    addedMembers: ThreadMember[];
+    memberCount: number;
+    removedMemberIds: string[];
+
+
+    /** 
+     * @internal 
+     */
+    constructor(json: IEventThreadMembersUpdate) {
+        this.id = json.id
+        this.addedMembers = json.addedMembers.map(v => new ThreadMember(v))
+        this.memberCount = json.memberCount
+        this.removedMemberIds = json.removedMemberIds
     }
 }

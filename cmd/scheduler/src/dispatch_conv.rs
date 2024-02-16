@@ -115,9 +115,33 @@ pub fn discord_event_to_dispatch(evt: DiscordEvent) -> Option<DiscordDispatchEve
         }),
         DiscordEventData::ThreadDelete(r) => Some(DiscordDispatchEvent {
             name: "THREAD_DELETE",
-            guild_id: r.guild_id,
+            guild_id: evt.guild_id,
             data: serde_json::to_value(runtime_models::discord::events::EventThreadDelete::from(r))
                 .unwrap(),
+        }),
+        DiscordEventData::ThreadListSync(r) => Some(DiscordDispatchEvent {
+            name: "THREAD_LIST_SYNC",
+            guild_id: evt.guild_id,
+            data: serde_json::to_value(
+                runtime_models::internal::events::EventThreadListSync::from(r),
+            )
+            .unwrap(),
+        }),
+        DiscordEventData::ThreadMemberUpdate(r) => Some(DiscordDispatchEvent {
+            name: "THREAD_MEMBER_UPDATE",
+            guild_id: evt.guild_id,
+            data: serde_json::to_value(runtime_models::internal::channel::ThreadMember::from(
+                r.member,
+            ))
+            .unwrap(),
+        }),
+        DiscordEventData::ThreadMembersUpdate(r) => Some(DiscordDispatchEvent {
+            name: "THREAD_MEMBERS_UPDATE",
+            guild_id: r.guild_id,
+            data: serde_json::to_value(
+                runtime_models::internal::events::EventThreadMembersUpdate::from(r),
+            )
+            .unwrap(),
         }),
         DiscordEventData::InteractionCreate(interaction) => {
             let guild_id = evt.guild_id;
