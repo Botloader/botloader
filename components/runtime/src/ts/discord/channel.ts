@@ -14,7 +14,7 @@ import type { INewsThread } from "../generated/internal/NewsThread";
 import type { ITextChannel } from "../generated/internal/TextChannel";
 import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
 import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
-import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, createForumThread, createStandaloneThread, createThreadFromMessage, editChannel, editThread, getPins } from "./dapi";
+import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, addThreadMember, createForumThread, createStandaloneThread, createThreadFromMessage, editChannel, editThread, getPins, removeThreadMember } from "./dapi";
 
 export type GuildChannel =
     | CategoryChannel
@@ -193,8 +193,10 @@ export class TextChannel extends BaseChannel {
     }
 }
 
+export type AutoArchiveMinutes = 60 | 1440 | 4320 | 10080
+
 export abstract class Thread extends BaseChannel {
-    defaultAutoArchiveDurationMinutes: number | null;
+    defaultAutoArchiveDurationMinutes: AutoArchiveMinutes | null;
     kind: "NewsThread" | "PrivateThread" | "PublicThread";
     member: SelfThreadMember | null;
     memberCount: number;
@@ -207,7 +209,7 @@ export abstract class Thread extends BaseChannel {
     constructor(json: IPrivateThread | INewsThread | IPublicThread) {
         super(json)
 
-        this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes
+        this.defaultAutoArchiveDurationMinutes = json.defaultAutoArchiveDurationMinutes as any
         this.kind = json.kind
         this.member = json.member
         this.memberCount = json.memberCount
@@ -223,6 +225,14 @@ export abstract class Thread extends BaseChannel {
             ...fields,
             channelId: this.id,
         })
+    }
+
+    addMemberToThread(userId: string) {
+        return addThreadMember(this.id, userId)
+    }
+
+    removeMemberFromThread(userId: string) {
+        return removeThreadMember(this.id, userId)
     }
 
     archive() {

@@ -2,6 +2,7 @@ import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionO
 import * as Internal from '../generated/internal/index';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, Thread, ThreadMember, guildChannelFromInternal, threadChannelFromInternal } from './channel';
+import type { AutoArchiveMinutes } from './channel';
 import { VoiceState } from './events';
 import { Invite } from './invite';
 import { Ban, Member } from './member';
@@ -645,13 +646,27 @@ export async function deleteInteractionOriginalResponse(token: string): Promise<
     return OpWrappers.deleteInteractionOriginal(token);
 }
 
-type AutoArchiveMinutes = 60 | 1440 | 4320 | 10080
-
 export interface ICreateStandaloneThread {
+    /**
+     * The channel the thread is in
+     */
     channelId: string;
+
+    /**
+     * 1-100 characters long name for the thread
+     */
     name: string;
+
     kind: "NewsThread" | "PublicThread" | "PrivateThread";
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
     autoArchiveDurationMinutes?: AutoArchiveMinutes;
+
+    /**
+     * Whether non-moderators can add other non-moderators to a thread; only available when creating a private thread
+     */
     invitable?: boolean;
 }
 
@@ -663,9 +678,24 @@ export async function createStandaloneThread(create: ICreateStandaloneThread): P
 }
 
 export interface ICreateThreadFromMessage {
+    /**
+     * The channel the thread is in
+     */
     channelId: string;
+
+    /**
+     * Message to start the thread on
+     */
     messageId: string;
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
     autoArchiveDurationMinutes?: AutoArchiveMinutes;
+
+    /**
+     * 1-100 characters long name for the thread
+     */
     name: string;
 }
 
@@ -677,11 +707,30 @@ export async function createThreadFromMessage(create: ICreateThreadFromMessage):
 }
 
 export interface ICreateForumThread {
+    /**
+     * The channel the thread is in, has to be of type forum
+     */
     channelId: string;
+
+    /**
+     * 1-100 characters long name for the thread
+     */
     name: string;
+
+    /**
+     * Tags to assign to the thread
+     */
     tagIds?: string[];
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
     autoArchiveDurationMinutes?: AutoArchiveMinutes;
-    // rateLimitPerUser?: number;
+
+
+    /**
+     * The starting message to be created in the thread
+     */
     message: CreateMessageFields;
 }
 
@@ -703,12 +752,29 @@ export async function createForumThread(create: ICreateForumThread): Promise<{ t
 }
 
 export interface IEditThread {
+    /**
+     * The id of the thread to edit
+     */
     channelId: string;
 
     tagIds?: string[];
+
+    /**
+     * The thread will stop showing in the channel list after auto_archive_duration minutes of inactivity, can be set to: 60, 1440, 4320, 10080
+     */
     autoArchiveDurationMinutes?: AutoArchiveMinutes;
+
+
+    /**
+     * Whether non-moderators can add other non-moderators to a thread; only available on private threads
+     */
     invitable?: boolean;
+
+    /**
+     * 1-100 long name for the thread
+     */
     name?: string;
+
     rateLimitPerUser?: number;
 
     /**
@@ -717,12 +783,6 @@ export interface IEditThread {
     locked?: boolean,
 
     archived?: boolean,
-
-    /**
-     * The thread will stop showing in the channel list after autoArchiveMinutes minutes of inactivity, can be set to: 60, 1440, 4320, 10080
-     */
-    autoArchiveMinutes?: AutoArchiveMinutes
-
 }
 
 export async function editThread(fields: IEditThread): Promise<Thread> {
@@ -750,9 +810,24 @@ export async function removeThreadMember(channelId: string, userId: string) {
 
 // discord_list_thread_members
 export interface IListThreadMembers {
+    /**
+     * The thread id
+     */
     channelId: string;
+
+    /**
+     * Get thread members after this user ID, used for pagination.
+     */
     afterUserId?: string;
+
+    /**
+     * Max number of thread members to return (1-100). Defaults to 100.
+     */
     limit?: number;
+
+    /**
+     * Whether to include a guild member object for each thread member
+     */
     withMember?: boolean;
 }
 
@@ -766,13 +841,17 @@ export async function getThreadMembers(options: IListThreadMembers): Promise<Thr
 }
 
 export interface IThreadsListing {
+    /**
+     * Whether there are potentially additional threads that could be returned on a subsequent call
+     */
     hasMore?: boolean;
+
     /**
      * This only includes the bot member, if you you want to list all the members in a thread, see {@link getThreadMembers}
      */
     members: ThreadMember[];
-    // TODO: only thread channels
-    threads: GuildChannel[];
+
+    threads: Thread[];
 }
 
 export async function getActiveThreads(): Promise<Omit<IThreadsListing, "hasMore">> {
@@ -784,12 +863,19 @@ export async function getActiveThreads(): Promise<Omit<IThreadsListing, "hasMore
     return {
         // hasMore: resp.hasMore,
         members: resp.members.map(v => new ThreadMember(v)),
-        threads: resp.threads.map(v => guildChannelFromInternal(v))
+        threads: resp.threads.map(v => threadChannelFromInternal(v))
     }
 }
 
 export interface IListThreads {
+    /**
+     * Channel to return threads from
+     */
     channelId: string;
+
+    /**
+     * Unix timestamp in milliseconds to returns threads before, used for pagination. 
+     */
     before?: number;
 }
 
@@ -802,7 +888,7 @@ export async function getPublicArchivedThreads(options: IListThreads): Promise<I
     return {
         hasMore: resp.hasMore,
         members: resp.members.map(v => new ThreadMember(v)),
-        threads: resp.threads.map(v => guildChannelFromInternal(v))
+        threads: resp.threads.map(v => threadChannelFromInternal(v))
     }
 }
 
@@ -815,6 +901,6 @@ export async function getPrivateArchivedThreads(options: IListThreads): Promise<
     return {
         hasMore: resp.hasMore,
         members: resp.members.map(v => new ThreadMember(v)),
-        threads: resp.threads.map(v => guildChannelFromInternal(v))
+        threads: resp.threads.map(v => threadChannelFromInternal(v))
     }
 }
