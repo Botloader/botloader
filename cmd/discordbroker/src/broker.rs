@@ -330,6 +330,13 @@ impl Broker {
             DispatchEvent::ThreadCreate(v) => (v.guild_id?, DiscordEventData::ThreadCreate(v)),
             DispatchEvent::ThreadUpdate(v) => (v.guild_id?, DiscordEventData::ThreadUpdate(v)),
             DispatchEvent::ThreadDelete(v) => (v.guild_id, DiscordEventData::ThreadDelete(v)),
+            DispatchEvent::ThreadListSync(v) => (v.guild_id, DiscordEventData::ThreadListSync(v)),
+            DispatchEvent::ThreadMemberUpdate(v) => {
+                (v.guild_id, DiscordEventData::ThreadMemberUpdate(v))
+            }
+            DispatchEvent::ThreadMembersUpdate(v) => {
+                (v.guild_id, DiscordEventData::ThreadMembersUpdate(v))
+            }
 
             DispatchEvent::InviteCreate(invite) => {
                 (invite.guild_id, DiscordEventData::InviteCreate(invite))

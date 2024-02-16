@@ -11,6 +11,8 @@ use crate::{
     util::NotBigU64,
 };
 
+use super::channel::{GuildChannel, ThreadMember};
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export, rename = "IEventMemberRemove")]
 #[ts(export_to = "bindings/internal/EventMemberRemove.ts")]
@@ -240,4 +242,56 @@ impl TryFrom<twilight_model::voice::VoiceState> for VoiceState {
 pub struct EventVoiceStateUpdate {
     pub new: VoiceState,
     pub old: Option<VoiceState>,
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IEventThreadListSync")]
+#[ts(export_to = "bindings/internal/IEventThreadListSync.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventThreadListSync {
+    pub channel_ids: Vec<String>,
+    pub members: Vec<ThreadMember>,
+    pub threads: Vec<GuildChannel>,
+}
+
+impl From<twilight_model::gateway::payload::incoming::ThreadListSync> for EventThreadListSync {
+    fn from(value: twilight_model::gateway::payload::incoming::ThreadListSync) -> Self {
+        Self {
+            channel_ids: value
+                .channel_ids
+                .into_iter()
+                .map(|v| v.to_string())
+                .collect(),
+            members: value.members.into_iter().map(Into::into).collect(),
+            threads: value.threads.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IEventThreadMembersUpdate")]
+#[ts(export_to = "bindings/internal/IEventThreadMembersUpdate.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct EventThreadMembersUpdate {
+    pub added_members: Vec<ThreadMember>,
+    pub id: String,
+    pub member_count: i32,
+    pub removed_member_ids: Vec<String>,
+}
+
+impl From<twilight_model::gateway::payload::incoming::ThreadMembersUpdate>
+    for EventThreadMembersUpdate
+{
+    fn from(value: twilight_model::gateway::payload::incoming::ThreadMembersUpdate) -> Self {
+        Self {
+            added_members: value.added_members.into_iter().map(Into::into).collect(),
+            id: value.id.to_string(),
+            member_count: value.member_count,
+            removed_member_ids: value
+                .removed_member_ids
+                .into_iter()
+                .map(|v| v.to_string())
+                .collect(),
+        }
+    }
 }

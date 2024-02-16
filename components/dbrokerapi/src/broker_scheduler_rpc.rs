@@ -4,8 +4,8 @@ use twilight_model::{
         ChannelCreate, ChannelDelete, ChannelUpdate, GuildCreate, GuildDelete, InteractionCreate,
         InviteCreate, InviteDelete, MemberAdd, MemberRemove, MemberUpdate, MessageCreate,
         MessageDelete, MessageDeleteBulk, MessageUpdate, ReactionAdd, ReactionRemove,
-        ReactionRemoveAll, ReactionRemoveEmoji, ThreadCreate, ThreadDelete, ThreadUpdate,
-        VoiceStateUpdate,
+        ReactionRemoveAll, ReactionRemoveEmoji, ThreadCreate, ThreadDelete, ThreadListSync,
+        ThreadMemberUpdate, ThreadMembersUpdate, ThreadUpdate, VoiceStateUpdate,
     },
     id::{marker::GuildMarker, Id},
     voice::VoiceState,
@@ -57,6 +57,10 @@ pub enum DiscordEventData {
     ThreadCreate(Box<ThreadCreate>),
     ThreadUpdate(Box<ThreadUpdate>),
     ThreadDelete(ThreadDelete),
+
+    ThreadListSync(ThreadListSync),
+    ThreadMemberUpdate(Box<ThreadMemberUpdate>),
+    ThreadMembersUpdate(ThreadMembersUpdate),
 
     InviteCreate(Box<InviteCreate>),
     InviteDelete(InviteDelete),

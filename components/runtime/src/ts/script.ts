@@ -282,6 +282,9 @@ export class Script {
     on(eventType: "THREAD_CREATE", cb: (evt: EventSystem.EventTypes["THREAD_CREATE"]) => void): void;
     on(eventType: "THREAD_UPDATE", cb: (evt: EventSystem.EventTypes["THREAD_UPDATE"]) => void): void;
     on(eventType: "THREAD_DELETE", cb: (evt: EventSystem.EventTypes["THREAD_DELETE"]) => void): void;
+    on(eventType: "THREAD_LIST_SYNC", cb: (evt: EventSystem.EventTypes["THREAD_LIST_SYNC"]) => void): void;
+    on(eventType: "THREAD_MEMBER_UPDATE", cb: (evt: EventSystem.EventTypes["THREAD_MEMBER_UPDATE"]) => void): void;
+    on(eventType: "THREAD_MEMBERS_UPDATE", cb: (evt: EventSystem.EventTypes["THREAD_MEMBERS_UPDATE"]) => void): void;
     on(eventType: "INVITE_CREATE", cb: (evt: EventSystem.EventTypes["INVITE_CREATE"]) => void): void;
     on(eventType: "INVITE_DELETE", cb: (evt: EventSystem.EventTypes["INVITE_DELETE"]) => void): void;
 
