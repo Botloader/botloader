@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM plugin_images WHERE plugin_id = $1 AND image_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5d4d48b2d4af04b9fc16575d08a7a9c8c09fa0d1be2d596c3d86f68f190f438b"
+}

@@ -89,7 +89,21 @@ export interface Plugin<Variant = ScriptPluginData> {
     is_official: boolean,
     data: Variant,
     current_version: number,
+    images: PluginImage[],
 }
+
+export interface PluginImage {
+    plugin_id: number,
+    image_id: string,
+    created_at: string,
+    description: string,
+    position: number,
+    kind: PluginImageKind,
+    width: string,
+    height: string,
+}
+
+export type PluginImageKind = "Icon" | "Showcase" | "Banner"
 
 export interface ScriptPluginData {
     plugin_type: "ScriptPlugin",

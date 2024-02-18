@@ -2,7 +2,7 @@ use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use common::{
-    plugin::{Plugin, PluginData, ScriptPluginData},
+    plugin::{Image, Plugin, PluginData, PluginImage, PluginImageKind, ScriptPluginData},
     user::UserMeta,
 };
 use sqlx::{postgres::types::PgInterval, PgConnection};
@@ -10,11 +10,13 @@ use twilight_model::id::{
     marker::{GuildMarker, UserMarker},
     Id,
 };
+use uuid::Uuid;
 
 use crate::config::{
-    ConfigStoreError, ConfigStoreResult, CreatePlugin, CreateScript,
-    CreateUpdatePremiumSlotBySource, GuildMetaConfig, JoinedGuild, PremiumSlot, PremiumSlotState,
-    PremiumSlotTier, Script, ScriptContributes, UpdatePluginMeta, UpdateScript,
+    ConfigStoreError, ConfigStoreResult, CreateImage, CreatePlugin, CreateScript,
+    CreateUpdatePluginImage, CreateUpdatePremiumSlotBySource, GuildMetaConfig, JoinedGuild,
+    PremiumSlot, PremiumSlotState, PremiumSlotTier, Script, ScriptContributes, UpdatePluginMeta,
+    UpdateScript,
 };
 
 const GUILD_SCRIPT_COUNT_LIMIT: i64 = 100;
@@ -124,11 +126,33 @@ RETURNING id, guild_id, name, original_source, enabled, contributes_commands, \
         Ok(res.into())
     }
 
+    async fn get_plugin_images_with_pool(
+        &self,
+        plugin_id: u64,
+    ) -> ConfigStoreResult<Vec<DbPluginImage>> {
+        Self::get_plugin_images_with_conn(&mut *self.pool.acquire().await?, plugin_id).await
+    }
+
+    async fn get_plugin_images_with_conn(
+        conn: &mut PgConnection,
+        plugin_id: u64,
+    ) -> ConfigStoreResult<Vec<DbPluginImage>> {
+        Ok(sqlx::query_as!(
+            DbPluginImage,
+            "SELECT plugin_images.*, width, height FROM plugin_images INNER JOIN images ON \
+             images.id = plugin_images.image_id WHERE plugin_images.plugin_id = $1 ORDER BY \
+             position DESC",
+            plugin_id as i64
+        )
+        .fetch_all(conn)
+        .await?)
+    }
+
     async fn inner_get_plugin(
         conn: &mut PgConnection,
         plugin_id: u64,
     ) -> ConfigStoreResult<Plugin> {
-        sqlx::query_as!(
+        let db_plugin = sqlx::query_as!(
             DbPlugin,
             r#"SELECT id,
 created_at,
@@ -148,10 +172,36 @@ is_public
 FROM plugins WHERE id = $1"#,
             plugin_id as i64,
         )
-        .fetch_optional(conn)
+        .fetch_optional(&mut *conn)
         .await?
-        .ok_or(ConfigStoreError::PluginNotFound(plugin_id))
-        .map(Into::into)
+        .ok_or(ConfigStoreError::PluginNotFound(plugin_id))?;
+
+        let images = Self::get_plugin_images_with_conn(conn, plugin_id).await?;
+
+        Ok(PluginAndImages(db_plugin, images).into())
+    }
+
+    async fn inner_upsert_plugin_image(
+        &self,
+        plugin_id: u64,
+        image: CreateUpdatePluginImage,
+    ) -> ConfigStoreResult<()> {
+        sqlx::query!(
+            "INSERT INTO plugin_images (plugin_id, image_id, created_at, description, position, \
+             kind)
+            VALUES ($1, $2, now(), $3, $4, $5)
+            ON CONFLICT (plugin_id, image_id) DO UPDATE SET
+            description = $3;",
+            plugin_id as i64,
+            image.image_id,
+            image.description,
+            image.position,
+            i32::from(image.kind),
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 }
 
@@ -585,8 +635,9 @@ is_public"#,
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(res.into())
+        Ok(PluginAndImages(res, Vec::new()).into())
     }
+
     async fn update_plugin_meta(
         &self,
         plugin_id: u64,
@@ -630,7 +681,59 @@ is_public"#,
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(res.into())
+        let images = self.get_plugin_images_with_pool(plugin_id).await?;
+
+        Ok(PluginAndImages(res, images).into())
+    }
+
+    async fn upsert_plugin_image(
+        &self,
+        plugin_id: u64,
+        image: CreateUpdatePluginImage,
+    ) -> ConfigStoreResult<()> {
+        if matches!(&image.kind, PluginImageKind::Icon | PluginImageKind::Banner) {
+            // There can only be 1 of type icon and banner
+            // Possibly delete existing one if it doesn't match
+            // TODO: use a transaction here to avoid race conditions
+            let res = sqlx::query!(
+                "SELECT image_id from plugin_images WHERE plugin_id = $1 AND kind = $2",
+                plugin_id as i64,
+                i32::from(image.kind)
+            )
+            .fetch_all(&self.pool)
+            .await?;
+
+            for item in res {
+                if item.image_id != image.image_id {
+                    self.delete_plugin_image(plugin_id, item.image_id).await?;
+                }
+            }
+        }
+
+        self.inner_upsert_plugin_image(plugin_id, image).await?;
+
+        Ok(())
+    }
+
+    async fn delete_plugin_image(&self, plugin_id: u64, image_id: Uuid) -> ConfigStoreResult<()> {
+        sqlx::query!(
+            "DELETE FROM plugin_images WHERE plugin_id = $1 AND image_id = $2",
+            plugin_id as i64,
+            image_id,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        sqlx::query!(
+            "UPDATE images SET deleted_at = COALESCE(images.deleted_at, now()) WHERE plugin_id = \
+             $1 and id = $2",
+            plugin_id as i64,
+            image_id,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 
     async fn update_script_plugin_dev_version(
@@ -665,7 +768,9 @@ is_public"#,
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(res.into())
+        let images = self.get_plugin_images_with_pool(plugin_id).await?;
+
+        Ok(PluginAndImages(res, images).into())
     }
 
     async fn publish_script_plugin_version(
@@ -740,7 +845,7 @@ is_public"#,
 
     async fn get_plugins(&self, plugin_ids: &[u64]) -> ConfigStoreResult<Vec<Plugin>> {
         let ids = plugin_ids.iter().map(|v| *v as i64).collect::<Vec<_>>();
-        Ok(sqlx::query_as!(
+        let raw_plugins = sqlx::query_as!(
             DbPlugin,
             r#"SELECT id,
 created_at,
@@ -762,14 +867,19 @@ ORDER BY id ASC"#,
             &ids,
         )
         .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect())
+        .await?;
+
+        let mut res: Vec<Plugin> = Vec::new();
+        for plugin in raw_plugins.into_iter() {
+            let images = self.get_plugin_images_with_pool(plugin.id as u64).await?;
+            res.push(PluginAndImages(plugin, images).into());
+        }
+
+        Ok(res)
     }
 
     async fn get_user_plugins(&self, user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
-        Ok(sqlx::query_as!(
+        let raw_plugins = sqlx::query_as!(
             DbPlugin,
             r#"SELECT id,
 created_at,
@@ -791,14 +901,19 @@ ORDER BY id ASC"#,
             user_id as i64,
         )
         .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect())
+        .await?;
+
+        let mut res: Vec<Plugin> = Vec::new();
+        for plugin in raw_plugins.into_iter() {
+            let images = self.get_plugin_images_with_pool(plugin.id as u64).await?;
+            res.push(PluginAndImages(plugin, images).into());
+        }
+
+        Ok(res)
     }
 
     async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>> {
-        Ok(sqlx::query_as!(
+        let raw_plugins = sqlx::query_as!(
             DbPlugin,
             r#"SELECT id,
 created_at,
@@ -819,10 +934,15 @@ FROM plugins WHERE is_published = true AND is_public = true
 ORDER BY id ASC"#,
         )
         .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect())
+        .await?;
+
+        let mut res: Vec<Plugin> = Vec::new();
+        for plugin in raw_plugins.into_iter() {
+            let images = self.get_plugin_images_with_pool(plugin.id as u64).await?;
+            res.push(PluginAndImages(plugin, images).into());
+        }
+
+        Ok(res)
     }
 
     async fn try_guild_add_script_plugin(
@@ -861,6 +981,52 @@ ORDER BY id ASC"#,
         tx.commit().await?;
 
         Ok(created)
+    }
+
+    async fn get_plugin_image(&self, plugin_id: u64, image_id: Uuid) -> ConfigStoreResult<Image> {
+        let res = sqlx::query!(
+            "SELECT * FROM images WHERE plugin_id = $1 AND id = $2",
+            plugin_id as i64,
+            image_id,
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(res) = res else {
+            return Err(ConfigStoreError::ImageNotFound(plugin_id, image_id));
+        };
+
+        Ok(Image {
+            id: res.id,
+            plugin_id: Some(plugin_id),
+            uploaded_by: res.uploaded_by as u64,
+            width: res.width as u32,
+            height: res.height as u32,
+            bytes: res.bytes,
+            created_at: res.created_at,
+            deleted_at: res.deleted_at,
+        })
+    }
+
+    async fn create_image(&self, create: CreateImage) -> ConfigStoreResult<Uuid> {
+        let res = sqlx::query!(
+            "INSERT INTO images (uploaded_by, plugin_id, width, height, bytes, created_at)
+            VALUES ($1, $2, $3, $4, $5, now())
+            RETURNING id;",
+            create.user_id as i64,
+            create.plugin_id as i64,
+            create.width as i32,
+            create.height as i32,
+            create.bytes,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(res.id)
+    }
+
+    async fn soft_delete_image(&self, _id: Uuid) -> ConfigStoreResult<Uuid> {
+        todo!()
     }
 }
 
@@ -1031,29 +1197,32 @@ struct DbPlugin {
     is_public: bool,
 }
 
-impl From<DbPlugin> for Plugin {
-    fn from(value: DbPlugin) -> Self {
+struct PluginAndImages(DbPlugin, Vec<DbPluginImage>);
+
+impl From<PluginAndImages> for Plugin {
+    fn from(PluginAndImages(plugin, images): PluginAndImages) -> Self {
         Self {
-            id: value.id as u64,
-            created_at: value.created_at,
-            author_id: Id::new(value.author_id as u64),
-            name: value.name,
-            short_description: value.short_description,
-            long_description: value.long_description,
-            is_public: value.is_public,
-            is_official: value.is_official,
-            current_version: value.current_version_number as u32,
-            data: match value.plugin_kind {
+            id: plugin.id as u64,
+            created_at: plugin.created_at,
+            author_id: Id::new(plugin.author_id as u64),
+            name: plugin.name,
+            short_description: plugin.short_description,
+            long_description: plugin.long_description,
+            is_public: plugin.is_public,
+            is_official: plugin.is_official,
+            current_version: plugin.current_version_number as u32,
+            data: match plugin.plugin_kind {
                 0 => PluginData::ScriptPlugin(ScriptPluginData {
-                    published_version: value.script_published_source,
-                    published_version_updated_at: value.script_published_version_updated_at,
-                    dev_version: value.script_dev_source,
-                    dev_version_updated_at: value.script_dev_version_updated_at,
+                    published_version: plugin.script_published_source,
+                    published_version_updated_at: plugin.script_published_version_updated_at,
+                    dev_version: plugin.script_dev_source,
+                    dev_version_updated_at: plugin.script_dev_version_updated_at,
                 }),
                 other => {
-                    panic!("unknown plugin kind: {other} for plugin id {}", value.id)
+                    panic!("unknown plugin kind: {other} for plugin id {}", plugin.id)
                 }
             },
+            images: images.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -1072,6 +1241,32 @@ impl From<DbUserMeta> for UserMeta {
             is_admin: value.is_admin,
             is_moderator: value.is_moderator,
             is_verified: value.is_verified,
+        }
+    }
+}
+
+struct DbPluginImage {
+    plugin_id: i64,
+    image_id: Uuid,
+    created_at: DateTime<Utc>,
+    description: String,
+    position: i32,
+    kind: i32,
+    width: i32,
+    height: i32,
+}
+
+impl From<DbPluginImage> for PluginImage {
+    fn from(value: DbPluginImage) -> Self {
+        Self {
+            plugin_id: value.plugin_id as u64,
+            image_id: value.image_id,
+            created_at: value.created_at,
+            description: value.description,
+            position: value.position,
+            kind: value.kind.into(),
+            width: value.width as u32,
+            height: value.height as u32,
         }
     }
 }

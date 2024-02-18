@@ -1,10 +1,11 @@
-import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Paper, Stack, TextField, Typography } from "@mui/material";
 import { isErrorResponse, ScriptPlugin } from "botloader-common";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BlLink } from "../../../components/BLLink";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
 import { useSession } from "../../../modules/session/useSession";
+import { PluginIcon } from "../../../components/PluginIcon";
+import { Link } from "react-router-dom";
 
 let scriptsContext = createFetchDataContext<ScriptPlugin[]>();
 
@@ -16,7 +17,7 @@ export function UserScriptsPage() {
         return scripts;
     }
 
-    return <>
+    return <Box p={1}>
         <Typography variant="h4">New Script Plugin</Typography>
         <Paper sx={{ p: 1, mb: 2 }}>
             <NewPluginForm />
@@ -26,39 +27,35 @@ export function UserScriptsPage() {
         <FetchDataGuarded loader={fetchScripts} context={scriptsContext}>
             <ListScripts />
         </FetchDataGuarded>
-    </>
+    </Box>
 }
 
 function ListScripts() {
     let { value: scripts } = useFetchedDataBehindGuard(scriptsContext);
 
     return <Paper>
-        {scripts.map((v) => <ScriptItem script={v} key={v.id} />)}
-        {scripts.length === 0 ? <p>...</p> : null}
+        <List>
+            {scripts.map((v) => <ScriptItem script={v} key={v.id} />)}
+            {scripts.length === 0 ? <p>...</p> : null}
+        </List>
     </Paper>
+
 }
 
 
 function ScriptItem({ script }: {
     script: ScriptPlugin,
 }) {
-    // async function deleteConfirm() {
-    //     if (window.confirm("are you sure you want to delete this script?")) {
-    //         // await deleteScript(script.id);
-    //     }
-    // }
+    const manageUrl = `/user/plugins/${script.id}/`
 
-    return <Box sx={{
-        p: 1, display: "flex", alignItems: "center",
-    }}>
-        <Typography variant="body1" flexGrow={1}>{script.name}</Typography>
-        <Stack direction={"row"}>
-            <BlLink to={`/user/plugins/${script.id}/`}>
-                Manage
-            </BlLink>
-            {/* <AsyncOpButton label="delete" onClick={() => deleteConfirm()}></AsyncOpButton> */}
-        </Stack>
-    </Box >
+    return <ListItem disablePadding>
+        <ListItemButton component={Link} to={manageUrl} >
+            <ListItemIcon>
+                <PluginIcon size="sm" plugin={script} />
+            </ListItemIcon>
+            <ListItemText primary={script.name} secondary={script.short_description} />
+        </ListItemButton>
+    </ListItem >
 }
 
 function NewPluginForm() {

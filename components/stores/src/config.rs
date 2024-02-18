@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use common::{
-    plugin::{Plugin, PluginType},
+    plugin::{Image, Plugin, PluginImageKind, PluginType},
     user::UserMeta,
 };
 use serde::{Deserialize, Serialize};
@@ -12,6 +12,7 @@ use twilight_model::id::{
     marker::{ChannelMarker, GuildMarker, UserMarker},
     Id,
 };
+use uuid::Uuid;
 
 #[derive(Debug, Error)]
 pub enum ConfigStoreError {
@@ -32,6 +33,9 @@ pub enum ConfigStoreError {
 
     #[error("plugin is already on guild")]
     GuildAlreadyHasPlugin,
+
+    #[error("image not found: {0}/{1}")]
+    ImageNotFound(u64, Uuid),
 }
 
 pub type ConfigStoreResult<T> = Result<T, ConfigStoreError>;
@@ -137,14 +141,22 @@ pub trait ConfigStore: Send + Sync {
 
     async fn create_plugin(&self, create_plugin: CreatePlugin) -> ConfigStoreResult<Plugin>;
     async fn get_plugin(&self, plugin_id: u64) -> ConfigStoreResult<Plugin>;
+    async fn get_plugin_image(&self, plugin_id: u64, image_id: Uuid) -> ConfigStoreResult<Image>;
     async fn get_plugins(&self, plugin_ids: &[u64]) -> ConfigStoreResult<Vec<Plugin>>;
     async fn get_user_plugins(&self, user_id: u64) -> ConfigStoreResult<Vec<Plugin>>;
+
     async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>>;
     async fn update_plugin_meta(
         &self,
         plugin_id: u64,
         update_plugin: UpdatePluginMeta,
     ) -> ConfigStoreResult<Plugin>;
+    async fn upsert_plugin_image(
+        &self,
+        plugin_id: u64,
+        image: CreateUpdatePluginImage,
+    ) -> ConfigStoreResult<()>;
+    async fn delete_plugin_image(&self, plugin_id: u64, image_id: Uuid) -> ConfigStoreResult<()>;
     async fn update_script_plugin_dev_version(
         &self,
         plugin_id: u64,
@@ -164,6 +176,9 @@ pub trait ConfigStore: Send + Sync {
     ) -> ConfigStoreResult<Script>;
 
     async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<UserMeta>;
+
+    async fn create_image(&self, create: CreateImage) -> ConfigStoreResult<Uuid>;
+    async fn soft_delete_image(&self, id: Uuid) -> ConfigStoreResult<Uuid>;
 }
 
 /// Struct you get back from the store
@@ -314,6 +329,13 @@ pub struct CreatePlugin {
     pub kind: PluginType,
 }
 
+pub struct CreateUpdatePluginImage {
+    pub image_id: Uuid,
+    pub description: String,
+    pub position: i32,
+    pub kind: PluginImageKind,
+}
+
 pub struct UpdatePluginMeta {
     pub name: Option<String>,
     pub short_description: Option<String>,
@@ -322,4 +344,12 @@ pub struct UpdatePluginMeta {
     pub author_id: Option<u64>,
     pub is_public: Option<bool>,
     pub is_published: Option<bool>,
+}
+
+pub struct CreateImage {
+    pub user_id: u64,
+    pub plugin_id: u64,
+    pub width: u32,
+    pub height: u32,
+    pub bytes: Vec<u8>,
 }

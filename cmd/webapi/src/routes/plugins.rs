@@ -1,15 +1,28 @@
-use std::sync::Arc;
+use std::{io::Cursor, sync::Arc};
 
-use axum::{response::IntoResponse, Extension, Json};
-use common::{plugin::Plugin, DiscordConfig};
+use axum::{
+    extract::{Multipart, Path},
+    http::{header::CONTENT_TYPE, HeaderMap, HeaderValue, StatusCode},
+    response::IntoResponse,
+    Extension, Json,
+};
+use common::{
+    plugin::{Plugin, PluginImageKind},
+    DiscordConfig,
+};
+use image::{codecs::webp::WebPEncoder, io::Limits, GenericImageView, ImageError};
 use serde::{Deserialize, Serialize};
-use stores::config::{ConfigStore, ConfigStoreError, CreatePlugin, UpdatePluginMeta};
+use stores::config::{
+    ConfigStore, ConfigStoreError, CreateImage, CreatePlugin, CreateUpdatePluginImage,
+    UpdatePluginMeta,
+};
 use tracing::error;
 use twilight_http::api_error::{ApiError, GeneralApiError};
 use twilight_model::{
     id::{marker::UserMarker, Id},
     user::{CurrentUser, CurrentUserGuild},
 };
+use uuid::Uuid;
 use validation::{validate, ValidationContext, Validator};
 
 use crate::{
@@ -430,4 +443,211 @@ async fn fetch_discord_user(
             }
         },
     }
+}
+
+#[derive(Deserialize)]
+pub struct AddPluginImageFormData {
+    description: Option<String>,
+    kind: PluginImageKind,
+}
+
+pub async fn add_plugin_image(
+    Extension(plugin): Extension<Plugin>,
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    mut multipart: Multipart,
+) -> ApiResult<EmptyResponse> {
+    if plugin.author_id != session.session.user.id {
+        return Err(ApiErrorResponse::NoAccessToPlugin);
+    }
+
+    // let mut kind: Option<PluginImageKind> = None;
+    // let mut description: String = String::new();
+    let mut data: Option<Vec<u8>> = None;
+    let mut form: Option<AddPluginImageFormData> = None;
+
+    while let Some(field) = multipart.next_field().await? {
+        let Some(name) = field.name() else {
+            continue;
+        };
+
+        if name == "form" {
+            let text = field.text().await?;
+            let deserialized: AddPluginImageFormData =
+                serde_json::from_str(&text).map_err(ApiErrorResponse::MultipartFormJson)?;
+            form = Some(deserialized);
+        } else {
+            let field_data = field.bytes().await?;
+            data = Some(field_data.to_vec());
+        }
+    }
+
+    let Some(data) = data else {
+        return Err(ApiErrorResponse::MissingMultiPartFormField(
+            "image".to_string(),
+        ));
+    };
+
+    let Some(form) = form else {
+        return Err(ApiErrorResponse::MissingMultiPartFormField(
+            "form".to_string(),
+        ));
+    };
+
+    match form.kind {
+        PluginImageKind::Icon | PluginImageKind::Banner => {}
+        PluginImageKind::Showcase => {
+            let current_count = plugin
+                .images
+                .iter()
+                .filter(|v| matches!(v.kind, PluginImageKind::Showcase))
+                .count();
+
+            if current_count >= 5 {
+                return Err(ApiErrorResponse::MaxImagesReached);
+            }
+        }
+    }
+
+    // Transcode image to webp
+    // TODO: skip if the image is already webp
+    let buf = Cursor::new(&data);
+    let mut reader = image::io::Reader::new(buf);
+    let mut limits = Limits::default();
+    limits.max_image_width = Some(1920);
+    limits.max_image_height = Some(1080);
+    reader.limits(limits);
+    reader = reader.with_guessed_format().map_err(|err| {
+        tracing::warn!(%err, "failed guessing image format");
+        ApiErrorResponse::ImageNotSupported
+    })?;
+
+    let decoded = reader.decode().map_err(|err| match err {
+        ImageError::Limits(_) => ApiErrorResponse::ImageTooBig,
+        _ => {
+            tracing::warn!(%err, "failed decoding image");
+            ApiErrorResponse::ImageNotSupported
+        }
+    })?;
+
+    let (width, height) = decoded.dimensions();
+
+    let mut dst = Vec::new();
+    let encoder = WebPEncoder::new_lossless(&mut dst);
+    decoded.write_with_encoder(encoder).map_err(|err| {
+        tracing::error!(%err, "failed encoding image");
+        ApiErrorResponse::InternalError
+    })?;
+
+    let image_id = config_store
+        .create_image(CreateImage {
+            bytes: dst,
+            width,
+            height,
+            plugin_id: plugin.id,
+            user_id: session.session.user.id.get(),
+        })
+        .await
+        .map_err(|err| {
+            tracing::error!(%err, "failed saving image to db");
+            ApiErrorResponse::InternalError
+        })?;
+
+    config_store
+        .upsert_plugin_image(
+            plugin.id,
+            CreateUpdatePluginImage {
+                image_id,
+                description: form.description.unwrap_or_default(),
+                kind: form.kind,
+                position: 0,
+            },
+        )
+        .await
+        .map_err(|err| {
+            tracing::error!(%err, "failed setting plugin image");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(EmptyResponse)
+}
+
+#[derive(Deserialize)]
+pub struct ImageParam {
+    pub image_id: Uuid,
+}
+
+pub async fn delete_plugin_image(
+    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(plugin): Extension<Plugin>,
+    Path(ImageParam { image_id }): Path<ImageParam>,
+) -> ApiResult<EmptyResponse> {
+    if plugin.author_id != session.session.user.id {
+        return Err(ApiErrorResponse::NoAccessToPlugin);
+    }
+
+    config_store
+        .delete_plugin_image(plugin.id, image_id)
+        .await
+        .map_err(|err| {
+            tracing::error!(%err, "failed deleting plugin image");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(EmptyResponse)
+}
+
+#[derive(Deserialize)]
+pub struct PluginImagesParam {
+    pub plugin_id: u64,
+    pub image_id_specifier_with_extension: String,
+}
+
+// To be honest im not sure what the deal with this lint is,
+// from googling it it seems to have generated a lot of false positives in the past
+// considering its just a lint and not a compiler error its also safe to ignore.
+#[allow(clippy::declare_interior_mutable_const)]
+const WEBP_CONTENT_TYPE: HeaderValue = HeaderValue::from_static("image/webp");
+
+pub async fn get_plugin_image(
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Path(PluginImagesParam {
+        plugin_id,
+        image_id_specifier_with_extension,
+    }): Path<PluginImagesParam>,
+) -> ApiResult<(StatusCode, HeaderMap, Vec<u8>)> {
+    dbg!(&image_id_specifier_with_extension);
+
+    let Some(image_id_raw) = image_id_specifier_with_extension.strip_suffix(".webp") else {
+        return Err(ApiErrorResponse::ImageNotFound);
+    };
+
+    let Ok(image_id) = Uuid::parse_str(image_id_raw) else {
+        return Err(ApiErrorResponse::ImageNotFound);
+    };
+
+    let image = config_store
+        .get_plugin_image(plugin_id, image_id)
+        .await
+        .map_err(|err| match err {
+            ConfigStoreError::ImageNotFound(_, _) => ApiErrorResponse::ImageNotSupported,
+            other => {
+                tracing::error!(%other, "failed retrieving plugin image");
+                ApiErrorResponse::InternalError
+            }
+        })?;
+
+    let Some(image_bytes) = image.bytes else {
+        return Err(ApiErrorResponse::ImageNotFound);
+    };
+
+    if image.deleted_at.is_some() {
+        return Err(ApiErrorResponse::ImageNotFound);
+    }
+
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, WEBP_CONTENT_TYPE);
+
+    Ok((StatusCode::OK, headers, image_bytes))
 }

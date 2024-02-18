@@ -1,5 +1,6 @@
 use axum::{
     body::Body,
+    extract::multipart::MultipartError,
     http::{header, StatusCode},
     response::{IntoResponse, Response},
 };
@@ -43,6 +44,27 @@ pub enum ApiErrorResponse {
 
     #[error("You're not an botloader admin")]
     NotBlAdmin,
+
+    #[error("Bad multi-part form request: {0}")]
+    MultipartFormError(#[from] MultipartError),
+
+    #[error("Bad multi-part form json data: {0}")]
+    MultipartFormJson(serde_json::Error),
+
+    #[error("Bad multi-part form, missing field: {0}")]
+    MissingMultiPartFormField(String),
+
+    #[error("Uploaded image is too big")]
+    ImageTooBig,
+
+    #[error("Unsupported image")]
+    ImageNotSupported,
+
+    #[error("Could not find image")]
+    ImageNotFound,
+
+    #[error("Reached max images")]
+    MaxImagesReached,
 }
 
 impl ApiErrorResponse {
@@ -64,6 +86,13 @@ impl ApiErrorResponse {
             Self::GuildAlreadyHasPlugin => (StatusCode::BAD_REQUEST, 10, None),
             Self::ScriptNotAPlugin => (StatusCode::BAD_REQUEST, 11, None),
             Self::NotBlAdmin => (StatusCode::FORBIDDEN, 12, None),
+            Self::MultipartFormError(_) => (StatusCode::BAD_REQUEST, 13, None),
+            Self::MultipartFormJson(_) => (StatusCode::BAD_REQUEST, 14, None),
+            Self::MissingMultiPartFormField(_) => (StatusCode::BAD_REQUEST, 15, None),
+            Self::ImageTooBig => (StatusCode::BAD_REQUEST, 16, None),
+            Self::ImageNotSupported => (StatusCode::BAD_REQUEST, 17, None),
+            Self::ImageNotFound => (StatusCode::BAD_REQUEST, 18, None),
+            Self::MaxImagesReached => (StatusCode::BAD_REQUEST, 19, None),
         }
     }
 }

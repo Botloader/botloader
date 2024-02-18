@@ -28,6 +28,8 @@ tower-http = { version = "0.5.1", features = ["trace", "set-header"] }
 tower = "0.4"
 axum = { workspace = true }
 tonic = { workspace = true }
+uuid = { workspace = true }
+image = { version = "0.24.8", features = ["webp-encoder"] }
 
 tracing = { workspace = true }
 tracing-log = { workspace = true }

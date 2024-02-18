@@ -19,6 +19,7 @@ dotenv = "0.15"
 clap = { workspace = true }
 chrono = { workspace = true }
 oauth2 = "4.1"
+uuid = { workspace = true }
 
 metrics = { workspace = true }
 metrics-exporter-prometheus = "0.13"

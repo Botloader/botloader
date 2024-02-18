@@ -1,14 +1,18 @@
 use crate::config::{
-    ConfigStore, ConfigStoreError, ConfigStoreResult, CreatePlugin, CreateScript,
-    CreateUpdatePremiumSlotBySource, GuildMetaConfig, JoinedGuild, PremiumSlot, Script,
-    ScriptContributes, UpdatePluginMeta, UpdateScript,
+    ConfigStore, ConfigStoreError, ConfigStoreResult, CreateImage, CreatePlugin, CreateScript,
+    CreateUpdatePluginImage, CreateUpdatePremiumSlotBySource, GuildMetaConfig, JoinedGuild,
+    PremiumSlot, Script, ScriptContributes, UpdatePluginMeta, UpdateScript,
 };
 use async_trait::async_trait;
-use common::{plugin::Plugin, user::UserMeta};
+use common::{
+    plugin::{Image, Plugin},
+    user::UserMeta,
+};
 use twilight_model::id::{
     marker::{GuildMarker, UserMarker},
     Id,
 };
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct ReadOnlyConfigStore {
@@ -112,6 +116,14 @@ impl ConfigStore for ReadOnlyConfigStore {
         Ok(guild)
     }
 
+    async fn set_guild_left_status(
+        &self,
+        _guild_id: Id<GuildMarker>,
+        _left: bool,
+    ) -> ConfigStoreResult<JoinedGuild> {
+        todo!();
+    }
+
     async fn get_joined_guilds(
         &self,
         _ids: &[Id<GuildMarker>],
@@ -123,14 +135,6 @@ impl ConfigStore for ReadOnlyConfigStore {
         &self,
         _ids: &[Id<GuildMarker>],
     ) -> ConfigStoreResult<Vec<JoinedGuild>> {
-        todo!();
-    }
-
-    async fn set_guild_left_status(
-        &self,
-        _guild_id: Id<GuildMarker>,
-        _left: bool,
-    ) -> ConfigStoreResult<JoinedGuild> {
         todo!();
     }
 
@@ -179,6 +183,20 @@ impl ConfigStore for ReadOnlyConfigStore {
     async fn create_plugin(&self, _create_plugin: CreatePlugin) -> ConfigStoreResult<Plugin> {
         todo!()
     }
+    async fn get_plugin(&self, _plugin_id: u64) -> ConfigStoreResult<Plugin> {
+        todo!()
+    }
+    async fn get_plugins(&self, _plugin_ids: &[u64]) -> ConfigStoreResult<Vec<Plugin>> {
+        todo!()
+    }
+    async fn get_user_plugins(&self, _user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
+        todo!()
+    }
+
+    async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>> {
+        todo!()
+    }
+
     async fn update_plugin_meta(
         &self,
         _plugin_id: u64,
@@ -193,30 +211,12 @@ impl ConfigStore for ReadOnlyConfigStore {
     ) -> ConfigStoreResult<Plugin> {
         todo!()
     }
+
     async fn publish_script_plugin_version(
         &self,
         _plugin_id: u64,
         _new_source: String,
     ) -> ConfigStoreResult<Vec<Id<GuildMarker>>> {
-        todo!()
-    }
-
-    async fn get_user_meta(&self, _user_id: u64) -> ConfigStoreResult<UserMeta> {
-        todo!()
-    }
-
-    async fn get_plugin(&self, _plugin_id: u64) -> ConfigStoreResult<Plugin> {
-        todo!()
-    }
-    async fn get_plugins(&self, _plugin_ids: &[u64]) -> ConfigStoreResult<Vec<Plugin>> {
-        todo!()
-    }
-
-    async fn get_user_plugins(&self, _user_id: u64) -> ConfigStoreResult<Vec<Plugin>> {
-        todo!()
-    }
-
-    async fn get_published_public_plugins(&self) -> ConfigStoreResult<Vec<Plugin>> {
         todo!()
     }
 
@@ -226,6 +226,34 @@ impl ConfigStore for ReadOnlyConfigStore {
         _plugin_id: u64,
         _auto_update: bool,
     ) -> ConfigStoreResult<Script> {
+        todo!()
+    }
+
+    async fn get_user_meta(&self, _user_id: u64) -> ConfigStoreResult<UserMeta> {
+        todo!()
+    }
+
+    async fn get_plugin_image(&self, _plugin_id: u64, _image_id: Uuid) -> ConfigStoreResult<Image> {
+        todo!()
+    }
+
+    async fn create_image(&self, _create: CreateImage) -> ConfigStoreResult<Uuid> {
+        todo!()
+    }
+
+    async fn soft_delete_image(&self, _id: Uuid) -> ConfigStoreResult<Uuid> {
+        todo!()
+    }
+
+    async fn upsert_plugin_image(
+        &self,
+        _plugin_id: u64,
+        _image: CreateUpdatePluginImage,
+    ) -> ConfigStoreResult<()> {
+        todo!()
+    }
+
+    async fn delete_plugin_image(&self, _plugin_id: u64, _image_id: Uuid) -> ConfigStoreResult<()> {
         todo!()
     }
 }

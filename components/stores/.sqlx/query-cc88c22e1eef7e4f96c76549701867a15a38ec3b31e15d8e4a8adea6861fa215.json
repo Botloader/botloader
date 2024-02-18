@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO plugin_images (plugin_id, image_id, created_at, description, position, kind)\n            VALUES ($1, $2, now(), $3, $4, $5)\n            ON CONFLICT (plugin_id, image_id) DO UPDATE SET\n            description = $3;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Uuid",
+        "Text",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cc88c22e1eef7e4f96c76549701867a15a38ec3b31e15d8e4a8adea6861fa215"
+}

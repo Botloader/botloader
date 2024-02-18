@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use twilight_model::id::{marker::UserMarker, Id};
+use uuid::Uuid;
 
 #[derive(Serialize, Clone)]
 pub struct Plugin {
@@ -13,6 +14,8 @@ pub struct Plugin {
     pub is_public: bool,
     pub is_official: bool,
     pub current_version: u32,
+
+    pub images: Vec<PluginImage>,
 
     pub data: PluginData,
 }
@@ -41,6 +44,57 @@ pub struct ScriptPluginData {
     pub published_version_updated_at: Option<DateTime<Utc>>,
     pub dev_version: Option<String>,
     pub dev_version_updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub enum PluginImageKind {
+    Icon,
+    Banner,
+    Showcase,
+}
+
+impl From<i32> for PluginImageKind {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => PluginImageKind::Icon,
+            2 => PluginImageKind::Banner,
+            3 => PluginImageKind::Showcase,
+            _ => PluginImageKind::Showcase,
+        }
+    }
+}
+
+impl From<PluginImageKind> for i32 {
+    fn from(value: PluginImageKind) -> Self {
+        match value {
+            PluginImageKind::Icon => 1,
+            PluginImageKind::Banner => 2,
+            PluginImageKind::Showcase => 3,
+        }
+    }
+}
+
+#[derive(Serialize, Clone)]
+pub struct PluginImage {
+    pub plugin_id: u64,
+    pub image_id: Uuid,
+    pub created_at: DateTime<Utc>,
+    pub description: String,
+    pub position: i32,
+    pub kind: PluginImageKind,
+    pub width: u32,
+    pub height: u32,
+}
+
+pub struct Image {
+    pub id: Uuid,
+    pub uploaded_by: u64,
+    pub plugin_id: Option<u64>,
+    pub width: u32,
+    pub height: u32,
+    pub bytes: Option<Vec<u8>>,
+    pub created_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 // pub struct Version {

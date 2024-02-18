@@ -217,6 +217,16 @@ async fn main() {
                 post(routes::plugins::publish_plugin_version)
                     .layer(axum::middleware::from_fn(plugin_middleware)),
             )
+            .route(
+                "/user/plugins/:plugin_id/images",
+                post(routes::plugins::add_plugin_image)
+                    .layer(axum::middleware::from_fn(plugin_middleware)),
+            )
+            .route(
+                "/user/plugins/:plugin_id/images/:image_id",
+                delete(routes::plugins::delete_plugin_image)
+                    .layer(axum::middleware::from_fn(plugin_middleware)),
+            )
             .route("/logout", post(AuthHandlerData::handle_logout));
 
     let auth_routes_mw_stack = ServiceBuilder::new()
@@ -230,6 +240,10 @@ async fn main() {
     let public_routes = Router::new()
         .route("/error", get(routes::errortest::handle_errortest))
         .route("/login", get(AuthHandlerData::handle_login))
+        .route(
+            "/media/plugins/:plugin_id/images/*image_id_specifier_with_extension",
+            get(routes::plugins::get_plugin_image),
+        )
         .route(
             "/api/plugins",
             get(routes::plugins::get_published_public_plugins),

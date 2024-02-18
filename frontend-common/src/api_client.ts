@@ -1,6 +1,11 @@
 import { GuildMetaConfig } from ".";
 import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Plugin, Script, ScriptPlugin, ScriptsWithPlugins, SessionMeta, UpdateScript, User } from "./api_models";
 
+export type Body = {
+    body: any,
+    kind: "json" | "custom"
+}
+
 export class ApiClient {
     token?: string;
     base: string;
@@ -13,7 +18,7 @@ export class ApiClient {
         this.fetcher = fetcher;
     }
 
-    async do<T>(method: string, path: string, body?: any): Promise<ApiResult<T>> {
+    async do<T>(method: string, path: string, body?: Body): Promise<ApiResult<T>> {
         let base = this.base;
 
         let headers = {};
@@ -24,18 +29,21 @@ export class ApiClient {
             };
         }
 
-        if (body) {
+        let sendingBody = body?.body
+        if (body && body.kind === "json") {
             headers = {
                 "Content-Type": "application/json",
                 ...headers,
             };
+            sendingBody = JSON.stringify(body.body)
         }
 
         let response = await this.fetcher.fetch(base + path, {
             headers: headers,
             method: method,
-            body: body ? JSON.stringify(body) : undefined,
+            body: sendingBody,
         });
+
         console.log(`Response status for ${path}: ${response.status}`);
         if (response.status === 204) {
             return {} as ApiResult<T>;
@@ -53,19 +61,19 @@ export class ApiClient {
         return await this.do("GET", path);
     }
 
-    async post<T>(path: string, body?: any): Promise<ApiResult<T>> {
+    async post<T>(path: string, body?: Body): Promise<ApiResult<T>> {
         return await this.do("POST", path, body);
     }
 
-    async delete<T>(path: string, body?: any): Promise<ApiResult<T>> {
+    async delete<T>(path: string, body?: Body): Promise<ApiResult<T>> {
         return await this.do("DELETE", path, body);
     }
 
-    async put<T>(path: string, body?: any): Promise<ApiResult<T>> {
+    async put<T>(path: string, body?: Body): Promise<ApiResult<T>> {
         return await this.do("PUT", path, body);
     }
 
-    async patch<T>(path: string, body?: any): Promise<ApiResult<T>> {
+    async patch<T>(path: string, body?: Body): Promise<ApiResult<T>> {
         return await this.do("PATCH", path, body);
     }
 
@@ -87,7 +95,10 @@ export class ApiClient {
 
     async deleteSession(token: string): Promise<ApiResult<{}>> {
         return await this.delete("/api/sessions", {
-            token: token,
+            kind: "json",
+            body: {
+                token: token,
+            }
         });
     }
 
@@ -101,8 +112,11 @@ export class ApiClient {
 
     async confirmLogin(code: string, state: string): Promise<ApiResult<LoginResponse>> {
         return await this.post("/api/confirm_login", {
-            code: code,
-            state: state,
+            kind: "json",
+            body: {
+                code: code,
+                state: state,
+            }
         });
     }
 
@@ -110,7 +124,10 @@ export class ApiClient {
         return await this.get("/api/premium_slots");
     }
     async updatePremiumSlotGuild(slotId: string, guildId: string | null): Promise<ApiResult<PremiumSlot>> {
-        return await this.post(`/api/premium_slots/${slotId}/update_guild`, { guild_id: guildId });
+        return await this.post(`/api/premium_slots/${slotId}/update_guild`, {
+            kind: "json",
+            body: { guild_id: guildId }
+        });
     }
 
     async getAllScripts(guildId: string): Promise<ApiResult<Script[]>> {
@@ -122,11 +139,17 @@ export class ApiClient {
     }
 
     async createScript(guildId: string, data: CreateScript): Promise<ApiResult<Script>> {
-        return await this.put(`/api/guilds/${guildId}/scripts`, data);
+        return await this.put(`/api/guilds/${guildId}/scripts`, {
+            kind: "json",
+            body: data
+        });
     }
 
     async updateScript(guildId: string, id: number, data: UpdateScript): Promise<ApiResult<Script>> {
-        return await this.patch(`/api/guilds/${guildId}/scripts/${id}`, data);
+        return await this.patch(`/api/guilds/${guildId}/scripts/${id}`, {
+            kind: "json",
+            body: data
+        });
     }
 
     async delScript(guildId: string, id: number): Promise<ApiResult<EmptyResponse>> {
@@ -166,7 +189,10 @@ export class ApiClient {
         short_description?: string,
         long_description?: string,
     }): Promise<ApiResult<Plugin>> {
-        return await this.put(`/api/user/plugins`, params);
+        return await this.put(`/api/user/plugins`, {
+            kind: "json",
+            body: params
+        });
     }
 
     async updatePluginMeta(pluginId: number, params: {
@@ -175,14 +201,18 @@ export class ApiClient {
         long_description?: string,
         is_public?: boolean,
     }): Promise<ApiResult<Plugin>> {
-        return await this.patch(`/api/user/plugins/${pluginId}`, params);
+        return await this.patch(`/api/user/plugins/${pluginId}`, {
+            kind: "json",
+            body: params
+        });
     }
 
     async updateScriptPluginDevVersion(pluginId: number, params: {
         source: string,
     }): Promise<ApiResult<ScriptPlugin>> {
         return await this.patch(`/api/user/plugins/${pluginId}/dev_version`, {
-            new_source: params.source
+            kind: "json",
+            body: { new_source: params.source }
         });
     }
 
@@ -190,7 +220,8 @@ export class ApiClient {
         source: string,
     }): Promise<ApiResult<{}>> {
         return await this.post(`/api/user/plugins/${pluginId}/publish_script_version`, {
-            new_source: params.source
+            kind: "json",
+            body: { new_source: params.source }
         });
     }
 
@@ -198,13 +229,28 @@ export class ApiClient {
         auto_update: boolean,
     }): Promise<ApiResult<ScriptPlugin>> {
         return await this.post(`/api/guilds/${guildId}/add_plugin`, {
-            plugin_id: pluginId,
-            auto_update: params.auto_update,
+            kind: "json",
+            body: {
+                plugin_id: pluginId,
+                auto_update: params.auto_update,
+            }
         });
     }
 
     async updateScriptPlugin(guildId: string, scriptId: number): Promise<ApiResult<ScriptPlugin>> {
         return await this.post(`/api/guilds/${guildId}/scripts/${scriptId}/update_plugin`);
+    }
+
+    // data should be a FormData, but this wrapper don't have DOM libs
+    async addPluginImage(pluginId: number, data: any) {
+        return await this.post(`/api/user/plugins/${pluginId}/images`, {
+            kind: "custom",
+            body: data
+        })
+    }
+
+    async deletePluginImage(pluginId: number, imageId: string) {
+        return await this.delete(`/api/user/plugins/${pluginId}/images/${imageId}`)
     }
 }
 
