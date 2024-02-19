@@ -337,7 +337,7 @@ impl Worker {
         let rt_ctx = CreateRuntimeContext {
             bot_state: self.broker_client.clone(),
             discord_config: self.discord_config.clone(),
-            guild_id: req.guild_id,
+            guild_id: Some(req.guild_id),
             guild_logger: self.guild_logger.with_guild(req.guild_id),
             script_http_client_proxy: self.user_http_proxy.clone(),
             premium_tier: self.premium_tier.clone(),

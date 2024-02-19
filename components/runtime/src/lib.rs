@@ -25,15 +25,98 @@ pub mod extensions;
 pub mod jsmodules;
 pub mod limits;
 
+pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
+    let mut http_client_builder: reqwest::ClientBuilder = reqwest::ClientBuilder::new();
+    if let Some(proxy_addr) = &ctx.script_http_client_proxy {
+        info!("using http client proxy: {}", proxy_addr);
+        let proxy = reqwest::Proxy::all(proxy_addr).expect("valid http proxy address");
+        http_client_builder = http_client_builder.proxy(proxy);
+    } else {
+        #[cfg(not(debug_assertions))]
+        tracing::warn!("no proxy set in release!");
+    }
+
+    let http_client = http_client_builder.build().expect("valid http client");
+    let premium_tier = *ctx.premium_tier.read().unwrap();
+    let core_ctx = CoreRuntimeContext {
+        event_tx: ctx.event_tx.clone(),
+    };
+
+    if let Some(guild_id) = ctx.guild_id {
+        let rt_ctx = RuntimeContext {
+            guild_id,
+            bot_state: ctx.bot_state.clone(),
+            discord_config: ctx.discord_config.clone(),
+            guild_logger: ctx.guild_logger.clone(),
+            script_http_client_proxy: ctx.script_http_client_proxy.clone(),
+            event_tx: ctx.event_tx.clone(),
+            premium_tier,
+
+            bucket_store: ctx.bucket_store.clone(),
+            config_store: ctx.config_store.clone(),
+            timer_store: ctx.timer_store.clone(),
+        };
+
+        vec![
+            bl_script_core::init_ops_and_esm(core_ctx, rt_ctx, http_client, premium_tier),
+            extensions::storage::bl_storage::init_ops_and_esm(),
+            extensions::discord::bl_discord::init_ops_and_esm(),
+            extensions::console::bl_console::init_ops_and_esm(),
+            extensions::httpclient::bl_http::init_ops_and_esm(),
+            extensions::tasks::bl_tasks::init_ops_and_esm(),
+        ]
+    } else {
+        vec![
+            bl_script_core_no_guild::init_ops_and_esm(core_ctx, http_client, premium_tier),
+            extensions::storage::bl_storage::init_ops_and_esm(),
+            extensions::discord::bl_discord::init_ops_and_esm(),
+            extensions::console::bl_console::init_ops_and_esm(),
+            extensions::httpclient::bl_http::init_ops_and_esm(),
+            extensions::tasks::bl_tasks::init_ops_and_esm(),
+        ]
+    }
+}
+
 deno_core::extension!(
     bl_script_core,
     ops = [
         op_botloader_script_start,
         op_get_current_bot_user,
         op_get_current_guild_id,
+        op_get_run_mode,
     ],
     options = {
-        ctx: RuntimeContext,
+        ctx: CoreRuntimeContext,
+        rt_ctx: RuntimeContext,
+        http_client: reqwest::Client,
+        premium_tier: Option<PremiumSlotTier>,
+    },
+    middleware = |op_decl|match op_decl.name {
+        // we have our own custom print function
+        "op_print" => disabled_op::DECL,
+        "op_wasm_streaming_feed" => disabled_op::DECL,
+        "op_wasm_streaming_set_url" => disabled_op::DECL,
+        _ => op_decl,
+    },
+    state = |state, options| {
+        state.put(options.ctx);
+        state.put(options.rt_ctx);
+        state.put(options.http_client);
+        state.put(Rc::new(RateLimiters::new(options.premium_tier)));
+    },
+
+);
+
+deno_core::extension!(
+    bl_script_core_no_guild,
+    ops = [
+        op_botloader_script_start,
+        op_get_current_bot_user,
+        op_get_current_guild_id,
+        op_get_run_mode,
+    ],
+    options = {
+        ctx: CoreRuntimeContext,
         http_client: reqwest::Client,
         premium_tier: Option<PremiumSlotTier>,
     },
@@ -48,114 +131,9 @@ deno_core::extension!(
         state.put(options.ctx);
         state.put(options.http_client);
         state.put(Rc::new(RateLimiters::new(options.premium_tier)));
-
-        // state.put(StorageState {
-        //     doing_limit_check: false,
-        //     hit_limit: false,
-        //     requests_until_limit_check: 0,
-        // });
-        // state.put::<Options>(options.options);
     },
 
 );
-
-pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
-    let mut http_client_builder = reqwest::ClientBuilder::new();
-    if let Some(proxy_addr) = &ctx.script_http_client_proxy {
-        info!("using http client proxy: {}", proxy_addr);
-        let proxy = reqwest::Proxy::all(proxy_addr).expect("valid http proxy address");
-        http_client_builder = http_client_builder.proxy(proxy);
-    } else {
-        #[cfg(not(debug_assertions))]
-        tracing::warn!("no proxy set in release!");
-    }
-
-    let http_client = http_client_builder.build().expect("valid http client");
-    let premium_tier = *ctx.premium_tier.read().unwrap();
-
-    let rt_ctx = RuntimeContext {
-        guild_id: ctx.guild_id,
-        bot_state: ctx.bot_state.clone(),
-        discord_config: ctx.discord_config.clone(),
-        guild_logger: ctx.guild_logger.clone(),
-        script_http_client_proxy: ctx.script_http_client_proxy.clone(),
-        event_tx: ctx.event_tx.clone(),
-        premium_tier,
-
-        bucket_store: ctx.bucket_store.clone(),
-        config_store: ctx.config_store.clone(),
-        timer_store: ctx.timer_store.clone(),
-    };
-
-    vec![
-        bl_script_core::init_ops_and_esm(rt_ctx, http_client, premium_tier),
-        extensions::storage::bl_storage::init_ops_and_esm(),
-        extensions::discord::bl_discord::init_ops_and_esm(),
-        extensions::console::bl_console::init_ops_and_esm(),
-        extensions::httpclient::bl_http::init_ops_and_esm(),
-        extensions::tasks::bl_tasks::init_ops_and_esm(),
-    ]
-}
-
-// pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
-//     let mut http_client_builder = reqwest::ClientBuilder::new();
-//     if let Some(proxy_addr) = &ctx.script_http_client_proxy {
-//         info!("using http client proxy: {}", proxy_addr);
-//         let proxy = reqwest::Proxy::all(proxy_addr).expect("valid http proxy address");
-//         http_client_builder = http_client_builder.proxy(proxy);
-//     } else {
-//         #[cfg(not(debug_assertions))]
-//         tracing::warn!("no proxy set in release!");
-//     }
-//     let http_client = http_client_builder.build().expect("valid http client");
-
-//     let core_extension = Extension::builder("bl_script_core")
-//         .ops(vec![
-//             // botloader stuff
-//             op_botloader_script_start::decl(),
-//             op_get_current_bot_user::decl(),
-//             op_get_current_guild_id::decl(),
-//         ])
-//         .state(move |state| {
-//             let premium_tier = *ctx.premium_tier.read().unwrap();
-
-//             state.put(RuntimeContext {
-//                 guild_id: ctx.guild_id,
-//                 bot_state: ctx.bot_state.clone(),
-//                 discord_config: ctx.discord_config.clone(),
-//                 guild_logger: ctx.guild_logger.clone(),
-//                 script_http_client_proxy: ctx.script_http_client_proxy.clone(),
-//                 event_tx: ctx.event_tx.clone(),
-//                 premium_tier,
-
-//                 bucket_store: ctx.bucket_store.clone(),
-//                 config_store: ctx.config_store.clone(),
-//                 timer_store: ctx.timer_store.clone(),
-//             });
-//             state.put(http_client.clone());
-
-//             state.put(Rc::new(RateLimiters::new(premium_tier)));
-
-//             Ok(())
-//         })
-//         .middleware(|deno_op| match deno_op.name {
-//             // we have our own custom print function
-//             "op_print" => disabled_op::decl(),
-//             "op_wasm_streaming_feed" => disabled_op::decl(),
-//             "op_wasm_streaming_set_url" => disabled_op::decl(),
-//             _ => deno_op,
-//         })
-//         .build();
-
-//     vec![
-//         core_extension,
-//         extensions::storage::extension(),
-//         extensions::discord::extension(),
-//         extensions::console::extension(),
-//         extensions::httpclient::extension(),
-//         extensions::tasks::extension(),
-//     ]
-// }
 
 pub fn in_mem_source_load_fn(src: &'static str) -> Box<dyn Fn() -> Result<String, AnyError>> {
     Box::new(move || Ok(src.to_string()))
@@ -164,6 +142,11 @@ pub fn in_mem_source_load_fn(src: &'static str) -> Box<dyn Fn() -> Result<String
 #[op2(fast)]
 pub fn disabled_op() -> Result<(), AnyError> {
     Err(anyhow::anyhow!("this op is disabled"))
+}
+
+#[derive(Clone)]
+pub struct CoreRuntimeContext {
+    pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
 }
 
 #[derive(Clone)]
@@ -183,7 +166,7 @@ pub struct RuntimeContext {
 
 #[derive(Clone)]
 pub struct CreateRuntimeContext {
-    pub guild_id: Id<GuildMarker>,
+    pub guild_id: Option<Id<GuildMarker>>,
     pub bot_state: dbrokerapi::state_client::Client,
     pub discord_config: Arc<DiscordConfig>,
     pub guild_logger: GuildLogSender,
@@ -210,6 +193,16 @@ pub fn op_get_current_bot_user(
 pub fn op_get_current_guild_id(state: &mut OpState) -> Result<String, AnyError> {
     let ctx = state.borrow::<RuntimeContext>();
     Ok(ctx.guild_id.to_string())
+}
+
+#[op2]
+#[string]
+pub fn op_get_run_mode(state: &mut OpState) -> String {
+    if state.has::<RuntimeContext>() {
+        "normal".to_string()
+    } else {
+        "validation".to_string()
+    }
 }
 
 #[op2]
