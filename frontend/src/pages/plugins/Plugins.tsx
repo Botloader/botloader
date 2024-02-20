@@ -1,12 +1,12 @@
 import {
     Alert,
     Avatar,
-    Card,
-    CardActions,
+    Box,
     CardContent,
     CardHeader,
     CardMedia,
     Container,
+    Paper,
     Typography
 } from "@mui/material";
 import { Stack } from "@mui/system";
@@ -36,7 +36,7 @@ export function ViewPlugins() {
 function InnerPage() {
     const { value: plugins } = useFetchedDataBehindGuard(context);
 
-    return <Grid2 container spacing={1} mt={1}>
+    return <Grid2 container spacing={1} mt={1} justifyContent={"center"}>
         {plugins.map((v) => (
             <Grid2 key={v.id}>
                 <PluginItem plugin={v} />
@@ -48,8 +48,15 @@ function InnerPage() {
 function PluginItem({ plugin }: { plugin: Plugin }) {
     const bannerImage = plugin.images.find(v => v.kind === "Banner")
 
-    return <Card
-        sx={{ minWidth: 345, maxWidth: 345 }}
+    return <Paper
+        sx={{
+            maxHeight: 400,
+            minWidth: 345,
+            maxWidth: 345,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between"
+        }}
     >
         <CardHeader
             avatar={
@@ -57,14 +64,14 @@ function PluginItem({ plugin }: { plugin: Plugin }) {
             }
             title={plugin.name}
             titleTypographyProps={{
-                variant: "h4",
+                variant: "h5",
             }}
             subheader={<>{plugin.author
                 ? <Stack mt={1} direction={"row"} alignItems={"center"} gap={1}>
                     <Avatar
                         alt={plugin.author.username}
                         src={userAvatarUrl(plugin.author, 64)}
-                        sx={{ width: 24, height: 24 }}
+                        sx={{ width: 32, height: 32 }}
                     />
                     {plugin.author.username}
                 </Stack>
@@ -73,21 +80,32 @@ function PluginItem({ plugin }: { plugin: Plugin }) {
         />
         {bannerImage && <CardMedia
             component="img"
-            height="194"
             image={pluginImageUrl(plugin.id, bannerImage.image_id)}
             alt={plugin.name + " banner"}
+            sx={{
+                minHeight: 10,
+                flexShrink: 1,
+            }}
         />}
+
         <CardContent>
-            <Typography mb={1} variant="body2" color="text.secondary">
+            <Typography mb={1} color="text.secondary">
                 {plugin.short_description}
             </Typography>
-            {plugin.author?.is_bl_staff
-                ? <Alert severity="success">Official plugin</Alert>
-                : <Alert severity="info">Community Plugin</Alert>}
-
         </CardContent>
-        <CardActions sx={{ justifyContent: "center" }} >
+
+        <Stack direction={"row"} alignItems={"center"} justifyContent={"space-between"} padding={1}>
+            {/* <CardContent> */}
+            <Box flexGrow={1} marginRight={1}>
+                {plugin.author?.is_bl_staff
+                    ? <Alert severity="success">Official plugin</Alert>
+                    : <Alert severity="info">Community Plugin</Alert>}
+            </Box>
+
+            {/* </CardContent> */}
+            {/* <CardActions sx={{ justifyContent: "center" }} > */}
             <BlLink variant="contained" to={`/plugins/${plugin.id}`}>Open</BlLink>
-        </CardActions>
-    </Card>
+            {/* </CardActions> */}
+        </Stack>
+    </Paper>
 }

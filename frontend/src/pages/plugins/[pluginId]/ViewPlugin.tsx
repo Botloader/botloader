@@ -63,7 +63,7 @@ export function ViewPlugin() {
                 <Divider />
                 {showcaseImages.length > 0
                     ? <>
-                        <Typography>Showcase images</Typography>
+                        <Typography marginTop={2} marginBottom={2} variant="h5">Showcase images</Typography>
                         {showcaseImages.map(v => (
                             <img
                                 key={v.image_id}
