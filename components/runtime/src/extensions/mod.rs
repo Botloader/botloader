@@ -12,7 +12,7 @@ use vm::AnyError;
 
 use crate::RuntimeContext;
 
-use self::discord::{handle_discord_error, not_found_error};
+use self::discord::{discord_request, not_found_error};
 
 pub mod console;
 pub mod discord;
@@ -55,14 +55,14 @@ pub(crate) async fn get_guild_channel(
             }
         }
         None => {
-            let channel = rt_ctx
-                .discord_config
-                .client
-                .channel(channel_id)
-                .await
-                .map_err(|err| handle_discord_error(state, err))?
-                .model()
-                .await?;
+            let cloned_discord = rt_ctx.discord_config.clone();
+
+            let channel = discord_request(state, async move {
+                cloned_discord.client.channel(channel_id).await
+            })
+            .await?
+            .model()
+            .await?;
 
             if matches!(channel.guild_id, Some(guild_id) if guild_id == rt_ctx.guild_id) {
                 Ok(channel)

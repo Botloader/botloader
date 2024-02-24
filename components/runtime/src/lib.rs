@@ -51,6 +51,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             script_http_client_proxy: ctx.script_http_client_proxy.clone(),
             event_tx: ctx.event_tx.clone(),
             premium_tier,
+            main_tokio_runtime: ctx.main_tokio_runtime,
 
             bucket_store: ctx.bucket_store.clone(),
             config_store: ctx.config_store.clone(),
@@ -158,6 +159,7 @@ pub struct RuntimeContext {
     pub script_http_client_proxy: Option<String>,
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
     pub premium_tier: Option<PremiumSlotTier>,
+    pub main_tokio_runtime: tokio::runtime::Handle,
 
     pub bucket_store: Arc<dyn BucketStore>,
     pub config_store: Arc<dyn ConfigStore>,
@@ -173,6 +175,7 @@ pub struct CreateRuntimeContext {
     pub script_http_client_proxy: Option<String>,
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
     pub premium_tier: Arc<RwLock<Option<PremiumSlotTier>>>,
+    pub main_tokio_runtime: tokio::runtime::Handle,
 
     pub bucket_store: Arc<dyn BucketStore>,
     pub config_store: Arc<dyn ConfigStore>,

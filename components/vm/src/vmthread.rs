@@ -59,6 +59,8 @@ pub async fn spawn_vm_thread<F: FnOnce() -> tracing::Span + Send + Sync + 'stati
             }
             .instrument(span),
         );
+
+        rt.shutdown_timeout(tokio::time::Duration::from_secs(60));
     });
 
     let shutdown_handle = vm_created_recv.await.unwrap();
