@@ -23,8 +23,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("worker starting");
 
+    #[cfg(target_family = "unix")] 
     let (scheduler_tx, scheduler_rx) =
         connect_scheduler("/tmp/botloader_scheduler_workers", config.worker_id).await;
+
+    #[cfg(target_family = "windows")] 
+    let (scheduler_tx, scheduler_rx) =
+        connect_scheduler("localhost:7885", config.worker_id).await;
 
     metrics::set_global_recorder(metrics_forwarder::MetricsForwarder {
         tx: scheduler_tx.clone(),
@@ -413,15 +418,53 @@ impl guild_logger::GuildLoggerBackend for GuildLogForwarder {
         let _ = self.tx.send(WorkerMessage::GuildLog(entry));
     }
 }
-
+  
+#[cfg(target_family = "unix")] 
 async fn connect_scheduler(
     path: &str,
     id: u64,
 ) -> (
     mpsc::UnboundedSender<WorkerMessage>,
     mpsc::UnboundedReceiver<SchedulerMessage>,
-) {
+) { 
     let mut stream = tokio::net::UnixStream::connect(path)
+        .await
+        .expect("scheduler should have opened socket");
+
+    simpleproto::write_message(&WorkerMessage::Hello(id), &mut stream)
+        .await
+        .expect("should write to scheduler successfully");
+
+    let (mut reader_half, mut writer_half) = stream.into_split();
+
+    let scheduler_rx = {
+        let (tx, rx) = mpsc::unbounded_channel::<SchedulerMessage>();
+
+        tokio::spawn(async move { simpleproto::message_reader(&mut reader_half, tx).await });
+        rx
+    };
+
+    let scheduler_tx = {
+        let (tx, rx) = mpsc::unbounded_channel::<WorkerMessage>();
+        tokio::spawn(async move { simpleproto::message_writer(&mut writer_half, rx).await });
+
+        tx
+    };
+
+    (scheduler_tx, scheduler_rx)
+}
+
+
+  
+#[cfg(target_family = "windows")] 
+async fn connect_scheduler(
+    addr: &str,
+    id: u64,
+) -> (
+    mpsc::UnboundedSender<WorkerMessage>,
+    mpsc::UnboundedReceiver<SchedulerMessage>,
+) { 
+    let mut stream = tokio::net::TcpStream::connect(addr)
         .await
         .expect("scheduler should have opened socket");
 

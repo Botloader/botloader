@@ -83,7 +83,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let worker_pool = vmworkerpool::VmWorkerPool::new(WorkerLaunchConfig {
         cmd: config.vmworker_bin_path,
     });
-    worker_listener::listen_for_workers("/tmp/botloader_scheduler_workers", worker_pool.clone());
+
+    #[cfg(target_family = "unix")]
+    worker_listener::listen_for_workers("/tmp/botloader_scheduler_workers", worker_pool.clone())
+        .await;
+
+    #[cfg(target_family = "windows")]
+    worker_listener::listen_for_workers("localhost:7885", worker_pool.clone()).await;
+
     tokio::time::sleep(Duration::from_secs(1)).await;
     info!(
         "spawning {},{},{}, free, lite, premium workers",
