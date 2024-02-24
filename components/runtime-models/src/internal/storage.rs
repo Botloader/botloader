@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use stores::bucketstore::{self, SetCondition};
+// use stores::bucketstore::{self, SetCondition};
 use ts_rs::TS;
 
 use crate::util::{NotBigU64, PluginId};
@@ -19,24 +19,6 @@ pub struct OpStorageBucket {
 pub enum OpStorageBucketValue {
     Json(#[ts(type = "any")] serde_json::Value),
     Double(f64),
-}
-
-impl From<bucketstore::StoreValue> for OpStorageBucketValue {
-    fn from(v: bucketstore::StoreValue) -> Self {
-        match v {
-            bucketstore::StoreValue::Json(s) => Self::Json(s),
-            bucketstore::StoreValue::Float(f) => Self::Double(f),
-        }
-    }
-}
-
-impl From<OpStorageBucketValue> for bucketstore::StoreValue {
-    fn from(v: OpStorageBucketValue) -> Self {
-        match v {
-            OpStorageBucketValue::Json(s) => Self::Json(s),
-            OpStorageBucketValue::Double(f) => Self::Float(f),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -108,14 +90,14 @@ pub enum OpStorageBucketListOrder {
     Descending,
 }
 
-impl From<OpStorageBucketListOrder> for bucketstore::SortedOrder {
-    fn from(v: OpStorageBucketListOrder) -> Self {
-        match v {
-            OpStorageBucketListOrder::Ascending => Self::Ascending,
-            OpStorageBucketListOrder::Descending => Self::Descending,
-        }
-    }
-}
+// impl From<OpStorageBucketListOrder> for bucketstore::SortedOrder {
+//     fn from(v: OpStorageBucketListOrder) -> Self {
+//         match v {
+//             OpStorageBucketListOrder::Ascending => Self::Ascending,
+//             OpStorageBucketListOrder::Descending => Self::Descending,
+//         }
+//     }
+// }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -153,23 +135,11 @@ pub struct OpStorageBucketIncr {
 #[ts(export_to = "bindings/internal/StorageBucketEntry.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct OpStorageBucketEntry {
-    plugin_id: Option<PluginId>,
-    bucket_name: String,
-    key: String,
-    value: OpStorageBucketValue,
-    expires_at: Option<NotBigU64>,
-}
-
-impl From<bucketstore::Entry> for OpStorageBucketEntry {
-    fn from(v: bucketstore::Entry) -> Self {
-        Self {
-            plugin_id: v.plugin_id.map(PluginId),
-            bucket_name: v.bucket,
-            key: v.key,
-            value: v.value.into(),
-            expires_at: v.expires_at.map(|e| NotBigU64(e.timestamp_millis() as u64)),
-        }
-    }
+    pub plugin_id: Option<PluginId>,
+    pub bucket_name: String,
+    pub key: String,
+    pub value: OpStorageBucketValue,
+    pub expires_at: Option<NotBigU64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -178,13 +148,4 @@ impl From<bucketstore::Entry> for OpStorageBucketEntry {
 pub enum OpStorageBucketSetCondition {
     IfExists,
     IfNotExists,
-}
-
-impl From<OpStorageBucketSetCondition> for SetCondition {
-    fn from(v: OpStorageBucketSetCondition) -> Self {
-        match v {
-            OpStorageBucketSetCondition::IfExists => Self::IfExists,
-            OpStorageBucketSetCondition::IfNotExists => Self::IfNotExists,
-        }
-    }
 }

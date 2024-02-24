@@ -6,6 +6,7 @@ use common::{
     plugin::{Image, Plugin, PluginImageKind, PluginType},
     user::UserMeta,
 };
+use runtime_models::internal::script::{SettingsOptionDefinition, SettingsOptionValue};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use twilight_model::id::{
@@ -36,6 +37,18 @@ pub enum ConfigStoreError {
 
     #[error("image not found: {0}/{1}")]
     ImageNotFound(u64, Uuid),
+}
+
+impl ConfigStoreError {
+    pub fn is_not_found(&self) -> bool {
+        matches!(
+            self,
+            Self::ScriptNotFound
+                | Self::LinkNotFound
+                | Self::PluginNotFound(_)
+                | Self::ImageNotFound(_, _)
+        )
+    }
 }
 
 pub type ConfigStoreResult<T> = Result<T, ConfigStoreError>;
@@ -192,6 +205,8 @@ pub struct Script {
     pub plugin_id: Option<u64>,
     pub plugin_auto_update: Option<bool>,
     pub plugin_version_number: Option<u32>,
+    pub settings_definitions: Option<Vec<SettingsOptionDefinition>>,
+    pub settings_values: Vec<SettingsOptionValue>,
 }
 
 /// Struct you get back from the store
@@ -203,6 +218,8 @@ pub struct UpdateScript {
     pub enabled: Option<bool>,
     pub contributes: Option<ScriptContributes>,
     pub plugin_version_number: Option<u32>,
+    pub settings_definitions: Option<Vec<SettingsOptionDefinition>>,
+    pub settings_values: Option<Vec<SettingsOptionValue>>,
 }
 
 /// Struct used when creating a script

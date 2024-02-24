@@ -17,10 +17,13 @@ impl Display for ValidationError {
     }
 }
 
-pub fn validate<T: Validator>(val: &T) -> Result<(), Vec<ValidationError>> {
+pub fn validate<T: Validator>(
+    val: &T,
+    ctx_data: &T::ContextData,
+) -> Result<(), Vec<ValidationError>> {
     let mut ctx = ValidationContext::new();
 
-    val.validate(&mut ctx);
+    val.validate(&mut ctx, ctx_data);
     if ctx.errs.is_empty() {
         Ok(())
     } else {
@@ -49,20 +52,36 @@ impl Default for ValidationContext {
 }
 
 impl ValidationContext {
-    fn push_error(&mut self, field: &str, msg: String) {
+    fn push_field_error(&mut self, field: &str, msg: impl Into<String>) {
         let mut prefix = self.field_stack.join(".");
         if !prefix.is_empty() {
             prefix.push('.');
         }
 
         self.errs.push(ValidationError {
-            field: field.to_string(),
-            msg: format!("{prefix}{msg}"),
+            field: format!("{prefix}{field}"),
+            msg: msg.into(),
         });
     }
 
-    pub fn push_field(&mut self, field: String) {
-        self.field_stack.push(field);
+    fn push_error(&mut self, msg: impl Into<String>) {
+        let mut fields = self.field_stack.join(".");
+        if !fields.is_empty() {
+            fields.push('.');
+        }
+
+        self.errs.push(ValidationError {
+            field: fields,
+            msg: msg.into(),
+        });
+    }
+
+    pub fn push_field(&mut self, field: impl Into<String>) {
+        self.field_stack.push(field.into());
+    }
+
+    pub fn push_index(&mut self, index: usize) {
+        self.push_field(index.to_string())
     }
 
     pub fn pop_field(&mut self) {
@@ -71,5 +90,7 @@ impl ValidationContext {
 }
 
 pub trait Validator {
-    fn validate(&self, ctx: &mut ValidationContext);
+    type ContextData;
+
+    fn validate(&self, ctx: &mut ValidationContext, context_data: &Self::ContextData);
 }

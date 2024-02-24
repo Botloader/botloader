@@ -4,6 +4,7 @@ use axum::{
     Json,
 };
 use common::plugin::Plugin;
+use runtime_models::internal::script::SettingsOptionValue;
 use serde::{Deserialize, Serialize};
 use stores::config::{ConfigStore, CreateScript, Script, UpdateScript};
 use tracing::error;
@@ -93,7 +94,7 @@ pub async fn create_guild_script(
         plugin_version_number: None,
     };
 
-    if let Err(verr) = validate(&cs) {
+    if let Err(verr) = validate(&cs, &()) {
         return Err(ApiErrorResponse::ValidationFailed(verr));
     }
 
@@ -127,6 +128,8 @@ pub struct UpdateRequestData {
     pub original_source: Option<String>,
     #[serde(default)]
     pub enabled: Option<bool>,
+    #[serde(default)]
+    pub settings_values: Option<Vec<SettingsOptionValue>>,
 }
 
 pub async fn update_guild_script(
@@ -135,6 +138,18 @@ pub async fn update_guild_script(
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
     Json(payload): Json<UpdateRequestData>,
 ) -> ApiResult<impl IntoResponse> {
+    let current_script = config_store
+        .get_script_by_id(current_guild.id, script_id)
+        .await
+        .map_err(|err| {
+            if (err.is_not_found()) {
+                ApiErrorResponse::ScriptNotFound
+            } else {
+                error!(%err, "failed fetching script");
+                ApiErrorResponse::InternalError
+            }
+        })?;
+
     let sc = UpdateScript {
         id: script_id,
         enabled: payload.enabled,
@@ -142,9 +157,11 @@ pub async fn update_guild_script(
         name: payload.name,
         contributes: None,
         plugin_version_number: None,
+        settings_definitions: None,
+        settings_values: payload.settings_values,
     };
 
-    if let Err(verr) = validate(&sc) {
+    if let Err(verr) = validate(&sc, &current_script) {
         return Err(ApiErrorResponse::ValidationFailed(verr));
     }
 
@@ -222,6 +239,8 @@ pub async fn update_script_plugin(
         name: None,
         contributes: None,
         plugin_version_number: Some(plugin.current_version),
+        settings_definitions: None,
+        settings_values: None,
     };
 
     let script = config_store

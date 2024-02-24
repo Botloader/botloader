@@ -3807,7 +3807,6 @@ dependencies = [
  "dbrokerapi",
  "serde",
  "serde_json",
- "stores",
  "tracing",
  "ts-rs",
  "twilight-cache-inmemory",
@@ -4643,6 +4642,7 @@ dependencies = [
  "dashmap",
  "oauth2",
  "rand",
+ "runtime-models",
  "serde",
  "serde_json",
  "sqlx",
@@ -6598,6 +6598,7 @@ dependencies = [
  "regex",
  "runtime-models",
  "serde",
+ "serde_json",
  "stores",
 ]
 
@@ -6810,6 +6811,7 @@ dependencies = [
  "guild-logger",
  "image",
  "oauth2",
+ "runtime-models",
  "serde",
  "serde_json",
  "stores",

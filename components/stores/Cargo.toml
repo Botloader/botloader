@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 common = { path = "../../components/common" }
+runtime-models = { path = "../../components/runtime-models" }
 
 twilight-model = { workspace = true }
 anyhow = { workspace = true }

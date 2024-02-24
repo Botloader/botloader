@@ -1,4 +1,8 @@
 use chrono::{DateTime, Utc};
+use runtime_models::{
+    internal::{script::TaskBucketId, tasks::GetGuildTasksFilter},
+    util::{NotBigU64, PluginId},
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use twilight_model::id::{marker::GuildMarker, Id};
@@ -11,16 +15,35 @@ pub enum TimerStoreError {
 
 pub type TimerStoreResult<T> = Result<T, TimerStoreError>;
 
-pub struct GetGuildTasksFilter {
-    pub scope: ScopeSelector,
-    pub namespace: Option<String>,
-}
+// pub struct GetGuildTasksFilter {
+//     pub scope: ScopeSelector,
+//     pub namespace: Option<String>,
+// }
 
-pub enum ScopeSelector {
-    All,
-    Guild,
-    Plugin(u64),
-}
+// impl From<GetGuildTasksFilter> for stores::timers::GetGuildTasksFilter {
+//     fn from(value: GetGuildTasksFilter) -> Self {
+//         Self {
+//             scope: value.scope.into(),
+//             namespace: value.namespace,
+//         }
+//     }
+// }
+
+// pub enum ScopeSelector {
+//     All,
+//     Guild,
+//     Plugin(u64),
+// }
+
+// impl From<runtime_models::ScopeSelector> for stores::timers::ScopeSelector {
+//     fn from(value: runtime_models::ScopeSelector) -> Self {
+//         match value {
+//             ScopeSelector::All => Self::All,
+//             ScopeSelector::Guild => Self::Guild,
+//             ScopeSelector::Plugin { plugin_id } => Self::Plugin(plugin_id.0),
+//         }
+//     }
+// }
 
 #[async_trait::async_trait]
 pub trait TimerStore: Send + Sync {
@@ -108,7 +131,7 @@ pub trait TimerStore: Send + Sync {
         &self,
         guild_id: Id<GuildMarker>,
         ignore_ids: &[u64],
-        buckets: &[TaskBucket],
+        buckets: &[TaskBucketId],
     ) -> TimerStoreResult<Option<DateTime<Utc>>>;
 
     async fn get_triggered_tasks(
@@ -116,7 +139,7 @@ pub trait TimerStore: Send + Sync {
         guild_id: Id<GuildMarker>,
         t: DateTime<Utc>,
         ignore_ids: &[u64],
-        buckets: &[TaskBucket],
+        buckets: &[TaskBucketId],
     ) -> TimerStoreResult<Vec<ScheduledTask>>;
 
     async fn delete_guild_timer_data(&self, guild_id: Id<GuildMarker>) -> TimerStoreResult<()>;
@@ -149,8 +172,15 @@ pub struct ScheduledTask {
     pub execute_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TaskBucket {
-    pub name: String,
-    pub plugin_id: Option<u64>,
+impl From<ScheduledTask> for runtime_models::internal::tasks::ScheduledTask {
+    fn from(v: ScheduledTask) -> Self {
+        Self {
+            id: NotBigU64(v.id),
+            plugin_id: v.plugin_id.map(PluginId),
+            namespace: v.name,
+            key: v.unique_key,
+            execute_at: NotBigU64(v.execute_at.timestamp_millis() as u64),
+            data: v.data,
+        }
+    }
 }

@@ -65,6 +65,9 @@ pub enum ApiErrorResponse {
 
     #[error("Reached max images")]
     MaxImagesReached,
+
+    #[error("Script not found")]
+    ScriptNotFound,
 }
 
 impl ApiErrorResponse {
@@ -93,6 +96,7 @@ impl ApiErrorResponse {
             Self::ImageNotSupported => (StatusCode::BAD_REQUEST, 17, None),
             Self::ImageNotFound => (StatusCode::BAD_REQUEST, 18, None),
             Self::MaxImagesReached => (StatusCode::BAD_REQUEST, 19, None),
+            Self::ScriptNotFound => (StatusCode::BAD_REQUEST, 20, None),
         }
     }
 }

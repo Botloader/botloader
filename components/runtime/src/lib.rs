@@ -84,6 +84,7 @@ deno_core::extension!(
         op_get_current_bot_user,
         op_get_current_guild_id,
         op_get_run_mode,
+        op_get_settings,
     ],
     options = {
         ctx: CoreRuntimeContext,
@@ -114,6 +115,7 @@ deno_core::extension!(
         op_get_current_bot_user,
         op_get_current_guild_id,
         op_get_run_mode,
+        op_get_settings,
     ],
     options = {
         ctx: CoreRuntimeContext,
@@ -235,11 +237,16 @@ pub fn op_botloader_script_start(
     Ok(())
 }
 
+#[op2]
+pub fn op_get_settings(state: &mut OpState, #[serde] args: JsValue) -> Result<(), AnyError> {
+    todo!()
+}
+
 pub(crate) fn validate_script_meta(meta: &ScriptMeta) -> Result<(), anyhow::Error> {
     let mut outbuf = String::new();
 
     for command in &meta.commands {
-        if let Err(verrs) = validation::validate(command) {
+        if let Err(verrs) = validation::validate(command, &()) {
             for verr in verrs {
                 outbuf.push_str(format!("\ncommand {}: {}", command.name, verr).as_str());
             }
@@ -247,7 +254,7 @@ pub(crate) fn validate_script_meta(meta: &ScriptMeta) -> Result<(), anyhow::Erro
     }
 
     for group in &meta.command_groups {
-        if let Err(verrs) = validation::validate(group) {
+        if let Err(verrs) = validation::validate(group, &()) {
             for verr in verrs {
                 outbuf.push_str(format!("\ncommand group {}: {}", group.name, verr).as_str());
             }

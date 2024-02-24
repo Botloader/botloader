@@ -13,6 +13,7 @@ guild-logger = { path = "../../components/guild-logger" }
 validation = { path = "../../components/validation" }
 common = { path = "../../components/common" }
 axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
+runtime-models = { path = "../../components/runtime-models" }
 
 oauth2 = "4.1"
 anyhow = { workspace = true }

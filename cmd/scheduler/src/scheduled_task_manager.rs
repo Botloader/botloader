@@ -1,8 +1,8 @@
 use std::{ops::Add, sync::Arc};
 
 use chrono::{DateTime, Utc};
-use runtime_models::internal::script::ScriptMeta;
-use stores::timers::{ScheduledTask, TaskBucket};
+use runtime_models::internal::script::{ScriptMeta, TaskBucketId};
+use stores::timers::ScheduledTask;
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
 
@@ -17,7 +17,7 @@ pub struct Manager {
     next_task_time: Option<Option<DateTime<Utc>>>,
     pending: Vec<u64>,
 
-    active_task_buckets: Vec<TaskBucket>,
+    active_task_buckets: Vec<TaskBucketId>,
 }
 
 impl Manager {
@@ -142,13 +142,11 @@ impl Manager {
 
     pub fn script_started(&mut self, meta: &ScriptMeta) {
         for script_task_bucket in &meta.task_buckets {
-            let task_bucket: TaskBucket = script_task_bucket.clone().into();
-
-            if self.active_task_buckets.contains(&task_bucket) {
+            if self.active_task_buckets.contains(script_task_bucket) {
                 continue;
             }
 
-            self.active_task_buckets.push(task_bucket);
+            self.active_task_buckets.push(script_task_bucket.clone());
         }
 
         self.clear_next();

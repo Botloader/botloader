@@ -171,7 +171,7 @@ async fn op_bl_get_all_tasks(
 
     Ok(rt_ctx
         .timer_store
-        .get_guild_tasks(rt_ctx.guild_id, filter.into(), after_id, 25)
+        .get_guild_tasks(rt_ctx.guild_id, filter, after_id, 25)
         .await?
         .into_iter()
         .map(Into::into)
