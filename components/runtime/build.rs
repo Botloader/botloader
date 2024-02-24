@@ -80,7 +80,17 @@ fn compile_folder(path: &Path) -> Vec<String> {
     for (name, file) in loaded_files {
         let output = compile_typescript(&file, format!("{}.ts", file)).unwrap();
         fs::write(target_dir.join(format!("{name}.js")), output.output).unwrap();
-        result.push(relative_path.join(name).to_string_lossy().into_owned());
+
+        // we manually construct the joined path because on windows the std::path separator is \ vs what we want, /
+        let path = relative_path.join(name);
+        let components = path
+            .components()
+            .map(|v| v.as_os_str().to_string_lossy())
+            .collect::<Vec<_>>();
+
+        let joined = components.join("/");
+
+        result.push(joined);
     }
 
     result

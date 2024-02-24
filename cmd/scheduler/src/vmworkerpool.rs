@@ -9,7 +9,6 @@ use metrics::counter;
 use simpleproto::{message_reader, message_writer};
 use stores::config::PremiumSlotTier;
 use tokio::{
-    net::UnixStream,
     process::{Child, Command},
     sync::{
         mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -266,7 +265,12 @@ impl VmWorkerPool {
         })
     }
 
-    pub fn worker_connected(&self, stream: UnixStream, id: u64) {
+    pub fn worker_connected(
+        &self,
+        #[cfg(target_family = "windows")] stream: tokio::net::TcpStream,
+        #[cfg(target_family = "unix")] stream: tokio::net::UnixStream,
+        id: u64,
+    ) {
         let mut w = self.inner.lock().unwrap();
         if let Some(pending) = w.pending_starts.remove(&id) {
             drop(w);
@@ -356,7 +360,11 @@ struct PendingWorkerHandle {
     priority_index: usize,
 }
 
-fn init_worker_handles(pending: PendingWorkerHandle, stream: UnixStream) -> WorkerHandle {
+fn init_worker_handles(
+    pending: PendingWorkerHandle,
+    #[cfg(target_family = "windows")] stream: tokio::net::TcpStream,
+    #[cfg(target_family = "unix")] stream: tokio::net::UnixStream,
+) -> WorkerHandle {
     let (scheduler_msg_tx, scheduler_msg_rx) = mpsc::unbounded_channel();
     let (worker_msg_tx, worker_msg_rx) = mpsc::unbounded_channel();
 
