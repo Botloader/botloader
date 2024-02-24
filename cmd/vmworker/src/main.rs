@@ -346,6 +346,7 @@ impl Worker {
             guild_logger: self.guild_logger.with_guild(req.guild_id),
             script_http_client_proxy: self.user_http_proxy.clone(),
             premium_tier: self.premium_tier.clone(),
+            main_tokio_runtime: tokio::runtime::Handle::current(),
 
             bucket_store: self.stores.clone(),
             config_store: self.stores.clone(),

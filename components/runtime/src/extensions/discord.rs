@@ -1,6 +1,9 @@
 use anyhow::anyhow;
 use chrono::TimeZone;
-use deno_core::{error::custom_error, op2, OpState};
+use deno_core::{
+    error::{custom_error, get_custom_error_class},
+    op2, OpState,
+};
 use futures::TryFutureExt;
 use runtime_models::{
     discord::{
@@ -31,7 +34,7 @@ use runtime_models::{
 use std::{
     borrow::Cow,
     collections::VecDeque,
-    str::FromStr,
+    future::Future,
     time::{Duration, Instant},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -42,7 +45,9 @@ use twilight_http::{
     api_error::{ApiError, GeneralApiError},
     response::StatusCode,
 };
-use twilight_model::id::marker::{GenericMarker, MessageMarker, RoleMarker, TagMarker};
+use twilight_model::id::marker::{
+    GenericMarker, InteractionMarker, MessageMarker, RoleMarker, TagMarker,
+};
 use twilight_model::id::Id;
 use twilight_model::{
     guild::Permissions,
@@ -150,6 +155,40 @@ impl DiscordOpsState {
     }
 }
 
+pub async fn discord_request<T: Send + Sync + 'static>(
+    state: &Rc<RefCell<OpState>>,
+    f: impl Future<Output = Result<T, twilight_http::Error>> + Send + 'static,
+) -> Result<T, AnyError> {
+    let rt_handle = {
+        let state = state.borrow();
+        let rt_ctx: &RuntimeContext = state.borrow();
+        rt_ctx.main_tokio_runtime.clone()
+    };
+
+    rt_handle
+        .spawn(f)
+        .await
+        .unwrap()
+        .map_err(|err| handle_discord_error(state, err))
+}
+
+pub async fn discord_request_with_extra_error<T: Send + Sync + 'static>(
+    state: &Rc<RefCell<OpState>>,
+    f: impl Future<Output = Result<Result<T, twilight_http::Error>, AnyError>> + Send + 'static,
+) -> Result<T, AnyError> {
+    let rt_handle = {
+        let state = state.borrow();
+        let rt_ctx: &RuntimeContext = state.borrow();
+        rt_ctx.main_tokio_runtime.clone()
+    };
+
+    rt_handle
+        .spawn(f)
+        .await
+        .unwrap()?
+        .map_err(|err| handle_discord_error(state, err))
+}
+
 pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Error) -> AnyError {
     let kind = err.kind();
     if let ErrorType::Response { status, .. } = kind {
@@ -212,8 +251,10 @@ pub fn error_from_code(resp_code: StatusCode, code: u64, message: &str) -> AnyEr
     }
 }
 
+const DISCORD_NOT_FOUND_CLASS_NAME: &str = "DiscordNotFoundError";
+
 pub fn not_found_error(message: impl Into<Cow<'static, str>>) -> AnyError {
-    custom_error("DiscordNotFoundError", message)
+    custom_error(DISCORD_NOT_FOUND_CLASS_NAME, message)
 }
 
 #[op2(async)]
@@ -254,15 +295,17 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &channel_id_raw).await?;
         let message_id = parse_discord_id(&message_id_raw)?;
 
-        Ok(rt_ctx
-            .discord_config
-            .client
-            .message(channel.id, message_id)
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+        Ok(discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .message(channel.id, message_id)
+                .await
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 
     async fn discord_get_messages(
@@ -279,36 +322,36 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             50
         };
 
-        let req = rt_ctx
-            .discord_config
-            .client
-            .channel_messages(channel.id)
-            .limit(limit as u16)?;
+        let before_id: Option<Id<MessageMarker>> = args
+            .before
+            .map(|v| parse_discord_id(&v))
+            .transpose()
+            .map_err(|err| anyhow::anyhow!("invalid 'before' message id: {err}"))?;
 
-        let res = if let Some(before) = args.before {
-            let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
-                id
+        let after_id: Option<Id<MessageMarker>> = args
+            .after
+            .map(|v| parse_discord_id(&v))
+            .transpose()
+            .map_err(|err| anyhow::anyhow!("invalid 'after' message id: {err}"))?;
+
+        let res = discord_request_with_extra_error(&self.state, async move {
+            let req = rt_ctx
+                .discord_config
+                .client
+                .channel_messages(channel.id)
+                .limit(limit as u16)?;
+
+            if let Some(before) = before_id {
+                Ok(req.before(before).await)
+            } else if let Some(after) = after_id {
+                Ok(req.after(after).await)
             } else {
-                return Err(anyhow::anyhow!("invalid 'before' message id"));
-            };
+                Ok(req.await)
+            }
+        })
+        .await?;
 
-            req.before(message_id).await
-        } else if let Some(after) = args.after {
-            let message_id = if let Some(id) = Id::new_checked(after.parse()?) {
-                id
-            } else {
-                return Err(anyhow::anyhow!("invalid 'after' message id"));
-            };
-
-            req.after(message_id).await
-        } else {
-            req.await
-        };
-
-        let messages = res
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?;
+        let messages = res.model().await?;
 
         Ok(messages.into_iter().map(Into::into).collect())
     }
@@ -321,44 +364,45 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
 
-        let maybe_embeds = args
-            .fields
-            .embeds
-            .unwrap_or_default()
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>();
+        Ok(discord_request_with_extra_error(&self.state, async move {
+            let maybe_embeds = args
+                .fields
+                .embeds
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>();
 
-        let components = args
-            .fields
-            .components
-            .unwrap_or_default()
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>();
+            let components = args
+                .fields
+                .components
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>();
 
-        let mut mc = rt_ctx
-            .discord_config
-            .client
-            .create_message(channel.id)
-            .embeds(&maybe_embeds)?
-            .components(&components)?;
+            let mut mc = rt_ctx
+                .discord_config
+                .client
+                .create_message(channel.id)
+                .embeds(&maybe_embeds)?
+                .components(&components)?;
 
-        if let Some(content) = &args.fields.content {
-            mc = mc.content(content)?
-        }
+            if let Some(content) = &args.fields.content {
+                mc = mc.content(content)?
+            }
 
-        let mentions = args.fields.allowed_mentions.map(Into::into);
-        if mentions.is_some() {
-            mc = mc.allowed_mentions(mentions.as_ref());
-        }
+            let mentions = args.fields.allowed_mentions.map(Into::into);
+            if mentions.is_some() {
+                mc = mc.allowed_mentions(mentions.as_ref());
+            }
 
-        Ok(mc
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+            Ok(mc.await)
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 
     async fn discord_edit_message(
@@ -370,38 +414,38 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
         let message_id = parse_str_snowflake_id(&args.message_id)?;
 
-        let maybe_embeds = args
-            .fields
-            .embeds
-            .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+        let res = discord_request_with_extra_error(&self.state, async move {
+            let maybe_embeds = args
+                .fields
+                .embeds
+                .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-        let components = args
-            .fields
-            .components
-            .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+            let components = args
+                .fields
+                .components
+                .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-        let mut mc = rt_ctx
-            .discord_config
-            .client
-            .update_message(channel.id, message_id.cast())
-            .content(args.fields.content.as_deref())?
-            .components(components.as_deref())?;
+            let mut mc = rt_ctx
+                .discord_config
+                .client
+                .update_message(channel.id, message_id.cast())
+                .content(args.fields.content.as_deref())?
+                .components(components.as_deref())?;
 
-        if let Some(embeds) = &maybe_embeds {
-            mc = mc.embeds(Some(embeds))?;
-        }
+            if let Some(embeds) = &maybe_embeds {
+                mc = mc.embeds(Some(embeds))?;
+            }
 
-        let mentions = args.fields.allowed_mentions.map(Into::into);
-        if mentions.is_some() {
-            mc = mc.allowed_mentions(mentions.as_ref());
-        }
+            let mentions = args.fields.allowed_mentions.map(Into::into);
+            if mentions.is_some() {
+                mc = mc.allowed_mentions(mentions.as_ref());
+            }
 
-        Ok(mc
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+            Ok(mc.await)
+        })
+        .await?;
+
+        Ok(res.model().await?.into())
     }
 
     async fn discord_crosspost_message(
@@ -410,12 +454,15 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
     ) -> Result<(), anyhow::Error> {
         let ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &ctx, &channel_id_raw).await?;
+        let message_id: Id<MessageMarker> = parse_discord_id(&message_id_raw)?;
 
-        ctx.discord_config
-            .client
-            .crosspost_message(channel.id, parse_discord_id(&message_id_raw)?)
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?;
+        discord_request(&self.state, async move {
+            ctx.discord_config
+                .client
+                .crosspost_message(channel.id, message_id)
+                .await
+        })
+        .await?;
 
         Ok(())
     }
@@ -425,13 +472,14 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
         let message_id = parse_str_snowflake_id(&args.message_id)?;
-
-        rt_ctx
-            .discord_config
-            .client
-            .delete_message(channel.id, message_id.cast())
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?;
+        discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .delete_message(channel.id, message_id.cast())
+                .await
+        })
+        .await?;
 
         Ok(())
     }
@@ -450,12 +498,14 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             .map(|v| v.cast())
             .collect::<Vec<_>>();
 
-        rt_ctx
-            .discord_config
-            .client
-            .delete_messages(channel.id, &message_ids)?
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?;
+        discord_request_with_extra_error(&self.state, async move {
+            Ok(rt_ctx
+                .discord_config
+                .client
+                .delete_messages(channel.id, &message_ids)?
+                .await)
+        })
+        .await?;
 
         Ok(())
     }
@@ -469,23 +519,24 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
         let message_id = parse_discord_id(&arg.message_id)?;
 
-        let mut req = rt_ctx
-            .discord_config
-            .client
-            .create_thread_from_message(channel.id, message_id, &arg.name)?;
+        Ok(discord_request_with_extra_error(&self.state, async move {
+            let mut req = rt_ctx
+                .discord_config
+                .client
+                .create_thread_from_message(channel.id, message_id, &arg.name)?;
 
-        if let Some(auto_archive) = arg.auto_archive_duration_minutes {
-            req = req.auto_archive_duration(
-                twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
-            )
-        }
+            if let Some(auto_archive) = arg.auto_archive_duration_minutes {
+                req = req.auto_archive_duration(
+                    twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
+                )
+            }
 
-        Ok(req
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+            Ok(req.await)
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 
     async fn discord_start_thread_without_message(
@@ -495,28 +546,29 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let rt_ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
 
-        let mut req =
-            rt_ctx
-                .discord_config
-                .client
-                .create_thread(channel.id, &arg.name, arg.kind.into())?;
+        Ok(discord_request_with_extra_error(&self.state, async move {
+            let mut req = rt_ctx.discord_config.client.create_thread(
+                channel.id,
+                &arg.name,
+                arg.kind.into(),
+            )?;
 
-        if let Some(auto_archive) = arg.auto_archive_duration_minutes {
-            req = req.auto_archive_duration(
-                twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
-            )
-        }
+            if let Some(auto_archive) = arg.auto_archive_duration_minutes {
+                req = req.auto_archive_duration(
+                    twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
+                )
+            }
 
-        if let Some(invitable) = arg.invitable {
-            req = req.invitable(invitable);
-        }
+            if let Some(invitable) = arg.invitable {
+                req = req.invitable(invitable);
+            }
 
-        Ok(req
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+            Ok(req.await)
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 
     async fn discord_start_forum_thread(
@@ -526,72 +578,73 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let rt_ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
 
-        let mut req = rt_ctx
-            .discord_config
-            .client
-            .create_forum_thread(channel.id, &arg.name);
+        let res = discord_request_with_extra_error(&self.state, async move {
+            let mut req = rt_ctx
+                .discord_config
+                .client
+                .create_forum_thread(channel.id, &arg.name);
 
-        if let Some(auto_archive) = arg.auto_archive_duration_minutes {
-            req = req.auto_archive_duration(
-                twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
-            )
-        }
+            if let Some(auto_archive) = arg.auto_archive_duration_minutes {
+                req = req.auto_archive_duration(
+                    twilight_model::channel::thread::AutoArchiveDuration::from(auto_archive),
+                )
+            }
 
-        let maybe_tags: Option<Vec<Id<TagMarker>>> = arg.tag_ids.map(|v| {
-            v.into_iter()
-                .filter_map(|string_id| parse_discord_id(&string_id).ok())
-                .collect()
-        });
+            let maybe_tags: Option<Vec<Id<TagMarker>>> = arg.tag_ids.map(|v| {
+                v.into_iter()
+                    .filter_map(|string_id| parse_discord_id(&string_id).ok())
+                    .collect()
+            });
 
-        if let Some(tags) = &maybe_tags {
-            req = req.applied_tags(tags);
-        }
+            if let Some(tags) = &maybe_tags {
+                req = req.applied_tags(tags);
+            }
 
-        // Can't find ratelimit usage
-        // if let Some(ratelimit) = arg.rate_limit_per_user{
-        //     req = req.
-        // }
+            // Can't find ratelimit usage
+            // if let Some(ratelimit) = arg.rate_limit_per_user{
+            //     req = req.
+            // }
 
-        let mut req = req.message();
+            let mut req = req.message();
 
-        let embeds = arg
-            .message
-            .embeds
-            .unwrap_or_default()
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>();
+            let embeds = arg
+                .message
+                .embeds
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>();
 
-        if !embeds.is_empty() {
-            req = req.embeds(&embeds)?;
-        }
+            if !embeds.is_empty() {
+                req = req.embeds(&embeds)?;
+            }
 
-        let components = arg
-            .message
-            .components
-            .unwrap_or_default()
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>();
+            let components = arg
+                .message
+                .components
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>();
 
-        if !components.is_empty() {
-            req = req.components(&components)?;
-        }
+            if !components.is_empty() {
+                req = req.components(&components)?;
+            }
 
-        if let Some(content) = &arg.message.content {
-            req = req.content(content)?;
-        }
+            if let Some(content) = &arg.message.content {
+                req = req.content(content)?;
+            }
 
-        let mentions = arg.message.allowed_mentions.map(Into::into);
-        if mentions.is_some() {
-            req = req.allowed_mentions(mentions.as_ref());
-        }
+            let mentions = arg.message.allowed_mentions.map(Into::into);
+            if mentions.is_some() {
+                req = req.allowed_mentions(mentions.as_ref());
+            }
 
-        let result = req
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?;
+            Ok(req.await)
+        })
+        .await?;
+
+        let result = res.model().await?;
 
         Ok(ForumThreadResponse {
             message: result.message.into(),
@@ -608,12 +661,14 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &channel_id_raw).await?;
         let user_id: Id<UserMarker> = parse_discord_id(&user_id_raw)?;
 
-        rt_ctx
-            .discord_config
-            .client
-            .add_thread_member(channel.id, user_id)
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?;
+        discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .add_thread_member(channel.id, user_id)
+                .await
+        })
+        .await?;
 
         Ok(())
     }
@@ -627,12 +682,14 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &channel_id_raw).await?;
         let user_id: Id<UserMarker> = parse_discord_id(&user_id_raw)?;
 
-        rt_ctx
-            .discord_config
-            .client
-            .remove_thread_member(channel.id, user_id)
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?;
+        discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .remove_thread_member(channel.id, user_id)
+                .await
+        })
+        .await?;
 
         Ok(())
     }
@@ -644,39 +701,42 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let rt_ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
 
-        let mut req = rt_ctx.discord_config.client.thread_members(channel.id);
-        if let Some(limit) = args.limit {
-            req = req.limit(limit)?;
-        }
-        if let Some(after) = args.after_user_id {
-            req = req.after(parse_discord_id(&after)?);
-        }
-        if let Some(with_member) = args.with_member {
-            req = req.with_member(with_member);
-        }
+        Ok(discord_request_with_extra_error(&self.state, async move {
+            let mut req = rt_ctx.discord_config.client.thread_members(channel.id);
+            if let Some(limit) = args.limit {
+                req = req.limit(limit)?;
+            }
+            if let Some(after) = args.after_user_id {
+                req = req.after(parse_discord_id(&after)?);
+            }
+            if let Some(with_member) = args.with_member {
+                req = req.with_member(with_member);
+            }
 
-        Ok(req
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .models()
-            .await?
-            .into_iter()
-            .map(Into::into)
-            .collect())
+            Ok(req.await)
+        })
+        .await?
+        .models()
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
     }
 
     async fn discord_list_active_threads(&self, _arg: ()) -> Result<ThreadsListing, anyhow::Error> {
         let rt_ctx = get_rt_ctx(&self.state);
 
-        Ok(rt_ctx
-            .discord_config
-            .client
-            .active_threads(rt_ctx.guild_id)
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+        Ok(discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .active_threads(rt_ctx.guild_id)
+                .await
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 
     async fn discord_list_public_archived_threads(
@@ -686,11 +746,6 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let rt_ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
 
-        let mut threads_request = rt_ctx
-            .discord_config
-            .client
-            .public_archived_threads(channel.id);
-
         let before_str = arg
             .before
             .map(|v| {
@@ -702,16 +757,22 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             })
             .transpose()?;
 
-        if let Some(before_str) = &before_str {
-            threads_request = threads_request.before(before_str);
-        }
+        Ok(discord_request(&self.state, async move {
+            let mut threads_request = rt_ctx
+                .discord_config
+                .client
+                .public_archived_threads(channel.id);
 
-        Ok(threads_request
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+            if let Some(before_str) = &before_str {
+                threads_request = threads_request.before(before_str);
+            }
+
+            threads_request.await
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 
     async fn discord_list_private_archived_threads(
@@ -721,11 +782,6 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let rt_ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
 
-        let mut threads_request = rt_ctx
-            .discord_config
-            .client
-            .private_archived_threads(channel.id);
-
         let before_str = arg
             .before
             .map(|v| {
@@ -737,82 +793,73 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             })
             .transpose()?;
 
-        if let Some(before_str) = &before_str {
-            threads_request = threads_request.before(before_str);
-        }
+        Ok(discord_request(&self.state, async move {
+            let mut threads_request = rt_ctx
+                .discord_config
+                .client
+                .private_archived_threads(channel.id);
 
-        Ok(threads_request
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+            if let Some(before_str) = &before_str {
+                threads_request = threads_request.before(before_str);
+            }
+
+            threads_request.await
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 
     async fn discord_edit_thread(&self, arg: UpdateThread) -> Result<GuildChannel, anyhow::Error> {
         let rt_ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
 
-        let mut req = rt_ctx.discord_config.client.update_thread(channel.id);
+        Ok(discord_request_with_extra_error(&self.state, async move {
+            let mut req = rt_ctx.discord_config.client.update_thread(channel.id);
 
-        let maybe_tags: Option<Vec<Id<TagMarker>>> = arg.tag_ids.map(|v| {
-            v.into_iter()
-                .filter_map(|string_id| parse_discord_id(&string_id).ok())
-                .collect()
-        });
+            let maybe_tags: Option<Vec<Id<TagMarker>>> = arg.tag_ids.map(|v| {
+                v.into_iter()
+                    .filter_map(|string_id| parse_discord_id(&string_id).ok())
+                    .collect()
+            });
 
-        if let Some(tags) = &maybe_tags {
-            req = req.applied_tags(Some(tags));
-        }
+            if let Some(tags) = &maybe_tags {
+                req = req.applied_tags(Some(tags));
+            }
 
-        if let Some(archived) = arg.archived {
-            req = req.archived(archived);
-        }
+            if let Some(archived) = arg.archived {
+                req = req.archived(archived);
+            }
 
-        if let Some(auto_archive_duration_minutes) = arg.auto_archive_duration_minutes {
-            req = req.auto_archive_duration(auto_archive_duration_minutes.into())
-        }
+            if let Some(auto_archive_duration_minutes) = arg.auto_archive_duration_minutes {
+                req = req.auto_archive_duration(auto_archive_duration_minutes.into())
+            }
 
-        if let Some(invitable) = arg.invitable {
-            req = req.invitable(invitable)
-        }
+            if let Some(invitable) = arg.invitable {
+                req = req.invitable(invitable)
+            }
 
-        if let Some(locked) = arg.locked {
-            req = req.locked(locked)
-        }
+            if let Some(locked) = arg.locked {
+                req = req.locked(locked)
+            }
 
-        if let Some(name) = &arg.name {
-            req = req.name(name)?;
-        }
+            if let Some(name) = &arg.name {
+                req = req.name(name)?;
+            }
 
-        if let Some(rate_limit_per_user) = &arg.rate_limit_per_user {
-            req = req.rate_limit_per_user(*rate_limit_per_user)?;
-        }
+            if let Some(rate_limit_per_user) = &arg.rate_limit_per_user {
+                req = req.rate_limit_per_user(*rate_limit_per_user)?;
+            }
 
-        Ok(req
-            .await
-            .map_err(|err| handle_discord_error(&self.state, err))?
-            .model()
-            .await?
-            .into())
+            Ok(req.await)
+        })
+        .await?
+        .model()
+        .await?
+        .into())
     }
 }
-
-// #[op2(async)]
-// #[serde]
-// pub async fn op_discord_get_guild(state: Rc<RefCell<OpState>>) -> Result<Guild, AnyError> {
-//     let rt_ctx = get_rt_ctx(&state);
-
-//     match rt_ctx
-//         .bot_state
-//         .get_guild(rt_ctx.guild_id)
-//         .map_err(|err| anyhow::anyhow!("error calling state api: {}", err))
-//         .await?
-//     {
-//         Some(c) => Ok(c.into()),
-//         None => Err(anyhow::anyhow!("guild not in state")),
-//     }
-// }
 
 #[op2(async)]
 #[serde]
@@ -821,14 +868,16 @@ pub async fn op_discord_get_invites(
 ) -> Result<Vec<runtime_models::internal::invite::Invite>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let resp = rt_ctx
-        .discord_config
-        .client
-        .guild_invites(rt_ctx.guild_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
+    let resp = discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .guild_invites(rt_ctx.guild_id)
+            .await
+    })
+    .await?
+    .model()
+    .await?;
 
     resp.into_iter().map(TryInto::try_into).collect()
 }
@@ -845,20 +894,21 @@ pub async fn op_discord_get_invite(
 
     let rt_ctx = get_rt_ctx(&state);
 
-    let mut req = rt_ctx.discord_config.client.invite(&code);
-    if with_counts {
-        req = req.with_counts();
-    }
+    discord_request(&state, async move {
+        let mut req = rt_ctx.discord_config.client.invite(&code);
+        if with_counts {
+            req = req.with_counts();
+        }
 
-    if with_expiration {
-        req = req.with_expiration();
-    }
-
-    req.await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .try_into()
+        if with_expiration {
+            req = req.with_expiration();
+        }
+        req.await
+    })
+    .await?
+    .model()
+    .await?
+    .try_into()
 }
 
 #[op2(async)]
@@ -869,15 +919,19 @@ pub async fn op_discord_delete_invite(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
+    let code_cloned = code.clone();
+    let rt_ctx_cloned = rt_ctx.clone();
     // we need to make sure this invite comes from this guild
-    let invite = rt_ctx
-        .discord_config
-        .client
-        .invite(&code)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
+    let invite = discord_request(&state, async move {
+        rt_ctx_cloned
+            .discord_config
+            .client
+            .invite(&code_cloned)
+            .await
+    })
+    .await?
+    .model()
+    .await?;
 
     let is_correct_guild = if let Some(guild) = invite.guild {
         guild.id == rt_ctx.guild_id
@@ -889,13 +943,10 @@ pub async fn op_discord_delete_invite(
     if !is_correct_guild {
         return Err(anyhow!("This invite does not belong to your server."));
     }
-
-    rt_ctx
-        .discord_config
-        .client
-        .delete_invite(&code)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx.discord_config.client.delete_invite(&code).await
+    })
+    .await?;
 
     Ok(())
 }
@@ -918,192 +969,6 @@ pub async fn op_discord_get_voice_states(
         .collect())
 }
 
-// Messages
-// #[op2(async)]
-// #[serde]
-// pub async fn op_discord_get_message(
-//     state: Rc<RefCell<OpState>>,
-//     #[serde] channel_id: Id<ChannelMarker>,
-//     #[serde] message_id: Id<MessageMarker>,
-// ) -> Result<Message, AnyError> {
-//     let rt_ctx = get_rt_ctx(&state);
-
-//     let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
-
-//     Ok(rt_ctx
-//         .discord_config
-//         .client
-//         .message(channel.id, message_id)
-//         .await
-//         .map_err(|err| handle_discord_error(&state, err))?
-//         .model()
-//         .await?
-//         .into())
-// }
-
-// #[op2(async)]
-// #[serde]
-// pub async fn op_discord_get_messages(
-//     state: Rc<RefCell<OpState>>,
-//     #[serde] args: OpGetMessages,
-// ) -> Result<Vec<Message>, AnyError> {
-//     let rt_ctx = get_rt_ctx(&state);
-
-//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-
-//     let limit = if let Some(limit) = args.limit {
-//         limit.clamp(1, 100)
-//     } else {
-//         50
-//     };
-
-//     let req = rt_ctx
-//         .discord_config
-//         .client
-//         .channel_messages(channel.id)
-//         .limit(limit as u16)?;
-
-//     let res = if let Some(before) = args.before {
-//         let message_id = if let Some(id) = Id::new_checked(before.parse()?) {
-//             id
-//         } else {
-//             return Err(anyhow::anyhow!("invalid 'before' message id"));
-//         };
-
-//         req.before(message_id).await
-//     } else if let Some(after) = args.after {
-//         let message_id = if let Some(id) = Id::new_checked(after.parse()?) {
-//             id
-//         } else {
-//             return Err(anyhow::anyhow!("invalid 'after' message id"));
-//         };
-
-//         req.after(message_id).await
-//     } else {
-//         req.await
-//     };
-
-//     let messages = res
-//         .map_err(|err| handle_discord_error(&state, err))?
-//         .model()
-//         .await?;
-
-//     Ok(messages.into_iter().map(Into::into).collect())
-// }
-
-// #[op2(async)]
-// #[serde]
-// pub async fn op_discord_create_message(
-//     state: Rc<RefCell<OpState>>,
-//     #[serde] args: OpCreateChannelMessage,
-// ) -> Result<Message, AnyError> {
-//     let rt_ctx = get_rt_ctx(&state);
-
-//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-
-//     let maybe_embeds = args
-//         .fields
-//         .embeds
-//         .unwrap_or_default()
-//         .into_iter()
-//         .map(Into::into)
-//         .collect::<Vec<_>>();
-
-//     let components = args
-//         .fields
-//         .components
-//         .unwrap_or_default()
-//         .into_iter()
-//         .map(Into::into)
-//         .collect::<Vec<_>>();
-
-//     let mut mc = rt_ctx
-//         .discord_config
-//         .client
-//         .create_message(channel.id)
-//         .embeds(&maybe_embeds)?
-//         .components(&components)?;
-
-//     if let Some(content) = &args.fields.content {
-//         mc = mc.content(content)?
-//     }
-
-//     let mentions = args.fields.allowed_mentions.map(Into::into);
-//     if mentions.is_some() {
-//         mc = mc.allowed_mentions(mentions.as_ref());
-//     }
-
-//     Ok(mc
-//         .await
-//         .map_err(|err| handle_discord_error(&state, err))?
-//         .model()
-//         .await?
-//         .into())
-// }
-
-// #[op2(async)]
-// #[serde]
-// pub async fn op_discord_edit_message(
-//     state: Rc<RefCell<OpState>>,
-//     #[serde] args: OpEditChannelMessage,
-// ) -> Result<Message, AnyError> {
-//     let rt_ctx = get_rt_ctx(&state);
-
-//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-//     let message_id = parse_str_snowflake_id(&args.message_id)?;
-
-//     let maybe_embeds = args
-//         .fields
-//         .embeds
-//         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
-
-//     let components = args
-//         .fields
-//         .components
-//         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
-
-//     let mut mc = rt_ctx
-//         .discord_config
-//         .client
-//         .update_message(channel.id, message_id.cast())
-//         .content(args.fields.content.as_deref())?
-//         .components(components.as_deref())?;
-
-//     if let Some(embeds) = &maybe_embeds {
-//         mc = mc.embeds(Some(embeds))?;
-//     }
-
-//     let mentions = args.fields.allowed_mentions.map(Into::into);
-//     if mentions.is_some() {
-//         mc = mc.allowed_mentions(mentions.as_ref());
-//     }
-
-//     Ok(mc
-//         .await
-//         .map_err(|err| handle_discord_error(&state, err))?
-//         .model()
-//         .await?
-//         .into())
-// }
-
-// #[op2(async)]
-// pub async fn op_discord_crosspost_message(
-//     state: Rc<RefCell<OpState>>,
-//     #[serde] channel_id: Id<ChannelMarker>,
-//     #[serde] message_id: Id<MessageMarker>,
-// ) -> Result<(), AnyError> {
-//     let ctx = get_rt_ctx(&state);
-//     get_guild_channel(&state, &ctx, channel_id).await?;
-
-//     ctx.discord_config
-//         .client
-//         .crosspost_message(channel_id, message_id)
-//         .await
-//         .map_err(|err| handle_discord_error(&state, err))?;
-
-//     Ok(())
-// }
-
 #[op2(async)]
 pub async fn op_discord_interaction_callback(
     state: Rc<RefCell<OpState>>,
@@ -1111,15 +976,15 @@ pub async fn op_discord_interaction_callback(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let client = rt_ctx.discord_config.interaction_client();
-    client
-        .create_response(
-            Id::from_str(&args.interaction_id)?,
-            &args.interaction_token,
-            &args.data.into(),
-        )
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    let interaction_id: Id<InteractionMarker> = parse_discord_id(&args.interaction_id)?;
+
+    discord_request(&state, async move {
+        let client = rt_ctx.discord_config.interaction_client();
+        client
+            .create_response(interaction_id, &args.interaction_token, &args.data.into())
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1132,14 +997,14 @@ pub async fn op_discord_interaction_get_original_response(
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let client = rt_ctx.discord_config.interaction_client();
-    Ok(client
-        .response(&token)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into())
+    Ok(discord_request(&state, async move {
+        let client = rt_ctx.discord_config.interaction_client();
+        client.response(&token).await
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -1160,26 +1025,27 @@ pub async fn op_discord_interaction_edit_original_response(
         .components
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-    let interaction_client = rt_ctx.discord_config.interaction_client();
+    Ok(discord_request_with_extra_error(&state, async move {
+        let interaction_client = rt_ctx.discord_config.interaction_client();
 
-    let mut mc = interaction_client
-        .update_response(&args.interaction_token)
-        .content(args.fields.content.as_deref())?
-        .embeds(maybe_embeds.as_deref())?
-        .components(components.as_deref())?
-        .content(args.fields.content.as_deref())?;
+        let mut mc = interaction_client
+            .update_response(&args.interaction_token)
+            .content(args.fields.content.as_deref())?
+            .embeds(maybe_embeds.as_deref())?
+            .components(components.as_deref())?
+            .content(args.fields.content.as_deref())?;
 
-    let mentions = args.fields.allowed_mentions.map(Into::into);
-    if mentions.is_some() {
-        mc = mc.allowed_mentions(mentions.as_ref());
-    }
+        let mentions = args.fields.allowed_mentions.map(Into::into);
+        if mentions.is_some() {
+            mc = mc.allowed_mentions(mentions.as_ref());
+        }
 
-    Ok(mc
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into())
+        Ok(mc.await)
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -1189,8 +1055,12 @@ pub async fn op_discord_interaction_delete_original(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let client = rt_ctx.discord_config.interaction_client();
-    client.delete_response(&token).await?;
+    discord_request(&state, async move {
+        let client = rt_ctx.discord_config.interaction_client();
+        client.delete_response(&token).await
+    })
+    .await?;
+
     Ok(())
 }
 
@@ -1203,14 +1073,14 @@ pub async fn op_discord_interaction_get_followup_message(
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let client = rt_ctx.discord_config.interaction_client();
-    Ok(client
-        .followup(&token, id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into())
+    Ok(discord_request(&state, async move {
+        let client = rt_ctx.discord_config.interaction_client();
+        client.followup(&token, id).await
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -1237,32 +1107,33 @@ pub async fn op_discord_interaction_followup_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
-    let interaction_client = rt_ctx.discord_config.interaction_client();
+    Ok(discord_request_with_extra_error(&state, async move {
+        let interaction_client = rt_ctx.discord_config.interaction_client();
 
-    let mut mc = interaction_client
-        .create_followup(&args.interaction_token)
-        .embeds(&maybe_embeds)?
-        .components(&components)?;
+        let mut mc = interaction_client
+            .create_followup(&args.interaction_token)
+            .embeds(&maybe_embeds)?
+            .components(&components)?;
 
-    if let Some(flags) = args.flags {
-        mc = mc.flags(flags.into());
-    }
+        if let Some(flags) = args.flags {
+            mc = mc.flags(flags.into());
+        }
 
-    if let Some(content) = &args.fields.content {
-        mc = mc.content(content)?
-    }
+        if let Some(content) = &args.fields.content {
+            mc = mc.content(content)?
+        }
 
-    let mentions = args.fields.allowed_mentions.map(Into::into);
-    if mentions.is_some() {
-        mc = mc.allowed_mentions(mentions.as_ref());
-    }
+        let mentions = args.fields.allowed_mentions.map(Into::into);
+        if mentions.is_some() {
+            mc = mc.allowed_mentions(mentions.as_ref());
+        }
 
-    Ok(mc
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into())
+        Ok(mc.await)
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -1284,21 +1155,24 @@ pub async fn op_discord_interaction_edit_followup_message(
         .components
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-    let interaction_client = rt_ctx.discord_config.interaction_client();
+    discord_request_with_extra_error(&state, async move {
+        let interaction_client = rt_ctx.discord_config.interaction_client();
 
-    let mut mc = interaction_client
-        .update_followup(&args.interaction_token, message_id)
-        .content(args.fields.content.as_deref())?
-        .embeds(maybe_embeds.as_deref())?
-        .components(components.as_deref())?
-        .content(args.fields.content.as_deref())?;
+        let mut mc = interaction_client
+            .update_followup(&args.interaction_token, message_id)
+            .content(args.fields.content.as_deref())?
+            .embeds(maybe_embeds.as_deref())?
+            .components(components.as_deref())?
+            .content(args.fields.content.as_deref())?;
 
-    let mentions = args.fields.allowed_mentions.map(Into::into);
-    if mentions.is_some() {
-        mc = mc.allowed_mentions(mentions.as_ref());
-    }
+        let mentions = args.fields.allowed_mentions.map(Into::into);
+        if mentions.is_some() {
+            mc = mc.allowed_mentions(mentions.as_ref());
+        }
 
-    mc.await.map_err(|err| handle_discord_error(&state, err))?;
+        Ok(mc.await)
+    })
+    .await?;
 
     Ok(())
 }
@@ -1311,58 +1185,14 @@ pub async fn op_discord_interaction_delete_followup_message(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let client = rt_ctx.discord_config.interaction_client();
-    client
-        .delete_followup(&token, id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        let client = rt_ctx.discord_config.interaction_client();
+        client.delete_followup(&token, id).await
+    })
+    .await?;
+
     Ok(())
 }
-
-// #[op2(async)]
-// pub async fn op_discord_delete_message(
-//     state: Rc<RefCell<OpState>>,
-//     #[serde] args: OpDeleteMessage,
-// ) -> Result<(), AnyError> {
-//     let rt_ctx = get_rt_ctx(&state);
-
-//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-//     let message_id = parse_str_snowflake_id(&args.message_id)?;
-
-//     rt_ctx
-//         .discord_config
-//         .client
-//         .delete_message(channel.id, message_id.cast())
-//         .await
-//         .map_err(|err| handle_discord_error(&state, err))?;
-
-//     Ok(())
-// }
-
-// #[op2(async)]
-// pub async fn op_discord_bulk_delete_messages(
-//     state: Rc<RefCell<OpState>>,
-//     #[serde] args: OpDeleteMessagesBulk,
-// ) -> Result<(), AnyError> {
-//     let rt_ctx = get_rt_ctx(&state);
-
-//     let channel = parse_get_guild_channel(&state, &rt_ctx, &args.channel_id).await?;
-//     let message_ids = args
-//         .message_ids
-//         .iter()
-//         .filter_map(|v| parse_str_snowflake_id(v).ok())
-//         .map(|v| v.cast())
-//         .collect::<Vec<_>>();
-
-//     rt_ctx
-//         .discord_config
-//         .client
-//         .delete_messages(channel.id, &message_ids)?
-//         .await
-//         .map_err(|err| handle_discord_error(&state, err))?;
-
-//     Ok(())
-// }
 
 // Roles
 #[op2(async)]
@@ -1402,12 +1232,14 @@ pub async fn op_discord_create_reaction(
     // ensure the provided channel is on the ctx guild
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .create_reaction(channel_id, message_id, &(&emoji).into())
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .create_reaction(channel_id, message_id, &(&emoji).into())
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1423,12 +1255,14 @@ pub async fn op_discord_delete_own_reaction(
     // ensure the provided channel is on the ctx guild
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .delete_current_user_reaction(channel_id, message_id, &(&emoji).into())
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .delete_current_user_reaction(channel_id, message_id, &(&emoji).into())
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1448,12 +1282,14 @@ pub async fn op_discord_delete_user_reaction(
     // ensure the provided channel is on the ctx guild
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .delete_reaction(channel_id, message_id, &(&emoji).into(), user_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .delete_reaction(channel_id, message_id, &(&emoji).into(), user_id)
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1469,28 +1305,29 @@ pub async fn op_discord_get_reactions(
 
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    let emoji = (&fields.emoji).into();
+    Ok(discord_request_with_extra_error(&state, async move {
+        let emoji = (&fields.emoji).into();
 
-    let mut req = rt_ctx
-        .discord_config
-        .client
-        .reactions(channel_id, message_id, &emoji);
+        let mut req = rt_ctx
+            .discord_config
+            .client
+            .reactions(channel_id, message_id, &emoji);
 
-    if let Some(after_str) = &fields.after {
-        req = req.after(parse_str_snowflake_id(after_str)?.cast())
-    }
-    if let Some(limit) = fields.limit {
-        req = req.limit(limit as u16)?;
-    }
+        if let Some(after_str) = &fields.after {
+            req = req.after(parse_str_snowflake_id(after_str)?.cast())
+        }
+        if let Some(limit) = fields.limit {
+            req = req.limit(limit as u16)?;
+        }
 
-    Ok(req
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect())
+        Ok(req.await)
+    })
+    .await?
+    .model()
+    .await?
+    .into_iter()
+    .map(Into::into)
+    .collect())
 }
 
 #[op2(async)]
@@ -1502,12 +1339,14 @@ pub async fn op_discord_delete_all_reactions(
 
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .delete_all_reactions(channel_id, message_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .delete_all_reactions(channel_id, message_id)
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1522,12 +1361,14 @@ pub async fn op_discord_delete_all_reactions_for_emoji(
 
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .delete_all_reaction(channel_id, message_id, &(&emoji).into())
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .delete_all_reaction(channel_id, message_id, &(&emoji).into())
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1568,15 +1409,16 @@ pub async fn op_discord_edit_channel(
     // ensure the channel exists on the guild
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    let mut overwrites = Vec::new();
-    let edit = rt_ctx.discord_config.client.update_channel(channel_id);
+    Ok(discord_request_with_extra_error(&state, async move {
+        let mut overwrites = Vec::new();
+        let edit = rt_ctx.discord_config.client.update_channel(channel_id);
 
-    Ok(params
-        .apply(&mut overwrites, edit)?
-        .await?
-        .model()
-        .await?
-        .into())
+        Ok(params.apply(&mut overwrites, edit)?.await)
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -1587,18 +1429,19 @@ pub async fn op_discord_create_channel(
 ) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let mut overwrites = Vec::new();
-    let edit = rt_ctx
-        .discord_config
-        .client
-        .create_guild_channel(rt_ctx.guild_id, &params.name)?;
+    Ok(discord_request_with_extra_error(&state, async move {
+        let mut overwrites = Vec::new();
+        let edit = rt_ctx
+            .discord_config
+            .client
+            .create_guild_channel(rt_ctx.guild_id, &params.name)?;
 
-    Ok(params
-        .apply(&mut overwrites, edit)?
-        .await?
-        .model()
-        .await?
-        .into())
+        Ok(params.apply(&mut overwrites, edit)?.await)
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -1612,14 +1455,17 @@ pub async fn op_discord_delete_channel(
     // ensure the channel exists on the guild
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    Ok(rt_ctx
-        .discord_config
-        .client
-        .delete_channel(channel_id)
-        .await?
-        .model()
-        .await?
-        .into())
+    Ok(discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .delete_channel(channel_id)
+            .await
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -1633,15 +1479,18 @@ pub async fn op_discord_update_channel_permission(
     // ensure the channel exists on the guild
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    let conv = permission_overwrite
-        .try_into()
-        .map_err(|_| anyhow!("invalid id"))?;
+    discord_request_with_extra_error(&state, async move {
+        let conv = permission_overwrite
+            .try_into()
+            .map_err(|_| anyhow!("invalid id"))?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .update_channel_permission(channel_id, &conv)
-        .await?;
+        Ok(rt_ctx
+            .discord_config
+            .client
+            .update_channel_permission(channel_id, &conv)
+            .await)
+    })
+    .await?;
 
     Ok(())
 }
@@ -1657,15 +1506,18 @@ pub async fn op_discord_delete_channel_permission(
     // ensure the channel exists on the guild
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    let req = rt_ctx
-        .discord_config
-        .client
-        .delete_channel_permission(channel_id);
+    discord_request(&state, async move {
+        let req = rt_ctx
+            .discord_config
+            .client
+            .delete_channel_permission(channel_id);
 
-    match kind {
-        PermissionOverwriteType::Member => req.member(overwrite_id.cast()).await?,
-        PermissionOverwriteType::Role => req.role(overwrite_id.cast()).await?,
-    };
+        match kind {
+            PermissionOverwriteType::Member => req.member(overwrite_id.cast()).await,
+            PermissionOverwriteType::Role => req.role(overwrite_id.cast()).await,
+        }
+    })
+    .await?;
 
     Ok(())
 }
@@ -1681,14 +1533,16 @@ pub async fn op_discord_get_channel_invites(
 
     let rt_ctx = get_rt_ctx(&state);
 
-    let resp = rt_ctx
-        .discord_config
-        .client
-        .channel_invites(channel.id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
+    let resp = discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .channel_invites(channel.id)
+            .await
+    })
+    .await?
+    .model()
+    .await?;
 
     resp.into_iter().map(TryInto::try_into).collect()
 }
@@ -1703,35 +1557,37 @@ pub async fn op_discord_create_channel_invite(
     let rt_ctx = get_rt_ctx(&state);
     let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    let mut req = rt_ctx.discord_config.client.create_invite(channel.id);
+    discord_request_with_extra_error(&state, async move {
+        let mut req = rt_ctx.discord_config.client.create_invite(channel.id);
 
-    if let Some(max_age) = fields.max_age {
-        req = req.max_age(max_age)?;
-    }
-    if let Some(max_uses) = fields.max_uses {
-        req = req.max_uses(max_uses)?;
-    }
-    if let Some(temporary) = fields.temporary {
-        req = req.temporary(temporary);
-    }
-    if let Some(target_application_id) = fields.target_application_id {
-        req = req.target_application_id(target_application_id);
-    }
-    if let Some(target_user_id) = fields.target_user_id {
-        req = req.target_user_id(target_user_id);
-    }
-    if let Some(target_type) = fields.target_type {
-        req = req.target_type(target_type.into());
-    }
-    if let Some(unique) = fields.unique {
-        req = req.unique(unique);
-    }
+        if let Some(max_age) = fields.max_age {
+            req = req.max_age(max_age)?;
+        }
+        if let Some(max_uses) = fields.max_uses {
+            req = req.max_uses(max_uses)?;
+        }
+        if let Some(temporary) = fields.temporary {
+            req = req.temporary(temporary);
+        }
+        if let Some(target_application_id) = fields.target_application_id {
+            req = req.target_application_id(target_application_id);
+        }
+        if let Some(target_user_id) = fields.target_user_id {
+            req = req.target_user_id(target_user_id);
+        }
+        if let Some(target_type) = fields.target_type {
+            req = req.target_type(target_type.into());
+        }
+        if let Some(unique) = fields.unique {
+            req = req.unique(unique);
+        }
 
-    req.await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?
-        .try_into()
+        Ok(req.await)
+    })
+    .await?
+    .model()
+    .await?
+    .try_into()
 }
 
 // Pins
@@ -1746,14 +1602,12 @@ pub async fn op_discord_get_channel_pins(
     // ensure the provided channel is on the guild
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    let pins = rt_ctx
-        .discord_config
-        .client
-        .pins(channel_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
+    let pins = discord_request(&state, async move {
+        rt_ctx.discord_config.client.pins(channel_id).await
+    })
+    .await?
+    .model()
+    .await?;
 
     Ok(pins.into_iter().map(Into::into).collect())
 }
@@ -1769,12 +1623,14 @@ pub async fn op_discord_create_pin(
     // ensure the provided channel is on the guild
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .create_pin(channel_id, message_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .create_pin(channel_id, message_id)
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1790,12 +1646,14 @@ pub async fn op_discord_delete_pin(
     // ensure the provided channel is on the guild
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
-    rt_ctx
-        .discord_config
-        .client
-        .delete_pin(channel_id, message_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .delete_pin(channel_id, message_id)
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1856,29 +1714,30 @@ async fn fetch_members_through_api(
     ids: Vec<Option<Id<UserMarker>>>,
 ) -> Result<Vec<Option<runtime_models::internal::member::Member>>, AnyError> {
     let mut res = Vec::new();
+
     for item in ids {
         if let Some(id) = item {
             // fall back to http api
-            match rt_ctx
-                .discord_config
-                .client
-                .guild_member(rt_ctx.guild_id, id)
-                .await
-            {
+
+            let cloned_discord = rt_ctx.discord_config.clone();
+            let guild_id = rt_ctx.guild_id;
+
+            let resp = discord_request(state, async move {
+                cloned_discord.client.guild_member(guild_id, id).await
+            })
+            .await;
+
+            match resp {
                 Ok(next) => {
                     let member = next.model().await?;
                     res.push(Some(member.into()))
                 }
                 Err(err) => {
-                    if !matches!(
-                        err.kind(),
-                        ErrorType::Response {
-                            // 10007 is unknown member
-                            error: ApiError::General(GeneralApiError { code: 10007, .. }),
-                            ..
-                        },
-                    ) {
-                        return Err(handle_discord_error(state, err));
+                    let class = get_custom_error_class(&err);
+
+                    // Handle unknown members by pushing null results
+                    if !matches!(class, Some(DISCORD_NOT_FOUND_CLASS_NAME),) {
+                        return Err(err);
                     }
 
                     res.push(None);
@@ -1900,12 +1759,14 @@ pub async fn op_discord_add_member_role(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    rt_ctx
-        .discord_config
-        .client
-        .add_guild_member_role(rt_ctx.guild_id, user_id, role_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .add_guild_member_role(rt_ctx.guild_id, user_id, role_id)
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1918,12 +1779,14 @@ pub async fn op_discord_remove_member_role(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    rt_ctx
-        .discord_config
-        .client
-        .remove_guild_member_role(rt_ctx.guild_id, user_id, role_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?;
+    discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .remove_guild_member_role(rt_ctx.guild_id, user_id, role_id)
+            .await
+    })
+    .await?;
 
     Ok(())
 }
@@ -1936,44 +1799,46 @@ pub async fn op_discord_update_member(
     #[serde] fields: UpdateGuildMemberFields,
 ) -> Result<runtime_models::internal::member::Member, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
-    let mut builder = rt_ctx
-        .discord_config
-        .client
-        .update_guild_member(rt_ctx.guild_id, user_id);
 
-    if let Some(maybe_cid) = fields.channel_id {
-        builder = builder.channel_id(maybe_cid);
-    }
+    Ok(discord_request_with_extra_error(&state, async move {
+        let mut builder = rt_ctx
+            .discord_config
+            .client
+            .update_guild_member(rt_ctx.guild_id, user_id);
 
-    if let Some(deaf) = fields.deaf {
-        builder = builder.deaf(deaf);
-    }
+        if let Some(maybe_cid) = fields.channel_id {
+            builder = builder.channel_id(maybe_cid);
+        }
 
-    if let Some(mute) = fields.mute {
-        builder = builder.mute(mute);
-    }
+        if let Some(deaf) = fields.deaf {
+            builder = builder.deaf(deaf);
+        }
 
-    if let Some(maybe_nick) = &fields.nick {
-        builder = builder.nick(maybe_nick.as_deref())?
-    }
+        if let Some(mute) = fields.mute {
+            builder = builder.mute(mute);
+        }
 
-    if let Some(roles) = &fields.roles {
-        builder = builder.roles(roles);
-    }
+        if let Some(maybe_nick) = &fields.nick {
+            builder = builder.nick(maybe_nick.as_deref())?
+        }
 
-    if let Some(ts) = &fields.communication_disabled_until {
-        builder = builder.communication_disabled_until(
-            ts.map(|v| twilight_model::util::Timestamp::from_micros(v.0 as i64 * 1000))
-                .transpose()?,
-        )?;
-    }
+        if let Some(roles) = &fields.roles {
+            builder = builder.roles(roles);
+        }
 
-    let ret = builder
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
-    Ok(ret.into())
+        if let Some(ts) = &fields.communication_disabled_until {
+            builder = builder.communication_disabled_until(
+                ts.map(|v| twilight_model::util::Timestamp::from_micros(v.0 as i64 * 1000))
+                    .transpose()?,
+            )?;
+        }
+
+        Ok(builder.await)
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 // Bans
@@ -1985,20 +1850,23 @@ pub async fn op_discord_create_ban(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let mut req = rt_ctx
-        .discord_config
-        .client
-        .create_ban(rt_ctx.guild_id, user_id);
+    discord_request_with_extra_error(&state, async move {
+        let mut req = rt_ctx
+            .discord_config
+            .client
+            .create_ban(rt_ctx.guild_id, user_id);
 
-    if let Some(days) = extras.delete_message_days {
-        req = req.delete_message_seconds(days * 24 * 60 * 60)?;
-    }
+        if let Some(days) = extras.delete_message_days {
+            req = req.delete_message_seconds(days * 24 * 60 * 60)?;
+        }
 
-    if let Some(reason) = &extras.audit_log_reason {
-        req = req.reason(reason)?;
-    }
+        if let Some(reason) = &extras.audit_log_reason {
+            req = req.reason(reason)?;
+        }
 
-    req.await.map_err(|err| handle_discord_error(&state, err))?;
+        Ok(req.await)
+    })
+    .await?;
 
     Ok(())
 }
@@ -2011,16 +1879,17 @@ pub async fn op_discord_get_ban(
 ) -> Result<Ban, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let result = rt_ctx
-        .discord_config
-        .client
-        .ban(rt_ctx.guild_id, user_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
-
-    Ok(result.into())
+    Ok(discord_request(&state, async move {
+        rt_ctx
+            .discord_config
+            .client
+            .ban(rt_ctx.guild_id, user_id)
+            .await
+    })
+    .await?
+    .model()
+    .await?
+    .into())
 }
 
 #[op2(async)]
@@ -2028,14 +1897,12 @@ pub async fn op_discord_get_ban(
 pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let result = rt_ctx
-        .discord_config
-        .client
-        .bans(rt_ctx.guild_id)
-        .await
-        .map_err(|err| handle_discord_error(&state, err))?
-        .model()
-        .await?;
+    let result = discord_request(&state, async move {
+        rt_ctx.discord_config.client.bans(rt_ctx.guild_id).await
+    })
+    .await?
+    .model()
+    .await?;
 
     Ok(result.into_iter().map(Into::into).collect())
 }
@@ -2048,16 +1915,19 @@ pub async fn op_discord_delete_ban(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let mut req = rt_ctx
-        .discord_config
-        .client
-        .delete_ban(rt_ctx.guild_id, user_id);
+    discord_request_with_extra_error(&state, async move {
+        let mut req = rt_ctx
+            .discord_config
+            .client
+            .delete_ban(rt_ctx.guild_id, user_id);
 
-    if let Some(reason) = &extras.audit_log_reason {
-        req = req.reason(reason)?;
-    }
+        if let Some(reason) = &extras.audit_log_reason {
+            req = req.reason(reason)?;
+        }
 
-    req.await.map_err(|err| handle_discord_error(&state, err))?;
+        Ok(req.await)
+    })
+    .await?;
 
     Ok(())
 }
@@ -2071,16 +1941,19 @@ pub async fn op_discord_remove_member(
 ) -> Result<(), AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    let mut req = rt_ctx
-        .discord_config
-        .client
-        .remove_guild_member(rt_ctx.guild_id, user_id);
+    discord_request_with_extra_error(&state, async move {
+        let mut req = rt_ctx
+            .discord_config
+            .client
+            .remove_guild_member(rt_ctx.guild_id, user_id);
 
-    if let Some(reason) = &extras.audit_log_reason {
-        req = req.reason(reason)?;
-    }
+        if let Some(reason) = &extras.audit_log_reason {
+            req = req.reason(reason)?;
+        }
 
-    req.await.map_err(|err| handle_discord_error(&state, err))?;
+        Ok(req.await)
+    })
+    .await?;
 
     Ok(())
 }
@@ -2097,13 +1970,16 @@ pub async fn op_discord_get_member_permissions(
     let member_roles = if let Some(roles) = roles {
         roles
     } else {
-        let member = rt_ctx
-            .discord_config
-            .client
-            .guild_member(rt_ctx.guild_id, user_id)
-            .await?
-            .model()
-            .await?;
+        let cloned_discord = rt_ctx.discord_config.clone();
+        let member = discord_request(&state, async move {
+            cloned_discord
+                .client
+                .guild_member(rt_ctx.guild_id, user_id)
+                .await
+        })
+        .await?
+        .model()
+        .await?;
 
         member.roles
     };

@@ -47,10 +47,9 @@ script.on("CHANNEL_DELETE", async (channel) => {
     if (channel.name === "bl-chtest-1") {
         await Discord.createChannel({
             name: "bl-chtest-2",
-            topic: "We are gaming",
             kind: "Voice",
             permissionOverwrites: [
-                // diasllow send messages for everyone
+                // disallow send messages for everyone
                 Discord.PermissionOverwrite.everyone(new Discord.Permissions(), Discord.Permissions.SendMessages),
             ]
         })
@@ -64,7 +63,7 @@ runOnce("channels.ts", async () => {
         name: "bl-chtest-1",
         topic: "We are gaming",
         permissionOverwrites: [
-            // diasllow send messages for everyone
+            // disallow send messages for everyone
             Discord.PermissionOverwrite.everyone(new Discord.Permissions(), Discord.Permissions.SendMessages),
         ]
     });
