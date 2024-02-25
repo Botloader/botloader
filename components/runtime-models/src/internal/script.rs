@@ -433,7 +433,7 @@ pub struct SettingsOption {
     pub description: String,
     pub required: bool,
     #[ts(type = "any")]
-    pub default_value: serde_json::Value,
+    pub default_value: Option<serde_json::Value>,
     pub kind: SettingsOptionType,
 }
 
@@ -446,7 +446,7 @@ pub struct SettingsOptionList {
     pub description: String,
     pub required: bool,
     #[ts(type = "any")]
-    pub default_value: serde_json::Value,
+    pub default_value: Option<serde_json::Value>,
     pub template: Vec<SettingsOption>,
 }
 
@@ -471,6 +471,13 @@ impl SettingsOptionDefinition {
         match self {
             SettingsOptionDefinition::Option(v) => v.required,
             SettingsOptionDefinition::List(v) => v.required,
+        }
+    }
+
+    pub fn default_value(&self) -> Option<&serde_json::Value> {
+        match &self {
+            SettingsOptionDefinition::Option(v) => v.default_value.as_ref(),
+            SettingsOptionDefinition::List(v) => v.default_value.as_ref(),
         }
     }
 }

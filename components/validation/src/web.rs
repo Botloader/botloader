@@ -47,19 +47,20 @@ impl Validator for UpdateScript {
 
                     ctx.push_field(value.name.clone());
                     value.validate(ctx, definition);
+                    ctx.pop_field();
                 } else {
                     ctx.push_field_error(&value.name, "unknown option".to_owned());
                 }
             }
 
             // check missing required fields
-            if let Some(definitions) = definitions {
-                for definition in definitions.iter().filter(|def| def.required()) {
-                    if !values.iter().any(|v| v.name == definition.name()) {
-                        ctx.push_error(format!("missing required field: {}", definition.name()));
-                    }
-                }
-            }
+            // if let Some(definitions) = definitions {
+            //     for definition in definitions.iter().filter(|def| def.required()) {
+            //         if !values.iter().any(|v| v.name == definition.name()) {
+            //             ctx.push_error(format!("missing required field: {}", definition.name()));
+            //         }
+            //     }
+            // }
 
             ctx.pop_field();
         }
@@ -81,7 +82,7 @@ impl Validator for SettingsOptionValue {
     }
 }
 
-fn validate_settings_option_value_option(
+pub(crate) fn validate_settings_option_value_option(
     ctx: &mut ValidationContext,
     value: &serde_json::Value,
     definition: &SettingsOption,
@@ -163,7 +164,7 @@ fn validate_settings_option_value_option(
     }
 }
 
-fn validate_settings_option_value_list(
+pub(crate) fn validate_settings_option_value_list(
     ctx: &mut ValidationContext,
     value: &serde_json::Value,
     context_data: &SettingsOptionList,

@@ -2,10 +2,16 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use runtime_models::internal::{
     interaction::CommandType,
-    script::{Command, CommandGroup, CommandOption, CommandSubGroup},
+    script::{
+        Command, CommandGroup, CommandOption, CommandSubGroup, SettingsOption,
+        SettingsOptionDefinition, SettingsOptionList,
+    },
 };
 
-use crate::{ValidationContext, Validator};
+use crate::{
+    web::{validate_settings_option_value_list, validate_settings_option_value_option},
+    ValidationContext, Validator,
+};
 
 impl Validator for Command {
     type ContextData = ();
@@ -109,5 +115,81 @@ fn check_description_field(ctx: &mut ValidationContext, field: &str, value: &str
     }
     if value.chars().count() > 100 {
         ctx.push_field_error(field, "can be max 100 characters long".to_string());
+    }
+}
+
+impl Validator for SettingsOptionDefinition {
+    type ContextData = ();
+
+    fn validate(&self, ctx: &mut ValidationContext, context_data: &Self::ContextData) {
+        match self {
+            SettingsOptionDefinition::Option(opt) => {
+                ctx.push_field(&opt.name);
+                opt.validate(ctx, context_data);
+                ctx.pop_field();
+            }
+            SettingsOptionDefinition::List(list) => {
+                ctx.push_field(&list.name);
+                list.validate(ctx, context_data);
+                ctx.pop_field();
+            }
+        }
+    }
+}
+
+impl Validator for SettingsOption {
+    type ContextData = ();
+
+    fn validate(&self, ctx: &mut ValidationContext, _context_data: &Self::ContextData) {
+        if self.name.chars().count() > 50 {
+            ctx.push_field_error("name", "max 50 characters");
+        }
+
+        if self.description.chars().count() > 1000 {
+            ctx.push_field_error("description", "max 1000 characters");
+        }
+
+        // validate default value
+        if let Some(default_value) = &self.default_value {
+            validate_settings_option_value_option(ctx, default_value, self);
+        }
+    }
+}
+
+impl Validator for SettingsOptionList {
+    type ContextData = ();
+
+    fn validate(&self, ctx: &mut ValidationContext, context_data: &Self::ContextData) {
+        if self.template.len() > 10 {
+            ctx.push_error("list objects can have max 10 fields")
+        }
+
+        if self.name.chars().count() > 50 {
+            ctx.push_error("option names can be max 50 characters");
+        }
+
+        if self.description.chars().count() > 1000 {
+            ctx.push_error("option description can be max 1000 characters");
+        }
+
+        for opt in &self.template {
+            ctx.push_field(&opt.name);
+            opt.validate(ctx, context_data);
+            ctx.pop_field();
+        }
+
+        // check for name duplicates
+        for (i, opt) in self.template.iter().enumerate() {
+            for (j, inner_opt) in self.template.iter().enumerate() {
+                if opt.name == inner_opt.name && i != j {
+                    ctx.push_error(format!("option {} appears multiple times", opt.name))
+                }
+            }
+        }
+
+        // validate list default value
+        if let Some(default_value) = &self.default_value {
+            validate_settings_option_value_list(ctx, default_value, self);
+        }
     }
 }

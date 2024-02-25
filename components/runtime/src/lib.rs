@@ -243,12 +243,12 @@ pub fn op_get_settings(state: &mut OpState, #[serde] args: JsValue) -> Result<()
 }
 
 pub(crate) fn validate_script_meta(meta: &ScriptMeta) -> Result<(), anyhow::Error> {
-    let mut outbuf = String::new();
+    let mut out_buf = String::new();
 
     for command in &meta.commands {
         if let Err(verrs) = validation::validate(command, &()) {
             for verr in verrs {
-                outbuf.push_str(format!("\ncommand {}: {}", command.name, verr).as_str());
+                out_buf.push_str(format!("\ncommand {}: {}", command.name, verr).as_str());
             }
         }
     }
@@ -256,15 +256,23 @@ pub(crate) fn validate_script_meta(meta: &ScriptMeta) -> Result<(), anyhow::Erro
     for group in &meta.command_groups {
         if let Err(verrs) = validation::validate(group, &()) {
             for verr in verrs {
-                outbuf.push_str(format!("\ncommand group {}: {}", group.name, verr).as_str());
+                out_buf.push_str(format!("\ncommand group {}: {}", group.name, verr).as_str());
             }
         }
     }
 
-    if outbuf.is_empty() {
+    for option in &meta.settings {
+        if let Err(validation_errors) = validation::validate(option, &()) {
+            for error in validation_errors {
+                out_buf.push_str(format!("\nsettings options: {}", error).as_str());
+            }
+        }
+    }
+
+    if out_buf.is_empty() {
         Ok(())
     } else {
-        Err(anyhow::anyhow!("failed validating script: {}", outbuf))
+        Err(anyhow::anyhow!("script validation failed: {}", out_buf))
     }
 }
 
