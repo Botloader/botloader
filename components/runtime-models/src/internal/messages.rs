@@ -17,7 +17,7 @@ use twilight_model::{
     channel::message::{
         AllowedMentions as TwilightAllowedMentions, MentionType as TwilightParseTypes,
     },
-    id::{marker::MessageMarker, Id},
+    id::Id,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
