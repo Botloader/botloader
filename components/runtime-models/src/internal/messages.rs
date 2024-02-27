@@ -17,7 +17,7 @@ use twilight_model::{
     channel::message::{
         AllowedMentions as TwilightAllowedMentions, MentionType as TwilightParseTypes,
     },
-    id::Id,
+    id::{marker::MessageMarker, Id},
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -84,6 +84,9 @@ pub struct OpCreateMessageFields {
     #[serde(default)]
     #[ts(optional)]
     pub components: Option<Vec<Component>>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub reply_to_message_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
