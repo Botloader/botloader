@@ -104,7 +104,7 @@ export interface CreateMessageFields {
 
     components?: IComponent[],
 
-    reply_to_message_id?: string;
+    replyToMessageId?: string;
 }
 
 export interface InteractionCreateMessageFields extends CreateMessageFields {
