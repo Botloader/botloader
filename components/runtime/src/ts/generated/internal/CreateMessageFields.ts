@@ -8,4 +8,5 @@ export interface OpCreateMessageFields {
   embeds?: Array<Embed>;
   allowedMentions?: AllowedMentions;
   components?: Array<IComponent>;
+  replyToMessageId?: string;
 }

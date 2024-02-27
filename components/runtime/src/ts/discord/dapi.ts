@@ -103,6 +103,8 @@ export interface CreateMessageFields {
     allowedMentions?: AllowedMentions;
 
     components?: IComponent[],
+
+    reply_to_message_id?: string;
 }
 
 export interface InteractionCreateMessageFields extends CreateMessageFields {

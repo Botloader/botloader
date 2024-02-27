@@ -397,6 +397,10 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 mc = mc.allowed_mentions(mentions.as_ref());
             }
 
+            if let Some(reply) = &args.fields.reply_to_message_id {
+                mc = mc.reply(parse_discord_id(reply)?);
+            }
+
             Ok(mc.await)
         })
         .await?
