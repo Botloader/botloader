@@ -89,7 +89,8 @@ export async function getMessages(channelId: string, options?: GetMessagesOption
     })).map(v => new Message(v));
 }
 
-export interface CreateMessageFields {
+
+export interface BaseCreateMessageFields {
     content?: string;
     embeds?: Embed[];
 
@@ -103,11 +104,16 @@ export interface CreateMessageFields {
     allowedMentions?: AllowedMentions;
 
     components?: IComponent[],
+}
 
+export interface CreateMessageFields extends BaseCreateMessageFields {
+    /**
+     * Shows up as a reply to the following message
+     */
     replyToMessageId?: string;
 }
 
-export interface InteractionCreateMessageFields extends CreateMessageFields {
+export interface InteractionCreateMessageFields extends BaseCreateMessageFields {
     flags?: InteractionMessageFlags,
 }
 
