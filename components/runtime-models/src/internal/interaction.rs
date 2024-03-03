@@ -13,7 +13,7 @@ pub enum Interaction {
 }
 
 impl TryFrom<twilight_model::application::interaction::Interaction> for Interaction {
-    type Error = ();
+    type Error = anyhow::Error;
 
     fn try_from(
         v: twilight_model::application::interaction::Interaction,
@@ -68,7 +68,11 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                     id: v.id.to_string(),
                     member: Member::from_partial(v.member.unwrap()),
                     token: v.token,
-                    data_map: data.resolved.map(Into::into).unwrap_or_default(),
+                    data_map: data
+                        .resolved
+                        .map(TryInto::try_into)
+                        .transpose()?
+                        .unwrap_or_default(),
 
                     kind: data.kind.into(),
                     target_id: data.target_id.as_ref().map(ToString::to_string),
@@ -82,7 +86,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                 id: v.id.to_string(),
                 locale: v.locale.unwrap_or_default(),
                 member: Member::from_partial(v.member.unwrap()),
-                message: v.message.unwrap().into(),
+                message: v.message.unwrap().try_into()?,
                 token: v.token,
                 custom_id: data.custom_id,
                 component_type: data.component_type.into(),
@@ -95,7 +99,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                     id: v.id.to_string(),
                     locale: v.locale.unwrap_or_default(),
                     member: Member::from_partial(v.member.unwrap()),
-                    message: v.message.map(Into::into),
+                    message: v.message.map(TryInto::try_into).transpose()?,
                     token: v.token,
                     custom_id: data.custom_id,
                     values: data
@@ -110,8 +114,14 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                         .collect::<Vec<_>>(),
                 }))
             }
-            Some(_) => Err(()),
-            None => Err(()),
+            Some(_) => Err(anyhow::anyhow!(
+                "unknown interaction data for interaction type {}",
+                v.kind.kind()
+            )),
+            None => Err(anyhow::anyhow!(
+                "no interaction data for interaction type {}",
+                v.kind.kind()
+            )),
         }
     }
 }
@@ -184,9 +194,11 @@ pub struct CommandInteractionDataMap {
     pub users: HashMap<String, User>,
 }
 
-impl From<CommandInteractionDataResolved> for CommandInteractionDataMap {
-    fn from(v: CommandInteractionDataResolved) -> Self {
-        Self {
+impl TryFrom<CommandInteractionDataResolved> for CommandInteractionDataMap {
+    type Error = anyhow::Error;
+
+    fn try_from(v: CommandInteractionDataResolved) -> Result<Self, Self::Error> {
+        Ok(Self {
             channels: v
                 .channels
                 .into_iter()
@@ -200,8 +212,8 @@ impl From<CommandInteractionDataResolved> for CommandInteractionDataMap {
             messages: v
                 .messages
                 .into_iter()
-                .map(|(k, v)| (k.to_string(), v.into()))
-                .collect(),
+                .map(|(k, v)| Ok((k.to_string(), v.try_into()?)))
+                .collect::<Result<_, anyhow::Error>>()?,
             roles: v
                 .roles
                 .into_iter()
@@ -212,7 +224,7 @@ impl From<CommandInteractionDataResolved> for CommandInteractionDataMap {
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v.into()))
                 .collect(),
-        }
+        })
     }
 }
 

@@ -446,13 +446,22 @@ impl VmSession {
     }
 
     pub async fn send_discord_guild_event(&mut self, evt: DiscordEvent) {
-        if let Some(converted_evt) = crate::dispatch_conv::discord_event_to_dispatch(evt) {
-            self.dispatch_worker_evt(
-                converted_evt.name.to_string(),
-                converted_evt.data,
-                PendingAck::Dispatch(None),
-            )
-            .await;
+        let t_clone = evt.t.clone();
+        match crate::dispatch_conv::discord_event_to_dispatch(evt) {
+            Ok(Some(converted_evt)) => {
+                self.dispatch_worker_evt(
+                    converted_evt.name.to_string(),
+                    converted_evt.data,
+                    PendingAck::Dispatch(None),
+                )
+                .await;
+            }
+            Ok(None) => {
+                tracing::warn!(t = t_clone, "skipped converting dispatch event")
+            }
+            Err(err) => {
+                error!(%err, t=t_clone, "failed converting dispatch event")
+            }
         }
     }
 

@@ -93,9 +93,13 @@ pub struct EventMessageUpdate {
     pub tts: Option<bool>,
 }
 
-impl From<twilight_model::gateway::payload::incoming::MessageUpdate> for EventMessageUpdate {
-    fn from(v: twilight_model::gateway::payload::incoming::MessageUpdate) -> Self {
-        Self {
+impl TryFrom<twilight_model::gateway::payload::incoming::MessageUpdate> for EventMessageUpdate {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        v: twilight_model::gateway::payload::incoming::MessageUpdate,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             attachments: v
                 .attachments
                 .map(|e| e.into_iter().map(From::from).collect()),
@@ -108,7 +112,7 @@ impl From<twilight_model::gateway::payload::incoming::MessageUpdate> for EventMe
             embeds: v.embeds.map(|e| e.into_iter().map(From::from).collect()),
             guild_id: v.guild_id.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
-            kind: v.kind.map(From::from),
+            kind: v.kind.map(TryFrom::try_from).transpose()?,
             mention_everyone: v.mention_everyone,
             mention_roles: v
                 .mention_roles
@@ -119,7 +123,7 @@ impl From<twilight_model::gateway::payload::incoming::MessageUpdate> for EventMe
                 .timestamp
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             tts: v.tts,
-        }
+        })
     }
 }
 

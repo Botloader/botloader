@@ -27,4 +27,8 @@ export type MessageType =
   | "AutoModerationAction"
   | "RoleSubscriptionPurchase"
   | "InteractionPremiumUpsell"
-  | "GuildApplicationPremiumSubscription";
+  | "GuildApplicationPremiumSubscription"
+  | "StageEnd"
+  | "StageSpeaker"
+  | "StageStart"
+  | "StageTopic";

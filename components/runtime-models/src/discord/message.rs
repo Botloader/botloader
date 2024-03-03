@@ -130,13 +130,19 @@ pub enum MessageType {
     RoleSubscriptionPurchase,
     InteractionPremiumUpsell,
     GuildApplicationPremiumSubscription,
+    StageEnd,
+    StageSpeaker,
+    StageStart,
+    StageTopic,
 }
 
-impl From<twilight_model::channel::message::MessageType> for MessageType {
-    fn from(v: twilight_model::channel::message::MessageType) -> Self {
+impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::message::MessageType) -> Result<Self, Self::Error> {
         use twilight_model::channel::message::MessageType as TwilightMessageType;
 
-        match v {
+        Ok(match v {
             TwilightMessageType::Regular => Self::Regular,
             TwilightMessageType::RecipientAdd => Self::RecipientAdd,
             TwilightMessageType::RecipientRemove => Self::RecipientRemove,
@@ -170,10 +176,14 @@ impl From<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::GuildApplicationPremiumSubscription => {
                 Self::GuildApplicationPremiumSubscription
             }
+            TwilightMessageType::StageEnd => Self::StageEnd,
+            TwilightMessageType::StageSpeaker => Self::StageSpeaker,
+            TwilightMessageType::StageStart => Self::StageStart,
+            TwilightMessageType::StageTopic => Self::StageTopic,
             _ => {
-                panic!("unknown message type: {}", u8::from(v));
+                return Err(anyhow::anyhow!("unknown message type: {}", u8::from(v)));
             }
-        }
+        })
     }
 }
 

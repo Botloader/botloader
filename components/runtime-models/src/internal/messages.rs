@@ -190,9 +190,11 @@ pub struct Message {
     pub webhook_id: Option<String>,
 }
 
-impl From<twilight_model::channel::Message> for Message {
-    fn from(v: twilight_model::channel::Message) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::Message> for Message {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Message) -> Result<Self, Self::Error> {
+        Ok(Self {
             activity: v.activity.map(From::from),
             application: v.application.map(From::from),
             attachments: v.attachments.into_iter().map(From::from).collect(),
@@ -207,7 +209,7 @@ impl From<twilight_model::channel::Message> for Message {
             flags: v.flags.map(From::from),
             guild_id: v.guild_id.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             member: v.member.map(From::from),
             mention_channels: v.mention_channels.into_iter().map(From::from).collect(),
             mention_everyone: v.mention_everyone,
@@ -216,11 +218,15 @@ impl From<twilight_model::channel::Message> for Message {
             pinned: v.pinned,
             reactions: v.reactions.into_iter().map(From::from).collect(),
             reference: v.reference.map(From::from),
-            referenced_message: v.referenced_message.map(|e| Box::new((*e).into())),
+            referenced_message: v
+                .referenced_message
+                .map(|e| (*e).try_into())
+                .transpose()?
+                .map(Box::new),
             timestamp: NotBigU64(v.timestamp.as_micros() as u64 / 1000),
             tts: v.tts,
             webhook_id: v.webhook_id.as_ref().map(ToString::to_string),
-        }
+        })
     }
 }
 

@@ -295,7 +295,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &channel_id_raw).await?;
         let message_id = parse_discord_id(&message_id_raw)?;
 
-        Ok(discord_request(&self.state, async move {
+        discord_request(&self.state, async move {
             rt_ctx
                 .discord_config
                 .client
@@ -305,7 +305,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()
     }
 
     async fn discord_get_messages(
@@ -353,7 +353,10 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         let messages = res.model().await?;
 
-        Ok(messages.into_iter().map(Into::into).collect())
+        messages
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
     }
 
     async fn discord_create_message(
@@ -364,7 +367,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
 
-        Ok(discord_request_with_extra_error(&self.state, async move {
+        discord_request_with_extra_error(&self.state, async move {
             let maybe_embeds = args
                 .fields
                 .embeds
@@ -406,7 +409,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()
     }
 
     async fn discord_edit_message(
@@ -449,7 +452,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         })
         .await?;
 
-        Ok(res.model().await?.into())
+        res.model().await?.try_into()
     }
 
     async fn discord_crosspost_message(
@@ -651,7 +654,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let result = res.model().await?;
 
         Ok(ForumThreadResponse {
-            message: result.message.into(),
+            message: result.message.try_into()?,
             channel: result.channel.into(),
         })
     }
@@ -1001,14 +1004,14 @@ pub async fn op_discord_interaction_get_original_response(
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    Ok(discord_request(&state, async move {
+    discord_request(&state, async move {
         let client = rt_ctx.discord_config.interaction_client();
         client.response(&token).await
     })
     .await?
     .model()
     .await?
-    .into())
+    .try_into()
 }
 
 #[op2(async)]
@@ -1029,7 +1032,7 @@ pub async fn op_discord_interaction_edit_original_response(
         .components
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
-    Ok(discord_request_with_extra_error(&state, async move {
+    discord_request_with_extra_error(&state, async move {
         let interaction_client = rt_ctx.discord_config.interaction_client();
 
         let mut mc = interaction_client
@@ -1049,7 +1052,7 @@ pub async fn op_discord_interaction_edit_original_response(
     .await?
     .model()
     .await?
-    .into())
+    .try_into()
 }
 
 #[op2(async)]
@@ -1077,14 +1080,14 @@ pub async fn op_discord_interaction_get_followup_message(
 ) -> Result<Message, AnyError> {
     let rt_ctx = get_rt_ctx(&state);
 
-    Ok(discord_request(&state, async move {
+    discord_request(&state, async move {
         let client = rt_ctx.discord_config.interaction_client();
         client.followup(&token, id).await
     })
     .await?
     .model()
     .await?
-    .into())
+    .try_into()
 }
 
 #[op2(async)]
@@ -1111,7 +1114,7 @@ pub async fn op_discord_interaction_followup_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
-    Ok(discord_request_with_extra_error(&state, async move {
+    discord_request_with_extra_error(&state, async move {
         let interaction_client = rt_ctx.discord_config.interaction_client();
 
         let mut mc = interaction_client
@@ -1137,7 +1140,7 @@ pub async fn op_discord_interaction_followup_message(
     .await?
     .model()
     .await?
-    .into())
+    .try_into()
 }
 
 #[op2(async)]
@@ -1613,7 +1616,9 @@ pub async fn op_discord_get_channel_pins(
     .model()
     .await?;
 
-    Ok(pins.into_iter().map(Into::into).collect())
+    pins.into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, _>>()
 }
 
 #[op2(async)]

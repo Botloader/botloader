@@ -2,20 +2,24 @@ use dbrokerapi::broker_scheduler_rpc::{DiscordEvent, DiscordEventData};
 use runtime_models::internal::events::VoiceState;
 use twilight_model::id::{marker::GuildMarker, Id};
 
-pub fn discord_event_to_dispatch(evt: DiscordEvent) -> Option<DiscordDispatchEvent> {
-    match evt.event {
+pub fn discord_event_to_dispatch(
+    evt: DiscordEvent,
+) -> Result<Option<DiscordDispatchEvent>, anyhow::Error> {
+    Ok(match evt.event {
         DiscordEventData::MessageCreate(m) => Some(DiscordDispatchEvent {
             name: "MESSAGE_CREATE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(&runtime_models::internal::messages::Message::from(m.0))
-                .unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::messages::Message::try_from(
+                m.0,
+            )?)
+            .unwrap(),
         }),
         DiscordEventData::MessageUpdate(m) => Some(DiscordDispatchEvent {
             name: "MESSAGE_UPDATE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(runtime_models::internal::events::EventMessageUpdate::from(
-                *m,
-            ))
+            data: serde_json::to_value(
+                runtime_models::internal::events::EventMessageUpdate::try_from(*m)?,
+            )
             .unwrap(),
         }),
         DiscordEventData::MessageDelete(m) => Some(DiscordDispatchEvent {
@@ -146,47 +150,36 @@ pub fn discord_event_to_dispatch(evt: DiscordEvent) -> Option<DiscordDispatchEve
         DiscordEventData::InteractionCreate(interaction) => {
             let guild_id = evt.guild_id;
 
-            if let Ok(v) =
-                runtime_models::internal::interaction::Interaction::try_from(interaction.0)
-            {
-                match v {
-                    runtime_models::internal::interaction::Interaction::Command(
-                        cmd_interaction,
-                    ) => Some(DiscordDispatchEvent {
+            let v = runtime_models::internal::interaction::Interaction::try_from(interaction.0)?;
+            match v {
+                runtime_models::internal::interaction::Interaction::Command(cmd_interaction) => {
+                    Some(DiscordDispatchEvent {
                         guild_id,
                         name: "BOTLOADER_COMMAND_INTERACTION_CREATE",
                         data: serde_json::to_value(&cmd_interaction).unwrap(),
-                    }),
-                    runtime_models::internal::interaction::Interaction::MessageComponent(
-                        component_interaction,
-                    ) => Some(DiscordDispatchEvent {
-                        guild_id,
-                        name: "BOTLOADER_COMPONENT_INTERACTION_CREATE",
-                        data: serde_json::to_value(&component_interaction).unwrap(),
-                    }),
-                    runtime_models::internal::interaction::Interaction::ModalSubmit(
-                        modal_interaction,
-                    ) => Some(DiscordDispatchEvent {
-                        guild_id,
-                        name: "BOTLOADER_MODAL_SUBMIT_INTERACTION_CREATE",
-                        data: serde_json::to_value(&modal_interaction).unwrap(),
-                    }),
+                    })
                 }
-            } else {
-                None
+                runtime_models::internal::interaction::Interaction::MessageComponent(
+                    component_interaction,
+                ) => Some(DiscordDispatchEvent {
+                    guild_id,
+                    name: "BOTLOADER_COMPONENT_INTERACTION_CREATE",
+                    data: serde_json::to_value(&component_interaction).unwrap(),
+                }),
+                runtime_models::internal::interaction::Interaction::ModalSubmit(
+                    modal_interaction,
+                ) => Some(DiscordDispatchEvent {
+                    guild_id,
+                    name: "BOTLOADER_MODAL_SUBMIT_INTERACTION_CREATE",
+                    data: serde_json::to_value(&modal_interaction).unwrap(),
+                }),
             }
         }
         DiscordEventData::InviteCreate(invite) => Some(DiscordDispatchEvent {
             guild_id: invite.guild_id,
             name: "INVITE_CREATE",
             data: serde_json::to_value(
-                runtime_models::internal::events::EventInviteCreate::try_from(*invite)
-                    .map_err(|err| {
-                        tracing::error!(
-                            "failed converting dispatch event InviteCreate event: {err:?}"
-                        );
-                    })
-                    .ok(),
+                runtime_models::internal::events::EventInviteCreate::try_from(*invite)?,
             )
             .unwrap(),
         }),
@@ -202,18 +195,15 @@ pub fn discord_event_to_dispatch(evt: DiscordEvent) -> Option<DiscordDispatchEve
             guild_id: evt.guild_id,
             name: "VOICE_STATE_UPDATE",
             data: serde_json::to_value(runtime_models::internal::events::EventVoiceStateUpdate {
-                new: VoiceState::try_from(event.0).ok()?,
-                old: old_state
-                    .map(|v| VoiceState::try_from(*v))
-                    .transpose()
-                    .ok()?,
+                new: VoiceState::try_from(event.0)?,
+                old: old_state.map(|v| VoiceState::try_from(*v)).transpose()?,
             })
             .unwrap(),
         }),
         DiscordEventData::GuildDelete(_) => None,
         DiscordEventData::GuildCreate(_) => None,
         DiscordEventData::MessageDeleteBulk(_) => None,
-    }
+    })
 }
 
 pub struct DiscordDispatchEvent {
