@@ -45,6 +45,9 @@ pub struct RunConfig {
     /// Export traces to an otlp compatible client (such as grafana agent) at the provided url
     #[clap(long, env = "BL_OTLP_GRPC_URL")]
     pub otlp_grpc_url: Option<String>,
+
+    #[clap(long, env = "BL_SENTRY_DSN")]
+    pub sentry_dsn: Option<String>,
 }
 
 impl RunConfig {

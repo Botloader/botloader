@@ -1,9 +1,11 @@
+use std::borrow::Cow;
 use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
+use sentry_tracing::EventFilter;
 use tracing::{info, Level};
 use tracing_subscriber::filter::Targets;
 use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
@@ -52,6 +54,15 @@ pub fn setup_metrics(metrics_listen_addr: &str) {
 // }
 
 pub fn setup_tracing(config: &config::RunConfig, service_name: &str) {
+    if let Some(dsn) = config.sentry_dsn.as_ref() {
+        std::mem::forget(sentry::init(sentry::ClientOptions {
+            dsn: Some(FromStr::from_str(dsn).unwrap()),
+            server_name: Some(Cow::Owned(service_name.to_owned())),
+            traces_sample_rate: 1.0,
+            ..Default::default()
+        }));
+    }
+
     if let Some(otlp_url) = config.otlp_grpc_url.as_ref() {
         setup_tracing_otlp(otlp_url, service_name.to_owned())
     } else {
@@ -75,12 +86,18 @@ pub fn setup_tracing_otlp(url: &str, service_name: String) {
 
     let otlp_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
+    let sentry_layer = sentry_tracing::layer().event_filter(|md| match md.level() {
+        &tracing::Level::ERROR => EventFilter::Event,
+        _ => EventFilter::Ignore,
+    });
+
     // We need to register our layer with `tracing`.
     tracing_subscriber::registry()
         .with(global_filters().with_default(Level::INFO))
         .with(otlp_layer)
         // Tracing error sadly can't be used as it results in deadlocks
         .with(tracing_subscriber::fmt::Layer::new())
+        .with(sentry_layer)
         .init();
 }
 
