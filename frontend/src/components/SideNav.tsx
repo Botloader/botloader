@@ -13,13 +13,9 @@ export interface SideNavItem {
     exact?: boolean
 }
 
-export interface SideNavItemMap {
-    [key: string]: SideNavItem;
-}
-
 const drawerWidth = 250;
 
-export function SideNav<T extends SideNavItemMap>(props: { items: T }) {
+export function SideNav(props: { items: SideNavItem[], children?: ReactNode | ReactNode[] }) {
     let sideNavController = UseSideNavController();
 
     useEffect(() => {
@@ -32,13 +28,11 @@ export function SideNav<T extends SideNavItemMap>(props: { items: T }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    let keys = Object.keys(props.items);
-
     const drawerContents = (
         <>
             <List>
-                {keys.map((k) => (
-                    <Item item={props.items[k as keyof T]} key={k} />
+                {props.items.map((v, i) => (
+                    <NavItem item={v} key={i} />
                 ))}
             </List>
         </>
@@ -48,7 +42,7 @@ export function SideNav<T extends SideNavItemMap>(props: { items: T }) {
     const topBarReplacements = (
         <>
             {TopBarNavPages.map((v, i) => (
-                <Item item={{
+                <NavItem item={{
                     isNavLink: !v.useHref,
                     label: v.label,
                     path: v.path,
@@ -83,6 +77,7 @@ export function SideNav<T extends SideNavItemMap>(props: { items: T }) {
             {topBarReplacements}
             <Divider />
             {drawerContents}
+            {props.children}
         </Drawer>
         <Drawer
             variant="permanent"
@@ -95,12 +90,14 @@ export function SideNav<T extends SideNavItemMap>(props: { items: T }) {
             <Toolbar >{":)"}</Toolbar>
             <Divider />
             {drawerContents}
+            {props.children}
         </Drawer>
     </Box>
 }
 
-function Item(props: { item: SideNavItem }) {
+export function NavItem(props: { item: SideNavItem }) {
     const location = useLocation();
+
     const isActive = props.item.exact
         ? location.pathname === props.item.path
         : location.pathname.startsWith(props.item.path);
@@ -112,7 +109,7 @@ function Item(props: { item: SideNavItem }) {
     </ListItem >
 }
 
-function NavButton({ item, children, selected }: { item: SideNavItem, children: ReactNode, selected: boolean }) {
+export function NavButton({ item, children, selected }: { item: SideNavItem, children: ReactNode, selected: boolean }) {
     let sideNavController = UseSideNavController();
 
     if (item.isNavLink) {

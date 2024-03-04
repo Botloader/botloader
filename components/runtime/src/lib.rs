@@ -242,7 +242,7 @@ pub fn op_botloader_script_start(
 
 #[op2]
 pub fn op_get_settings(state: &mut OpState, #[serde] args: JsValue) -> Result<(), AnyError> {
-    todo!()
+    Ok(())
 }
 
 pub(crate) fn validate_script_meta(meta: &ScriptMeta) -> Result<(), anyhow::Error> {

@@ -8,7 +8,7 @@ if [ -d "./typings" ]; then
     rm -r typings
 fi
 
-tsc --build tsconfig.json
+npx tsc --build tsconfig.json
 
 # mkdir typings
 # mv *.d.ts typings

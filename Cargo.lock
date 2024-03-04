@@ -6806,6 +6806,7 @@ dependencies = [
  "chrono",
  "clap",
  "common",
+ "dbrokerapi",
  "discordoauthwrapper",
  "futures",
  "guild-logger",

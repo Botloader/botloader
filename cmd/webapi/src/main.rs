@@ -88,6 +88,7 @@ async fn main() {
     let session_layer = SessionLayer::new(session_store.clone(), oatuh_client.clone());
     let require_auth_layer = session_layer.require_auth_layer();
     let client_cache = session_layer.oauth_api_client_cache.clone();
+    let state_client = dbrokerapi::state_client::Client::new(web_conf.broker_api_addr);
 
     let common_middleware_stack = ServiceBuilder::new()
         .layer(axum_metrics_layer::MetricsLayer {
@@ -105,6 +106,7 @@ async fn main() {
         .layer(Extension(client_cache))
         .layer(Extension(news_handle))
         .layer(Extension(discord_config))
+        .layer(Extension(state_client))
         .layer(Extension(OptionalSession::<CurrentSessionStore>::none()))
         .layer(session_layer)
         .layer(CorsLayer {
@@ -151,10 +153,15 @@ async fn main() {
                 .delete(routes::scripts::delete_guild_script),
         )
         .route(
+            "/scripts/:script_id/validate_settings",
+            post(routes::scripts::validate_script_settings),
+        )
+        .route(
             "/scripts/:script_id/update_plugin",
             post(routes::scripts::update_script_plugin),
         )
         .route("/add_plugin", post(routes::plugins::guild_add_plugin))
+        .route("/full_guild", get(routes::guilds::get_full_guild))
         .layer(auth_guild_mw_stack);
 
     let authorized_api_routes =
@@ -302,4 +309,11 @@ pub struct WebConfig {
 
     #[clap(long, env = "BL_NEWS_GUILD")]
     pub(crate) news_guild: Option<Id<GuildMarker>>,
+
+    #[clap(
+        long,
+        env = "BL_BROKER_API_ADDR",
+        default_value = "http://localhost:7449"
+    )]
+    pub(crate) broker_api_addr: String,
 }

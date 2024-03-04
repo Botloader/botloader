@@ -12,7 +12,8 @@ use twilight_model::user::CurrentUserGuild;
 use validation::{validate, ValidationError};
 
 use crate::{
-    errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, ApiResult, CurrentConfigStore,
+    errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, util::EmptyResponse, ApiResult,
+    CurrentConfigStore,
 };
 
 pub async fn get_all_guild_scripts(
@@ -142,7 +143,7 @@ pub async fn update_guild_script(
         .get_script_by_id(current_guild.id, script_id)
         .await
         .map_err(|err| {
-            if (err.is_not_found()) {
+            if err.is_not_found() {
                 ApiErrorResponse::ScriptNotFound
             } else {
                 error!(%err, "failed fetching script");
@@ -174,6 +175,42 @@ pub async fn update_guild_script(
         })?;
 
     Ok(Json(script))
+}
+
+pub async fn validate_script_settings(
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(current_guild): Extension<CurrentUserGuild>,
+    Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
+    Json(payload): Json<UpdateRequestData>,
+) -> ApiResult<impl IntoResponse> {
+    let current_script = config_store
+        .get_script_by_id(current_guild.id, script_id)
+        .await
+        .map_err(|err| {
+            if err.is_not_found() {
+                ApiErrorResponse::ScriptNotFound
+            } else {
+                error!(%err, "failed fetching script");
+                ApiErrorResponse::InternalError
+            }
+        })?;
+
+    let sc = UpdateScript {
+        id: script_id,
+        enabled: payload.enabled,
+        original_source: payload.original_source,
+        name: payload.name,
+        contributes: None,
+        plugin_version_number: None,
+        settings_definitions: None,
+        settings_values: payload.settings_values,
+    };
+
+    if let Err(verr) = validate(&sc, &current_script) {
+        return Err(ApiErrorResponse::ValidationFailed(verr));
+    }
+
+    Ok(EmptyResponse)
 }
 
 pub async fn delete_guild_script(

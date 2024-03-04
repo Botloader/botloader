@@ -129,7 +129,16 @@ export class SettingsManager {
     addOption<
         const T extends OptionTypesUnion,
     >(name: string, options: ValidateOptions3<T>): ToConfigValue<T> {
-        throw new Error("TODO")
+
+        this.definitions.push({
+            kind: "Option",
+            name,
+            description: options.description,
+            definition: options,
+        })
+
+        return null as any
+        // throw new Error("TODO")
     }
 
     addOptionList<
@@ -157,41 +166,91 @@ export class SettingsManager {
      * @internal
      */
     toInternalOptions(): Internal.SettingsOptionDefinition[] {
-        return []
+        return this.definitions.map(def => defToInternal(def))
     }
 }
 
+function defToInternal(def: OptionDefinition): Internal.SettingsOptionDefinition {
+    if (def.kind === "Option") {
+        return {
+            kind: "Option",
+            data: {
+                name: def.name,
+                description: def.description || "",
+                required: def.definition.required ?? false,
+                kind: optionTypesUnionToInternal(def.definition),
+                defaultValue: def.definition.defaultValue ?? null,
+            }
+        }
+    } else {
+        return {
+            kind: "List",
+            data: {
+                name: def.name,
+                description: def.description || "",
+                required: def.options.required ?? false,
+                defaultValue: def.options.defaultValue ?? null,
+                template: Object.entries(def.template).map(([k, v]) => ({
+                    name: k,
+                    defaultValue: v.defaultValue ?? null,
+                    description: v.description ?? "",
+                    required: v.required ?? false,
+                    kind: optionTypesUnionToInternal(v),
+                }))
+            }
+        }
+    }
+}
 
-const builder = new SettingsManager()
-
-const levelRoles = builder.addOptionList("level roles", {
-    description: "Roles to assign when they reach a level",
-    defaultValue: [],
-}, {
-    xp: {
-        kind: "integer",
-        min: 10,
-        required: true,
-        // unknownField: 10,
-    },
-    role: {
-        kind: "role",
-        required: true,
-    },
-})
-
-const xpName = builder.addOption("some string", {
-    kind: "string",
-    description: "Name to give xp points",
-    defaultValue: "xp",
-})
-
-levelRoles.map(v => {
-    const a = v.xp
-    const b = v.role
-})
-
-const disabledChannels = builder.addOption("disabled channels", {
-    description: "disable xp gain in selected channels",
-    kind: "channels",
-})
+function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOptionType {
+    switch (def.kind) {
+        case "string":
+            return {
+                kind: "string",
+                max_length: def.maxLength ?? null,
+                min_length: def.minLength ?? null,
+            }
+        case "float":
+            return {
+                kind: "float",
+                max: def.max ?? null,
+                min: def.min ?? null,
+            }
+        case "integer":
+            return {
+                kind: "integer",
+                max: null,
+                min: null,
+            }
+        case "integer64":
+            return {
+                kind: "integer64",
+                max: def.max ?? null,
+                min: def.min ?? null,
+            }
+        case "channel":
+            return {
+                kind: "channel",
+                types: null,
+            }
+        case "channels":
+            return {
+                kind: "channels",
+                types: null,
+                max_length: def.max ?? null,
+                min_length: def.min ?? null,
+            }
+        case "role":
+            return {
+                kind: "role",
+                assignable: null
+            }
+        case "roles":
+            return {
+                kind: "roles",
+                assignable: null,
+                max_length: def.max ?? null,
+                min_length: def.min ?? null,
+            }
+    }
+}

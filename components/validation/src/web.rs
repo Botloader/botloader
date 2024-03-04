@@ -96,6 +96,18 @@ pub(crate) fn validate_settings_option_value_option(
                 ctx.push_error(format!("expected string, got {}", value));
                 return;
             };
+
+            if let Some(max_length) = max_length {
+                if value.chars().count() > *max_length as usize {
+                    ctx.push_error(format!("can be a maximum of {} characters", max_length))
+                }
+            }
+
+            if let Some(min_length) = min_length {
+                if value.chars().count() < *min_length as usize {
+                    ctx.push_error(format!("has to be at least {} characters", min_length))
+                }
+            }
         }
         SettingsOptionType::Float { min, max } => {
             let Some(value) = value.as_f64() else {
@@ -177,30 +189,50 @@ pub(crate) fn validate_settings_option_value_list(
     for (i, item) in v.iter().enumerate() {
         ctx.push_index(i);
 
-        let Some(object) = item.as_object() else {
-            ctx.push_error("item is not a object");
-            ctx.pop_field();
-            continue;
-        };
+        // let Some(arr) = item.as_array() else {
+        //     ctx.push_error("item is not a object");
+        //     ctx.pop_field();
+        //     continue;
+        // };
 
-        // validate all fields against the template
-        for (key, value) in object {
-            let Some(definition) = context_data.template.iter().find(|v| &v.name == key) else {
-                ctx.push_field_error(key, "unknown field");
-                continue;
-            };
+        match serde_json::from_value::<Vec<SettingsOptionValue>>(item.clone()) {
+            Ok(fields) => {
+                for field in &fields {
+                    let Some(definition) =
+                        context_data.template.iter().find(|v| v.name == field.name)
+                    else {
+                        ctx.push_field_error(&field.name, "unknown field");
+                        continue;
+                    };
 
-            ctx.push_field(key);
-            validate_settings_option_value_option(ctx, value, definition);
-            ctx.pop_field();
-        }
+                    ctx.push_field(&field.name);
+                    validate_settings_option_value_option(ctx, &field.value, definition);
+                    ctx.pop_field();
+                }
 
-        // check required fields
-        for field in context_data.template.iter().filter(|v| v.required) {
-            if !object.contains_key(&field.name) {
-                ctx.push_error(format!("missing required field: {}", field.name))
+                // check required fields
+                for field_def in context_data.template.iter().filter(|v| v.required) {
+                    if !fields.iter().any(|v| v.name == field_def.name) {
+                        ctx.push_field_error(&field_def.name, "required")
+                    }
+                }
+            }
+            Err(err) => {
+                ctx.push_error(format!("failed deserializing fields: {}", err));
             }
         }
+
+        // validate all fields against the template
+        // for (key, value) in object {
+        //     let Some(definition) = context_data.template.iter().find(|v| &v.name == key) else {
+        //         ctx.push_field_error(key, "unknown field");
+        //         continue;
+        //     };
+
+        //     ctx.push_field(key);
+        //     validate_settings_option_value_option(ctx, value, definition);
+        //     ctx.pop_field();
+        // }
 
         ctx.pop_field();
     }

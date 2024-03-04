@@ -10,6 +10,7 @@ stores = { path = "../../components/stores" }
 discordoauthwrapper = { path = "../../components/discordoauthwrapper" }
 botrpc = { path = "../../components/botrpc" }
 guild-logger = { path = "../../components/guild-logger" }
+dbrokerapi = { path = "../../components/dbrokerapi" }
 validation = { path = "../../components/validation" }
 common = { path = "../../components/common" }
 axum-metrics-layer = { path = "../../components/axum-metrics-layer" }

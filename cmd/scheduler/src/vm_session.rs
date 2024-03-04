@@ -20,7 +20,7 @@ use scheduler_worker_rpc::{
     CreateScriptsVmReq, MetricEvent, SchedulerMessage, VmDispatchEvent, WorkerMessage,
 };
 use stores::{
-    config::{IntervalTimerContrib, Script, ScriptContributes},
+    config::{IntervalTimerContrib, Script, ScriptContributes, UpdateScript},
     timers::{IntervalTimer, ScheduledTask},
 };
 use tokio::sync::oneshot;
@@ -644,6 +644,26 @@ impl VmSession {
             .await
         {
             error!(%err, "failed updating db contribs");
+        }
+
+        if let Err(err) = self
+            .stores
+            .update_script(
+                self.guild_id,
+                UpdateScript {
+                    id: evt.script_id.0,
+                    name: None,
+                    original_source: None,
+                    enabled: None,
+                    contributes: None,
+                    plugin_version_number: None,
+                    settings_definitions: Some(evt.settings.clone()),
+                    settings_values: None,
+                },
+            )
+            .await
+        {
+            error!(%err, "failed updating db contribs (settings)");
         }
     }
 }

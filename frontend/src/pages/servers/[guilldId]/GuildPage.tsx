@@ -3,7 +3,6 @@ import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, S
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { useNavigate, useParams } from "react-router-dom";
 import { Panel } from "../../../components/Panel";
-import { SideNav } from "../../../components/SideNav";
 import { EditScriptPage } from "./scripts/[script_id]/edit/EditScript";
 import { Alert, AlertTitle, Box, Button, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
 import { FetchDataGuard } from "../../../components/FetchData";
@@ -13,33 +12,6 @@ import { useSession } from "../../../modules/session/useSession";
 import { useCurrentGuild } from "../../../modules/guilds/CurrentGuild";
 import { guildScriptsContext, useCurrentGuildScripts } from "../../../modules/guilds/GuildScriptsProvider";
 import { Loading } from "../../../components/Loading";
-
-export function GuildSideNav() {
-    const guild = useCurrentGuild();
-
-    const navItems = {
-        "home": {
-            label: "Home",
-            isNavLink: true,
-            exact: true,
-            path: `/servers/${guild?.value?.guild.id}`,
-        },
-        // "scripts": {
-        //     label: "Scripts",
-        //     isNavLink: true,
-        //     exact: true,
-        //     path: `/servers/${props.guild.guild.id}/scripts`,
-        // },
-        // "settings": {
-        //     label: "Settings",
-        //     isNavLink: true,
-        //     exact: true,
-        //     path: `/servers/${props.guild.guild.id}/settings`,
-        // },
-    }
-
-    return <SideNav items={navItems}></SideNav>
-}
 
 export function EditGuildScript() {
     const guild = useCurrentGuild()!;

@@ -140,6 +140,10 @@ export namespace OpWrappers {
         );
     }
 
+    export function getSettings() {
+        return Deno.core.ops.op_get_settings()
+    }
+
     export function consoleLog(args: Internal.ConsoleLogMessage) {
         Deno.core.ops.op_botloader_log(
             args

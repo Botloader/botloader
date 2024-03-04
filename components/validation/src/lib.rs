@@ -65,10 +65,7 @@ impl ValidationContext {
     }
 
     fn push_error(&mut self, msg: impl Into<String>) {
-        let mut fields = self.field_stack.join(".");
-        if !fields.is_empty() {
-            fields.push('.');
-        }
+        let fields = self.field_stack.join(".");
 
         self.errs.push(ValidationError {
             field: fields,

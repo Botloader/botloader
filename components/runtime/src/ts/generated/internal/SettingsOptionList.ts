@@ -6,5 +6,5 @@ export interface SettingsOptionList {
   description: string;
   required: boolean;
   defaultValue: any;
-  template: Record<string, SettingsOption>;
+  template: Array<SettingsOption>;
 }

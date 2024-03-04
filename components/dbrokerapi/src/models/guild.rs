@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use twilight_model::{
     guild::{
         DefaultMessageNotificationLevel, ExplicitContentFilter, MfaLevel, NSFWLevel, Permissions,
@@ -14,7 +14,7 @@ use twilight_model::{
 /// Represents a cached [`Guild`].
 ///
 /// [`Guild`]: twilight_model::guild::Guild
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct BrokerGuild {
     pub afk_channel_id: Option<Id<ChannelMarker>>,
     pub afk_timeout: u64,
