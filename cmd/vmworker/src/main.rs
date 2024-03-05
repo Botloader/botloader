@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use common::DiscordConfig;
 use guild_logger::LogSender;
-use runtime::{CreateRuntimeContext, RuntimeEvent};
+use runtime::{CreateRuntimeContext, RuntimeEvent, ScriptSettingsValues};
 use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
 use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
@@ -23,13 +23,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("worker starting");
 
-    #[cfg(target_family = "unix")] 
+    #[cfg(target_family = "unix")]
     let (scheduler_tx, scheduler_rx) =
         connect_scheduler("/tmp/botloader_scheduler_workers", config.worker_id).await;
 
-    #[cfg(target_family = "windows")] 
-    let (scheduler_tx, scheduler_rx) =
-        connect_scheduler("localhost:7885", config.worker_id).await;
+    #[cfg(target_family = "windows")]
+    let (scheduler_tx, scheduler_rx) = connect_scheduler("localhost:7885", config.worker_id).await;
 
     metrics::set_global_recorder(metrics_forwarder::MetricsForwarder {
         tx: scheduler_tx.clone(),
@@ -266,7 +265,7 @@ impl Worker {
     #[instrument(
         skip(self),
         fields(
-            guild_id = self.current_guild_id().map(|v| v.to_string()), 
+            guild_id = self.current_guild_id().map(|v| v.to_string()),
         )
     )]
     async fn handle_vm_evt(&mut self, evt: VmEvent) -> anyhow::Result<ContinueState> {
@@ -348,6 +347,16 @@ impl Worker {
             premium_tier: self.premium_tier.clone(),
             main_tokio_runtime: tokio::runtime::Handle::current(),
 
+            settings_values: req
+                .scripts
+                .iter()
+                .filter(|v| !v.settings_values.is_empty())
+                .map(|v| ScriptSettingsValues {
+                    script_id: v.id,
+                    settings_values: v.settings_values.clone(),
+                })
+                .collect(),
+ 
             bucket_store: self.stores.clone(),
             config_store: self.stores.clone(),
             timer_store: self.stores.clone(),
@@ -419,15 +428,15 @@ impl guild_logger::GuildLoggerBackend for GuildLogForwarder {
         let _ = self.tx.send(WorkerMessage::GuildLog(entry));
     }
 }
-  
-#[cfg(target_family = "unix")] 
+
+#[cfg(target_family = "unix")]
 async fn connect_scheduler(
     path: &str,
     id: u64,
 ) -> (
     mpsc::UnboundedSender<WorkerMessage>,
     mpsc::UnboundedReceiver<SchedulerMessage>,
-) { 
+) {
     let mut stream = tokio::net::UnixStream::connect(path)
         .await
         .expect("scheduler should have opened socket");
@@ -455,16 +464,14 @@ async fn connect_scheduler(
     (scheduler_tx, scheduler_rx)
 }
 
-
-  
-#[cfg(target_family = "windows")] 
+#[cfg(target_family = "windows")]
 async fn connect_scheduler(
     addr: &str,
     id: u64,
 ) -> (
     mpsc::UnboundedSender<WorkerMessage>,
     mpsc::UnboundedReceiver<SchedulerMessage>,
-) { 
+) {
     let mut stream = tokio::net::TcpStream::connect(addr)
         .await
         .expect("scheduler should have opened socket");
