@@ -133,22 +133,56 @@ export class SettingsManager {
     definitions: AnyOptionDefinition[] = [];
     loadedSettings: Internal.SettingsOptionValue[];
 
-    constructor() {
-        this.loadedSettings = OpWrappers.getSettings()
+    constructor(scriptId: number) {
+        this.loadedSettings = OpWrappers.getSettings(scriptId)
     }
 
     addOptionString<
-        // TRequired extends boolean = false,
         TDefault extends string | undefined = undefined,
     >(name: string, options: StringOptions<false, TDefault>) {
         return this.addOption<"string", false, TDefault>(name, "string", options)
     }
 
     addOptionFloat<
-        // TRequired extends boolean = false,
         TDefault extends number | undefined = undefined,
     >(name: string, options: FloatOptions<false, TDefault>) {
         return this.addOption<"float", false, TDefault>(name, "float", options)
+    }
+
+    addOptionInteger<
+        TDefault extends number | undefined = undefined,
+    >(name: string, options: IntegerOptions<false, TDefault>) {
+        return this.addOption<"integer", false, TDefault>(name, "integer", options)
+    }
+
+    addOptionInteger64<
+        TDefault extends string | undefined = undefined,
+    >(name: string, options: Integer64Options<false, TDefault>) {
+        return this.addOption<"integer64", false, TDefault>(name, "integer64", options)
+    }
+
+    addOptionRole<
+        TDefault extends string | undefined = undefined,
+    >(name: string, options: RoleOptions<false, TDefault>) {
+        return this.addOption<"role", false, TDefault>(name, "role", options)
+    }
+
+    addOptionRoles<
+        TDefault extends string[] | undefined = undefined,
+    >(name: string, options: RolesOptions<false, TDefault>) {
+        return this.addOption<"roles", false, TDefault>(name, "roles", options)
+    }
+
+    addOptionChannel<
+        TDefault extends string | undefined = undefined,
+    >(name: string, options: ChannelOptions<false, TDefault>) {
+        return this.addOption<"channel", false, TDefault>(name, "channel", options)
+    }
+
+    addOptionChannels<
+        TDefault extends string[] | undefined = undefined,
+    >(name: string, options: ChannelsOptions<false, TDefault>) {
+        return this.addOption<"channels", false, TDefault>(name, "channels", options)
     }
 
     private addOption<
@@ -268,6 +302,54 @@ export class ListBuilder<TOpts extends OptionsMap> {
         return this.addOption<TName, "float", TRequired, TDefault>(name, "float", options)
     }
 
+    addOptionInteger<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends number | undefined = undefined,
+    >(name: TName, options: IntegerOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "integer", TRequired, TDefault>(name, "integer", options)
+    }
+
+    addOptionInteger64<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string | undefined = undefined,
+    >(name: TName, options: Integer64Options<TRequired, TDefault>) {
+        return this.addOption<TName, "integer64", TRequired, TDefault>(name, "integer64", options)
+    }
+
+    addOptionRole<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string | undefined = undefined,
+    >(name: TName, options: RoleOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "role", TRequired, TDefault>(name, "role", options)
+    }
+
+    addOptionRoles<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string[] | undefined = undefined,
+    >(name: TName, options: RolesOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "roles", TRequired, TDefault>(name, "roles", options)
+    }
+
+    addOptionChannel<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string | undefined = undefined,
+    >(name: TName, options: ChannelOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "channel", TRequired, TDefault>(name, "channel", options)
+    }
+
+    addOptionChannels<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string[] | undefined = undefined,
+    >(name: TName, options: ChannelsOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "channels", TRequired, TDefault>(name, "channels", options)
+    }
+
     private addOption<
         const TName extends string,
         const TKind extends OptionTypesKeys,
@@ -373,44 +455,6 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
             }
     }
 }
-
-const manager = new SettingsManager()
-
-
-// const a = manager.addOptionString("fun", {
-//     required: true,
-//     minLength: 10,
-// })
-
-const b = manager.addOptionString("fun", {
-    label: "Fun",
-    minLength: 10,
-})
-const bValue = b.value
-
-const c = manager.addOptionString("fun", {
-    minLength: 10,
-})
-const cValue = c.value
-
-const d = manager.addOptionString("fun", {
-    minLength: 10,
-    defaultValue: "asd",
-})
-const dValue = d.value
-
-const list = manager
-    .startList("aa")
-    .addOptionFloat("wahoo", {})
-    .addOptionString("some_string", { defaultValue: "asd" })
-    .addOptionString("another", { required: true })
-    .complete()
-
-list.value.map(v => {
-    const a = v.some_string
-    const b = v.wahoo
-    const c = v.another
-})
 
 // I originally tried to use generics here to double check the return type 
 // but i seem to run into weird typescript limitations regaring that

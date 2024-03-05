@@ -140,8 +140,8 @@ export namespace OpWrappers {
         );
     }
 
-    export function getSettings() {
-        return Deno.core.ops.op_get_settings()
+    export function getSettings(scriptId: number) {
+        return Deno.core.ops.op_get_settings(scriptId)
     }
 
     export function consoleLog(args: Internal.ConsoleLogMessage) {

@@ -25,7 +25,7 @@ export class Script {
     private storageBuckets: Storage.Bucket<unknown>[] = [];
     private taskHandlers: Internal.TaskBucketId[] = [];
     private commands: Commands.Command[] = [];
-    settings: SettingsManager = new SettingsManager();
+    settings: SettingsManager;
 
     private runCalled = false;
     private customStorageScope?: CustomScope;
@@ -37,6 +37,7 @@ export class Script {
         this.description = `script id ${id}`;
         this.scriptId = id;
         this.pluginId = pluginId;
+        this.settings = new SettingsManager(id)
     }
 
     setCustomStorageScope(scope: CustomScope) {
