@@ -1,64 +1,69 @@
 import { OpWrappers } from "./op_wrappers"
 import * as Internal from "./generated/internal/index";
+import { ChannelType } from "./discord/index";
 
-interface OptionTypes {
-    string: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: string,
-        maxLength?: number,
-        minLength?: number,
-    },
-    float: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: number,
-        max?: number,
-        min?: number,
-    },
-    integer: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: number,
-        max?: number,
-        min?: number,
-    },
-    integer64: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: string,
-        max?: string,
-        min?: string,
-    },
-    channel: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: string,
-    },
-    channels: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: string[],
-        min?: number,
-        max?: number,
-    },
-    role: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: string,
-    },
-    roles: {
-        description?: string,
-        required?: boolean,
-        defaultValue?: string[],
-        min?: number,
-        max?: number,
-    },
+interface BaseOptions<TRequired, TDefault> {
+    label?: string
+    description?: string
+    required?: TRequired
+    defaultValue?: TDefault,
 }
 
+interface StringOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    maxLength?: number,
+    minLength?: number,
+}
+
+interface FloatOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    max?: number,
+    min?: number,
+}
+
+interface IntegerOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    max?: number,
+    min?: number,
+}
+
+interface Integer64Options<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    max?: string,
+    min?: string,
+}
+
+interface ChannelOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    types?: ChannelType[]
+}
+
+interface ChannelsOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    allowEmpty?: boolean,
+    types?: ChannelType[]
+    max?: number,
+}
+
+interface RoleOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    requireAssignable?: boolean
+}
+
+interface RolesOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+    allowEmpty?: boolean,
+    max?: number,
+}
+
+interface OptionTypes<TRequired, TDefault> {
+    string: StringOptions<TRequired, TDefault>,
+    float: FloatOptions<TRequired, TDefault>,
+    integer: IntegerOptions<TRequired, TDefault>,
+    integer64: Integer64Options<TRequired, TDefault>,
+    channel: ChannelOptions<TRequired, TDefault>,
+    channels: ChannelsOptions<TRequired, TDefault>,
+    role: RoleOptions<TRequired, TDefault>,
+    roles: RolesOptions<TRequired, TDefault>,
+}
+
+type OptionTypesKeys = keyof OptionTypes<boolean, any>
+
 type OptionTypesUnion = {
-    [Key in keyof OptionTypes]: { kind: Key } & OptionTypes[Key]
-}[keyof OptionTypes]
+    [Key in OptionTypesKeys]: { kind: Key } & OptionTypes<boolean, any>[Key]
+}[OptionTypesKeys]
 
 export interface ConfigOptionValueTypesMapping {
     string: string,
@@ -71,39 +76,31 @@ export interface ConfigOptionValueTypesMapping {
     roles: string[],
 }
 
-type InnerToConfigValue<T extends OptionTypesUnion> = ConfigOptionValueTypesMapping[T["kind"]]
+type InnerToConfigValue<TKind extends OptionTypesKeys> = ConfigOptionValueTypesMapping[TKind]
 
-type ToConfigValue<T extends OptionTypesUnion> =
-    T["required"] extends true
-    ? InnerToConfigValue<T>
-    : T["defaultValue"] extends InnerToConfigValue<T>
-    ? InnerToConfigValue<T>
-    : InnerToConfigValue<T> | undefined
+type ToConfigValue<TKind extends OptionTypesKeys, TDefaultValue, TRequired extends boolean> =
+    TRequired extends true
+    ? InnerToConfigValue<TKind>
+    : InnerToConfigValue<TKind> | TDefaultValue
+// ? InnerToConfigValue<TKind>
+// : InnerToConfigValue<TKind> | undefined
 
-export type ToConfigValueMap<T extends Record<string, OptionTypesUnion>> = {
-    [Key in keyof T]: ToConfigValue<T[Key]>
-}
-
-type ValidateOptions<TOptions, Base> = keyof TOptions extends keyof Base ? TOptions : never
-type ValidateConfigMap<T extends Record<string, OptionTypesUnion>> = {
-    [Key in keyof T]: ValidateOptions<T[Key], OptionTypes[T[Key]["kind"]] & { kind: string }>
-}
-
-type ValidateOptions3<T extends OptionTypesUnion> = ValidateOptions<T, OptionTypes[T["kind"]] & { kind: string }>
-
-type OptionDefinition = {
+type OptionDefinitionOption = {
     kind: "Option",
     name: string,
-    description?: string,
     definition: OptionTypesUnion,
-} | {
+}
+
+type OptionDefinitionList = {
     kind: "List",
     name: string,
+    label?: string,
     description?: string,
     template: Record<string, OptionTypesUnion>,
     options: ListOptions<boolean, any>,
 }
 
+type AnyOptionDefinition = OptionDefinitionOption | OptionDefinitionList
 
 type ListOptions<TRequired extends boolean, TDefault> = {
     description?: string,
@@ -113,53 +110,66 @@ type ListOptions<TRequired extends boolean, TDefault> = {
     defaultValue?: TDefault,
 }
 
-type OptionReturnType<TRequired, TDefault, TReturn> = TRequired extends true
-    ? TReturn
-    : TDefault | TReturn
+export class LoadedOption<TKind extends OptionTypesKeys, TDefaultValue, TRequired extends boolean> {
+    definition: OptionDefinitionOption
+    value: ToConfigValue<TKind, TDefaultValue, TRequired>
+
+    /**
+     * @internal
+     */
+    constructor(definition: OptionDefinitionOption, rawValue?: Internal.SettingsOptionValue) {
+        this.definition = definition
+
+        if (rawValue) {
+            this.value = loadOptionValue(rawValue.value, definition.definition)
+        } else {
+            this.value = definition.definition.defaultValue
+        }
+    }
+}
 
 export class SettingsManager {
 
-    definitions: OptionDefinition[] = [];
-    loadedSettings: [];
+    definitions: AnyOptionDefinition[] = [];
+    loadedSettings: Internal.SettingsOptionValue[];
 
     constructor() {
         this.loadedSettings = OpWrappers.getSettings()
     }
 
-    addOption<
-        const T extends OptionTypesUnion,
-    >(name: string, options: ValidateOptions3<T>): ToConfigValue<T> {
-
-        this.definitions.push({
-            kind: "Option",
-            name,
-            description: options.description,
-            definition: options,
-        })
-
-        return null as any
-        // throw new Error("TODO")
+    addOptionString<
+        // TRequired extends boolean = false,
+        TDefault extends string | undefined = undefined,
+    >(name: string, options: StringOptions<false, TDefault>) {
+        return this.addOption<"string", false, TDefault>(name, "string", options)
     }
 
-    addOptionList<
-        const T extends Record<string, OptionTypesUnion>,
-        const TRequired extends boolean = false,
-        const TDefault extends ToConfigValueMap<T>[] | undefined = undefined,
-    >(
-        name: string,
-        options: ListOptions<TRequired, TDefault>,
-        template: ValidateConfigMap<T>
-    ): OptionReturnType<TRequired, TDefault, ToConfigValueMap<T>[]> {
-        this.definitions.push({
-            kind: "List",
-            name,
-            description: options.description,
-            template: template,
-            options: options,
-        })
+    addOptionFloat<
+        // TRequired extends boolean = false,
+        TDefault extends number | undefined = undefined,
+    >(name: string, options: FloatOptions<false, TDefault>) {
+        return this.addOption<"float", false, TDefault>(name, "float", options)
+    }
 
-        const built = template;
-        return built as any
+    private addOption<
+        const TKind extends OptionTypesKeys,
+        const TRequired extends boolean = false,
+        const TDefault extends InnerToConfigValue<TKind> | undefined = undefined,
+    >(name: string, kind: TKind, options: OptionTypes<TRequired, TDefault>[TKind]): LoadedOption<TKind, TDefault, TRequired> {
+        const definition: OptionDefinitionOption = {
+            kind: "Option",
+            name,
+            definition: { kind, ...options } as any,
+        }
+
+        this.definitions.push(definition)
+
+        const value = this.loadedSettings.find(v => v.name === name)
+        return new LoadedOption(definition, value)
+    }
+
+    startList(name: string) {
+        return new ListBuilder<{}>(this)
     }
 
     /**
@@ -170,13 +180,122 @@ export class SettingsManager {
     }
 }
 
-function defToInternal(def: OptionDefinition): Internal.SettingsOptionDefinition {
+interface OptionsMap {
+    [key: string]: { defaultValue: any, kind: any, required: boolean }
+}
+
+type LayerOption<TInner, TKey extends string, TKind extends keyof ConfigOptionValueTypesMapping, TDefault, TRequired> =
+    { [Prop in keyof TInner]: TInner[Prop] } & { [Prop in TKey]: { defaultValue: TDefault, kind: TKind, required: TRequired } };
+
+type OptionMapValues<T extends OptionsMap> = {
+    [Prop in keyof T]: ToConfigValue<T[Prop]["kind"], T[Prop]["defaultValue"], T[Prop]["required"]>
+}
+
+// interface LoadedList<TOpts extends OptionsMap> {
+//     definitions: AnyOptionDefinition[],
+//     value: OptionMapValues<TOpts>[]
+// }
+
+export class LoadedList<TOpts extends OptionsMap> {
+    definition: OptionDefinitionList
+    value: OptionMapValues<TOpts>[]
+
+    /**
+     * @internal
+     */
+    constructor(definition: OptionDefinitionList, rawValue?: Internal.SettingsOptionValue) {
+        this.definition = definition
+
+        if (!rawValue?.value) {
+            this.value = definition.options.defaultValue
+            return
+        }
+
+        const arrValue = rawValue?.value
+        if (!Array.isArray(arrValue)) {
+            this.value = definition.options.defaultValue
+            return
+        }
+
+        this.value = []
+
+        for (const entry of arrValue) {
+            if (!Array.isArray(entry)) {
+                console.log(`Invalid list item in option list ${definition.name} skipping...`)
+                continue
+            }
+
+            const obj = {} as any
+            for (const [name, optionDefinition] of Object.entries(definition.template)) {
+                const optionValue = entry.find(v => "name" in v && v.name === name)
+                if (optionValue && "value" in optionValue) {
+                    obj[name] = loadOptionValue(optionValue.value, optionDefinition)
+                } else {
+                    if (optionDefinition.required && optionDefinition.defaultValue === undefined) {
+                        console.log(`List item in option list ${definition.name} missing required option [${name}], skipping...`)
+                    } else {
+                        obj[name] = optionDefinition.defaultValue
+                    }
+                }
+            }
+
+            this.value.push(obj)
+        }
+    }
+}
+
+export class ListBuilder<TOpts extends OptionsMap> {
+    manager: SettingsManager;
+    definitions: OptionDefinitionOption[] = [];
+
+    constructor(manager: SettingsManager) {
+        this.manager = manager
+    }
+
+    addOptionString<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string | undefined = undefined,
+    >(name: TName, options: StringOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "string", TRequired, TDefault>(name, "string", options)
+    }
+
+    addOptionFloat<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends number | undefined = undefined,
+    >(name: TName, options: FloatOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "float", TRequired, TDefault>(name, "float", options)
+    }
+
+    private addOption<
+        const TName extends string,
+        const TKind extends OptionTypesKeys,
+        const TRequired extends boolean = false,
+        const TDefault extends InnerToConfigValue<TKind> | undefined = undefined,
+    >(name: TName, kind: TKind, options: OptionTypes<TRequired, TDefault>[TKind]) {
+        this.definitions.push({
+            kind: "Option",
+            name,
+            definition: { kind, ...options } as any,
+        })
+
+        return this as ListBuilder<LayerOption<TOpts, TName, TKind, TDefault, TRequired>>
+    }
+
+    complete(): LoadedList<TOpts> {
+
+        return null as any
+    }
+}
+
+function defToInternal(def: AnyOptionDefinition): Internal.SettingsOptionDefinition {
     if (def.kind === "Option") {
         return {
             kind: "Option",
             data: {
                 name: def.name,
-                description: def.description || "",
+                description: def.definition.description || "",
                 required: def.definition.required ?? false,
                 kind: optionTypesUnionToInternal(def.definition),
                 defaultValue: def.definition.defaultValue ?? null,
@@ -238,7 +357,7 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
                 kind: "channels",
                 types: null,
                 max_length: def.max ?? null,
-                min_length: def.min ?? null,
+                min_length: def.allowEmpty ? 0 : 1,
             }
         case "role":
             return {
@@ -250,7 +369,79 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
                 kind: "roles",
                 assignable: null,
                 max_length: def.max ?? null,
-                min_length: def.min ?? null,
+                min_length: def.allowEmpty ? 0 : 1,
             }
+    }
+}
+
+const manager = new SettingsManager()
+
+
+// const a = manager.addOptionString("fun", {
+//     required: true,
+//     minLength: 10,
+// })
+
+const b = manager.addOptionString("fun", {
+    label: "Fun",
+    minLength: 10,
+})
+const bValue = b.value
+
+const c = manager.addOptionString("fun", {
+    minLength: 10,
+})
+const cValue = c.value
+
+const d = manager.addOptionString("fun", {
+    minLength: 10,
+    defaultValue: "asd",
+})
+const dValue = d.value
+
+const list = manager
+    .startList("aa")
+    .addOptionFloat("wahoo", {})
+    .addOptionString("some_string", { defaultValue: "asd" })
+    .addOptionString("another", { required: true })
+    .complete()
+
+list.value.map(v => {
+    const a = v.some_string
+    const b = v.wahoo
+    const c = v.another
+})
+
+// I originally tried to use generics here to double check the return type 
+// but i seem to run into weird typescript limitations regaring that
+// and it also wouldn't be usable from the list then'
+//
+// This performs some basic protections and sanity checks, but more in depth ones may be implemented later
+function loadOptionValue(value: any, definition: OptionTypesUnion): any {
+    switch (definition.kind) {
+        case "string": {
+            return typeof value === "string" ? value : definition.defaultValue
+        }
+        case "float": {
+            return typeof value === "number" ? value : definition.defaultValue
+        }
+        case "integer": {
+            return typeof value === "number" ? Math.floor(value) : definition.defaultValue
+        }
+        case "integer64": {
+            return typeof value === "string" ? value : definition.defaultValue
+        }
+        case "channel": {
+            return typeof value === "string" ? value : definition.defaultValue
+        }
+        case "channels": {
+            return Array.isArray(value) ? value : definition.defaultValue
+        }
+        case "role": {
+            return typeof value === "string" ? value : definition.defaultValue
+        }
+        case "roles": {
+            return Array.isArray(value) ? value : definition.defaultValue
+        }
     }
 }
