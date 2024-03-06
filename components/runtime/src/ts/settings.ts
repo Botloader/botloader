@@ -94,19 +94,17 @@ type OptionDefinitionOption = {
 type OptionDefinitionList = {
     kind: "List",
     name: string,
-    label?: string,
-    description?: string,
     template: Record<string, OptionTypesUnion>,
-    options: ListOptions<boolean, any>,
+    options: ListOptions<any>,
 }
 
 type AnyOptionDefinition = OptionDefinitionOption | OptionDefinitionList
 
-type ListOptions<TRequired extends boolean, TDefault> = {
+type ListOptions<TDefault> = {
     description?: string,
+    label?: string,
     max?: number,
     min?: number,
-    required?: TRequired,
     defaultValue?: TDefault,
 }
 
@@ -203,7 +201,7 @@ export class SettingsManager {
     }
 
     startList(name: string) {
-        return new ListBuilder<{}>(this)
+        return new ListBuilder<{}>(name, this)
     }
 
     /**
@@ -241,13 +239,13 @@ export class LoadedList<TOpts extends OptionsMap> {
         this.definition = definition
 
         if (!rawValue?.value) {
-            this.value = definition.options.defaultValue
+            this.value = definition.options.defaultValue ?? []
             return
         }
 
         const arrValue = rawValue?.value
         if (!Array.isArray(arrValue)) {
-            this.value = definition.options.defaultValue
+            this.value = definition.options.defaultValue ?? []
             return
         }
 
@@ -280,9 +278,11 @@ export class LoadedList<TOpts extends OptionsMap> {
 
 export class ListBuilder<TOpts extends OptionsMap> {
     manager: SettingsManager;
-    definitions: OptionDefinitionOption[] = [];
+    name: string;
+    definitions: Record<string, OptionTypesUnion> = {};
 
-    constructor(manager: SettingsManager) {
+    constructor(name: string, manager: SettingsManager) {
+        this.name = name
         this.manager = manager
     }
 
@@ -356,16 +356,22 @@ export class ListBuilder<TOpts extends OptionsMap> {
         const TRequired extends boolean = false,
         const TDefault extends InnerToConfigValue<TKind> | undefined = undefined,
     >(name: TName, kind: TKind, options: OptionTypes<TRequired, TDefault>[TKind]) {
-        this.definitions.push({
-            kind: "Option",
-            name,
-            definition: { kind, ...options } as any,
-        })
+        this.definitions[name] = {
+            kind: kind,
+            ...(options as any),
+        }
 
         return this as ListBuilder<LayerOption<TOpts, TName, TKind, TDefault, TRequired>>
     }
 
-    complete(): LoadedList<TOpts> {
+    complete(options?: ListOptions<OptionMapValues<TOpts>[]>): LoadedList<TOpts> {
+
+        this.manager.definitions.push({
+            kind: "List",
+            name: this.name,
+            options: options ?? {},
+            template: this.definitions,
+        })
 
         return null as any
     }
@@ -377,6 +383,7 @@ function defToInternal(def: AnyOptionDefinition): Internal.SettingsOptionDefinit
             kind: "Option",
             data: {
                 name: def.name,
+                label: def.definition.label ?? def.name,
                 description: def.definition.description || "",
                 required: def.definition.required ?? false,
                 kind: optionTypesUnionToInternal(def.definition),
@@ -388,11 +395,14 @@ function defToInternal(def: AnyOptionDefinition): Internal.SettingsOptionDefinit
             kind: "List",
             data: {
                 name: def.name,
-                description: def.description || "",
-                required: def.options.required ?? false,
+                description: def.options.description || "",
+                label: def.options.label ?? def.name,
+                // asd: 10,
+                required: false,
                 defaultValue: def.options.defaultValue ?? null,
                 template: Object.entries(def.template).map(([k, v]) => ({
                     name: k,
+                    label: v.label ?? k,
                     defaultValue: v.defaultValue ?? null,
                     description: v.description ?? "",
                     required: v.required ?? false,

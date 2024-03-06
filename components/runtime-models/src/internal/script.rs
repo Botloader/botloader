@@ -430,6 +430,7 @@ pub enum SettingsOptionType {
 #[ts(export_to = "bindings/internal/SettingsOption.ts")]
 pub struct SettingsOption {
     pub name: String,
+    pub label: String,
     pub description: String,
     pub required: bool,
     #[ts(type = "any")]
@@ -443,6 +444,7 @@ pub struct SettingsOption {
 #[ts(export_to = "bindings/internal/SettingsOptionList.ts")]
 pub struct SettingsOptionList {
     pub name: String,
+    pub label: String,
     pub description: String,
     pub required: bool,
     #[ts(type = "any")]

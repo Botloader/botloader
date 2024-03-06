@@ -103,6 +103,7 @@ function ScriptSettings({ script }: { script: Script }) {
     const session = useSession()
     const currentGuildId = useCurrentGuildId()
     const [newValues, setNewValues] = useState<SettingsOptionValue[]>(script.settings_values ?? [])
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const [apiErrorResponse, setApiErrorResponse] = useState<ApiError | null>(null)
 
@@ -137,10 +138,14 @@ function ScriptSettings({ script }: { script: Script }) {
     }
 
     async function save() {
+        const response = await session.apiClient.updateScript(currentGuildId, script.id, {
+            settings_values: newValues
+        })
 
+        if (isErrorResponse(response)) {
+            setApiErrorResponse(response)
+        }
     }
-
-
 
     useEffect(() => {
         async function validateScript() {
@@ -155,21 +160,45 @@ function ScriptSettings({ script }: { script: Script }) {
             }
         }
 
-        validateScript()
+        if (!isSubmitting) {
+            setIsSubmitting(true)
+            validateScript().finally(() => setIsSubmitting(false))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newValues, currentGuildId, script.id, session.apiClient])
 
     return <Paper sx={{ padding: 2, marginTop: 2 }}>
         <Typography variant="h5">Settings</Typography>
-        {script.settings_definitions?.length} definitions and {script.settings_values.length} values
-        <SettingsValuesContext.Provider value={settingsHook}>
-            {script.settings_definitions?.map(v => {
-                if (v.kind === "List") {
-                    return <EditSettingsOptionList key={v.data.name} list={v.data} />
-                } else {
-                    return <EditSettingsOption key={v.data.name} option={v.data} />
+        <form
+            onSubmit={(evt) => {
+                evt.preventDefault()
+                if (isSubmitting) {
+                    return
                 }
-            })}
-        </SettingsValuesContext.Provider>
+                setIsSubmitting(true)
+                save().finally(() => setIsSubmitting(false))
+            }}
+        >
+            {script.settings_definitions?.length} definitions and {script.settings_values.length} values
+            <SettingsValuesContext.Provider value={settingsHook}>
+                {script.settings_definitions?.map(v => {
+                    if (v.kind === "List") {
+                        return <EditSettingsOptionList key={v.data.name} list={v.data} />
+                    } else {
+                        return <EditSettingsOption key={v.data.name} option={v.data} />
+                    }
+                })}
+            </SettingsValuesContext.Provider>
+            <Button
+                type="submit"
+                disabled={isSubmitting}
+                sx={{
+                    marginTop: 2,
+                    marginBottom: 2
+                }}>
+                Save Changes
+            </Button>
+        </form>
         <Paper elevation={3} sx={{ p: 2 }}>
             <Typography>Debug definitions</Typography>
             <CodeBlock>
@@ -219,7 +248,7 @@ function EditSettingsOptionList({ list }: {
 
     return <Paper sx={{ marginTop: 3, padding: 1 }} elevation={2}>
         <Box display={"flex"} justifyContent={"space-between"}>
-            <Typography>{list.name}</Typography>
+            <Typography>{list.label}</Typography>
             <Box>
                 <Button
                     onClick={newItem}
@@ -230,6 +259,7 @@ function EditSettingsOptionList({ list }: {
                 </Button>
             </Box>
         </Box>
+        <Typography variant='body2'>{list.description}</Typography>
         <Box paddingLeft={1}>
             {
                 value.map((item, i) => {
@@ -250,11 +280,9 @@ function EditSettingsOptionList({ list }: {
                                     row[currentIndex] = { name, value: newValue }
                                 }
                             } else if (value !== null) {
-                                console.log("NOT NULL!")
                                 row.push({ name, value: newValue })
                             }
                             setValue(copy)
-                            console.log(newValue)
                         },
                         getFieldError(name) {
                             const prefix = `${list.name}.${i}.`
@@ -341,7 +369,7 @@ function EditOptionNumberField({ option }: { option: SettingsOption }) {
     return <Box mt={3}>
         <TextField
             id={"script-option-" + option.name}
-            label={option.name}
+            label={option.label}
             // defaultValue="Default Value"
             type={"number"}
             inputProps={{
@@ -398,7 +426,7 @@ function EditOptionTextField({ option }: { option: SettingsOption }) {
     return <Box mt={3}>
         <TextField
             id={"script-option-" + option.name}
-            label={option.name}
+            label={option.label}
             // defaultValue="Default Value"
             type={"text"}
             inputProps={{
@@ -428,20 +456,30 @@ function EditOptionSelect({ option }: { option: SettingsOption }) {
         || option.kind.kind === "roles"
         || option.kind.kind === "channels")
 
-    const { error } = useSettingsField(option.name)
+    const { value: rawValue, setValue, error } = useSettingsField(option.name)
 
     const isMultiple = option.kind.kind === "channels" || option.kind.kind === "roles"
 
-    return <Box mt={3} minWidth={"150px"}>
-        <FormControl fullWidth>
-            <InputLabel>{option.name}</InputLabel>
+    return <Box mt={3} minWidth={"150px"} display={"flex"}>
+        <FormControl>
+            <InputLabel>{option.label}</InputLabel>
             {isMultiple
                 ? <EditOptionSelectMultiple option={option} />
                 : <EditOptionSelectSingle option={option} />}
+
             <FormHelperText error={Boolean(error)}>
                 <FieldHelpText description={option.description} error={error} />
             </FormHelperText>
+
         </FormControl>
+        {(Boolean(rawValue) && (option.defaultValue || !option.required)) &&
+            <IconButton
+                color='warning'
+                onClick={() => setValue(null)}
+                sx={{ alignSelf: "start" }}
+            >
+                <ReplayIcon />
+            </IconButton>}
     </Box>
 }
 
@@ -460,7 +498,7 @@ function EditOptionSelectSingle({ option }: { option: SettingsOption }) {
         return <SelectChannel
             multiple={false}
             value={value}
-            label={option.name}
+            label={option.label}
             error={error}
             onChange={(newValue) => {
                 setValue(newValue)
@@ -471,7 +509,7 @@ function EditOptionSelectSingle({ option }: { option: SettingsOption }) {
     return <SelectRole
         multiple={false}
         value={value}
-        label={option.name}
+        label={option.label}
         error={error}
         onChange={(newValue) => {
             setValue(newValue)
@@ -494,7 +532,7 @@ function EditOptionSelectMultiple({ option }: { option: SettingsOption }) {
         return <SelectChannel
             multiple={true}
             value={value}
-            label={option.name}
+            label={option.label}
             error={error}
             onChange={(newValue) => {
                 setValue(newValue)

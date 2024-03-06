@@ -3,6 +3,7 @@ import type { SettingsOptionType } from "./SettingsOptionType";
 
 export interface SettingsOption {
   name: string;
+  label: string;
   description: string;
   required: boolean;
   defaultValue: any;

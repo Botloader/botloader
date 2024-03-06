@@ -66,6 +66,7 @@ export type SettingsOptionDefinition = {
 
 export interface SettingsOption {
     name: string;
+    label: string;
     description: string;
     required: boolean;
     defaultValue: any;
@@ -74,6 +75,7 @@ export interface SettingsOption {
 
 export interface SettingsOptionList {
     name: string;
+    label: string;
     description: string;
     required: boolean;
     defaultValue: any;
