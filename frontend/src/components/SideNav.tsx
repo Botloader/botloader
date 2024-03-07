@@ -1,4 +1,4 @@
-import { Divider, Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar } from "@mui/material";
+import { Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar } from "@mui/material";
 import { Box } from "@mui/system";
 import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -95,7 +95,7 @@ export function SideNav(props: { items: SideNavItem[], children?: ReactNode | Re
     </Box>
 }
 
-export function NavItem(props: { item: SideNavItem }) {
+export function NavItem(props: { item: SideNavItem, icon?: ReactNode, indicator?: ReactNode }) {
     const location = useLocation();
 
     const isActive = props.item.exact
@@ -104,7 +104,12 @@ export function NavItem(props: { item: SideNavItem }) {
 
     return <ListItem disablePadding>
         <NavButton item={props.item} selected={isActive}>
+            {props.icon && <ListItemIcon>
+                {props.icon}
+            </ListItemIcon>}
             <ListItemText primary={props.item.label} />
+            {/* <ListItemText primary={"*"} /> */}
+            {props.indicator}
         </NavButton>
     </ListItem >
 }

@@ -1,8 +1,9 @@
-import { Divider, List, ListItem, ListItemText } from "@mui/material";
+import { Box, Divider, List, ListItem, ListItemText } from "@mui/material";
 import { useCurrentGuild } from "../modules/guilds/CurrentGuild";
 import { useCurrentGuildScripts } from "../modules/guilds/GuildScriptsProvider";
 import { NavItem, SideNav } from "./SideNav";
 import { Loading } from "./Loading";
+import { PluginIcon } from "./PluginIcon";
 
 export function GuildSideNav() {
     const guild = useCurrentGuild();
@@ -17,7 +18,7 @@ export function GuildSideNav() {
         },
     ]
 
-
+    const guildScripts = data?.scripts.filter(v => !v.plugin_id)
     const pluginScripts = data?.scripts.filter(v => Boolean(v.plugin_id))
     // if (!pluginScripts) {
     //     navItems.push("loading" as any)
@@ -35,15 +36,68 @@ export function GuildSideNav() {
     return <SideNav items={navItems}>
         <Divider />
         <ListItem>
-            <ListItemText>Plugins</ListItemText>
+            <ListItemText
+                primaryTypographyProps={{
+                    variant: "overline",
+                    color: "grey"
+                }}
+            >Plugins</ListItemText>
         </ListItem>
-        <Divider />
         {!pluginScripts && <Loading />}
-        {pluginScripts?.map(script => (<NavItem key={script.id} item={{
-            label: script.name,
-            path: `/servers/${guild?.value?.guild.id}/scripts/${script.id}`,
-            exact: true,
-            isNavLink: true,
-        }} />))}
+        <List>
+
+            {pluginScripts?.map(script => (<NavItem
+                key={script.id}
+                item={{
+                    label: script.name,
+                    path: `/servers/${guild?.value?.guild.id}/scripts/${script.id}`,
+                    exact: true,
+                    isNavLink: true,
+                }}
+                icon={<PluginIcon
+                    plugin={data?.plugins.find(v => v.id === script.plugin_id)!}
+                    size="xs"
+                />}
+
+                indicator={<ScriptEnabledIndicator enabled={script.enabled} />}
+
+            // icon={<MailIcon />}
+            />))}
+        </List>
+        <Divider />
+        <List>
+
+            <ListItem>
+                <ListItemText
+                    primaryTypographyProps={{
+                        variant: "overline",
+                        color: "grey"
+                    }}
+                >Scripts</ListItemText>
+            </ListItem>
+            {guildScripts?.map(script => (<NavItem
+                key={script.id}
+                item={{
+                    label: script.name,
+                    path: `/servers/${guild?.value?.guild.id}/scripts/${script.id}`,
+                    exact: true,
+                    isNavLink: true,
+                }}
+                indicator={<ScriptEnabledIndicator enabled={script.enabled} />}
+            />))}
+
+
+        </List>
     </SideNav>
 }
+
+function ScriptEnabledIndicator({ enabled }: { enabled: boolean }) {
+    return <Box
+        width={"8px"}
+        height={"8px"}
+        borderRadius={"4px"}
+        sx={{
+            backgroundColor: enabled ? "#31c631" : "#ff3939"
+        }}
+    ></Box>
+} 

@@ -4,7 +4,16 @@ import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { useNavigate, useParams } from "react-router-dom";
 import { Panel } from "../../../components/Panel";
 import { EditScriptPage } from "./scripts/[script_id]/edit/EditScript";
-import { Alert, AlertTitle, Box, Button, Paper, Stack, Switch, TextField, Typography } from "@mui/material";
+import {
+    Alert,
+    AlertTitle,
+    Box,
+    Button,
+    Paper,
+    Stack,
+    TextField,
+    Typography
+} from "@mui/material";
 import { FetchDataGuard } from "../../../components/FetchData";
 import { BlLink } from "../../../components/BLLink";
 import { UseNotifications } from "../../../components/Notifications";
@@ -12,6 +21,7 @@ import { useSession } from "../../../modules/session/useSession";
 import { useCurrentGuild } from "../../../modules/guilds/CurrentGuild";
 import { guildScriptsContext, useCurrentGuildScripts } from "../../../modules/guilds/GuildScriptsProvider";
 import { Loading } from "../../../components/Loading";
+import { ScriptEnableToggle } from "../../../components/ScriptEnableToggle";
 
 export function EditGuildScript() {
     const guild = useCurrentGuild()!;
@@ -175,20 +185,9 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
     toggleScript: (id: number, on: boolean) => any,
     deleteScript: (id: number) => any
 }) {
-    const [isToggling, setToggling] = useState(false);
     const session = useSession();
     const notifications = UseNotifications();
     const { reload } = useCurrentGuildScripts();
-
-    async function toggleWrapper(on: boolean) {
-        setToggling(true);
-        await toggleScript(script.id, on);
-        try {
-
-        } finally {
-            setToggling(false);
-        }
-    }
 
     async function deleteConfirm() {
         if (window.confirm("are you sure you want to delete this script?")) {
@@ -226,14 +225,18 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
                         to={`/servers/${guildId}/scripts/${script.id}/edit?diffMode=pluginPublished`}>View changes</BlLink>
                 </>
             ) : null}
-            <BlLink to={`/servers/${guildId}/scripts/${script.id}/edit`}>
-                Edit
-            </BlLink>
 
-            <Switch checked={script.enabled} disabled={isToggling} color={"success"} onChange={(evt) => {
-                toggleWrapper(evt.target.checked)
-            }} />
-            <AsyncOpButton label="delete" onClick={() => deleteConfirm()}></AsyncOpButton>
+            {plugin
+                ? <BlLink to={`/servers/${guildId}/scripts/${script.id}`}>
+                    Settings
+                </BlLink>
+                : <>
+                    <BlLink to={`/servers/${guildId}/scripts/${script.id}/edit`}>
+                        Edit
+                    </BlLink>
+                    <ScriptEnableToggle script={script} />
+                    <AsyncOpButton label="delete" onClick={() => deleteConfirm()}></AsyncOpButton>
+                </>}
         </Stack>
     </Box>
 }

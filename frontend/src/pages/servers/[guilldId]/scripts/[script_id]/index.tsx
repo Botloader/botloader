@@ -1,4 +1,3 @@
-import { EditGuildScript, GuildHome } from "../../GuildPage";
 import { OurRouteObject } from "../../../../../misc/ourRoute";
 import { routes as editScriptRoutes } from "./edit";
 import { Box } from "@mui/material";

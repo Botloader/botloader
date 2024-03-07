@@ -1,8 +1,13 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
+    Alert,
     Box,
     Button,
+    Divider,
     FormControl,
     FormHelperText,
     IconButton,
@@ -38,6 +43,11 @@ import { SelectChannel, SelectRole } from "./Select";
 import ReplayIcon from '@mui/icons-material/Replay';
 import { CodeBlock } from './CodeBlock';
 import { useSession } from '../modules/session/useSession';
+import { ScriptEnableToggle } from './ScriptEnableToggle';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { UseNotifications } from './Notifications';
+import { AsyncOpButton } from './AsyncOpButton';
+import { BlLink } from './BLLink';
 
 export function GuildScriptPage() {
     let { scriptId: scriptIdString } = useParams();
@@ -52,21 +62,37 @@ export function GuildScriptPage() {
     const plugin = scripts.value?.plugins.find(v => v.id === script.plugin_id)
 
     return <>
-        {plugin ? <PluginHeader plugin={plugin} /> : <>ToDO</>}
+        <Paper sx={{ padding: 2 }}>
+            {plugin ? <PluginHeader plugin={plugin} script={script} /> : <ScriptHeader script={script} />}
+            <Divider sx={{ marginTop: 1 }} />
+            <ScriptDetails guildId={currentGuildId} script={script} plugin={plugin} />
+        </Paper>
         <FullGuildProvider guildId={currentGuildId}>
-            <ScriptSettings script={script} />
+            {script.settings_definitions && script.settings_definitions.length > 0 &&
+                <ScriptSettings key={script.id} script={script} />
+            }
         </FullGuildProvider>
     </>
 }
 
-function PluginHeader({ plugin }: { plugin: Plugin }) {
-    return <Paper sx={{ padding: 2 }}>
+function ScriptHeader({ script }: { script: Script }) {
+    return <Box>
+        <Stack direction={"row"} alignItems={"center"} spacing={1}>
+            <Typography variant="h4">{script.name}</Typography>
+            <ScriptEnableToggle script={script} />
+        </Stack>
+    </Box>
+}
+
+function PluginHeader({ plugin, script }: { plugin: Plugin, script: Script }) {
+    return <Box>
         <Stack direction={"row"} alignItems={"center"} spacing={1}>
             <PluginIcon plugin={plugin} />
             <Typography variant="h4">{plugin.name}</Typography>
+            <ScriptEnableToggle script={script} />
         </Stack>
-        <Typography>{plugin.short_description}</Typography>
-    </Paper>
+        <Typography mt={1}>{plugin.short_description}</Typography>
+    </Box>
 }
 
 interface SettingsValuesHook {
@@ -179,7 +205,6 @@ function ScriptSettings({ script }: { script: Script }) {
                 save().finally(() => setIsSubmitting(false))
             }}
         >
-            {script.settings_definitions?.length} definitions and {script.settings_values.length} values
             <SettingsValuesContext.Provider value={settingsHook}>
                 {script.settings_definitions?.map(v => {
                     if (v.kind === "List") {
@@ -199,19 +224,25 @@ function ScriptSettings({ script }: { script: Script }) {
                 Save Changes
             </Button>
         </form>
-        <Paper elevation={3} sx={{ p: 2 }}>
-            <Typography>Debug definitions</Typography>
-            <CodeBlock>
-                <>{JSON.stringify(script.settings_definitions, null, "  ")}</>
-            </CodeBlock>
-            <Typography>Debug</Typography>
-
-            {Object.entries(newValues).map(([k, v]) => <Box>
-                {k}:{" "}
-                <code key={k}>
-                    {JSON.stringify(v, null, " ")}
-                </code></Box>)}
-        </Paper>
+        <Accordion elevation={2}>
+            <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="panel1-content"
+                id="panel1-header"
+            >
+                Debug info
+            </AccordionSummary>
+            <AccordionDetails>
+                <Typography>Definitions</Typography>
+                <CodeBlock>
+                    <>{JSON.stringify(script.settings_definitions, null, "  ")}</>
+                </CodeBlock>
+                <Typography>Values</Typography>
+                <CodeBlock>
+                    <>{JSON.stringify(newValues, null, "  ")}</>
+                </CodeBlock>
+            </AccordionDetails>
+        </Accordion>
     </Paper >
 }
 
@@ -555,4 +586,58 @@ function FieldHelpText({ description, error }: { description: string, error?: st
     return <>
         {error && <>{error}<br /></>}{description}
     </>
+}
+
+function ScriptDetails({ script, guildId, plugin }: {
+    script: Script,
+    plugin?: Plugin,
+    guildId: string,
+}) {
+    const session = useSession();
+    const notifications = UseNotifications();
+    const { reload, delScript } = useCurrentGuildScripts();
+
+    async function deleteConfirm() {
+        if (window.confirm("are you sure you want to delete this script?")) {
+            await delScript(script.id);
+        }
+    }
+
+    async function updatePluginVersion() {
+        const resp = await session.apiClient.updateScriptPlugin(guildId, script.id);
+        if (isErrorResponse(resp)) {
+            notifications.push({ class: "error", message: "failed updating plugin: " + resp.response?.description });
+        } else {
+            reload();
+            notifications.push({ class: "success", message: "updated plugin" });
+        }
+    }
+
+    return <Box sx={{
+        display: "flex",
+        alignItems: "start",
+        flexDirection: "column",
+    }}>
+        <Stack direction={"row"} alignItems="center">
+            {plugin ? (
+                <>
+                    <Typography variant="body1">{plugin.current_version === script.plugin_version_number ?
+                        "Using the latest version"
+                        : script.plugin_version_number === null
+                            ? "Using a modified version"
+                            : "New version available"}</Typography>
+                    <AsyncOpButton disabled={plugin.current_version === script.plugin_version_number} onClick={updatePluginVersion} label="Update version"></AsyncOpButton>
+                    <BlLink disabled={plugin.current_version === script.plugin_version_number}
+                        to={`/servers/${guildId}/scripts/${script.id}/edit?diffMode=pluginPublished`}>View changes</BlLink>
+                </>
+            ) : null}
+            <BlLink to={`/servers/${guildId}/scripts/${script.id}/edit`}>
+                Edit
+            </BlLink>
+            <AsyncOpButton label="delete" onClick={() => deleteConfirm()}></AsyncOpButton>
+        </Stack>
+        {!script.enabled && <Alert severity='warning'>
+            This script is not enabled
+        </Alert>}
+    </Box>
 }

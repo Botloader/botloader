@@ -7,8 +7,8 @@ import { useCallback } from "react";
 export const guildScriptsContext = createFetchDataContext<ScriptsWithPlugins>();
 
 type GuildScriptsHook = {
-    delScript: (scriptId: number) => void,
-    toggleScript: (scriptId: number, enabled: boolean) => void,
+    delScript: (scriptId: number) => Promise<void>,
+    toggleScript: (scriptId: number, enabled: boolean) => Promise<void>,
     createScript: (name: string) => Promise<ApiResult<Script>>,
 } & FetchDataHookNotBehindGuard<ScriptsWithPlugins>
 
