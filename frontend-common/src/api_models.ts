@@ -213,7 +213,7 @@ export interface DiscordChannel {
     guild_id: string,
     icon?: string,
     invitable?: boolean,
-    kind: DiscordNumberedChannelTypes,
+    type: DiscordNumberedChannelTypes,
     // last_message_id: Option<Id<GenericMarker>>,
     // last_pin_timestamp: Option<Timestamp>,
     // managed: Option<bool>,

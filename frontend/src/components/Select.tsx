@@ -2,17 +2,18 @@ import { Box, Checkbox, Chip, ListItemText, MenuItem, OutlinedInput, Select } fr
 import { useCurrentFullGuild } from "../modules/guilds/FullGuildProvider";
 import { Loading } from "./Loading";
 import { useMemo } from "react";
-import { DiscordChannel, DiscordRole } from "botloader-common";
+import { ChannelType, DiscordChannel, DiscordNumberedChannelTypes, DiscordRole } from "botloader-common";
 
 type OptionsValue<TMultiple extends boolean> = TMultiple extends true ? string[] : string
 
 export function SelectRole<
     TMultiple extends boolean,
->({ value, multiple, onChange, label, error }: {
+>({ value, multiple, onChange, label, error, allowEmpty }: {
     value: OptionsValue<TMultiple>,
     multiple: TMultiple,
     label: string
-    error?: string | null
+    error?: string | null,
+    allowEmpty?: boolean,
     onChange: (value: OptionsValue<TMultiple>) => any,
 }) {
     const guild = useCurrentFullGuild()
@@ -33,6 +34,8 @@ export function SelectRole<
     if (!guild.value) {
         return <Loading />
     }
+
+    console.log(guild.value.channels)
 
     return <Select
         multiple={multiple}
@@ -60,6 +63,10 @@ export function SelectRole<
         )}
         autoWidth={true}
     >
+        {!multiple && allowEmpty && <MenuItem value={""}>
+            <ListItemText primary={"None"} />
+        </MenuItem>}
+
         {sortedRoles.map((role) => (
             <MenuItem key={role.id} value={role.id}>
                 {multiple && <Checkbox checked={value.includes(role.id)} />}
@@ -100,11 +107,13 @@ function RoleColorDot({ size, role }: { size: number, role: DiscordRole }) {
 
 export function SelectChannel<
     TMultiple extends boolean,
->({ value, multiple, onChange, label, error }: {
+>({ value, multiple, onChange, label, error, allowEmpty, types }: {
     value: OptionsValue<TMultiple>,
     multiple: TMultiple,
     label: string
     error?: string | null
+    allowEmpty?: boolean
+    types?: ChannelType[]
     onChange: (value: OptionsValue<TMultiple>) => any,
 }) {
     const guild = useCurrentFullGuild()
@@ -114,12 +123,61 @@ export function SelectChannel<
             return []
         }
 
-        let copy = [...guild.value.channels]
+        const filterBy = types?.map(v => ChannelTypeToNumber(v))
+
+        // const copy = 
+
+        let copy = guild.value.channels.filter(v =>
+            !filterBy || filterBy.includes(v.type))
         copy.sort(
             (a, b) => (b.position ?? 0) - (a.position ?? 0)
         )
-        return copy
-    }, [guild.value?.channels])
+
+        const categorySorted: {
+            name: string,
+            id?: string,
+            position?: number,
+            children: DiscordChannel[]
+        }[] = [{
+            name: "",
+            children: []
+        }]
+
+        for (const item of guild.value.channels) {
+            if (item.type !== DiscordNumberedChannelTypes.GuildCategory) {
+                continue
+            }
+
+            categorySorted.push({
+                name: item.name ?? "",
+                children: [],
+                id: item.id,
+                position: item.position
+            })
+        }
+
+        categorySorted.sort((a, b) =>
+            (a.position ?? 0) - (b.position ?? 0))
+
+        for (const item of copy) {
+            if (item.type === DiscordNumberedChannelTypes.GuildCategory) {
+                continue
+            }
+
+            let parentCategory;
+            if (item.parent_id) {
+                parentCategory = categorySorted.find(v => v.id === item.parent_id)
+            }
+
+            if (parentCategory) {
+                parentCategory.children.push(item)
+            } else {
+                categorySorted[0].children.push(item)
+            }
+        }
+
+        return categorySorted
+    }, [guild.value?.channels, types])
 
     if (!guild.value) {
         return <Loading />
@@ -144,20 +202,45 @@ export function SelectChannel<
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, marginRight: 2 }}>
                 {Array.isArray(selected)
                     ? selected.map((value) => (
-                        <SelectedChannel key={value} allChannels={sortedChannels} channelId={value} />
+                        <SelectedChannel key={value} allChannels={guild.value?.channels ?? []} channelId={value} />
                     ))
-                    : <SelectedChannel allChannels={sortedChannels} channelId={selected} />
+                    : <SelectedChannel allChannels={guild.value?.channels ?? []} channelId={selected} />
 
                 }
             </Box>
         )}
         autoWidth={true}
     >
-        {sortedChannels.map((channel) => (
-            <MenuItem key={channel.id} value={channel.id}>
-                {multiple && <Checkbox checked={value.includes(channel.id)} />}
-                <ListItemText primary={channel.name} />
-            </MenuItem>
+        {!multiple && allowEmpty && <MenuItem value={""}>
+            <ListItemText primary={"None"} />
+        </MenuItem>}
+
+        {sortedChannels.map((group) => (
+            [
+                group.id && (
+                    (!types || types.includes("Category")) || group.children.length > 0
+                ) && <MenuItem
+                    key={group.id}
+                    value={group.id}
+                    disabled={types && !types.includes("Category")}
+                >
+                    {multiple && <Checkbox checked={value.includes(group.id)} />}
+                    <ListItemText primary={group.name} />
+                </MenuItem>,
+
+                ...group.children.map(channel => (
+                    <MenuItem
+                        key={channel.id}
+                        value={channel.id}
+                        sx={{
+                            paddingLeft: channel.parent_id ? 5 : 2,
+                        }}
+                    >
+                        {multiple && <Checkbox checked={value.includes(channel.id)} />}
+                        <ListItemText primary={channel.name} />
+                    </MenuItem>
+                ))
+            ]
         ))}
     </Select>
 }
@@ -169,4 +252,40 @@ function SelectedChannel({ allChannels, channelId }: { allChannels: DiscordChann
         size="small"
         label={channel?.name ?? channelId}
     />
+}
+
+function ChannelTypeToNumber(inputKind: ChannelType): DiscordNumberedChannelTypes {
+    switch (inputKind) {
+        case "Text":
+            return DiscordNumberedChannelTypes.GuildText
+
+        case "Voice":
+            return DiscordNumberedChannelTypes.GuildVoice
+
+        case "Category":
+            return DiscordNumberedChannelTypes.GuildCategory
+
+        case "News":
+            return DiscordNumberedChannelTypes.GuildAnnouncement
+
+        case "NewsThread":
+            return DiscordNumberedChannelTypes.AnnouncementThread
+
+        case "PublicThread":
+            return DiscordNumberedChannelTypes.PublicThread
+
+        case "PrivateThread":
+            return DiscordNumberedChannelTypes.PrivateThread
+
+        case "StageVoice":
+            return DiscordNumberedChannelTypes.GuildStageVoice
+
+        case "GuildDirectory":
+            return DiscordNumberedChannelTypes.GuildDirectory
+
+        case "Forum":
+            return DiscordNumberedChannelTypes.GuildForum
+    }
+
+    throw new Error("unsupported channel type: " + inputKind)
 }

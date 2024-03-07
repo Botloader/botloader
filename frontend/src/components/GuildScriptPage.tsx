@@ -130,7 +130,6 @@ function ScriptSettings({ script }: { script: Script }) {
     const currentGuildId = useCurrentGuildId()
     const [newValues, setNewValues] = useState<SettingsOptionValue[]>(script.settings_values ?? [])
     const [isSubmitting, setIsSubmitting] = useState(false)
-
     const [apiErrorResponse, setApiErrorResponse] = useState<ApiError | null>(null)
 
     const settingsHook: SettingsValuesHook = {
@@ -532,8 +531,10 @@ function EditOptionSelectSingle({ option }: { option: SettingsOption }) {
             label={option.label}
             error={error}
             onChange={(newValue) => {
-                setValue(newValue)
+                setValue(newValue || null)
             }}
+            allowEmpty={!option.required}
+            types={option.kind.types ?? undefined}
         />
     }
 
@@ -543,8 +544,9 @@ function EditOptionSelectSingle({ option }: { option: SettingsOption }) {
         label={option.label}
         error={error}
         onChange={(newValue) => {
-            setValue(newValue)
+            setValue(newValue ?? null)
         }}
+        allowEmpty={!option.required}
     />
 }
 

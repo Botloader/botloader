@@ -2,49 +2,52 @@ import { OpWrappers } from "./op_wrappers"
 import * as Internal from "./generated/internal/index";
 import { ChannelType } from "./discord/index";
 
-interface BaseOptions<TRequired, TDefault> {
+type DefaultValue<TDefault> = TDefault extends undefined
+    ? { defaultValue?: TDefault }
+    : { defaultValue: TDefault }
+
+type BaseOptions<TRequired, TDefault> = {
     label?: string
     description?: string
     required?: TRequired
     defaultValue?: TDefault,
-}
+} & DefaultValue<TDefault>
 
-interface StringOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+type StringOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     maxLength?: number,
     minLength?: number,
 }
 
-interface FloatOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+type FloatOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     max?: number,
     min?: number,
 }
 
-interface IntegerOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+type IntegerOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     max?: number,
     min?: number,
 }
 
-interface Integer64Options<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+type Integer64Options<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     max?: string,
     min?: string,
 }
 
-interface ChannelOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+type ChannelOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     types?: ChannelType[]
 }
 
-interface ChannelsOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
-    allowEmpty?: boolean,
+type ChannelsOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     types?: ChannelType[]
     max?: number,
 }
 
-interface RoleOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
+type RoleOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     requireAssignable?: boolean
 }
 
-interface RolesOptions<TRequired, TDefault> extends BaseOptions<TRequired, TDefault> {
-    allowEmpty?: boolean,
+type RolesOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    requireAssignable?: boolean
     max?: number,
 }
 
@@ -76,14 +79,18 @@ export interface ConfigOptionValueTypesMapping {
     roles: string[],
 }
 
+type NonNullableOptionTypes = "string" | "channels" | "roles"
+
 type InnerToConfigValue<TKind extends OptionTypesKeys> = ConfigOptionValueTypesMapping[TKind]
 
 type ToConfigValue<TKind extends OptionTypesKeys, TDefaultValue, TRequired extends boolean> =
     TRequired extends true
     ? InnerToConfigValue<TKind>
+    : TKind extends NonNullableOptionTypes
+    ? InnerToConfigValue<TKind>
+    : TKind extends "channel" | "role"
+    ? InnerToConfigValue<TKind> | null
     : InnerToConfigValue<TKind> | TDefaultValue
-// ? InnerToConfigValue<TKind>
-// : InnerToConfigValue<TKind> | undefined
 
 type OptionDefinitionOption = {
     kind: "Option",
@@ -126,6 +133,11 @@ export class LoadedOption<TKind extends OptionTypesKeys, TDefaultValue, TRequire
     }
 }
 
+type TDefaultValueTopLevel<TRequired extends boolean, TKind extends OptionTypesKeys> =
+    TRequired extends true
+    ? InnerToConfigValue<TKind>
+    : InnerToConfigValue<TKind> | undefined;
+
 export class SettingsManager {
 
     definitions: AnyOptionDefinition[] = [];
@@ -136,9 +148,10 @@ export class SettingsManager {
     }
 
     addOptionString<
-        TDefault extends string | undefined = undefined,
-    >(name: string, options: StringOptions<false, TDefault>) {
-        return this.addOption<"string", false, TDefault>(name, "string", options)
+        TDefault extends TDefaultValueTopLevel<TRequired, "string">,
+        TRequired extends boolean = false,
+    >(name: string, options: StringOptions<TRequired, TDefault>) {
+        return this.addOption<"string", TRequired, TDefault>(name, "string", options)
     }
 
     addOptionFloat<
@@ -220,7 +233,11 @@ type LayerOption<TInner, TKey extends string, TKind extends keyof ConfigOptionVa
     { [Prop in keyof TInner]: TInner[Prop] } & { [Prop in TKey]: { defaultValue: TDefault, kind: TKind, required: TRequired } };
 
 type OptionMapValues<T extends OptionsMap> = {
-    [Prop in keyof T]: ToConfigValue<T[Prop]["kind"], T[Prop]["defaultValue"], T[Prop]["required"]>
+    [Prop in keyof T]: ToConfigValue<
+        T[Prop]["kind"],
+        T[Prop]["defaultValue"],
+        T[Prop]["required"]
+    >
 }
 
 // interface LoadedList<TOpts extends OptionsMap> {
@@ -442,26 +459,26 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
         case "channel":
             return {
                 kind: "channel",
-                types: null,
+                types: def.types ?? null,
             }
         case "channels":
             return {
                 kind: "channels",
-                types: null,
+                types: def.types ?? null,
                 max_length: def.max ?? null,
-                min_length: def.allowEmpty ? 0 : 1,
+                min_length: 0
             }
         case "role":
             return {
                 kind: "role",
-                assignable: null
+                assignable: def.requireAssignable ?? null,
             }
         case "roles":
             return {
                 kind: "roles",
-                assignable: null,
+                assignable: def.requireAssignable ?? null,
                 max_length: def.max ?? null,
-                min_length: def.allowEmpty ? 0 : 1,
+                min_length: 0
             }
     }
 }
@@ -489,13 +506,13 @@ function loadOptionValue(value: any, definition: OptionTypesUnion): any {
             return typeof value === "string" ? value : definition.defaultValue
         }
         case "channels": {
-            return Array.isArray(value) ? value : definition.defaultValue
+            return Array.isArray(value) ? value : definition.defaultValue ?? []
         }
         case "role": {
             return typeof value === "string" ? value : definition.defaultValue
         }
         case "roles": {
-            return Array.isArray(value) ? value : definition.defaultValue
+            return Array.isArray(value) ? value : definition.defaultValue ?? []
         }
     }
 }

@@ -108,24 +108,68 @@ pub(crate) fn validate_settings_option_value_option(
                     ctx.push_error(format!("has to be at least {} characters", min_length))
                 }
             }
+
+            if definition.required && value.is_empty() {
+                ctx.push_error("cannot be empty")
+            }
         }
         SettingsOptionType::Float { min, max } => {
             let Some(value) = value.as_f64() else {
                 ctx.push_error(format!("expected double, got {}", value));
                 return;
             };
+
+            if let Some(max) = max {
+                if value > *max {
+                    ctx.push_error(format!("max {}", max));
+                }
+            }
+
+            if let Some(min) = min {
+                if value < *min {
+                    ctx.push_error(format!("min {}", min));
+                }
+            }
         }
         SettingsOptionType::Integer { min, max } => {
             let Some(value) = value.as_i64() else {
                 ctx.push_error(format!("expected integer, got {}", value));
                 return;
             };
+
+            if let Some(max) = max {
+                if value > *max {
+                    ctx.push_error(format!("max {}", max));
+                }
+            }
+
+            if let Some(min) = min {
+                if value < *min {
+                    ctx.push_error(format!("min {}", min));
+                }
+            }
         }
         SettingsOptionType::Integer64 { min, max } => {
             let Some(value) = value.as_i64() else {
                 ctx.push_error(format!("expected integer, got {}", value));
                 return;
             };
+
+            if let Some(max) = max {
+                if let Ok(max) = max.parse() {
+                    if value > max {
+                        ctx.push_error(format!("max {}", max));
+                    }
+                }
+            }
+
+            if let Some(min) = min {
+                if let Ok(min) = min.parse() {
+                    if value > min {
+                        ctx.push_error(format!("min {}", min));
+                    }
+                }
+            }
         }
         SettingsOptionType::Channel { types } => {
             let Some(value) = value.as_str() else {
