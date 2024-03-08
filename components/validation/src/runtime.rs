@@ -141,9 +141,7 @@ impl Validator for SettingsOption {
     type ContextData = ();
 
     fn validate(&self, ctx: &mut ValidationContext, _context_data: &Self::ContextData) {
-        if self.name.chars().count() > 50 {
-            ctx.push_field_error("name", "max 50 characters");
-        }
+        validate_option_name(ctx, &self.name);
 
         if self.description.chars().count() > 1000 {
             ctx.push_field_error("description", "max 1000 characters");
@@ -160,12 +158,10 @@ impl Validator for SettingsOptionList {
     type ContextData = ();
 
     fn validate(&self, ctx: &mut ValidationContext, context_data: &Self::ContextData) {
+        validate_option_name(ctx, &self.name);
+
         if self.template.len() > 10 {
             ctx.push_error("list objects can have max 10 fields")
-        }
-
-        if self.name.chars().count() > 50 {
-            ctx.push_error("option names can be max 50 characters");
         }
 
         if self.description.chars().count() > 1000 {
@@ -191,5 +187,21 @@ impl Validator for SettingsOptionList {
         if let Some(default_value) = &self.default_value {
             validate_settings_option_value_list(ctx, default_value, self);
         }
+    }
+}
+
+fn validate_option_name(ctx: &mut ValidationContext, name: &str) {
+    if name.chars().count() > 42 {
+        ctx.push_field_error("name", "name can be max 42 characters long".to_string());
+    }
+
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r#"^[\w_-]*$"#).unwrap();
+    }
+    if !RE.is_match(name) {
+        ctx.push_field_error(
+            "name",
+            "name can only contain 'word characters', '-' and '_'".to_string(),
+        );
     }
 }

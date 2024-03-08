@@ -171,7 +171,7 @@ pub(crate) fn validate_settings_option_value_option(
                 }
             }
         }
-        SettingsOptionType::Channel { types } => {
+        SettingsOptionType::Channel { types: _ } => {
             let Some(value) = value.as_str() else {
                 ctx.push_error(format!("expected string, got {}", value));
                 return;
@@ -182,7 +182,7 @@ pub(crate) fn validate_settings_option_value_option(
             }
         }
         SettingsOptionType::Channels {
-            types,
+            types: _,
             max_length,
             min_length,
         } => {
@@ -218,14 +218,18 @@ pub(crate) fn validate_settings_option_value_option(
                 }
             }
         }
-        SettingsOptionType::Role { assignable } => {
+        SettingsOptionType::Role { assignable: _ } => {
             let Some(value) = value.as_str() else {
                 ctx.push_error(format!("expected string, got {}", value));
                 return;
             };
+
+            if value.parse::<u64>().is_err() {
+                ctx.push_error(format!("expected snowflake, got: {}", value));
+            }
         }
         SettingsOptionType::Roles {
-            assignable,
+            assignable: _,
             max_length,
             min_length,
         } => {
