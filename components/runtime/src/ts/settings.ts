@@ -68,7 +68,7 @@ type OptionTypesUnion = {
     [Key in OptionTypesKeys]: { kind: Key } & OptionTypes<boolean, any>[Key]
 }[OptionTypesKeys]
 
-export interface ConfigOptionValueTypesMapping {
+export interface ConfigOptionSetValueTypesMapping {
     string: string,
     integer: number,
     integer64: string,
@@ -79,18 +79,41 @@ export interface ConfigOptionValueTypesMapping {
     roles: string[],
 }
 
-type NonNullableOptionTypes = "string" | "channels" | "roles"
+type InnerToConfigSetValueType<TKind extends OptionTypesKeys> =
+    ConfigOptionSetValueTypesMapping[TKind]
 
-type InnerToConfigValue<TKind extends OptionTypesKeys> = ConfigOptionValueTypesMapping[TKind]
-
-type ToConfigValue<TKind extends OptionTypesKeys, TDefaultValue, TRequired extends boolean> =
+// Converts the input generic parameters (kind, default value, required)
+// to the value type depending on if the config option is required or has a default value
+type ToConfigValue<
+    TKind extends OptionTypesKeys,
+    TDefaultValue,
+    TRequired extends boolean
+> =
     TRequired extends true
-    ? InnerToConfigValue<TKind>
-    : TKind extends NonNullableOptionTypes
-    ? InnerToConfigValue<TKind>
-    : TKind extends "channel" | "role"
-    ? InnerToConfigValue<TKind> | null
-    : InnerToConfigValue<TKind> | TDefaultValue
+    ? InnerToConfigSetValueType<TKind>
+    : TDefaultValue extends undefined
+    ? InnerToConfigSetValueType<TKind> | SysDefaultValueType<TKind>
+    : InnerToConfigSetValueType<TKind> | TDefaultValue
+
+const SysDefaultValues = {
+    string: "",
+    float: undefined,
+    integer: undefined,
+    integer64: undefined,
+    channel: undefined,
+    channels: [] as string[],
+    role: undefined,
+    roles: [] as string[],
+}
+
+type SysDefaultValueType<TKind extends keyof typeof SysDefaultValues> =
+    (typeof SysDefaultValues)[TKind]
+
+function getSysDefaultValue<TKind extends keyof typeof SysDefaultValues>
+    (kind: TKind): SysDefaultValueType<TKind> {
+    return SysDefaultValues[kind]
+}
+
 
 type OptionDefinitionOption = {
     kind: "Option",
@@ -128,15 +151,15 @@ export class LoadedOption<TKind extends OptionTypesKeys, TDefaultValue, TRequire
         if (rawValue) {
             this.value = loadOptionValue(rawValue.value, definition.definition)
         } else {
-            this.value = definition.definition.defaultValue
+            this.value = definition.definition.defaultValue ?? getSysDefaultValue(definition.definition.kind)
         }
     }
 }
 
 type TDefaultValueTopLevel<TRequired extends boolean, TKind extends OptionTypesKeys> =
     TRequired extends true
-    ? InnerToConfigValue<TKind>
-    : InnerToConfigValue<TKind> | undefined;
+    ? InnerToConfigSetValueType<TKind>
+    : InnerToConfigSetValueType<TKind> | undefined;
 
 export class SettingsManager {
 
@@ -199,7 +222,7 @@ export class SettingsManager {
     private addOption<
         const TKind extends OptionTypesKeys,
         const TRequired extends boolean = false,
-        const TDefault extends InnerToConfigValue<TKind> | undefined = undefined,
+        const TDefault extends InnerToConfigSetValueType<TKind> | undefined = undefined,
     >(name: string, kind: TKind, options: OptionTypes<TRequired, TDefault>[TKind]): LoadedOption<TKind, TDefault, TRequired> {
         const definition: OptionDefinitionOption = {
             kind: "Option",
@@ -229,7 +252,7 @@ interface OptionsMap {
     [key: string]: { defaultValue: any, kind: any, required: boolean }
 }
 
-type LayerOption<TInner, TKey extends string, TKind extends keyof ConfigOptionValueTypesMapping, TDefault, TRequired> =
+type LayerOption<TInner, TKey extends string, TKind extends keyof ConfigOptionSetValueTypesMapping, TDefault, TRequired> =
     { [Prop in keyof TInner]: TInner[Prop] } & { [Prop in TKey]: { defaultValue: TDefault, kind: TKind, required: TRequired } };
 
 type OptionMapValues<T extends OptionsMap> = {
@@ -283,7 +306,7 @@ export class LoadedList<TOpts extends OptionsMap> {
                     if (optionDefinition.required && optionDefinition.defaultValue === undefined) {
                         console.log(`List item in option list ${definition.name} missing required option [${name}], skipping...`)
                     } else {
-                        obj[name] = optionDefinition.defaultValue
+                        obj[name] = optionDefinition.defaultValue ?? getSysDefaultValue(optionDefinition.kind)
                     }
                 }
             }
@@ -371,7 +394,7 @@ export class ListBuilder<TOpts extends OptionsMap> {
         const TName extends string,
         const TKind extends OptionTypesKeys,
         const TRequired extends boolean = false,
-        const TDefault extends InnerToConfigValue<TKind> | undefined = undefined,
+        const TDefault extends InnerToConfigSetValueType<TKind> | undefined = undefined,
     >(name: TName, kind: TKind, options: OptionTypes<TRequired, TDefault>[TKind]) {
         this.definitions[name] = {
             kind: kind,
@@ -383,14 +406,17 @@ export class ListBuilder<TOpts extends OptionsMap> {
 
     complete(options?: ListOptions<OptionMapValues<TOpts>[]>): LoadedList<TOpts> {
 
-        this.manager.definitions.push({
+        const def: OptionDefinitionList = {
             kind: "List",
             name: this.name,
             options: options ?? {},
             template: this.definitions,
-        })
+        }
 
-        return null as any
+        this.manager.definitions.push(def)
+
+        const value = this.manager.loadedSettings.find(v => v.name === this.name)
+        return new LoadedList(def, value)
     }
 }
 
@@ -491,28 +517,28 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
 function loadOptionValue(value: any, definition: OptionTypesUnion): any {
     switch (definition.kind) {
         case "string": {
-            return typeof value === "string" ? value : definition.defaultValue
+            return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "float": {
-            return typeof value === "number" ? value : definition.defaultValue
+            return typeof value === "number" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "integer": {
-            return typeof value === "number" ? Math.floor(value) : definition.defaultValue
+            return typeof value === "number" ? Math.floor(value) : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "integer64": {
-            return typeof value === "string" ? value : definition.defaultValue
+            return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "channel": {
-            return typeof value === "string" ? value : definition.defaultValue
+            return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "channels": {
-            return Array.isArray(value) ? value : definition.defaultValue ?? []
+            return Array.isArray(value) ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "role": {
-            return typeof value === "string" ? value : definition.defaultValue
+            return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "roles": {
-            return Array.isArray(value) ? value : definition.defaultValue ?? []
+            return Array.isArray(value) ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
     }
 }

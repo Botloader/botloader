@@ -137,6 +137,7 @@ pub async fn update_guild_script(
     Extension(config_store): Extension<CurrentConfigStore>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
+    Extension(bot_rpc): Extension<botrpc::Client>,
     Json(payload): Json<UpdateRequestData>,
 ) -> ApiResult<impl IntoResponse> {
     let current_script = config_store
@@ -171,6 +172,14 @@ pub async fn update_guild_script(
         .await
         .map_err(|err| {
             error!(%err, "failed updating guild script");
+            ApiErrorResponse::InternalError
+        })?;
+
+    bot_rpc
+        .restart_guild_vm(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed reloading guild vm");
             ApiErrorResponse::InternalError
         })?;
 

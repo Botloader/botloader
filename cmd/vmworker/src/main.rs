@@ -314,9 +314,9 @@ impl Worker {
         req: CreateScriptsVmReq,
     ) -> anyhow::Result<ContinueState> {
         if let Some(current) = &self.current_state {
-            if current.guild_id != req.guild_id {
+            // if current.guild_id != req.guild_id {
                 self.wait_shutdown_current_vm().await;
-            }
+            // }
         };
 
         {
@@ -325,15 +325,15 @@ impl Worker {
             *w = req.premium_tier;
         }
 
-        if let Some(current) = &self.current_state {
-            // we were already running a vm for this guild, issue a restart command with the new scripts instead
-            // TODO: there is a possibility of a race condition here
-            // we could receive a "completed" event here we handle after this and since we send a ack back
-            // stuff could go wrong...
-            let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
-            self.write_message(WorkerMessage::Ack(req.seq)).await?;
-            return Ok(ContinueState::Continue);
-        }
+        // if let Some(current) = &self.current_state {
+        //     // we were already running a vm for this guild, issue a restart command with the new scripts instead
+        //     // TODO: there is a possibility of a race condition here
+        //     // we could receive a "completed" event here we handle after this and since we send a ack back
+        //     // stuff could go wrong...
+        //     let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
+        //     self.write_message(WorkerMessage::Ack(req.seq)).await?;
+        //     return Ok(ContinueState::Continue);
+        // }
 
         let (vm_cmd_tx, vm_cmd_rx) = mpsc::unbounded_channel();
         let (vm_evt_tx, vm_evt_rx) = mpsc::unbounded_channel();

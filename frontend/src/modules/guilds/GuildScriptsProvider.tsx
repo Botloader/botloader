@@ -60,7 +60,6 @@ export function useCurrentGuildScripts(): GuildScriptsHook {
             enabled,
         });
         if (!isErrorResponse(resp)) {
-            await session.apiClient.reloadGuildVm(safeGuildId);
             fetchedData.reload();
         }
     }

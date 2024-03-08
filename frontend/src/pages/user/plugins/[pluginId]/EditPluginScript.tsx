@@ -103,15 +103,6 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
             return;
         }
 
-        const reloadResp = await session.apiClient.reloadGuildVm(guildId);
-        if (isErrorResponse(reloadResp)) {
-            debugMessageStore.pushMessage({
-                level: "Client",
-                message: "Failed reloading guild scripts in testing session: " + reloadResp.response?.description,
-            });
-            return;
-        }
-
         debugMessageStore.pushMessage({
             level: "Client",
             message: "Changes are live are live on testing guild!"
