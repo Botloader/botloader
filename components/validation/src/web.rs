@@ -176,6 +176,10 @@ pub(crate) fn validate_settings_option_value_option(
                 ctx.push_error(format!("expected string, got {}", value));
                 return;
             };
+
+            if value.parse::<u64>().is_err() {
+                ctx.push_error(format!("expected snowflake, got: {}", value));
+            }
         }
         SettingsOptionType::Channels {
             types,
@@ -187,11 +191,31 @@ pub(crate) fn validate_settings_option_value_option(
                 return;
             };
 
+            if let Some(min) = min_length {
+                if *min as usize > value.len() {
+                    ctx.push_error(format!("you have to select at least {} channel(s)", min));
+                }
+            }
+
+            if let Some(max) = max_length {
+                if (*max as usize) < value.len() {
+                    ctx.push_error(format!("you can select a maximum of {} channel(s)", max));
+                }
+            }
+
             for (i, item) in value.iter().enumerate() {
                 let Some(id) = item.as_str() else {
                     ctx.push_field_error(&i.to_string(), format!("expected string, got: {}", item));
                     continue;
                 };
+
+                if id.parse::<u64>().is_err() {
+                    ctx.push_field_error(
+                        &i.to_string(),
+                        format!("expected snowflake, got: {}", item),
+                    );
+                    continue;
+                }
             }
         }
         SettingsOptionType::Role { assignable } => {
@@ -210,11 +234,31 @@ pub(crate) fn validate_settings_option_value_option(
                 return;
             };
 
+            if let Some(min) = min_length {
+                if *min as usize > value.len() {
+                    ctx.push_error(format!("you have to select at least {} role(s)", min));
+                }
+            }
+
+            if let Some(max) = max_length {
+                if (*max as usize) < value.len() {
+                    ctx.push_error(format!("you can select a maximum of {} role(s)", max));
+                }
+            }
+
             for (i, item) in value.iter().enumerate() {
                 let Some(id) = item.as_str() else {
                     ctx.push_field_error(&i.to_string(), format!("expected string, got: {}", item));
                     continue;
                 };
+
+                if id.parse::<u64>().is_err() {
+                    ctx.push_field_error(
+                        &i.to_string(),
+                        format!("expected snowflake, got: {}", item),
+                    );
+                    continue;
+                }
             }
         }
     }
