@@ -10,7 +10,6 @@ type BaseOptions<TRequired, TDefault> = {
     label?: string
     description?: string
     required?: TRequired
-    defaultValue?: TDefault,
 } & DefaultValue<TDefault>
 
 type StringOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
@@ -93,7 +92,7 @@ type ToConfigValue<
     ? InnerToConfigSetValueType<TKind>
     : TDefaultValue extends undefined
     ? InnerToConfigSetValueType<TKind> | SysDefaultValueType<TKind>
-    : InnerToConfigSetValueType<TKind> | TDefaultValue
+    : InnerToConfigSetValueType<TKind> | TDefaultValue | SysDefaultValueType<TKind>
 
 const SysDefaultValues = {
     string: "",
@@ -178,19 +177,22 @@ export class SettingsManager {
     }
 
     addOptionFloat<
-        TDefault extends number | undefined = undefined,
-    >(name: string, options: FloatOptions<false, TDefault>) {
-        return this.addOption<"float", false, TDefault>(name, "float", options)
+        TDefault extends TDefaultValueTopLevel<TRequired, "float">,
+        TRequired extends boolean = false,
+    >(name: string, options: FloatOptions<TRequired, TDefault>) {
+        return this.addOption<"float", TRequired, TDefault>(name, "float", options)
     }
 
     addOptionInteger<
-        TDefault extends number | undefined = undefined,
-    >(name: string, options: IntegerOptions<false, TDefault>) {
-        return this.addOption<"integer", false, TDefault>(name, "integer", options)
+        TDefault extends TDefaultValueTopLevel<TRequired, "integer">,
+        TRequired extends boolean = false,
+    >(name: string, options: IntegerOptions<TRequired, TDefault>) {
+        return this.addOption<"integer", TRequired, TDefault>(name, "integer", options)
     }
 
     addOptionInteger64<
-        TDefault extends string | undefined = undefined,
+        TDefault extends TDefaultValueTopLevel<TRequired, "string">,
+        TRequired extends boolean = false,
     >(name: string, options: Integer64Options<false, TDefault>) {
         return this.addOption<"integer64", false, TDefault>(name, "integer64", options)
     }
