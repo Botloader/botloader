@@ -1,7 +1,8 @@
 use std::ops::Add;
 use std::{num::NonZeroU64, path::PathBuf};
 
-use stores::config::{ConfigStore, CreateScript, CreateUpdatePremiumSlotBySource};
+use runtime_models::internal::script::SettingsOptionValue;
+use stores::config::{ConfigStore, CreateScript, CreateUpdatePremiumSlotBySource, UpdateScript};
 use stores::postgres::Postgres;
 use tracing::info;
 use twilight_model::id::Id;
@@ -38,9 +39,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let compiled_filter_regex = config.filter.map(|v| regex::Regex::new(&v).unwrap());
 
     let dir = std::fs::read_dir(config.scripts_path)?;
-    for entry in dir {
-        let unwrapped = entry.unwrap();
-        let os_name = unwrapped.file_name();
+    let entries = dir.collect::<Result<Vec<_>, _>>().unwrap();
+
+    for entry in &entries {
+        let os_name = entry.file_name();
         let name_with_suffix = os_name.to_str().unwrap();
         if !name_with_suffix.ends_with(".ts") || name_with_suffix.ends_with(".d.ts") {
             continue;
@@ -55,14 +57,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        let contents = std::fs::read_to_string(unwrapped.path())?;
+        let contents = std::fs::read_to_string(entry.path())?;
 
-        config_store
+        let name_without_suffix = name_with_suffix.strip_suffix(".ts").unwrap();
+        let added_script = config_store
             .create_script(
                 guild_id,
                 CreateScript {
                     enabled: true,
-                    name: name_with_suffix.strip_suffix(".ts").unwrap().to_string(),
+                    name: name_without_suffix.to_string(),
                     original_source: contents,
                     plugin_auto_update: None,
                     plugin_id: None,
@@ -71,7 +74,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .await?;
 
-        info!("added script {}", name_with_suffix);
+        info!("added script {} id {}", name_with_suffix, added_script.id);
+
+        let settings_file_name = format!("{}.settings.json", name_without_suffix);
+        if let Some(settings_entry) = entries
+            .iter()
+            .find(|v| v.file_name().to_str().unwrap() == settings_file_name)
+        {
+            let contents = std::fs::read_to_string(settings_entry.path())?;
+            let deserialized: Vec<SettingsOptionValue> = serde_json::from_str(&contents)?;
+            config_store
+                .update_script(
+                    guild_id,
+                    UpdateScript {
+                        id: added_script.id,
+                        name: None,
+                        original_source: None,
+                        enabled: None,
+                        contributes: None,
+                        plugin_version_number: None,
+                        settings_definitions: None,
+                        settings_values: Some(deserialized),
+                    },
+                )
+                .await?;
+
+            info!("loaded script settings {}", settings_file_name);
+        }
     }
 
     Ok(())
