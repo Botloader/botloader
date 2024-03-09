@@ -125,12 +125,57 @@ function useSettingsField(field: string) {
     }
 }
 
+function stripUnknownFields(script: Script): SettingsOptionValue[] {
+    const clone = []
+    for (const optionValue of script.settings_values ?? []) {
+        const definition = script.settings_definitions?.find(v => v.data.name === optionValue.name)
+        if (!definition) {
+            console.log(`Could not find option definition for ${optionValue.name}`)
+            continue
+        }
+
+        if (definition.kind === "List") {
+            if (!Array.isArray(optionValue.value)) {
+                console.log(`Skipped bad type for list ${optionValue.name}`)
+                continue;
+            }
+
+            const newRows = []
+
+            for (const row of optionValue.value as SettingsOptionValue[][]) {
+                const newRow = []
+                for (const field of row) {
+                    let fieldDefinition = definition.data.template.find(v => v.name === field.name)
+                    if (!fieldDefinition) {
+                        console.log(`Skipped unknown value in list ${optionValue.name}, field: ${field.name}`)
+                        continue
+                    }
+                    newRow.push(field)
+                }
+                newRows.push(newRow)
+            }
+
+            clone.push({
+                name: optionValue.name,
+                value: newRows
+            })
+        } else {
+            clone.push(optionValue)
+        }
+    }
+
+    return clone
+}
+
 function ScriptSettings({ script }: { script: Script }) {
     const session = useSession()
     const currentGuildId = useCurrentGuildId()
-    const [newValues, setNewValues] = useState<SettingsOptionValue[]>(script.settings_values ?? [])
+    const [newValues, setNewValues] = useState<SettingsOptionValue[]>(() => {
+        return stripUnknownFields(script)
+    })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [apiErrorResponse, setApiErrorResponse] = useState<ApiError | null>(null)
+    const notifications = UseNotifications()
 
     const settingsHook: SettingsValuesHook = {
         getFieldValue(name) {
@@ -168,7 +213,17 @@ function ScriptSettings({ script }: { script: Script }) {
         })
 
         if (isErrorResponse(response)) {
+            notifications.push({
+                class: "error",
+                message: "Validation errors occurred"
+            })
+
             setApiErrorResponse(response)
+        } else {
+            notifications.push({
+                class: "success",
+                message: "Successfully saved!"
+            })
         }
     }
 
