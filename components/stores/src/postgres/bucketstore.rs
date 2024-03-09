@@ -1,10 +1,13 @@
 use std::time::Duration;
 
-use crate::bucketstore::{Entry, SetCondition, SortedOrder, StoreError, StoreResult, StoreValue};
+use crate::bucketstore::{Entry, StoreError, StoreResult};
 
 use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use runtime_models::internal::storage::{
+    OpStorageBucketListOrder, OpStorageBucketSetCondition, OpStorageBucketValue,
+};
 use tracing::error;
 use twilight_model::id::{marker::GuildMarker, Id};
 
@@ -39,7 +42,7 @@ impl crate::bucketstore::BucketStore for Postgres {
         plugin_id: Option<u64>,
         bucket: String,
         key: String,
-        value: StoreValue,
+        value: OpStorageBucketValue,
         ttl: Option<Duration>,
     ) -> StoreResult<Entry> {
         let expires_at = ttl.and_then(|ttl| {
@@ -49,8 +52,8 @@ impl crate::bucketstore::BucketStore for Postgres {
         });
 
         let (val_num, val_json) = match value {
-            StoreValue::Json(json) => (None, Some(json)),
-            StoreValue::Float(n) => (Some(n), None),
+            OpStorageBucketValue::Json(json) => (None, Some(json)),
+            OpStorageBucketValue::Double(n) => (Some(n), None),
         };
 
         let res = sqlx::query_as!(
@@ -93,9 +96,9 @@ impl crate::bucketstore::BucketStore for Postgres {
         plugin_id: Option<u64>,
         bucket: String,
         key: String,
-        value: StoreValue,
+        value: OpStorageBucketValue,
         ttl: Option<Duration>,
-        cond: SetCondition,
+        cond: OpStorageBucketSetCondition,
     ) -> StoreResult<Option<Entry>> {
         let expires_at = ttl.and_then(|ttl| {
             chrono::Duration::from_std(ttl)
@@ -104,12 +107,12 @@ impl crate::bucketstore::BucketStore for Postgres {
         });
 
         let (val_num, val_json) = match value {
-            StoreValue::Json(json) => (None, Some(json)),
-            StoreValue::Float(n) => (Some(n), None),
+            OpStorageBucketValue::Json(json) => (None, Some(json)),
+            OpStorageBucketValue::Double(n) => (Some(n), None),
         };
 
         let res = match cond {
-            SetCondition::IfExists => {
+            OpStorageBucketSetCondition::IfExists => {
                 sqlx::query_as!(
                     DbEntry,
                     "UPDATE bucket_store SET
@@ -132,7 +135,7 @@ impl crate::bucketstore::BucketStore for Postgres {
                 .fetch_optional(&self.pool)
                 .await
             }
-            SetCondition::IfNotExists => {
+            OpStorageBucketSetCondition::IfNotExists => {
                 sqlx::query_as!(
                     DbEntry,
                     "INSERT INTO bucket_store
@@ -318,12 +321,12 @@ impl crate::bucketstore::BucketStore for Postgres {
         guild_id: Id<GuildMarker>,
         plugin_id: Option<u64>,
         bucket: String,
-        order: SortedOrder,
+        order: OpStorageBucketListOrder,
         offset: u32,
         limit: u32,
     ) -> StoreResult<Vec<Entry>> {
         let res = match order {
-            SortedOrder::Ascending => {
+            OpStorageBucketListOrder::Ascending => {
                 sqlx::query_as!(
                     DbEntry,
                     "SELECT guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
@@ -339,7 +342,7 @@ impl crate::bucketstore::BucketStore for Postgres {
                 .fetch_all(&self.pool)
                 .await
             }
-            SortedOrder::Descending => {
+            OpStorageBucketListOrder::Descending => {
                 sqlx::query_as!(
                     DbEntry,
                     "SELECT guild_id, plugin_id, bucket, key, created_at, updated_at, expires_at, \
@@ -393,12 +396,12 @@ impl From<DbEntry> for Entry {
             key: v.key,
             expires_at: v.expires_at,
             value: if let Some(fv) = v.value_float {
-                StoreValue::Float(fv)
+                OpStorageBucketValue::Double(fv)
             } else if let Some(sv) = v.value_json {
-                StoreValue::Json(sv)
+                OpStorageBucketValue::Json(sv)
             } else {
                 error!("got neither float nor json value from db");
-                StoreValue::Json(serde_json::Value::Null)
+                OpStorageBucketValue::Json(serde_json::Value::Null)
             },
         }
     }

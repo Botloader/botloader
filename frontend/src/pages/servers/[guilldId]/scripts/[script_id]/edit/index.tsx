@@ -5,14 +5,7 @@ export const routes: OurRouteObject[] = [{
     index: true,
     handle: {
         breadCrumb: (params, data) => {
-            if (params.scriptId && data.currentGuildScripts?.scripts) {
-                const script = data.currentGuildScripts.scripts.find(v => v.id + "" === params.scriptId)
-                if (script) {
-                    return script.name + ".ts"
-                }
-            }
-
-            return params.scriptId ?? "unknown script"
+            return "Edit"
         },
     },
     element: <EditGuildScript />

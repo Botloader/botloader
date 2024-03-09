@@ -1,13 +1,19 @@
 use std::convert::TryFrom;
 
 use crate::timers::{
-    GetGuildTasksFilter, IntervalTimer, IntervalType, ScheduledTask, ScopeSelector, TaskBucket,
-    TimerStoreError, TimerStoreResult,
+    IntervalTimer, IntervalType, ScheduledTask, TimerStoreError, TimerStoreResult,
 };
 
 use super::Postgres;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use runtime_models::{
+    internal::{
+        script::TaskBucketId,
+        tasks::{GetGuildTasksFilter, ScopeSelector},
+    },
+    util::PluginId,
+};
 use twilight_model::id::{marker::GuildMarker, Id};
 
 #[derive(Debug, thiserror::Error)]
@@ -187,7 +193,7 @@ impl crate::timers::TimerStore for Postgres {
         let filter_plugin = match filter.scope {
             ScopeSelector::All => None,
             ScopeSelector::Guild => Some(0),
-            ScopeSelector::Plugin(p) => Some(p),
+            ScopeSelector::Plugin { plugin_id } => Some(plugin_id.0),
         };
 
         let res = if let Some(plugin_id) = filter_plugin {
@@ -280,7 +286,7 @@ impl crate::timers::TimerStore for Postgres {
         &self,
         guild_id: Id<GuildMarker>,
         ignore_ids: &[u64],
-        names: &[TaskBucket],
+        names: &[TaskBucketId],
     ) -> TimerStoreResult<Option<DateTime<Utc>>> {
         // This was a pretty fun rabbit hole to go down
         // The problem is that postgres' multidimensional array support is trash.
@@ -293,7 +299,7 @@ impl crate::timers::TimerStore for Postgres {
         // So to work around this shitty flaw, just concat the nested array to a string, shitty but works for now.
         let name_plugin_filter = names
             .iter()
-            .map(|v| format!("{}_{}", v.plugin_id.unwrap_or(0), v.name))
+            .map(|v| format!("{}_{}", v.plugin_id.unwrap_or(PluginId(0)).0, v.name))
             .collect::<Vec<_>>();
 
         let res = sqlx::query!(
@@ -314,12 +320,12 @@ impl crate::timers::TimerStore for Postgres {
         guild_id: Id<GuildMarker>,
         t: DateTime<Utc>,
         ignore_ids: &[u64],
-        names: &[TaskBucket],
+        names: &[TaskBucketId],
     ) -> TimerStoreResult<Vec<ScheduledTask>> {
         // Working around postgres limitation, see the comment in get_next_task_time for an explanation
         let name_plugin_filter = names
             .iter()
-            .map(|v| format!("{}_{}", v.plugin_id.unwrap_or(0), v.name))
+            .map(|v| format!("{}_{}", v.plugin_id.unwrap_or(PluginId(0)).0, v.name))
             .collect::<Vec<_>>();
 
         let res = sqlx::query_as!(

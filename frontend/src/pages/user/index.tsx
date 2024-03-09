@@ -31,25 +31,25 @@ export const routes: RouteObject[] = [
 ]
 
 export function UserSideNav() {
-    const navItems = {
-        "General": {
+    const navItems = [
+        {
             label: "General",
             isNavLink: true,
             exact: true,
             path: `/user/general`,
         },
-        "Premium": {
+        {
             label: "Premium",
             isNavLink: true,
             exact: true,
             path: `/user/premium`,
         },
-        "Plugins": {
+        {
             label: "Plugins",
             isNavLink: true,
             path: `/user/plugins`,
         },
-    }
+    ]
 
     return <SideNav items={navItems}></SideNav>
 }

@@ -138,7 +138,7 @@ pub async fn create_plugin(
         kind: common::plugin::PluginType::Script,
     };
 
-    if let Err(err) = validate(&create) {
+    if let Err(err) = validate(&create, &()) {
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
@@ -191,7 +191,7 @@ pub async fn update_plugin_meta(
         is_published: None,
     };
 
-    if let Err(err) = validate(&update) {
+    if let Err(err) = validate(&update, &()) {
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
@@ -216,7 +216,8 @@ pub struct UpdatePluginDevSourceRequest {
 }
 
 impl Validator for UpdatePluginDevSourceRequest {
-    fn validate(&self, ctx: &mut ValidationContext) {
+    type ContextData = ();
+    fn validate(&self, ctx: &mut ValidationContext, _: &()) {
         validation::web::check_script_source(ctx, "new_source", &self.new_source);
     }
 }
@@ -228,7 +229,7 @@ pub async fn update_plugin_dev_source(
     Extension(plugin): Extension<Plugin>,
     Json(body): Json<UpdatePluginDevSourceRequest>,
 ) -> ApiResult<impl IntoResponse> {
-    if let Err(err) = validate(&body) {
+    if let Err(err) = validate(&body, &()) {
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
@@ -254,7 +255,9 @@ pub struct PublishPluginVersionData {
 }
 
 impl Validator for PublishPluginVersionData {
-    fn validate(&self, ctx: &mut ValidationContext) {
+    type ContextData = ();
+
+    fn validate(&self, ctx: &mut ValidationContext, _: &()) {
         validation::web::check_script_source(ctx, "new_source", &self.new_source);
     }
 }
@@ -266,7 +269,7 @@ pub async fn publish_plugin_version(
     Extension(bot_rpc): Extension<botrpc::Client>,
     Json(body): Json<PublishPluginVersionData>,
 ) -> ApiResult<impl IntoResponse> {
-    if let Err(err) = validate(&body) {
+    if let Err(err) = validate(&body, &()) {
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 

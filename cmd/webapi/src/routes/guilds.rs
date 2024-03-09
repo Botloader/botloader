@@ -1,5 +1,6 @@
 use axum::{extract::Extension, response::IntoResponse, Json};
 use chrono::{DateTime, Utc};
+use dbrokerapi::models::BrokerGuild;
 use stores::{
     config::{ConfigStore, PremiumSlot, PremiumSlotTier},
     web::SessionStore,
@@ -93,6 +94,55 @@ pub async fn get_guild_premium_slots<CT: ConfigStore + 'static>(
         })?;
 
     Ok(Json(slots.into_iter().map(Into::into).collect()))
+}
+
+#[derive(Debug, Serialize)]
+pub struct FullGuild {
+    guild: BrokerGuild,
+    channels: Vec<twilight_model::channel::Channel>,
+    roles: Vec<twilight_model::guild::Role>,
+}
+
+pub async fn get_full_guild(
+    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
+    Extension(current_guild): Extension<CurrentUserGuild>,
+) -> ApiResult<Json<FullGuild>> {
+    let guild = state_client
+        .get_guild(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed fetching guild");
+            ApiErrorResponse::InternalError
+        })?;
+
+    let Some(guild) = guild else {
+        // while this is possible due to the async nature of everything,
+        // realistically this case wont hit
+        error!("guild not found while current_guild is set");
+        return Err(ApiErrorResponse::InternalError);
+    };
+
+    let channels = state_client
+        .get_channels(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed fetching guild channels");
+            ApiErrorResponse::InternalError
+        })?;
+
+    let roles = state_client
+        .get_roles(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed fetching guild roles");
+            ApiErrorResponse::InternalError
+        })?;
+
+    Ok(Json(FullGuild {
+        guild,
+        channels,
+        roles,
+    }))
 }
 
 #[derive(Debug, Serialize)]

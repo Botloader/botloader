@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -21,24 +23,16 @@ pub struct ScriptMeta {
     pub command_groups: Vec<CommandGroup>,
     pub interval_timers: Vec<IntervalTimer>,
     pub task_buckets: Vec<TaskBucketId>,
+    pub settings: Vec<SettingsOptionDefinition>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, TS)]
+#[derive(Debug, Clone, Deserialize, Serialize, TS, PartialEq, Eq)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/ScriptTaskBucketId.ts")]
 pub struct TaskBucketId {
     pub name: String,
     pub plugin_id: Option<PluginId>,
-}
-
-impl From<TaskBucketId> for stores::timers::TaskBucket {
-    fn from(value: TaskBucketId) -> Self {
-        Self {
-            name: value.name,
-            plugin_id: value.plugin_id.map(|v| v.0),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -388,4 +382,112 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
             },
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/SettingsOptionType.ts")]
+#[serde(rename_all = "camelCase")]
+#[serde(tag = "kind")]
+pub enum SettingsOptionType {
+    String {
+        max_length: Option<u32>,
+        min_length: Option<u32>,
+    },
+    Float {
+        min: Option<f64>,
+        max: Option<f64>,
+    },
+    Integer {
+        min: Option<i64>,
+        max: Option<i64>,
+    },
+    Integer64 {
+        min: Option<String>,
+        max: Option<String>,
+    },
+    Channel {
+        types: Option<Vec<ChannelType>>,
+    },
+    Channels {
+        types: Option<Vec<ChannelType>>,
+        max_length: Option<u32>,
+        min_length: Option<u32>,
+    },
+    Role {
+        assignable: Option<bool>,
+    },
+    Roles {
+        assignable: Option<bool>,
+        max_length: Option<u32>,
+        min_length: Option<u32>,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/SettingsOption.ts")]
+pub struct SettingsOption {
+    pub name: String,
+    pub label: String,
+    pub description: String,
+    pub required: bool,
+    #[ts(type = "any")]
+    pub default_value: Option<serde_json::Value>,
+    pub kind: SettingsOptionType,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/SettingsOptionList.ts")]
+pub struct SettingsOptionList {
+    pub name: String,
+    pub label: String,
+    pub description: String,
+    pub required: bool,
+    #[ts(type = "any")]
+    pub default_value: Option<serde_json::Value>,
+    pub template: Vec<SettingsOption>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/SettingOptionDefinition.ts")]
+#[serde(tag = "kind", content = "data")]
+pub enum SettingsOptionDefinition {
+    Option(SettingsOption),
+    List(SettingsOptionList),
+}
+
+impl SettingsOptionDefinition {
+    pub fn name(&self) -> &str {
+        match self {
+            SettingsOptionDefinition::Option(v) => &v.name,
+            SettingsOptionDefinition::List(v) => &v.name,
+        }
+    }
+
+    pub fn required(&self) -> bool {
+        match self {
+            SettingsOptionDefinition::Option(v) => v.required,
+            SettingsOptionDefinition::List(v) => v.required,
+        }
+    }
+
+    pub fn default_value(&self) -> Option<&serde_json::Value> {
+        match &self {
+            SettingsOptionDefinition::Option(v) => v.default_value.as_ref(),
+            SettingsOptionDefinition::List(v) => v.default_value.as_ref(),
+        }
+    }
+}
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/SettingsOptionValue.ts")]
+pub struct SettingsOptionValue {
+    pub name: String,
+    #[ts(type = "any")]
+    pub value: serde_json::Value,
 }

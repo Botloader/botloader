@@ -436,6 +436,7 @@ checksum = "1236b4b292f6c4d6dc34604bb5120d85c3fe1d1aa596bd5cc52ca054d13e7b9e"
 dependencies = [
  "async-trait",
  "axum-core 0.4.3",
+ "axum-macros",
  "base64 0.21.6",
  "bytes",
  "futures-util",
@@ -524,6 +525,18 @@ dependencies = [
  "tower",
  "tower-layer",
  "tower-service",
+]
+
+[[package]]
+name = "axum-macros"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00c055ee2d014ae5981ce1016374e8213682aa14d9bf40e48ab48b5f3ef20eaa"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
 ]
 
 [[package]]
@@ -3348,6 +3361,9 @@ dependencies = [
  "clap",
  "common",
  "regex",
+ "runtime-models",
+ "serde",
+ "serde_json",
  "stores",
  "tokio",
  "tracing",
@@ -3849,7 +3865,6 @@ dependencies = [
  "dbrokerapi",
  "serde",
  "serde_json",
- "stores",
  "tracing",
  "ts-rs",
  "twilight-cache-inmemory",
@@ -4793,6 +4808,7 @@ dependencies = [
  "dashmap",
  "oauth2",
  "rand",
+ "runtime-models",
  "serde",
  "serde_json",
  "sqlx",
@@ -6771,7 +6787,9 @@ dependencies = [
  "regex",
  "runtime-models",
  "serde",
+ "serde_json",
  "stores",
+ "twilight-model",
 ]
 
 [[package]]
@@ -6978,11 +6996,13 @@ dependencies = [
  "chrono",
  "clap",
  "common",
+ "dbrokerapi",
  "discordoauthwrapper",
  "futures",
  "guild-logger",
  "image",
  "oauth2",
+ "runtime-models",
  "serde",
  "serde_json",
  "stores",

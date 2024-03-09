@@ -2,6 +2,7 @@
 import type { Command } from "./Command";
 import type { CommandGroup } from "./CommandGroup";
 import type { IntervalTimer } from "./IntervalTimer";
+import type { SettingsOptionDefinition } from "./SettingOptionDefinition";
 import type { TaskBucketId } from "./ScriptTaskBucketId";
 
 export interface ScriptMeta {
@@ -12,4 +13,5 @@ export interface ScriptMeta {
   commandGroups: Array<CommandGroup>;
   intervalTimers: Array<IntervalTimer>;
   taskBuckets: Array<TaskBucketId>;
+  settings: Array<SettingsOptionDefinition>;
 }

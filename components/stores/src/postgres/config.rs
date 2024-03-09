@@ -30,8 +30,9 @@ impl Postgres {
         match sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
-             FROM guild_scripts WHERE guild_id = $1 AND name = $2 AND plugin_id IS NULL;",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
+             settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 AND \
+             name = $2 AND plugin_id IS NULL;",
             guild_id.get() as i64,
             script_name
         )
@@ -52,8 +53,9 @@ impl Postgres {
         Ok(sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
-             FROM guild_scripts WHERE guild_id = $1 AND id = $2;",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
+             settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 AND id \
+             = $2;",
             guild_id.get() as i64,
             id
         )
@@ -82,8 +84,9 @@ impl Postgres {
         let res = sqlx::query_as!(
             DbScript,
             "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number \
-             FROM guild_scripts WHERE guild_id = $1 ORDER BY id ASC",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
+             settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 ORDER \
+             BY id ASC",
             guild_id.get() as i64,
         )
         .fetch_all(conn)
@@ -111,7 +114,8 @@ impl Postgres {
              plugin_auto_update, plugin_version_number) 
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;",
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
+             settings_definitions, settings_values;",
             guild_id.get() as i64,
             script.name,
             script.original_source,
@@ -243,6 +247,12 @@ impl crate::config::ConfigStore for Postgres {
         script: UpdateScript,
     ) -> ConfigStoreResult<Script> {
         let commands_enc = script.contributes.map(|v| serde_json::to_value(v).unwrap());
+        let settings_definitions = script
+            .settings_definitions
+            .map(|v| serde_json::to_value(v).unwrap());
+        let settings_values = script
+            .settings_values
+            .map(|v| serde_json::to_value(v).unwrap());
 
         let res = sqlx::query_as!(
             DbScript,
@@ -251,10 +261,13 @@ impl crate::config::ConfigStore for Postgres {
                     original_source = COALESCE($3, guild_scripts.original_source),
                     enabled = COALESCE($4, guild_scripts.enabled),
                     contributes_commands = COALESCE($5, guild_scripts.contributes_commands),
-                    plugin_version_number = COALESCE($6, guild_scripts.plugin_version_number)
+                    plugin_version_number = COALESCE($6, guild_scripts.plugin_version_number),
+                    settings_definitions = COALESCE($7, guild_scripts.settings_definitions),
+                    settings_values = COALESCE($8, guild_scripts.settings_values)
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
+             settings_definitions, settings_values;
                 ",
             guild_id.get() as i64,
             script.id as i64,
@@ -262,6 +275,8 @@ impl crate::config::ConfigStore for Postgres {
             script.enabled,
             commands_enc,
             script.plugin_version_number.map(|v| v as i32),
+            settings_definitions,
+            settings_values,
         )
         .fetch_one(&self.pool)
         .await?;
@@ -286,7 +301,8 @@ impl crate::config::ConfigStore for Postgres {
                     contributes_interval_timers = $4
                     WHERE guild_id = $1 AND id=$2
                     RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;
+             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
+             settings_definitions, settings_values;
                 ",
             guild_id.get() as i64,
             script_id as i64,
@@ -1042,6 +1058,8 @@ struct DbScript {
     plugin_id: Option<i64>,
     plugin_auto_update: Option<bool>,
     plugin_version_number: Option<i32>,
+    settings_definitions: serde_json::Value,
+    settings_values: serde_json::Value,
 }
 
 impl From<DbScript> for Script {
@@ -1049,6 +1067,10 @@ impl From<DbScript> for Script {
         let commands_dec = serde_json::from_value(script.contributes_commands).unwrap_or_default();
         let intervals_dec =
             serde_json::from_value(script.contributes_interval_timers).unwrap_or_default();
+
+        let settings_definitions =
+            serde_json::from_value(script.settings_definitions).unwrap_or_default();
+        let settings_values = serde_json::from_value(script.settings_values).unwrap_or_default();
 
         Self {
             id: script.id as u64,
@@ -1062,6 +1084,8 @@ impl From<DbScript> for Script {
             plugin_id: script.plugin_id.map(|v| v as u64),
             plugin_auto_update: script.plugin_auto_update,
             plugin_version_number: script.plugin_version_number.map(|v| v as u32),
+            settings_definitions,
+            settings_values,
         }
     }
 }

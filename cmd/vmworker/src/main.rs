@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 
 use common::DiscordConfig;
 use guild_logger::LogSender;
-use runtime::{CreateRuntimeContext, RuntimeEvent};
+use runtime::{CreateRuntimeContext, RuntimeEvent, ScriptSettingsValues};
 use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
 use stores::{config::PremiumSlotTier, postgres::Postgres};
 use tokio::sync::mpsc;
@@ -266,7 +266,7 @@ impl Worker {
     #[instrument(
         skip(self),
         fields(
-            guild_id = self.current_guild_id().map(|v| v.to_string()), 
+            guild_id = self.current_guild_id().map(|v| v.to_string()),
         )
     )]
     async fn handle_vm_evt(&mut self, evt: VmEvent) -> anyhow::Result<ContinueState> {
@@ -315,9 +315,9 @@ impl Worker {
         req: CreateScriptsVmReq,
     ) -> anyhow::Result<ContinueState> {
         if let Some(current) = &self.current_state {
-            if current.guild_id != req.guild_id {
+            // if current.guild_id != req.guild_id {
                 self.wait_shutdown_current_vm().await;
-            }
+            // }
         };
 
         {
@@ -326,15 +326,15 @@ impl Worker {
             *w = req.premium_tier;
         }
 
-        if let Some(current) = &self.current_state {
-            // we were already running a vm for this guild, issue a restart command with the new scripts instead
-            // TODO: there is a possibility of a race condition here
-            // we could receive a "completed" event here we handle after this and since we send a ack back
-            // stuff could go wrong...
-            let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
-            self.write_message(WorkerMessage::Ack(req.seq)).await?;
-            return Ok(ContinueState::Continue);
-        }
+        // if let Some(current) = &self.current_state {
+        //     // we were already running a vm for this guild, issue a restart command with the new scripts instead
+        //     // TODO: there is a possibility of a race condition here
+        //     // we could receive a "completed" event here we handle after this and since we send a ack back
+        //     // stuff could go wrong...
+        //     let _ = current.scripts_vm.send(VmCommand::Restart(req.scripts));
+        //     self.write_message(WorkerMessage::Ack(req.seq)).await?;
+        //     return Ok(ContinueState::Continue);
+        // }
 
         let (vm_cmd_tx, vm_cmd_rx) = mpsc::unbounded_channel();
         let (vm_evt_tx, vm_evt_rx) = mpsc::unbounded_channel();
@@ -348,6 +348,16 @@ impl Worker {
             premium_tier: self.premium_tier.clone(),
             main_tokio_runtime: tokio::runtime::Handle::current(),
 
+            settings_values: req
+                .scripts
+                .iter()
+                .filter(|v| !v.settings_values.is_empty())
+                .map(|v| ScriptSettingsValues {
+                    script_id: v.id,
+                    settings_values: v.settings_values.clone(),
+                })
+                .collect(),
+ 
             bucket_store: self.stores.clone(),
             config_store: self.stores.clone(),
             timer_store: self.stores.clone(),

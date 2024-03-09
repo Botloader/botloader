@@ -1,5 +1,5 @@
 import { GuildMetaConfig } from ".";
-import { CreateScript, CurrentGuildsResponse, EmptyResponse, LoginResponse, Plugin, Script, ScriptPlugin, ScriptsWithPlugins, SessionMeta, UpdateScript, User } from "./api_models";
+import { CreateScript, CurrentGuildsResponse, EmptyResponse, FullGuild, LoginResponse, Plugin, Script, ScriptPlugin, ScriptsWithPlugins, SessionMeta, UpdateScript, User } from "./api_models";
 
 export type Body = {
     body: any,
@@ -130,6 +130,10 @@ export class ApiClient {
         });
     }
 
+    async getFullDiscordGuild(guildId: string): Promise<ApiResult<FullGuild>> {
+        return await this.get(`/api/guilds/${guildId}/full_guild`);
+    }
+
     async getAllScripts(guildId: string): Promise<ApiResult<Script[]>> {
         return await this.get(`/api/guilds/${guildId}/scripts`);
     }
@@ -147,6 +151,13 @@ export class ApiClient {
 
     async updateScript(guildId: string, id: number, data: UpdateScript): Promise<ApiResult<Script>> {
         return await this.patch(`/api/guilds/${guildId}/scripts/${id}`, {
+            kind: "json",
+            body: data
+        });
+    }
+
+    async validateScript(guildId: string, id: number, data: UpdateScript): Promise<ApiResult<void>> {
+        return await this.post(`/api/guilds/${guildId}/scripts/${id}/validate_settings`, {
             kind: "json",
             body: data
         });

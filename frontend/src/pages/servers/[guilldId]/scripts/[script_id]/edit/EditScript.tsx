@@ -72,7 +72,6 @@ function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) 
         if (!isErrorResponse(newScript)) {
             setScript(newScript);
         }
-        await session.apiClient.reloadGuildVm(props.guild.guild.id);
     }
 
     async function save(content: string) {
@@ -91,7 +90,6 @@ function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) 
             setScript(updated);
         }
 
-        await session.apiClient.reloadGuildVm(props.guild.guild.id);
         debugMessageStore.pushMessage({
             guildId: props.guild.guild.id,
             level: "Client",

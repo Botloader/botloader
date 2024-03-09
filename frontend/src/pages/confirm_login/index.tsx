@@ -1,5 +1,5 @@
 import { RouteObject } from "react-router-dom";
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router";
 import { ApiClient, isErrorResponse, ApiError } from "botloader-common";
 import { CreateFetcher } from "../../Util";
@@ -19,6 +19,7 @@ interface LoadingStatus {
 }
 
 export function ConfirmLoginPage() {
+    const confirmingLogin = useRef(false)
     let [status, setStatus] = useState<LoadingStatus>({
         loading: true,
     });
@@ -43,6 +44,13 @@ export function ConfirmLoginPage() {
                 });
             }
         }
+
+        // in react strict mode this hook triggers twice, 
+        // causing the csrf token to expire and the login the be invalidated
+        if (confirmingLogin.current) {
+            return
+        }
+        confirmingLogin.current = true
 
         completeLogin()
 

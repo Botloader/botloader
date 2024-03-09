@@ -304,8 +304,8 @@ declare namespace Deno {
             | Float64Array
             | BigUint64Array
             | BigInt64Array;
-        function isWeakMap(value: unknown): value is WeakMap<WeakKey, unknown>;
-        function isWeakSet(value: unknown): value is WeakSet<WeakKey>;
+        // function isWeakMap(value: unknown): value is WeakMap<WeakKey, unknown>;
+        // function isWeakSet(value: unknown): value is WeakSet<WeakKey>;
 
         const build: {
             target: string;

@@ -1,7 +1,8 @@
-import { GuildHome, GuildSideNav } from "./GuildPage";
+import { GuildHome } from "./GuildPage";
 import { Box } from "@mui/material";
-import { routes as editScriptRoutes } from "./scripts/[script_id]/edit";
+import { routes as scriptRoutes } from "./scripts/[script_id]";
 import { OurRouteObject } from "../../../misc/ourRoute";
+import { GuildSideNav } from "../../../components/GuildSideNav";
 
 export const routes: OurRouteObject[] = [
     {
@@ -11,7 +12,6 @@ export const routes: OurRouteObject[] = [
         // },
         element: <>
             <Box sx={{ display: 'flex' }}>
-
                 <GuildSideNav />
                 <Box
                     component="main"
@@ -23,7 +23,7 @@ export const routes: OurRouteObject[] = [
         </>,
     },
     {
-        path: "scripts/:scriptId/edit",
-        children: editScriptRoutes
+        path: "scripts/:scriptId",
+        children: scriptRoutes
     }
 ]

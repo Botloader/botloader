@@ -54,7 +54,72 @@ export interface Script {
     plugin_id: number | null,
     plugin_auto_update: boolean | null,
     plugin_version_number: number | null,
+    settings_definitions: SettingsOptionDefinition[] | null,
+    settings_values: SettingsOptionValue[],
 }
+
+export type SettingsOptionDefinition = {
+    "kind": "Option";
+    "data": SettingsOption;
+} | { "kind": "List"; "data": SettingsOptionList };
+
+
+export interface SettingsOption {
+    name: string;
+    label: string;
+    description: string;
+    required: boolean;
+    defaultValue: any;
+    kind: SettingsOptionType;
+}
+
+export interface SettingsOptionList {
+    name: string;
+    label: string;
+    description: string;
+    required: boolean;
+    defaultValue: any;
+    template: Array<SettingsOption>;
+}
+
+export type SettingsOptionType =
+    | { "kind": "string"; max_length: number | null; min_length: number | null }
+    | { "kind": "float"; min: number | null; max: number | null }
+    | { "kind": "integer"; min: bigint | null; max: bigint | null }
+    | { "kind": "integer64"; min: string | null; max: string | null }
+    | { "kind": "channel"; types: Array<ChannelType> | null }
+    | {
+        "kind": "channels";
+        types: Array<ChannelType> | null;
+        max_length: number | null;
+        min_length: number | null;
+    }
+    | { "kind": "role"; assignable: boolean | null }
+    | {
+        "kind": "roles";
+        assignable: boolean | null;
+        max_length: number | null;
+        min_length: number | null;
+    };
+
+export type ChannelType =
+    | "Text"
+    | "Voice"
+    | "Category"
+    | "News"
+    | "StageVoice"
+    | "NewsThread"
+    | "PublicThread"
+    | "PrivateThread"
+    | "GuildDirectory"
+    | "Forum"
+    | { "Unknown": number };
+
+export interface SettingsOptionValue {
+    name: string;
+    value: any;
+}
+
 
 export interface CreateScript {
     name: string,
@@ -66,6 +131,7 @@ export interface UpdateScript {
     name?: string,
     original_source?: string,
     enabled?: boolean,
+    settings_values?: SettingsOptionValue[],
 }
 
 export interface EmptyResponse { }
@@ -129,3 +195,65 @@ export interface BlUser {
     is_bl_staff: boolean;
     is_bl_trusted: boolean;
 }
+
+export interface FullGuild {
+    guild: Guild,
+    channels: DiscordChannel[],
+    roles: DiscordRole[],
+}
+
+export interface Guild {
+    icon: string | null
+    id: string
+}
+
+export interface DiscordChannel {
+    id: string,
+    // flags: Option<ChannelFlags>,
+    guild_id: string,
+    icon?: string,
+    invitable?: boolean,
+    type: DiscordNumberedChannelTypes,
+    // last_message_id: Option<Id<GenericMarker>>,
+    // last_pin_timestamp: Option<Timestamp>,
+    // managed: Option<bool>,
+    // member: Option<ThreadMember>,
+    // member_count: Option<i8>,
+    // message_count: Option<u32>,
+    name?: string,
+    nsfw?: boolean,
+    parent_id?: string,
+    // permission_overwrites: Option<Vec<PermissionOverwrite>>,
+    position?: number,
+}
+
+export enum DiscordNumberedChannelTypes {
+    GuildText = 0,
+    Private = 1,
+    GuildVoice = 2,
+    Group = 3,
+    GuildCategory = 4,
+    GuildAnnouncement = 5,
+    AnnouncementThread = 10,
+    PublicThread = 11,
+    PrivateThread = 12,
+    GuildStageVoice = 13,
+    GuildDirectory = 14,
+    GuildForum = 15,
+}
+
+export interface DiscordRole {
+    id: string,
+    color: number,
+    hoist: boolean,
+    icon?: string,
+    managed: boolean,
+    mentionable: boolean,
+    name: String,
+    permissions: string,
+    position: number,
+    // flags: RoleFlags,
+    // tags: Option<RoleTags>,
+    // unicode_emoji: Option<String>,
+}
+

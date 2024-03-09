@@ -7,7 +7,7 @@ use std::{
 use common::DiscordConfig;
 use deno_core::{op2, Extension, Op, OpState, ResourceId, ResourceTable};
 use guild_logger::{entry::CreateLogEntry, GuildLogSender};
-use runtime_models::internal::script::ScriptMeta;
+use runtime_models::internal::script::{ScriptMeta, SettingsOptionValue};
 use stores::{
     bucketstore::BucketStore,
     config::{ConfigStore, PremiumSlotTier},
@@ -40,6 +40,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
     let premium_tier = *ctx.premium_tier.read().unwrap();
     let core_ctx = CoreRuntimeContext {
         event_tx: ctx.event_tx.clone(),
+        settings_values: ctx.settings_values,
     };
 
     if let Some(guild_id) = ctx.guild_id {
@@ -85,6 +86,7 @@ deno_core::extension!(
         op_get_current_bot_user,
         op_get_current_guild_id,
         op_get_run_mode,
+        op_get_settings,
     ],
     options = {
         ctx: CoreRuntimeContext,
@@ -115,6 +117,7 @@ deno_core::extension!(
         op_get_current_bot_user,
         op_get_current_guild_id,
         op_get_run_mode,
+        op_get_settings,
     ],
     options = {
         ctx: CoreRuntimeContext,
@@ -148,6 +151,7 @@ pub fn disabled_op() -> Result<(), AnyError> {
 #[derive(Clone)]
 pub struct CoreRuntimeContext {
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
+    pub settings_values: Vec<ScriptSettingsValues>,
 }
 
 #[derive(Clone)]
@@ -176,10 +180,17 @@ pub struct CreateRuntimeContext {
     pub event_tx: mpsc::UnboundedSender<RuntimeEvent>,
     pub premium_tier: Arc<RwLock<Option<PremiumSlotTier>>>,
     pub main_tokio_runtime: tokio::runtime::Handle,
+    pub settings_values: Vec<ScriptSettingsValues>,
 
     pub bucket_store: Arc<dyn BucketStore>,
     pub config_store: Arc<dyn ConfigStore>,
     pub timer_store: Arc<dyn TimerStore>,
+}
+
+#[derive(Clone)]
+pub struct ScriptSettingsValues {
+    pub script_id: u64,
+    pub settings_values: Vec<SettingsOptionValue>,
 }
 
 #[op2]
@@ -238,29 +249,55 @@ pub fn op_botloader_script_start(
     Ok(())
 }
 
+#[op2]
+#[serde]
+pub fn op_get_settings(
+    state: &mut OpState,
+    #[number] script_id: u64,
+) -> Result<Vec<SettingsOptionValue>, AnyError> {
+    let core_ctx = state.borrow::<CoreRuntimeContext>();
+    let Some(script_settings_entry) = core_ctx
+        .settings_values
+        .iter()
+        .find(|v| v.script_id == script_id)
+    else {
+        return Ok(Vec::new());
+    };
+
+    Ok(script_settings_entry.settings_values.clone())
+}
+
 pub(crate) fn validate_script_meta(meta: &ScriptMeta) -> Result<(), anyhow::Error> {
-    let mut outbuf = String::new();
+    let mut out_buf = String::new();
 
     for command in &meta.commands {
-        if let Err(verrs) = validation::validate(command) {
+        if let Err(verrs) = validation::validate(command, &()) {
             for verr in verrs {
-                outbuf.push_str(format!("\ncommand {}: {}", command.name, verr).as_str());
+                out_buf.push_str(format!("\ncommand {}: {}", command.name, verr).as_str());
             }
         }
     }
 
     for group in &meta.command_groups {
-        if let Err(verrs) = validation::validate(group) {
+        if let Err(verrs) = validation::validate(group, &()) {
             for verr in verrs {
-                outbuf.push_str(format!("\ncommand group {}: {}", group.name, verr).as_str());
+                out_buf.push_str(format!("\ncommand group {}: {}", group.name, verr).as_str());
             }
         }
     }
 
-    if outbuf.is_empty() {
+    for option in &meta.settings {
+        if let Err(validation_errors) = validation::validate(option, &()) {
+            for error in validation_errors {
+                out_buf.push_str(format!("\nsettings options: {}", error).as_str());
+            }
+        }
+    }
+
+    if out_buf.is_empty() {
         Ok(())
     } else {
-        Err(anyhow::anyhow!("failed validating script: {}", outbuf))
+        Err(anyhow::anyhow!("script validation failed: {}", out_buf))
     }
 }
 

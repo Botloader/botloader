@@ -1,6 +1,13 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
+use runtime_models::{
+    internal::storage::{
+        OpStorageBucketEntry, OpStorageBucketListOrder, OpStorageBucketSetCondition,
+        OpStorageBucketValue,
+    },
+    util::{NotBigU64, PluginId},
+};
 use thiserror::Error;
 use twilight_model::id::{marker::GuildMarker, Id};
 
@@ -31,7 +38,7 @@ pub trait BucketStore: Send + Sync {
         plugin_id: Option<u64>,
         bucket: String,
         key: String,
-        value: StoreValue,
+        value: OpStorageBucketValue,
         ttl: Option<Duration>,
     ) -> StoreResult<Entry>;
 
@@ -42,9 +49,9 @@ pub trait BucketStore: Send + Sync {
         plugin_id: Option<u64>,
         bucket: String,
         key: String,
-        value: StoreValue,
+        value: OpStorageBucketValue,
         ttl: Option<Duration>,
-        cond: SetCondition,
+        cond: OpStorageBucketSetCondition,
     ) -> StoreResult<Option<Entry>>;
 
     async fn del(
@@ -98,7 +105,7 @@ pub trait BucketStore: Send + Sync {
         guild_id: Id<GuildMarker>,
         plugin_id: Option<u64>,
         bucket: String,
-        order: SortedOrder,
+        order: OpStorageBucketListOrder,
         offset: u32,
         limit: u32,
     ) -> StoreResult<Vec<Entry>>;
@@ -106,27 +113,23 @@ pub trait BucketStore: Send + Sync {
     async fn delete_guild_bucket_store_data(&self, id: Id<GuildMarker>) -> StoreResult<()>;
 }
 
-pub enum SetCondition {
-    IfNotExists,
-    IfExists,
-}
-
-pub enum SortedOrder {
-    Ascending,
-    Descending,
-}
-
 #[derive(Debug)]
 pub struct Entry {
     pub bucket: String,
     pub key: String,
     pub plugin_id: Option<u64>,
-    pub value: StoreValue,
+    pub value: OpStorageBucketValue,
     pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug)]
-pub enum StoreValue {
-    Json(serde_json::Value),
-    Float(f64),
+impl From<Entry> for OpStorageBucketEntry {
+    fn from(v: Entry) -> Self {
+        Self {
+            plugin_id: v.plugin_id.map(PluginId),
+            bucket_name: v.bucket,
+            key: v.key,
+            value: v.value,
+            expires_at: v.expires_at.map(|e| NotBigU64(e.timestamp_millis() as u64)),
+        }
+    }
 }

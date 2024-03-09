@@ -9,6 +9,7 @@ import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
 import { Tasks } from "./scheduled_tasks";
 import { ComponentInteraction, SelectMenuInteraction, ModalSubmitInteraction } from "./discord/index";
+import { SettingsManager } from "./settings";
 
 /**
  * The script class is the main way you interact with botloader and discord.
@@ -24,6 +25,7 @@ export class Script {
     private storageBuckets: Storage.Bucket<unknown>[] = [];
     private taskHandlers: Internal.TaskBucketId[] = [];
     private commands: Commands.Command[] = [];
+    settings: SettingsManager;
 
     private runCalled = false;
     private customStorageScope?: CustomScope;
@@ -35,6 +37,7 @@ export class Script {
         this.description = `script id ${id}`;
         this.scriptId = id;
         this.pluginId = pluginId;
+        this.settings = new SettingsManager(id)
     }
 
     setCustomStorageScope(scope: CustomScope) {
@@ -316,6 +319,7 @@ export class Script {
             intervalTimers: this.intervalTimers.map(inner => inner.timer),
             taskBuckets: this.taskHandlers,
             pluginId: this.pluginId,
+            settings: this.settings.toInternalOptions()
         });
 
         EventSystem.registerEventMuxer(this.events);

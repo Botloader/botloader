@@ -92,7 +92,7 @@ pub async fn op_botloader_bucket_storage_set(
             args.plugin_id.map(Into::into),
             args.bucket_name,
             args.key,
-            args.value.into(),
+            args.value,
             args.ttl.map(|ttl| Duration::from_secs(ttl as u64)),
         )
         .await?;
@@ -122,9 +122,9 @@ pub async fn op_botloader_bucket_storage_set_if(
             args.plugin_id.map(Into::into),
             args.bucket_name,
             args.key,
-            args.value.into(),
+            args.value,
             args.ttl.map(|ttl| Duration::from_secs(ttl as u64)),
-            args.cond.into(),
+            args.cond,
         )
         .await?;
 
@@ -338,7 +338,7 @@ pub async fn op_botloader_bucket_storage_sorted_list(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
             args.bucket_name,
-            args.order.into(),
+            args.order,
             args.offset.unwrap_or_default(),
             limit,
         )

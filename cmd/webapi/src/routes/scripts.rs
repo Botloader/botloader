@@ -1,17 +1,25 @@
+use std::rc::Rc;
+
 use axum::{
     extract::{Extension, Path},
     response::IntoResponse,
     Json,
 };
 use common::plugin::Plugin;
+use runtime_models::internal::script::SettingsOptionValue;
 use serde::{Deserialize, Serialize};
 use stores::config::{ConfigStore, CreateScript, Script, UpdateScript};
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
-use validation::{validate, ValidationError};
+use validation::{
+    validate,
+    web::{GuildData, ScriptValidationContextData},
+    ValidationError,
+};
 
 use crate::{
-    errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, ApiResult, CurrentConfigStore,
+    errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, util::EmptyResponse, ApiResult,
+    CurrentConfigStore,
 };
 
 pub async fn get_all_guild_scripts(
@@ -93,7 +101,7 @@ pub async fn create_guild_script(
         plugin_version_number: None,
     };
 
-    if let Err(verr) = validate(&cs) {
+    if let Err(verr) = validate(&cs, &()) {
         return Err(ApiErrorResponse::ValidationFailed(verr));
     }
 
@@ -127,14 +135,30 @@ pub struct UpdateRequestData {
     pub original_source: Option<String>,
     #[serde(default)]
     pub enabled: Option<bool>,
+    #[serde(default)]
+    pub settings_values: Option<Vec<SettingsOptionValue>>,
 }
 
 pub async fn update_guild_script(
-    Extension(config_store): Extension<CurrentConfigStore>,
     Extension(current_guild): Extension<CurrentUserGuild>,
+    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
+    Extension(bot_rpc): Extension<botrpc::Client>,
+    Extension(config_store): Extension<CurrentConfigStore>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
     Json(payload): Json<UpdateRequestData>,
 ) -> ApiResult<impl IntoResponse> {
+    let current_script = config_store
+        .get_script_by_id(current_guild.id, script_id)
+        .await
+        .map_err(|err| {
+            if err.is_not_found() {
+                ApiErrorResponse::ScriptNotFound
+            } else {
+                error!(%err, "failed fetching script");
+                ApiErrorResponse::InternalError
+            }
+        })?;
+
     let sc = UpdateScript {
         id: script_id,
         enabled: payload.enabled,
@@ -142,10 +166,42 @@ pub async fn update_guild_script(
         name: payload.name,
         contributes: None,
         plugin_version_number: None,
+        settings_definitions: None,
+        settings_values: payload.settings_values,
     };
 
-    if let Err(verr) = validate(&sc) {
-        return Err(ApiErrorResponse::ValidationFailed(verr));
+    {
+        let validation_data = if sc.settings_definitions.is_some() {
+            let channels = state_client
+                .get_channels(current_guild.id)
+                .await
+                .map_err(|err| {
+                    error!(%err, "failed fetching guild channels");
+                    ApiErrorResponse::InternalError
+                })?;
+
+            let roles = state_client
+                .get_roles(current_guild.id)
+                .await
+                .map_err(|err| {
+                    error!(%err, "failed fetching guild roles");
+                    ApiErrorResponse::InternalError
+                })?;
+
+            ScriptValidationContextData {
+                script: current_script,
+                guild_data: Some(Rc::new(GuildData { channels, roles })),
+            }
+        } else {
+            ScriptValidationContextData {
+                script: current_script,
+                guild_data: None,
+            }
+        };
+
+        if let Err(validation_errors) = validate(&sc, &validation_data) {
+            return Err(ApiErrorResponse::ValidationFailed(validation_errors));
+        }
     }
 
     let script = config_store
@@ -156,7 +212,80 @@ pub async fn update_guild_script(
             ApiErrorResponse::InternalError
         })?;
 
+    bot_rpc
+        .restart_guild_vm(current_guild.id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed reloading guild vm");
+            ApiErrorResponse::InternalError
+        })?;
+
     Ok(Json(script))
+}
+
+pub async fn validate_script_settings(
+    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(current_guild): Extension<CurrentUserGuild>,
+    Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
+    Json(payload): Json<UpdateRequestData>,
+) -> ApiResult<impl IntoResponse> {
+    let current_script = config_store
+        .get_script_by_id(current_guild.id, script_id)
+        .await
+        .map_err(|err| {
+            if err.is_not_found() {
+                ApiErrorResponse::ScriptNotFound
+            } else {
+                error!(%err, "failed fetching script");
+                ApiErrorResponse::InternalError
+            }
+        })?;
+
+    let sc = UpdateScript {
+        id: script_id,
+        enabled: payload.enabled,
+        original_source: payload.original_source,
+        name: payload.name,
+        contributes: None,
+        plugin_version_number: None,
+        settings_definitions: None,
+        settings_values: payload.settings_values,
+    };
+
+    let validation_data = if sc.settings_definitions.is_some() {
+        let channels = state_client
+            .get_channels(current_guild.id)
+            .await
+            .map_err(|err| {
+                error!(%err, "failed fetching guild channels");
+                ApiErrorResponse::InternalError
+            })?;
+
+        let roles = state_client
+            .get_roles(current_guild.id)
+            .await
+            .map_err(|err| {
+                error!(%err, "failed fetching guild roles");
+                ApiErrorResponse::InternalError
+            })?;
+
+        ScriptValidationContextData {
+            script: current_script,
+            guild_data: Some(Rc::new(GuildData { channels, roles })),
+        }
+    } else {
+        ScriptValidationContextData {
+            script: current_script,
+            guild_data: None,
+        }
+    };
+
+    if let Err(validation_errors) = validate(&sc, &validation_data) {
+        return Err(ApiErrorResponse::ValidationFailed(validation_errors));
+    }
+
+    Ok(EmptyResponse)
 }
 
 pub async fn delete_guild_script(
@@ -222,6 +351,8 @@ pub async fn update_script_plugin(
         name: None,
         contributes: None,
         plugin_version_number: Some(plugin.current_version),
+        settings_definitions: None,
+        settings_values: None,
     };
 
     let script = config_store
