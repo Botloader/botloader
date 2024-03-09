@@ -55,7 +55,7 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, TS, Copy)]
+#[derive(Clone, Debug, Serialize, Deserialize, TS, Copy, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ChannelType.ts")]
 pub enum ChannelType {

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use axum::{
     extract::{Extension, Path},
     response::IntoResponse,
@@ -9,7 +11,11 @@ use serde::{Deserialize, Serialize};
 use stores::config::{ConfigStore, CreateScript, Script, UpdateScript};
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
-use validation::{validate, ValidationError};
+use validation::{
+    validate,
+    web::{GuildData, ScriptValidationContextData},
+    ValidationError,
+};
 
 use crate::{
     errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, util::EmptyResponse, ApiResult,
@@ -134,10 +140,11 @@ pub struct UpdateRequestData {
 }
 
 pub async fn update_guild_script(
-    Extension(config_store): Extension<CurrentConfigStore>,
     Extension(current_guild): Extension<CurrentUserGuild>,
-    Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
+    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
     Extension(bot_rpc): Extension<botrpc::Client>,
+    Extension(config_store): Extension<CurrentConfigStore>,
+    Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
     Json(payload): Json<UpdateRequestData>,
 ) -> ApiResult<impl IntoResponse> {
     let current_script = config_store
@@ -163,8 +170,38 @@ pub async fn update_guild_script(
         settings_values: payload.settings_values,
     };
 
-    if let Err(verr) = validate(&sc, &current_script) {
-        return Err(ApiErrorResponse::ValidationFailed(verr));
+    {
+        let validation_data = if sc.settings_definitions.is_some() {
+            let channels = state_client
+                .get_channels(current_guild.id)
+                .await
+                .map_err(|err| {
+                    error!(%err, "failed fetching guild channels");
+                    ApiErrorResponse::InternalError
+                })?;
+
+            let roles = state_client
+                .get_roles(current_guild.id)
+                .await
+                .map_err(|err| {
+                    error!(%err, "failed fetching guild roles");
+                    ApiErrorResponse::InternalError
+                })?;
+
+            ScriptValidationContextData {
+                script: current_script,
+                guild_data: Some(Rc::new(GuildData { channels, roles })),
+            }
+        } else {
+            ScriptValidationContextData {
+                script: current_script,
+                guild_data: None,
+            }
+        };
+
+        if let Err(validation_errors) = validate(&sc, &validation_data) {
+            return Err(ApiErrorResponse::ValidationFailed(validation_errors));
+        }
     }
 
     let script = config_store
@@ -187,6 +224,7 @@ pub async fn update_guild_script(
 }
 
 pub async fn validate_script_settings(
+    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
     Extension(config_store): Extension<CurrentConfigStore>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
@@ -215,8 +253,36 @@ pub async fn validate_script_settings(
         settings_values: payload.settings_values,
     };
 
-    if let Err(verr) = validate(&sc, &current_script) {
-        return Err(ApiErrorResponse::ValidationFailed(verr));
+    let validation_data = if sc.settings_definitions.is_some() {
+        let channels = state_client
+            .get_channels(current_guild.id)
+            .await
+            .map_err(|err| {
+                error!(%err, "failed fetching guild channels");
+                ApiErrorResponse::InternalError
+            })?;
+
+        let roles = state_client
+            .get_roles(current_guild.id)
+            .await
+            .map_err(|err| {
+                error!(%err, "failed fetching guild roles");
+                ApiErrorResponse::InternalError
+            })?;
+
+        ScriptValidationContextData {
+            script: current_script,
+            guild_data: Some(Rc::new(GuildData { channels, roles })),
+        }
+    } else {
+        ScriptValidationContextData {
+            script: current_script,
+            guild_data: None,
+        }
+    };
+
+    if let Err(validation_errors) = validate(&sc, &validation_data) {
+        return Err(ApiErrorResponse::ValidationFailed(validation_errors));
     }
 
     Ok(EmptyResponse)

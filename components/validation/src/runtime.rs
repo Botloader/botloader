@@ -149,7 +149,7 @@ impl Validator for SettingsOption {
 
         // validate default value
         if let Some(default_value) = &self.default_value {
-            validate_settings_option_value_option(ctx, default_value, self);
+            validate_settings_option_value_option(ctx, default_value, self, None);
         }
     }
 }
@@ -185,7 +185,7 @@ impl Validator for SettingsOptionList {
 
         // validate list default value
         if let Some(default_value) = &self.default_value {
-            validate_settings_option_value_list(ctx, default_value, self);
+            validate_settings_option_value_list(ctx, default_value, self, None);
         }
     }
 }
