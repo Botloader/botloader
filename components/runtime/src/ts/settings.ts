@@ -292,7 +292,7 @@ export class LoadedList<TOpts extends OptionsMap> {
         }
 
         this.value = []
-
+        OUTER:
         for (const entry of arrValue) {
             if (!Array.isArray(entry)) {
                 console.log(`Invalid list item in option list ${definition.name} skipping...`)
@@ -307,6 +307,7 @@ export class LoadedList<TOpts extends OptionsMap> {
                 } else {
                     if (optionDefinition.required && optionDefinition.defaultValue === undefined) {
                         console.log(`List item in option list ${definition.name} missing required option [${name}], skipping...`)
+                        continue OUTER
                     } else {
                         obj[name] = optionDefinition.defaultValue ?? getSysDefaultValue(optionDefinition.kind)
                     }
