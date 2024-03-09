@@ -14,5 +14,46 @@
     {
         "name": "number_no_default_provided",
         "value": 20
+    },
+    {
+        "name": "string_list",
+        "value": [
+            [
+                {
+                    "name": "string_required_no_default_provided",
+                    "value": "provided"
+                },
+                {
+                    "name": "string_required_default_provided",
+                    "value": "provided"
+                },
+                {
+                    "name": "string_provided",
+                    "value": "provided"
+                },
+                {
+                    "name": "string_default_provided",
+                    "value": "provided"
+                }
+            ],
+            [
+                {
+                    "name": "string_required_no_default_provided",
+                    "value": "provided2"
+                },
+                {
+                    "name": "string_required_default_provided",
+                    "value": "provided2"
+                },
+                {
+                    "name": "string_provided",
+                    "value": "provided2"
+                },
+                {
+                    "name": "string_default_provided",
+                    "value": "provided2"
+                }
+            ]
+        ]
     }
 ]
