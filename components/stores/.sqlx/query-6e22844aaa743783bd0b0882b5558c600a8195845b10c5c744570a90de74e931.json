@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands),\n                    plugin_version_number = COALESCE($6, guild_scripts.plugin_version_number)\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;\n                ",
+  "query": "\n                    UPDATE guild_scripts SET\n                    original_source = COALESCE($3, guild_scripts.original_source),\n                    enabled = COALESCE($4, guild_scripts.enabled),\n                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands),\n                    plugin_version_number = COALESCE($6, guild_scripts.plugin_version_number),\n                    settings_definitions = COALESCE($7, guild_scripts.settings_definitions),\n                    settings_values = COALESCE($8, guild_scripts.settings_values)\n                    WHERE guild_id = $1 AND id=$2\n                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, settings_definitions, settings_values;\n                ",
   "describe": {
     "columns": [
       {
@@ -52,6 +52,16 @@
         "ordinal": 9,
         "name": "plugin_version_number",
         "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "settings_definitions",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 11,
+        "name": "settings_values",
+        "type_info": "Jsonb"
       }
     ],
     "parameters": {
@@ -61,7 +71,9 @@
         "Text",
         "Bool",
         "Jsonb",
-        "Int4"
+        "Int4",
+        "Jsonb",
+        "Jsonb"
       ]
     },
     "nullable": [
@@ -74,8 +86,10 @@
       false,
       true,
       true,
+      true,
+      true,
       true
     ]
   },
-  "hash": "c000e2e1114fab3d4f26fc2f2b0db6bfca6788194e147c787c4b40be450d2b29"
+  "hash": "6e22844aaa743783bd0b0882b5558c600a8195845b10c5c744570a90de74e931"
 }

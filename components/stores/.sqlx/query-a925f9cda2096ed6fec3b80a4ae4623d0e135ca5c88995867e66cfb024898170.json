@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO guild_scripts (guild_id, name, original_source, enabled, plugin_id, plugin_auto_update, plugin_version_number) \nVALUES ($1, $2, $3, $4, $5, $6, $7)\nRETURNING id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number;",
+  "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 ORDER BY id ASC",
   "describe": {
     "columns": [
       {
@@ -15,12 +15,12 @@
       },
       {
         "ordinal": 2,
-        "name": "name",
+        "name": "original_source",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
-        "name": "original_source",
+        "name": "name",
         "type_info": "Text"
       },
       {
@@ -52,17 +52,21 @@
         "ordinal": 9,
         "name": "plugin_version_number",
         "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "settings_definitions",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 11,
+        "name": "settings_values",
+        "type_info": "Jsonb"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Text",
-        "Text",
-        "Bool",
-        "Int8",
-        "Bool",
-        "Int4"
+        "Int8"
       ]
     },
     "nullable": [
@@ -75,8 +79,10 @@
       false,
       true,
       true,
+      true,
+      true,
       true
     ]
   },
-  "hash": "42bd28b616f6ab97f1d677c2d4f40420961c9b5e562ca2ab7986c4c752e3a9de"
+  "hash": "a925f9cda2096ed6fec3b80a4ae4623d0e135ca5c88995867e66cfb024898170"
 }
