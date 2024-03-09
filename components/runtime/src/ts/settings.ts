@@ -96,12 +96,12 @@ type ToConfigValue<
 
 const SysDefaultValues = {
     string: "",
-    float: undefined,
-    integer: undefined,
-    integer64: undefined,
-    channel: undefined,
+    float: null,
+    integer: null,
+    integer64: null,
+    channel: null,
     channels: [] as string[],
-    role: undefined,
+    role: null,
     roles: [] as string[],
 }
 
