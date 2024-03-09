@@ -320,10 +320,16 @@ function EditSettingsOptionList({ list }: {
                         },
                     }
 
-                    return <Box key={i}
-                        display={"flex"}
-                        flexDirection={"row"}
-                        gap={1}
+                    return <Paper key={i}
+                        sx={{
+                            marginTop: 2,
+                            display: "flex",
+                            flexDirection: "row",
+                            gap: 1,
+                            flexWrap: "wrap",
+                            padding: 1,
+                        }}
+                        elevation={3}
                     >
                         <SettingsValuesContext.Provider value={innerContext}>
                             {list.template.map(v => (
@@ -338,7 +344,8 @@ function EditSettingsOptionList({ list }: {
                                 console.log("deleting", i)
                             }}><DeleteIcon /></Button>
                         </Box>
-                    </Box>
+                        <Divider />
+                    </Paper>
                 })
             }
         </Box>
