@@ -5,6 +5,7 @@ export * from './core_util';
 export * from './commands';
 export * from './eventsystem';
 export * from './script';
+export * as Settings from './settings';
 export * from './storage';
 export * from './httpclient';
 export * from './scheduled_tasks';

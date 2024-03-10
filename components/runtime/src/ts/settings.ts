@@ -2,51 +2,104 @@ import { OpWrappers } from "./op_wrappers"
 import * as Internal from "./generated/internal/index";
 import { ChannelType } from "./discord/index";
 
-type DefaultValue<TDefault> = TDefault extends undefined
+export type DefaultValue<TDefault> = TDefault extends undefined
     ? { defaultValue?: TDefault }
     : { defaultValue: TDefault }
 
-type BaseOptions<TRequired, TDefault> = {
+export type BaseOptions<TRequired, TDefault> = {
+    /**
+     * A cosmetic label for this option, used when displaying it
+     * 
+     * Changing the label will not alter the user provided value in any way unlike changing the "name" for the option. 
+     */
     label?: string
     description?: string
+
+    /**
+     * Whether this setting is required, this can only be set on top level options if a default value is provided.
+     */
     required?: TRequired
 } & DefaultValue<TDefault>
 
-type StringOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type StringOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    /**
+     * Max length of the string in unicode runes
+     */
     maxLength?: number,
+
+    /**
+     * Minimum length of the string in unicode runes
+     * 
+     * Note if you just want to disallow an empty value then you should set "required" instead
+     */
     minLength?: number,
 }
 
-type FloatOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type FloatOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    /**
+     * Maximum allowed value
+     */
     max?: number,
+
+    /**
+     * Minimum allowed value
+     */
     min?: number,
 }
 
-type IntegerOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type IntegerOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    /**
+     * Maximum allowed value
+     */
     max?: number,
+
+    /**
+     * Minimum allowed value
+     */
     min?: number,
 }
 
-type Integer64Options<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type Integer64Options<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    /**
+     * Maximum allowed value
+     */
     max?: string,
+
+    /**
+     * Minimum allowed value
+     */
     min?: string,
 }
 
-type ChannelOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type ChannelOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    /**
+     * What channel types to allow
+     */
     types?: ChannelType[]
 }
 
-type ChannelsOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type ChannelsOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    /**
+     * What channel types to allow
+     */
     types?: ChannelType[]
+
+    /**
+     * Maximum number of channels
+     */
     max?: number,
 }
 
-type RoleOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type RoleOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     requireAssignable?: boolean
 }
 
-type RolesOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+export type RolesOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     requireAssignable?: boolean
+
+    /**
+     * Maximum number of roles
+     */
     max?: number,
 }
 
@@ -94,7 +147,10 @@ type ToConfigValue<
     ? InnerToConfigSetValueType<TKind> | SysDefaultValueType<TKind>
     : InnerToConfigSetValueType<TKind> | TDefaultValue | SysDefaultValueType<TKind>
 
-const SysDefaultValues = {
+/**
+ * Builtin default values for option types
+ */
+export const SysDefaultValues = {
     string: "",
     float: null,
     integer: null,
@@ -137,9 +193,20 @@ type ListOptions<TDefault> = {
     defaultValue?: TDefault,
 }
 
+/**
+ * A loaded settings option, to access the value use the {@link value} field
+ */
 export class LoadedOption<TKind extends OptionTypesKeys, TDefaultValue, TRequired extends boolean> {
     definition: OptionDefinitionOption
-    value: ToConfigValue<TKind, TDefaultValue, TRequired>
+
+    private _value: ToConfigValue<TKind, TDefaultValue, TRequired>
+
+    /**
+     * The loaded settings value
+     */
+    get value(): ToConfigValue<TKind, TDefaultValue, TRequired> {
+        return this._value;
+    }
 
     /**
      * @internal
@@ -148,9 +215,9 @@ export class LoadedOption<TKind extends OptionTypesKeys, TDefaultValue, TRequire
         this.definition = definition
 
         if (rawValue) {
-            this.value = loadOptionValue(rawValue.value, definition.definition)
+            this._value = loadOptionValue(rawValue.value, definition.definition)
         } else {
-            this.value = definition.definition.defaultValue ?? getSysDefaultValue(definition.definition.kind)
+            this._value = definition.definition.defaultValue ?? getSysDefaultValue(definition.definition.kind)
         }
     }
 }
@@ -160,11 +227,55 @@ type TDefaultValueTopLevel<TRequired extends boolean, TKind extends OptionTypesK
     ? InnerToConfigSetValueType<TKind>
     : InnerToConfigSetValueType<TKind> | undefined;
 
+/**
+ * Configuration options for your script/plugins
+ * 
+ * Configuration options are configurable through the web interface, giving users of your script/plugin
+ * the ability to change variables though the configuration options youe expose, without having to edit the source code.
+ * 
+ * To register an optoin you use the appropiate addOption* methods, or the startList method.
+ * 
+ * **Default values and 'required'**
+ * 
+ * You can provide a default value that is used when the field is not provided but
+ * users can still put it to to the types appropiate empty value unless you set "required" to true
+ * 
+ * Top level options can only be required if you have a default value assigned to them.
+ * 
+ * The empty value for strings is an empty string ("") and setting required to true will require a non-empty string.
+ * 
+ * Example:
+ * ```
+ * const xpNameSetting = script.settings.addOptionString("xp_name", {
+ *     label: "XP point name",
+ *     description: "Name to give xp points",
+ *     defaultValue: "xp",
+ *     required: true,
+ * })
+ *
+ * const messageXpCooldownSecondsSetting = script.settings.addOptionInteger("message_xp_cooldown_seconds", {
+ *     label: "Message XP coooldown",
+ *     description: "The time period between messages to wait before they're eligible for more XP",
+ *     defaultValue: 60,
+ *     min: 0,
+ *     required: true,
+ * })
+ * ```
+ */
 export class SettingsManager {
-
+    /**
+     * @internal
+     */
     definitions: AnyOptionDefinition[] = [];
+
+    /**
+     * @internal
+     */
     loadedSettings: Internal.SettingsOptionValue[];
 
+    /**
+     * @internal
+     */
     constructor(scriptId: number) {
         this.loadedSettings = OpWrappers.getSettings(scriptId)
     }
@@ -238,6 +349,34 @@ export class SettingsManager {
         return new LoadedOption(definition, value)
     }
 
+    /**
+     * Start building a list.
+     * 
+     * The list give you the ability to expose a option that users can add multiple items to
+     * 
+     * To create a list you define the schema, a set of options each item in the list needs to have.
+     * 
+     * An example for this is level roles for a leveling system
+     * where each item would have a level integer option and a role option:
+     * 
+     * ```
+     * const levelRolesSetting = script.settings.startList("level_roles")
+     *   .addOptionInteger("level", {
+     *       label: "Level",
+     *       required: true,
+     *       min: 1,
+     *       description: "The level at which the user gains the role"
+     *   })
+     *   .addOptionRole("role", {
+     *       label: "Level",
+     *       required: true,
+     *       description: "The role to assign the user"
+     *   }).complete({
+     *       label: "Level Roles",
+     *       description: "Roles to give users as they advance in levels",
+     *   })
+     * ```
+     */
     startList(name: string) {
         return new ListBuilder<{}>(name, this)
     }
@@ -265,14 +404,20 @@ type OptionMapValues<T extends OptionsMap> = {
     >
 }
 
-// interface LoadedList<TOpts extends OptionsMap> {
-//     definitions: AnyOptionDefinition[],
-//     value: OptionMapValues<TOpts>[]
-// }
-
+/**
+ * A loaded settings option list, to access the value use the {@link value} field
+ */
 export class LoadedList<TOpts extends OptionsMap> {
     definition: OptionDefinitionList
-    value: OptionMapValues<TOpts>[]
+
+    private _value: OptionMapValues<TOpts>[]
+
+    /**
+     * The actual loaded settings value
+     */
+    get value(): OptionMapValues<TOpts>[] {
+        return this._value;
+    }
 
     /**
      * @internal
@@ -281,17 +426,17 @@ export class LoadedList<TOpts extends OptionsMap> {
         this.definition = definition
 
         if (!rawValue?.value) {
-            this.value = definition.options.defaultValue ?? []
+            this._value = definition.options.defaultValue ?? []
             return
         }
 
         const arrValue = rawValue?.value
         if (!Array.isArray(arrValue)) {
-            this.value = definition.options.defaultValue ?? []
+            this._value = definition.options.defaultValue ?? []
             return
         }
 
-        this.value = []
+        this._value = []
         OUTER:
         for (const entry of arrValue) {
             if (!Array.isArray(entry)) {
@@ -314,7 +459,7 @@ export class LoadedList<TOpts extends OptionsMap> {
                 }
             }
 
-            this.value.push(obj)
+            this._value.push(obj)
         }
     }
 }
