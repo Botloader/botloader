@@ -9,6 +9,7 @@ edition = "2021"
 isolatecell = { path = "../../components/isolatecell" }
 stores = { path = "../../components/stores" }
 guild-logger = { path = "../../components/guild-logger" }
+common = { path = "../../components/common" }
 tscompiler = { path = "../../components/tscompiler" }
 
 deno_core = { workspace = true }
@@ -20,6 +21,7 @@ tracing = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { workspace = true }
 futures = { workspace = true }
+chrono = { workspace = true }
 anyhow = { workspace = true }
 url = { workspace = true }
 serde_json = { workspace = true }

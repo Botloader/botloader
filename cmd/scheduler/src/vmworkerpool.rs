@@ -15,7 +15,7 @@ use tokio::{
         oneshot,
     },
 };
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
 
 pub enum WorkerRetrieved {
@@ -75,6 +75,7 @@ impl VmWorkerPool {
         }
     }
 
+    #[instrument(skip_all)]
     pub async fn req_worker(
         &self,
         guild_id: Id<GuildMarker>,
@@ -115,6 +116,7 @@ impl VmWorkerPool {
                     metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => i.to_string()).decrement(1.0);
                     let worker = pool.remove(pref_worker);
                     w.track_claimed_worker(ClaimedWorker::new_claim(guild_id, &worker));
+                    info!("found worker in preferred search");
                     return worker;
                 }
 
@@ -144,6 +146,7 @@ impl VmWorkerPool {
                     metrics::gauge!("bl.scheduler.workerpool_available_workers", "priority_index" => i.to_string()).decrement(1.0);
                     let worker = pool.remove(can);
                     w.track_claimed_worker(ClaimedWorker::new_claim(guild_id, &worker));
+                    info!("found worker in least recently used search");
                     return worker;
                 }
 
@@ -153,6 +156,8 @@ impl VmWorkerPool {
 
                 i -= 1;
             }
+
+            info!("need to wait for worker");
 
             // no available workers, queue the request
             let (tx, rx) = oneshot::channel();

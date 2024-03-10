@@ -11,8 +11,8 @@ use crate::{
     guild_handler::{GuildCommand, GuildHandle, GuildHandler, GuildStatus},
     vm_session::VmSessionEvent,
     vmworkerpool::WorkerStatus,
+    SchedulerConfig,
 };
-use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::{DiscordEvent, DiscordEventData, HelloData};
 use guild_logger::LogEntry;
 use std::future::Future;
@@ -41,26 +41,26 @@ pub struct Scheduler {
     logger: guild_logger::LogSender,
     cmd_manager_handle: command_manager::Handle,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
-    discord_config: Arc<DiscordConfig>,
+    config: Arc<SchedulerConfig>,
 
     suspended_guilds: HashMap<Id<GuildMarker>, GuildSuspension>,
 }
 
 impl Scheduler {
     pub fn new(
+        config: Arc<SchedulerConfig>,
         scheduler_rx: mpsc::UnboundedReceiver<SchedulerCommand>,
         stores: Arc<dyn Store>,
         logger: guild_logger::LogSender,
         cmd_manager_handle: command_manager::Handle,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
-        discord_config: Arc<DiscordConfig>,
     ) -> Self {
         Self {
             stores,
             logger,
             cmd_manager_handle,
             worker_pool,
-            discord_config,
+            config,
 
             guilds: HashMap::new(),
             cmd_rx: scheduler_rx,
@@ -313,12 +313,12 @@ impl Scheduler {
     fn get_or_start_guild(&mut self, guild_id: Id<GuildMarker>) -> &GuildHandle {
         if let std::collections::hash_map::Entry::Vacant(e) = self.guilds.entry(guild_id) {
             let handle = GuildHandler::new_run(
+                self.config.clone(),
                 self.stores.clone(),
                 guild_id,
                 self.logger.clone(),
                 self.worker_pool.clone(),
                 self.cmd_manager_handle.clone(),
-                self.discord_config.clone(),
             );
             e.insert(handle);
             return self.guilds.get(&guild_id).unwrap();

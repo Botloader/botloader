@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use core::slice::Iter;
-use metrics::{CounterFn, GaugeFn, Label, Recorder};
+use metrics::{CounterFn, GaugeFn, HistogramFn, Label, Recorder};
 use scheduler_worker_rpc::{CounterEvent, GaugeEvent, MetricEvent, WorkerMessage};
 use tokio::sync::mpsc;
 
@@ -52,10 +52,10 @@ impl Recorder for MetricsForwarder {
 
     fn register_histogram(
         &self,
-        _key: &metrics::Key,
+        key: &metrics::Key,
         _metadata: &metrics::Metadata<'_>,
     ) -> metrics::Histogram {
-        metrics::Histogram::noop()
+        metrics::Histogram::from_arc(Arc::new(Metric::new(self.tx.clone(), key)))
     }
     // fn describe_counter(
     //     &self,
@@ -139,6 +139,12 @@ impl CounterFn for Metric {
 
     fn absolute(&self, value: u64) {
         self.send_metric_event(MetricEvent::Counter(CounterEvent::Absolute(value)));
+    }
+}
+
+impl HistogramFn for Metric {
+    fn record(&self, value: f64) {
+        self.send_metric_event(MetricEvent::Histogram(value));
     }
 }
 

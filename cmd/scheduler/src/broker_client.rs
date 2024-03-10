@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use dbrokerapi::broker_scheduler_rpc::{BrokerEvent, SchedulerEvent};
 use tokio::{net::TcpStream, sync::mpsc::UnboundedSender};
-use tracing::{info, warn};
+use tracing::{info, instrument, warn};
 
 use crate::scheduler::SchedulerCommand;
 
@@ -33,38 +33,55 @@ struct BrokerConn {
     scheduler_tx: UnboundedSender<SchedulerCommand>,
 }
 
+enum ContinueState {
+    Continue,
+    Stop,
+}
+
 impl BrokerConn {
     async fn run(mut self) -> std::io::Result<()> {
         let _ = self.scheduler_tx.send(SchedulerCommand::BrokerConnected);
 
         loop {
             let next: BrokerEvent = simpleproto::read_message(&mut self.stream).await?;
+            match self.handle_broker_message(next).await? {
+                ContinueState::Continue => {}
+                ContinueState::Stop => return Ok(()),
+            }
+        }
+    }
 
-            match next {
-                BrokerEvent::Hello(h) => {
-                    if self
-                        .scheduler_tx
-                        .send(SchedulerCommand::BrokerHello(h))
-                        .is_err()
-                    {
-                        // return, close the connection, the broker will add it back to the queue
-                        return Ok(());
-                    }
-                }
-                BrokerEvent::DiscordEvent(evt) => {
-                    if self
-                        .scheduler_tx
-                        .send(SchedulerCommand::DiscordEvent(evt))
-                        .is_err()
-                    {
-                        // return, close the connection, the broker will add it back to the queue
-                        return Ok(());
-                    }
+    #[instrument(skip(self, message))]
+    async fn handle_broker_message(
+        &mut self,
+        message: BrokerEvent,
+    ) -> std::io::Result<ContinueState> {
+        match message {
+            BrokerEvent::Hello(h) => {
+                if self
+                    .scheduler_tx
+                    .send(SchedulerCommand::BrokerHello(h))
+                    .is_err()
+                {
+                    // return, close the connection, the broker will add it back to the queue
+                    return Ok(ContinueState::Stop);
                 }
             }
-
-            // send ack
-            simpleproto::write_message(&SchedulerEvent::Ack, &mut self.stream).await?;
+            BrokerEvent::DiscordEvent(evt) => {
+                if self
+                    .scheduler_tx
+                    .send(SchedulerCommand::DiscordEvent(evt))
+                    .is_err()
+                {
+                    // return, close the connection, the broker will add it back to the queue
+                    return Ok(ContinueState::Stop);
+                }
+            }
         }
+
+        // send ack
+        simpleproto::write_message(&SchedulerEvent::Ack, &mut self.stream).await?;
+
+        Ok(ContinueState::Continue)
     }
 }

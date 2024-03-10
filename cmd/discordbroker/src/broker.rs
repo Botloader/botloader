@@ -12,7 +12,7 @@ use tokio::{
     net::TcpStream,
     sync::mpsc::{self, UnboundedSender},
 };
-use tracing::{error, info, warn};
+use tracing::{error, info, instrument, warn};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{
     stream::{self, ShardEventStream},
@@ -133,6 +133,7 @@ impl Broker {
         }
     }
 
+    #[instrument(skip(self, evt))]
     async fn handle_event(&mut self, evt: Event) {
         metrics::counter!("bl.broker.handled_events_total").increment(1);
 
@@ -383,6 +384,7 @@ impl Broker {
             t: event_t,
             guild_id,
             event: data,
+            timestamp: chrono::Utc::now(),
         })
     }
 
@@ -405,6 +407,7 @@ impl Broker {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn wait_for_ack(&mut self) -> std::io::Result<()> {
         if let Some(connected) = &mut self.connected_scheduler {
             let _msg: broker_scheduler_rpc::SchedulerEvent =

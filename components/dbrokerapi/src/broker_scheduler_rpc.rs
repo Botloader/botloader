@@ -27,6 +27,7 @@ pub struct DiscordEvent {
     pub t: String,
     pub guild_id: Id<GuildMarker>,
     pub event: DiscordEventData,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

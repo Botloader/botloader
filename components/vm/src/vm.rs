@@ -3,11 +3,14 @@ use crate::{
     bl_core, AnyError, ScriptLoadState, ScriptState, ScriptStateStoreWrapper, ScriptsStateStore,
     ScriptsStateStoreHandle,
 };
+use chrono::Utc;
+use common::dispatch_event::VmDispatchEvent;
 use deno_core::{Extension, FastString, PollEventLoopOptions, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
 use guild_logger::entry::CreateLogEntry;
 use guild_logger::GuildLogSender;
 use isolatecell::{IsolateCell, ManagedIsolate};
+use metrics::histogram;
 use serde::Serialize;
 use std::convert::TryFrom;
 use std::fmt::Debug;
@@ -25,7 +28,7 @@ use v8::{CreateParams, IsolateHandle};
 
 #[derive(Debug, Clone)]
 pub enum VmCommand {
-    DispatchEvent(String, serde_json::Value, u64),
+    DispatchEvent(VmDispatchEvent),
     LoadScript(Script),
 
     // note that this also reloads the runtime, shutting it down and starting it again
@@ -68,6 +71,7 @@ pub struct Vm {
 }
 
 impl Vm {
+    #[instrument(skip_all)]
     pub(crate) fn create_with_handles(
         create_req: CreateRt,
         isolate_cell: Rc<IsolateCell>,
@@ -90,12 +94,13 @@ impl Vm {
         }
     }
 
-    async fn create_run(
+    #[instrument(skip_all)]
+    async fn create_init(
         create_req: CreateRt,
         timeout_handle: VmShutdownHandle,
         isolate_cell: Rc<IsolateCell>,
         wakeup_rx: UnboundedReceiver<()>,
-    ) {
+    ) -> Self {
         let script_store = ScriptsStateStore::new_rc();
 
         let module_manager = Rc::new(ModuleManager {
@@ -130,14 +135,19 @@ impl Vm {
 
         rt.emit_isolate_handle();
 
-        for script in &create_req.load_scripts {
-            rt.compile_script(script.clone());
-        }
+        rt.compile_scripts(&create_req.load_scripts);
+        rt.run_scripts(&create_req.load_scripts).await;
 
-        for script in create_req.load_scripts {
-            rt.run_script(script.id).await;
-        }
+        rt
+    }
 
+    async fn create_run(
+        create_req: CreateRt,
+        timeout_handle: VmShutdownHandle,
+        isolate_cell: Rc<IsolateCell>,
+        wakeup_rx: UnboundedReceiver<()>,
+    ) {
+        let mut rt = Self::create_init(create_req, timeout_handle, isolate_cell, wakeup_rx).await;
         rt.run().await;
     }
 
@@ -296,7 +306,7 @@ impl Vm {
             VmCommand::Restart(new_scripts) => {
                 self.restart(new_scripts).await;
             }
-            VmCommand::DispatchEvent(name, evt, evt_id) => self.dispatch_event(&name, &evt, evt_id),
+            VmCommand::DispatchEvent(dispatch_event) => self.dispatch_event(dispatch_event),
             VmCommand::LoadScript(script) => {
                 if let Some(script) = self.compile_script(script) {
                     self.run_script(script.script.id).await
@@ -344,7 +354,14 @@ impl Vm {
         // self._dump_heap_stats();
     }
 
-    #[instrument(skip(self, script))]
+    #[instrument(skip_all, fields(num_scripts=scripts.len()))]
+    fn compile_scripts(&self, scripts: &Vec<Script>) {
+        for script in scripts {
+            self.compile_script(script.clone());
+        }
+    }
+
+    #[instrument(skip_all, fields(script_len=script.original_source.len()))]
     fn compile_script(&self, script: Script) -> Option<ScriptState> {
         let mut script_store = self.script_store.borrow_mut();
 
@@ -357,6 +374,13 @@ impl Vm {
                 )));
                 None
             }
+        }
+    }
+
+    #[instrument(skip_all, fields(num_scripts=scripts.len()))]
+    async fn run_scripts(&mut self, scripts: &Vec<Script>) {
+        for script in scripts {
+            self.run_script(script.id).await;
         }
     }
 
@@ -428,15 +452,12 @@ impl Vm {
         }
     }
 
-    fn dispatch_event<P>(&mut self, name: &str, args: &P, evt_id: u64)
-    where
-        P: Serialize,
-    {
-        let _ = self.tx.send(VmEvent::DispatchedEvent(evt_id));
+    fn dispatch_event(&mut self, event: VmDispatchEvent) {
+        let _ = self.tx.send(VmEvent::DispatchedEvent(event.seq));
 
         let data = ScriptDispatchData {
-            data: serde_json::to_value(args).unwrap(),
-            name: name.to_string(),
+            data: serde_json::to_value(event.value).unwrap(),
+            name: event.name.to_string(),
         };
 
         let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
@@ -477,6 +498,15 @@ impl Vm {
 
         let v = serde_v8::to_v8(&mut scope, &data).unwrap();
         let _ = dispatch_fn.call(&mut scope, globals.into(), &[v]);
+
+        let elapsed = Utc::now().signed_duration_since(event.source_timestamp);
+        let millis = elapsed.num_milliseconds();
+        let class = match event.source {
+            common::dispatch_event::EventSource::Discord => "discord",
+            common::dispatch_event::EventSource::Timer => "timer",
+        };
+
+        histogram!("dispatch_event_latency", "event_source" => class).record(millis as f64)
     }
 
     fn get_property<'a>(

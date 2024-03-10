@@ -3,7 +3,7 @@ import type { IMessage } from "./IMessage";
 import type { IUser } from "./IUser";
 import type { InteractionPartialChannel } from "./InteractionChannel";
 import type { InteractionPartialMember } from "./InteractionPartialMember";
-import type { Role } from "..\\discord\\Role";
+import type { Role } from "../discord/Role";
 
 export interface CommandInteractionDataMap {
   channels: Record<string, InteractionPartialChannel>;

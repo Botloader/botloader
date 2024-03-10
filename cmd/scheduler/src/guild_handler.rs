@@ -4,9 +4,9 @@ use crate::{
     command_manager,
     scheduler::Store,
     vm_session::{VmSession, VmSessionEvent, VmSessionStatus},
+    SchedulerConfig,
 };
 use chrono::{DateTime, Utc};
-use common::DiscordConfig;
 use dbrokerapi::broker_scheduler_rpc::{DiscordEvent, DiscordEventData};
 use guild_logger::LogSender;
 use stores::config::PremiumSlotTier;
@@ -40,7 +40,6 @@ impl PremiumTierState {
 pub struct GuildHandler {
     guild_id: Id<GuildMarker>,
 
-    _discord_config: Arc<DiscordConfig>,
     stores: Arc<dyn Store>,
     _logger: LogSender,
     _worker_pool: crate::vmworkerpool::VmWorkerPool,
@@ -57,12 +56,12 @@ pub struct GuildHandler {
 
 impl GuildHandler {
     pub fn new_run(
+        config: Arc<SchedulerConfig>,
         stores: Arc<dyn Store>,
         guild_id: Id<GuildMarker>,
         logger: LogSender,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
         cmd_manager_handle: crate::command_manager::Handle,
-        discord_config: Arc<DiscordConfig>,
     ) -> GuildHandle {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (evt_tx, evt_rx) = mpsc::unbounded_channel();
@@ -80,7 +79,6 @@ impl GuildHandler {
             guild_id,
             _logger: logger.clone(),
             _worker_pool: worker_pool.clone(),
-            _discord_config: discord_config.clone(),
 
             guild_rx: cmd_rx,
             scheduler_tx: evt_tx,
@@ -89,12 +87,12 @@ impl GuildHandler {
 
             _cmd_manager_handle: cmd_manager_handle.clone(),
             scripts_session: VmSession::new(
+                config,
                 stores,
                 guild_id,
                 logger.with_guild(guild_id),
                 worker_pool,
                 cmd_manager_handle,
-                discord_config,
                 premium_tier,
             ),
         };

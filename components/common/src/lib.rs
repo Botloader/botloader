@@ -13,6 +13,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod config;
 pub mod discord;
+pub mod dispatch_event;
 pub mod plugin;
 pub mod shutdown;
 pub mod user;
@@ -84,6 +85,8 @@ pub fn setup_tracing_otlp(url: &str, service_name: String) {
         .install_simple()
         .expect("valid tracing config");
 
+    let env_filter = EnvFilter::from_default_env();
+
     let otlp_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
     let sentry_layer = sentry_tracing::layer().event_filter(|md| match md.level() {
@@ -93,11 +96,12 @@ pub fn setup_tracing_otlp(url: &str, service_name: String) {
 
     // We need to register our layer with `tracing`.
     tracing_subscriber::registry()
-        .with(global_filters().with_default(Level::INFO))
+        .with(global_filters())
         .with(otlp_layer)
         // Tracing error sadly can't be used as it results in deadlocks
         .with(tracing_subscriber::fmt::Layer::new())
         .with(sentry_layer)
+        .with(env_filter)
         .init();
 }
 

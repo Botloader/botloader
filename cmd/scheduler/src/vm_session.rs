@@ -11,14 +11,14 @@ use crate::{
     scheduled_task_manager,
     scheduler::Store,
     vmworkerpool::{WorkerHandle, WorkerRetrieved},
+    SchedulerConfig,
 };
-use common::DiscordConfig;
+use chrono::{DateTime, Utc};
+use common::dispatch_event::{EventSource, VmDispatchEvent};
 use dbrokerapi::broker_scheduler_rpc::DiscordEvent;
 use guild_logger::{entry::CreateLogEntry, GuildLogSender};
 use runtime_models::{internal::script::ScriptMeta, util::PluginId};
-use scheduler_worker_rpc::{
-    CreateScriptsVmReq, MetricEvent, SchedulerMessage, VmDispatchEvent, WorkerMessage,
-};
+use scheduler_worker_rpc::{CreateScriptsVmReq, MetricEvent, SchedulerMessage, WorkerMessage};
 use stores::{
     config::{IntervalTimerContrib, Script, ScriptContributes, UpdateScript},
     timers::{IntervalTimer, ScheduledTask},
@@ -30,7 +30,7 @@ use twilight_model::id::{marker::GuildMarker, Id};
 pub struct VmSession {
     guild_id: Id<GuildMarker>,
 
-    _discord_config: Arc<DiscordConfig>,
+    config: Arc<SchedulerConfig>,
     stores: Arc<dyn Store>,
     logger: GuildLogSender,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
@@ -53,12 +53,12 @@ pub struct VmSession {
 
 impl VmSession {
     pub fn new(
+        config: Arc<SchedulerConfig>,
         stores: Arc<dyn Store>,
         guild_id: Id<GuildMarker>,
         logger: GuildLogSender,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
         cmd_manager_handle: crate::command_manager::Handle,
-        discord_config: Arc<DiscordConfig>,
         premium_tier: Arc<RwLock<PremiumTierState>>,
     ) -> VmSession {
         let interval_timer_man =
@@ -67,13 +67,12 @@ impl VmSession {
         let tasks_man = scheduled_task_manager::Manager::new(guild_id, stores.clone());
 
         VmSession {
+            config,
             stores,
             guild_id,
             logger,
             worker_pool,
-            _discord_config: discord_config,
             premium_tier,
-
             id_gen: 1,
             pending_acks: HashMap::new(),
             current_worker: None,
@@ -390,7 +389,9 @@ impl VmSession {
             .map(|(k, v)| metrics::Label::new(k, v))
             .collect::<Vec<_>>();
 
-        labels.push(metrics::Label::new("guild_id", self.guild_id.to_string()));
+        if name != "dispatch_event_latency" {
+            labels.push(metrics::Label::new("guild_id", self.guild_id.to_string()));
+        }
 
         match m {
             MetricEvent::Gauge(action) => {
@@ -407,6 +408,9 @@ impl VmSession {
                     scheduler_worker_rpc::CounterEvent::Incr(v) => handle.increment(v),
                     scheduler_worker_rpc::CounterEvent::Absolute(v) => handle.absolute(v),
                 }
+            }
+            MetricEvent::Histogram(action) => {
+                metrics::histogram!(name, labels).record(action);
             }
         }
     }
@@ -425,6 +429,8 @@ impl VmSession {
             "BOTLOADER_SCHEDULED_TASK_FIRED".to_string(),
             serialized,
             PendingAck::ScheduledTask(task_id),
+            EventSource::Timer,
+            Utc::now(),
         )
         .await;
     }
@@ -441,18 +447,23 @@ impl VmSession {
             "BOTLOADER_INTERVAL_TIMER_FIRED".to_string(),
             serialized,
             PendingAck::IntervalTimer(TimerId::new(timer.plugin_id, timer.name)),
+            EventSource::Timer,
+            Utc::now(),
         )
         .await;
     }
 
     pub async fn send_discord_guild_event(&mut self, evt: DiscordEvent) {
         let t_clone = evt.t.clone();
+        let ts_clone = evt.timestamp;
         match crate::dispatch_conv::discord_event_to_dispatch(evt) {
             Ok(Some(converted_evt)) => {
                 self.dispatch_worker_evt(
                     converted_evt.name.to_string(),
                     converted_evt.data,
                     PendingAck::Dispatch(None),
+                    EventSource::Discord,
+                    ts_clone,
                 )
                 .await;
             }
@@ -465,7 +476,14 @@ impl VmSession {
         }
     }
 
-    async fn dispatch_worker_evt(&mut self, t: String, data: serde_json::Value, ack: PendingAck) {
+    async fn dispatch_worker_evt(
+        &mut self,
+        t: String,
+        data: serde_json::Value,
+        ack: PendingAck,
+        source: EventSource,
+        ts: DateTime<Utc>,
+    ) {
         if self.scripts.is_empty() {
             return;
         }
@@ -480,6 +498,8 @@ impl VmSession {
                     name: t.clone(),
                     seq: evt_id,
                     value: data.clone(),
+                    source,
+                    source_timestamp: ts,
                 })) {
                     Ok(_) => {
                         self.pending_acks.insert(evt_id, ack);
@@ -495,6 +515,7 @@ impl VmSession {
         }
     }
 
+    #[instrument(skip_all)]
     async fn ensure_claim_worker(&mut self) -> ClaimWorkerResult {
         if self.current_worker.is_some() {
             return ClaimWorkerResult::Reused;
@@ -536,6 +557,7 @@ impl VmSession {
     //
     // but we would have to wait for potential in flight tasks/timers
     // and the only downside for not resetting contribs is timers being fired that's not used
+    #[instrument(skip_all)]
     async fn send_create_scripts_vm(&mut self) -> Result<(), ()> {
         let evt_id = self.gen_id();
 
@@ -585,7 +607,10 @@ impl VmSession {
     }
 
     fn should_send_scripts(&mut self, wr: WorkerRetrieved) -> bool {
-        if !self.force_load_scripts_next && matches!(wr, WorkerRetrieved::SameGuild) {
+        if !self.config.no_reuse_vms
+            && !self.force_load_scripts_next
+            && matches!(wr, WorkerRetrieved::SameGuild)
+        {
             return false;
         }
 

@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bot_rpc_server = rpc_server::Server::new(
         guild_log_sub_backend,
         scheduler_tx.clone(),
-        config.common.bot_rpc_listen_addr,
+        config.common.bot_rpc_listen_addr.clone(),
     );
     tokio::spawn(bot_rpc_server.run());
 
@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(manager.run());
 
     let worker_pool = vmworkerpool::VmWorkerPool::new(WorkerLaunchConfig {
-        cmd: config.vmworker_bin_path,
+        cmd: config.vmworker_bin_path.clone(),
     });
 
     #[cfg(target_family = "unix")]
@@ -107,12 +107,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let scheduler = scheduler::Scheduler::new(
+        Arc::new(config.clone()),
         scheduler_rx,
         postgres_store,
         logger,
         cmd_man_handle,
         worker_pool,
-        discord_config.clone(),
     );
     let task = tokio::spawn(scheduler.run());
 
@@ -183,4 +183,9 @@ pub struct SchedulerConfig {
     pub(crate) num_workers_lite: u16,
     #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS_PREMIUM", default_value = "0")]
     pub(crate) num_workers_premium: u16,
+
+    // Disables reusing vm's when the vm session has to grab a worker from the pool
+    // This is useful for benchmarking and diagnostics purposes
+    #[clap(long, env = "BL_SCHEDULER_NO_REUSE_VMS", default_value = "false")]
+    pub no_reuse_vms: bool,
 }

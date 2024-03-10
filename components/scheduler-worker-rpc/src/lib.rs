@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use common::dispatch_event::VmDispatchEvent;
 use runtime_models::internal::script::ScriptMeta;
 use serde::{Deserialize, Serialize};
 use stores::config::{PremiumSlotTier, Script};
@@ -43,13 +44,6 @@ pub struct CreateScriptsVmReq {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct VmDispatchEvent {
-    pub name: String,
-    pub seq: u64,
-    pub value: serde_json::Value,
-}
-
-#[derive(Deserialize, Serialize)]
 pub enum WorkerMessage {
     Ack(u64),
     Shutdown(ShutdownReason),
@@ -90,6 +84,7 @@ pub enum ShutdownReason {
 pub enum MetricEvent {
     Gauge(GaugeEvent),
     Counter(CounterEvent),
+    Histogram(f64),
 }
 
 #[derive(Deserialize, Serialize, Debug)]

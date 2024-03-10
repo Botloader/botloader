@@ -219,7 +219,7 @@ impl Worker {
                 if let Some(current) = &self.current_state {
                     let _ = current
                         .scripts_vm
-                        .send(VmCommand::DispatchEvent(evt.name, evt.value, evt.seq));
+                        .send(VmCommand::DispatchEvent(evt));
                 }
 
                 Ok(ContinueState::Continue)
@@ -314,7 +314,8 @@ impl Worker {
         &mut self,
         req: CreateScriptsVmReq,
     ) -> anyhow::Result<ContinueState> {
-        if let Some(current) = &self.current_state {
+        if self.current_state.is_some() {
+        // if let Some(_) = &self.current_state {
             // if current.guild_id != req.guild_id {
                 self.wait_shutdown_current_vm().await;
             // }
