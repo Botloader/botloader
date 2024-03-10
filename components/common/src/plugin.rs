@@ -13,6 +13,7 @@ pub struct Plugin {
     pub long_description: String,
     pub is_public: bool,
     pub is_official: bool,
+    pub is_published: bool,
     pub current_version: u32,
 
     pub images: Vec<PluginImage>,

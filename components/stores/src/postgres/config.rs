@@ -1234,6 +1234,7 @@ impl From<PluginAndImages> for Plugin {
             long_description: plugin.long_description,
             is_public: plugin.is_public,
             is_official: plugin.is_official,
+            is_published: plugin.is_published,
             current_version: plugin.current_version_number as u32,
             data: match plugin.plugin_kind {
                 0 => PluginData::ScriptPlugin(ScriptPluginData {
