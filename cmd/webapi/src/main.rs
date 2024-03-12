@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::{
     error_handling::HandleErrorLayer,
     extract::Extension,
+    http::StatusCode,
     response::IntoResponse,
     routing::{delete, get, patch, post},
     BoxError, Router,
@@ -291,7 +292,8 @@ async fn main() {
 
     let app = public_routes
         .merge(authorized_routes)
-        .layer(common_middleware_stack);
+        .layer(common_middleware_stack)
+        .fallback(|| async { StatusCode::NOT_FOUND });
 
     info!("Starting hype on address: {}", conf.listen_addr);
 
