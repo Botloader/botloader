@@ -3,7 +3,7 @@ use ts_rs::TS;
 
 use crate::{
     discord::channel::ChannelType,
-    util::{NotBigU64, PluginId},
+    util::{NotBigI64, NotBigU64, PluginId},
 };
 
 use super::interaction::CommandType;
@@ -397,8 +397,8 @@ pub enum SettingsOptionType {
         max: Option<f64>,
     },
     Integer {
-        min: Option<i64>,
-        max: Option<i64>,
+        min: Option<NotBigI64>,
+        max: Option<NotBigI64>,
     },
     Integer64 {
         min: Option<String>,

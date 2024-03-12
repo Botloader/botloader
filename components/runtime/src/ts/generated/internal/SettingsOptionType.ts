@@ -4,7 +4,7 @@ import type { ChannelType } from "../discord/ChannelType";
 export type SettingsOptionType =
   | { "kind": "string"; max_length: number | null; min_length: number | null }
   | { "kind": "float"; min: number | null; max: number | null }
-  | { "kind": "integer"; min: bigint | null; max: bigint | null }
+  | { "kind": "integer"; min: number | null; max: number | null }
   | { "kind": "integer64"; min: string | null; max: string | null }
   | { "kind": "channel"; types: Array<ChannelType> | null }
   | {

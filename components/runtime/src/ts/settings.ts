@@ -621,8 +621,8 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
         case "integer":
             return {
                 kind: "integer",
-                max: null,
-                min: null,
+                max: def.max ?? null,
+                min: def.min ?? null,
             }
         case "integer64":
             return {

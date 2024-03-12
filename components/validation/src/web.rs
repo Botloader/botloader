@@ -162,13 +162,13 @@ pub(crate) fn validate_settings_option_value_option(
             };
 
             if let Some(max) = max {
-                if value > *max {
+                if value > max.0 {
                     ctx.push_error(format!("max {}", max));
                 }
             }
 
             if let Some(min) = min {
-                if value < *min {
+                if value < min.0 {
                     ctx.push_error(format!("min {}", min));
                 }
             }
