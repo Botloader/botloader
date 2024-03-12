@@ -30,6 +30,7 @@ pub struct Manager {
     guild_id: Id<GuildMarker>,
     loaded_intervals: HashMap<TimerId, WrappedIntervalTimer>,
     pending: Vec<TimerId>,
+    cron_smear: Duration,
 }
 
 impl Manager {
@@ -39,6 +40,7 @@ impl Manager {
             guild_id,
             loaded_intervals: HashMap::new(),
             pending: Vec::new(),
+            cron_smear: Duration::milliseconds((guild_id.get() % 10000) as i64),
         }
     }
 
@@ -205,7 +207,7 @@ impl Manager {
             .filter(|(name, _)| !self.pending.contains(name))
             .min_by(|(_, a), (_, b)| a.next_run.cmp(&b.next_run));
 
-        lowest_interval.map(|(_, v)| v.next_run)
+        lowest_interval.map(|(_, v)| v.next_run_with_cron_smear(self.cron_smear))
     }
 }
 
@@ -242,6 +244,13 @@ fn wrap_timer(timer: IntervalTimer) -> Result<WrappedIntervalTimer, Error> {
 impl WrappedIntervalTimer {
     fn is_triggered(&self, t: DateTime<Utc>) -> bool {
         t > self.next_run
+    }
+
+    fn next_run_with_cron_smear(&self, cron_smear: Duration) -> DateTime<Utc> {
+        match self.parsed_type {
+            ParsedIntervalType::Minutes(_) => self.next_run,
+            ParsedIntervalType::Cron(_, _) => self.next_run + cron_smear,
+        }
     }
 }
 
