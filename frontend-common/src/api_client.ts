@@ -211,6 +211,7 @@ export class ApiClient {
         short_description?: string,
         long_description?: string,
         is_public?: boolean,
+        is_published?: boolean,
     }): Promise<ApiResult<Plugin>> {
         return await this.patch(`/api/user/plugins/${pluginId}`, {
             kind: "json",

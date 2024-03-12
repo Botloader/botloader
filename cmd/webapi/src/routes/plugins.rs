@@ -172,6 +172,8 @@ pub struct UpdatePluginMetaRequest {
     pub long_description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_public: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_published: Option<bool>,
 }
 
 // update plugin meta
@@ -188,7 +190,7 @@ pub async fn update_plugin_meta(
         is_public: body.is_public,
         is_official: None,
         author_id: None,
-        is_published: None,
+        is_published: body.is_published,
     };
 
     if let Err(err) = validate(&update, &()) {

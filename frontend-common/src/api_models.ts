@@ -152,6 +152,7 @@ export interface Plugin<Variant = ScriptPluginData> {
     short_description: string,
     long_description: string,
     is_public: boolean,
+    is_published: boolean,
     is_official: boolean,
     data: Variant,
     current_version: number,
