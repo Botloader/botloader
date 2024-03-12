@@ -6,6 +6,7 @@ import { useGuilds } from "../modules/guilds/GuildsProvider";
 import { guildScriptsContext } from "../modules/guilds/GuildScriptsProvider";
 import { useFetchedData } from "./FetchData";
 import { pluginContext } from "./PluginProvider";
+import { useEffect } from "react";
 export function Breadcrumbs() {
     let matches = useMatches() as UIMatch<any, OurRouteObject["handle"]>[];
     let filteredMatches = matches
@@ -15,6 +16,20 @@ export function Breadcrumbs() {
     const guilds = useGuilds().value
     const scripts = useFetchedData(guildScriptsContext)
     const currentPlugin = useFetchedData(pluginContext)
+
+    useEffect(() => {
+        const joined = filteredMatches
+            .map(v => (
+                v.handle!.breadCrumb!(v.params, {
+                    userGuilds: guilds?.all,
+                    currentGuildScripts: scripts.value ?? undefined,
+                    currentPlugin: currentPlugin.value ?? undefined,
+                })
+            ))
+            .join(" - ")
+
+        document.title = joined
+    }, [filteredMatches, scripts.value, guilds?.all, currentPlugin.value])
 
     return (
         <MaterialBreadCrumbs aria-label="breadcrumb">

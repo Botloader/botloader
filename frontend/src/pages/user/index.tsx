@@ -10,7 +10,7 @@ export const routes: RouteObject[] = [
     {
         element: <UserPages />,
         handle: {
-            breadCrumb: () => <>User</>,
+            breadCrumb: () => "User",
             breadCrumbCosmeticOnly: true,
         },
         children: [

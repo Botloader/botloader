@@ -5,7 +5,7 @@ export const routes: RouteObject[] = [
     {
         index: true,
         handle: {
-            breadCrumb: () => <>Premium</>
+            breadCrumb: () => "Premium"
         },
         element: <UserPremiumPage />
     }

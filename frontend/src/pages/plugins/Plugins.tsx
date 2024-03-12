@@ -51,11 +51,12 @@ function PluginItem({ plugin }: { plugin: Plugin }) {
     return <Paper
         sx={{
             maxHeight: 400,
+            height: 400,
             minWidth: 345,
             maxWidth: 345,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "space-between"
+            justifyContent: "start"
         }}
     >
         <CardHeader
@@ -88,13 +89,21 @@ function PluginItem({ plugin }: { plugin: Plugin }) {
             }}
         />}
 
-        <CardContent>
+        <CardContent sx={{
+            flexGrow: 1
+        }}>
             <Typography mb={1} color="text.secondary">
                 {plugin.short_description}
             </Typography>
         </CardContent>
 
-        <Stack direction={"row"} alignItems={"center"} justifyContent={"space-between"} padding={1}>
+        <Stack
+            direction={"row"}
+            alignItems={"center"}
+            justifyContent={"space-between"}
+            padding={1}
+            justifySelf={"flex-end"}
+        >
             {/* <CardContent> */}
             <Box flexGrow={1} marginRight={1}>
                 {plugin.author?.is_bl_staff
