@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_meta (discord_user_id, is_admin, is_moderator, is_verified, stripe_customer_id)\n            VALUES ($1, false, false, false, $2)\n            ON CONFLICT (discord_user_id)\n            DO UPDATE SET stripe_customer_id=$2\n            WHERE user_meta.stripe_customer_id IS NULL\n            RETURNING discord_user_id, is_admin, is_moderator, is_verified, stripe_customer_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "discord_user_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "is_admin",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "is_moderator",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_verified",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "stripe_customer_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "00d42cb8ca0b04b1d790cfc8e095f125e3038c4e4e2bfeee207d2cb4fc792746"
+}

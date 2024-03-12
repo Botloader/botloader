@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT discord_user_id, is_admin, is_moderator, is_verified FROM user_meta WHERE discord_user_id = $1",
+  "query": "SELECT discord_user_id, is_admin, is_moderator, is_verified, stripe_customer_id FROM user_meta WHERE stripe_customer_id = $1",
   "describe": {
     "columns": [
       {
@@ -22,19 +22,25 @@
         "ordinal": 3,
         "name": "is_verified",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "stripe_customer_id",
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8"
+        "Text"
       ]
     },
     "nullable": [
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "268dab1dc855644aef999afdc5e61860ab7086b85b61c3304cdee9ab95379209"
+  "hash": "25a0eaabe736ebf6e21d8056fc6b5869655f0c0e5f0fcccf90f3703da538a247"
 }
