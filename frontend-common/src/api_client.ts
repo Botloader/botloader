@@ -263,6 +263,19 @@ export class ApiClient {
     async deletePluginImage(pluginId: number, imageId: string) {
         return await this.delete(`/api/user/plugins/${pluginId}/images/${imageId}`)
     }
+
+    async createStripeCheckoutSession(tier: PremiumSlotTier): Promise<ApiResult<UrlResponse>> {
+        return await this.post(`/api/stripe/create_checkout_session`, {
+            kind: "json",
+            body: {
+                tier,
+            }
+        })
+    }
+
+    async createStripeCustomerPortalSession(): Promise<ApiResult<UrlResponse>> {
+        return await this.post(`/api/stripe/customer_portal`)
+    }
 }
 
 export type ApiResult<T> = T | ApiError;
@@ -382,4 +395,8 @@ export enum ErrorCode {
     UserPluginLimitReached = 8,
     PluginNotFound = 9,
     GuildAlreadyHasPlugin = 10,
+}
+
+export interface UrlResponse {
+    url: string
 }

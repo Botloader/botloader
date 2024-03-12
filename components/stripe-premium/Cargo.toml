@@ -1,0 +1,22 @@
+[package]
+name = "stripe-premium"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+stores = { path = "../stores" }
+common = { path = "../common" }
+
+tracing = { workspace = true }
+anyhow = { workspace = true }
+axum = { workspace = true }
+chrono = { workspace = true }
+twilight-model = { workspace = true }
+
+async-stripe = { version = "0.34.1", features = [
+    "webhook-events",
+    "checkout",
+    "runtime-tokio-hyper",
+] }

@@ -35,7 +35,6 @@ export function GuildHome() {
     const guild = useCurrentGuild()!;
 
     return <Stack spacing={2}>
-        <Alert severity="warning">This is a reminder that this service is currently in an early beta state and everything you're seeing is in a unfinished state, especially when it comes to this website.</Alert>
         <PremiumPanel guildId={guild!.value!.guild!.id!}></PremiumPanel>
         <FetchDataGuard context={guildScriptsContext}><GuildScripts guild={guild!.value!}></GuildScripts></FetchDataGuard>
     </Stack >
@@ -60,16 +59,29 @@ function PremiumPanel(props: { guildId: string }) {
         }
     }
 
+    if (slots === null) {
+        return <Typography>Failed loading premium slots</Typography>
+    }
 
-    return <>
-        <Typography variant="h4">Premium/Lite</Typography>
-        <Paper sx={{ p: 1 }}>
-            {slots === null ? <p>Failed loading slots</p>
-                : slots === undefined ? <Loading />
-                    : slots.length > 0 ? slots.map(v => <div className="guild-premium-slots" key={v.id}>{v.tier} by <code>{v.user_id}</code></div>)
-                        : <p>This server is on the free plan</p>}
-        </Paper>
-    </>
+    if (slots === undefined) {
+        return <Loading />
+    }
+
+    if (slots.length > 0) {
+        return slots.map(v => <PremiumBy key={v.id} slot={v}></PremiumBy>)
+    }
+
+    return <Alert severity="info">
+        This server is on the free tier<br />
+        Botloader is developed and run by a single person in their spare time, please consider lite or premium to support the project.<br /><br />
+        <BlLink to="/user/premium" variant="contained" color="success">Check out Lite/Premium</BlLink>
+    </Alert>
+}
+
+function PremiumBy({ slot }: { slot: GuildPremiumSlot }) {
+    return <Alert color="success">
+        This server is on the {slot.tier} tier, provided by user id {slot.user_id}
+    </Alert>
 }
 
 function GuildSettings(props: { guild: BotGuild }) {

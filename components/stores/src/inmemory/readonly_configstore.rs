@@ -229,7 +229,7 @@ impl ConfigStore for ReadOnlyConfigStore {
         todo!()
     }
 
-    async fn get_user_meta(&self, _user_id: u64) -> ConfigStoreResult<UserMeta> {
+    async fn get_user_meta(&self, _user_id: u64) -> ConfigStoreResult<Option<UserMeta>> {
         todo!()
     }
 

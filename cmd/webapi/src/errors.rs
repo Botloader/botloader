@@ -68,6 +68,9 @@ pub enum ApiErrorResponse {
 
     #[error("Script not found")]
     ScriptNotFound,
+
+    #[error("Stripe integration not enabled")]
+    StripeNotEnabled,
 }
 
 impl ApiErrorResponse {
@@ -97,6 +100,7 @@ impl ApiErrorResponse {
             Self::ImageNotFound => (StatusCode::BAD_REQUEST, 18, None),
             Self::MaxImagesReached => (StatusCode::BAD_REQUEST, 19, None),
             Self::ScriptNotFound => (StatusCode::BAD_REQUEST, 20, None),
+            Self::StripeNotEnabled => (StatusCode::INTERNAL_SERVER_ERROR, 21, None),
         }
     }
 }

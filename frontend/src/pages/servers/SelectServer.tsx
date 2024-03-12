@@ -33,7 +33,11 @@ function InnerPage() {
     }
 
     return <Container>
-        <Alert severity="warning">Botloader is still in early development, beware of bugs and potential breaking changes.</Alert>
+        <Alert severity="info" sx={{ marginTop: 1 }}>
+            Botloader is developed and run by a single person in their spare time, please consider lite or premium to support the project.<br /><br />
+            <BlLink to="/user/premium" variant="contained" color="success">Check out Lite/Premium</BlLink>
+        </Alert>
+        {/* <Alert severity="warning">Botloader is still in early development, beware of bugs and potential breaking changes.</Alert> */}
 
         <h2>Joined servers</h2>
         <Grid2 container gap={2}>

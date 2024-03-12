@@ -7,5 +7,6 @@ pub mod plugins;
 pub mod premium;
 pub mod scripts;
 pub mod sessions;
+pub mod stripe;
 pub mod vm;
 pub mod ws;

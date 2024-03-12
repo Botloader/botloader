@@ -2,6 +2,7 @@ import { Outlet, useParams } from "react-router-dom"
 import { routes as serverRoutes } from "./servers"
 import { routes as pluginRoutes } from "./plugins"
 import { routes as userRoutes } from "./user"
+import { routes as completeStripePurchaseRoutes } from "./confirm_stripe_purchase"
 import { routes as confirmLoginRoutes } from "./confirm_login"
 import { TosPage } from "./TOS"
 import { PrivacyPolicyPage } from "./PrivacyPolicy"
@@ -75,6 +76,10 @@ export const routes: OurRouteObject[] = [
             {
                 path: "/confirm_login",
                 children: confirmLoginRoutes
+            },
+            {
+                path: "/confirm_stripe_purchase",
+                children: completeStripePurchaseRoutes
             },
         ]
     }

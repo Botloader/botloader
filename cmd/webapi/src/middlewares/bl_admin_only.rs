@@ -23,7 +23,7 @@ pub async fn bl_admin_only_mw(
             ApiErrorResponse::InternalError
         })?;
 
-    if !user_meta.is_admin {
+    if !user_meta.map(|v| v.is_admin).unwrap_or(false) {
         return Err(ApiErrorResponse::NotBlAdmin);
     }
 

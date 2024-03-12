@@ -14,6 +14,7 @@ dbrokerapi = { path = "../../components/dbrokerapi" }
 validation = { path = "../../components/validation" }
 common = { path = "../../components/common" }
 axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
+stripe-premium = { path = "../../components/stripe-premium" }
 runtime-models = { path = "../../components/runtime-models" }
 
 oauth2 = "4.1"

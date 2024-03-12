@@ -207,6 +207,43 @@ FROM plugins WHERE id = $1"#,
 
         Ok(())
     }
+
+    pub async fn get_user_by_stripe_customer_id(
+        &self,
+        stripe_customer_id: &str,
+    ) -> ConfigStoreResult<Option<UserMeta>> {
+        let res = sqlx::query_as!(
+            DbUserMeta,
+            r#"SELECT discord_user_id, is_admin, is_moderator, is_verified, stripe_customer_id FROM user_meta WHERE stripe_customer_id = $1"#,
+            stripe_customer_id,
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(res.map(Into::into))
+    }
+
+    pub async fn try_set_stripe_customer_id(
+        &self,
+        discord_user_id: Id<UserMarker>,
+        stripe_customer_id: &str,
+    ) -> ConfigStoreResult<Option<UserMeta>> {
+        let res = sqlx::query_as!(
+            DbUserMeta,
+            r#"INSERT INTO user_meta (discord_user_id, is_admin, is_moderator, is_verified, stripe_customer_id)
+            VALUES ($1, false, false, false, $2)
+            ON CONFLICT (discord_user_id)
+            DO UPDATE SET stripe_customer_id=$2
+            WHERE user_meta.stripe_customer_id IS NULL
+            RETURNING discord_user_id, is_admin, is_moderator, is_verified, stripe_customer_id"#,
+            discord_user_id.get() as i64,
+            stripe_customer_id,
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(res.map(Into::into))
+    }
 }
 
 #[async_trait]
@@ -843,16 +880,16 @@ is_public"#,
             .collect())
     }
 
-    async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<UserMeta> {
+    async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<Option<UserMeta>> {
         let res = sqlx::query_as!(
             DbUserMeta,
-            r#"SELECT discord_user_id, is_admin, is_moderator, is_verified FROM user_meta WHERE discord_user_id = $1"#,
+            r#"SELECT discord_user_id, is_admin, is_moderator, is_verified, stripe_customer_id FROM user_meta WHERE discord_user_id = $1"#,
             user_id as i64,
         )
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(res.map(Into::into).unwrap_or_default())
+        Ok(res.map(Into::into))
     }
 
     async fn get_plugin(&self, plugin_id: u64) -> ConfigStoreResult<Plugin> {
@@ -1253,19 +1290,21 @@ impl From<PluginAndImages> for Plugin {
 }
 
 struct DbUserMeta {
-    #[allow(unused)]
     discord_user_id: i64,
     is_moderator: bool,
     is_admin: bool,
     is_verified: bool,
+    stripe_customer_id: Option<String>,
 }
 
 impl From<DbUserMeta> for UserMeta {
     fn from(value: DbUserMeta) -> Self {
         Self {
+            discord_user_id: value.discord_user_id as u64,
             is_admin: value.is_admin,
             is_moderator: value.is_moderator,
             is_verified: value.is_verified,
+            stripe_customer_id: value.stripe_customer_id,
         }
     }
 }

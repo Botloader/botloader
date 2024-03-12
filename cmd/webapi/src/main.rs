@@ -10,9 +10,10 @@ use axum::{
 use oauth2::basic::BasicClient;
 use routes::auth::AuthHandlers;
 use stores::{inmemory::web::InMemoryCsrfStore, postgres::Postgres};
+use stripe_premium::webhook_handler::StripeWebhookSecret;
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-use tracing::{error, info, Level};
+use tracing::{error, info, warn, Level};
 use twilight_model::id::{marker::GuildMarker, Id};
 
 mod errors;
@@ -30,6 +31,7 @@ use crate::{errors::ApiErrorResponse, middlewares::current_guild_injector_middle
 #[derive(Clone)]
 pub struct ConfigData {
     oauth_client: BasicClient,
+    frontend_base: String,
 }
 
 type CurrentSessionStore = Postgres;
@@ -43,7 +45,7 @@ async fn main() {
     common::setup_tracing(&web_conf.common, "webapi");
     common::setup_metrics("0.0.0.0:7801");
 
-    let conf = web_conf.common;
+    let conf = web_conf.common.clone();
 
     info!("starting...");
 
@@ -85,6 +87,7 @@ async fn main() {
     let auth_handler: AuthHandlerData =
         routes::auth::AuthHandlers::new(session_store.clone(), InMemoryCsrfStore::default());
 
+    let stripe_client = init_stripe_client(postgres_store.clone(), &web_conf);
     let session_layer = SessionLayer::new(session_store.clone(), oatuh_client.clone());
     let require_auth_layer = session_layer.require_auth_layer();
     let client_cache = session_layer.oauth_api_client_cache.clone();
@@ -97,6 +100,7 @@ async fn main() {
         .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
         .layer(Extension(ConfigData {
             oauth_client: oatuh_client,
+            frontend_base: web_conf.common.frontend_host_base.clone(),
         }))
         .layer(TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)))
         .layer(Extension(bot_rpc_client))
@@ -107,6 +111,10 @@ async fn main() {
         .layer(Extension(news_handle))
         .layer(Extension(discord_config))
         .layer(Extension(state_client))
+        .layer(Extension(Arc::new(stripe_client)))
+        .layer(Extension(StripeWebhookSecret::new(
+            web_conf.stripe_webhook_secret.unwrap_or_default(),
+        )))
         .layer(Extension(OptionalSession::<CurrentSessionStore>::none()))
         .layer(session_layer)
         .layer(CorsLayer {
@@ -234,7 +242,15 @@ async fn main() {
                 delete(routes::plugins::delete_plugin_image)
                     .layer(axum::middleware::from_fn(plugin_middleware)),
             )
-            .route("/logout", post(AuthHandlerData::handle_logout));
+            .route("/logout", post(AuthHandlerData::handle_logout))
+            .route(
+                "/stripe/customer_portal",
+                post(routes::stripe::handle_create_customer_portal_session),
+            )
+            .route(
+                "/stripe/create_checkout_session",
+                post(routes::stripe::handle_create_checkout_session),
+            );
 
     let auth_routes_mw_stack = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(handle_mw_err_no_auth))
@@ -267,6 +283,10 @@ async fn main() {
         .route(
             "/api/confirm_login",
             post(AuthHandlerData::handle_confirm_login),
+        )
+        .route(
+            "/api/stripe/webhook",
+            post(stripe_premium::webhook_handler::handle_webhook),
         );
 
     let app = public_routes
@@ -299,6 +319,38 @@ async fn handle_mw_err_no_auth(err: BoxError) -> impl IntoResponse {
     }
 }
 
+fn init_stripe_client(db: Postgres, config: &WebConfig) -> Option<stripe_premium::Client> {
+    match (
+        &config.stripe_private_key,
+        &config.stripe_premium_product_id,
+        &config.stripe_premium_price_id,
+        &config.stripe_lite_product_id,
+        &config.stripe_lite_price_id,
+    ) {
+        (
+            Some(stripe_private_key),
+            Some(stripe_premium_product_id),
+            Some(stripe_premium_price_id),
+            Some(stripe_lite_product_id),
+            Some(stripe_lite_price_id),
+        ) => {
+            info!("Stripe client created");
+            Some(stripe_premium::Client::new(
+                db,
+                stripe_private_key.to_owned(),
+                stripe_lite_product_id.to_owned(),
+                stripe_lite_price_id.to_owned(),
+                stripe_premium_product_id.to_owned(),
+                stripe_premium_price_id.to_owned(),
+            ))
+        }
+        _ => {
+            warn!("One or more stripe settings not provided");
+            None
+        }
+    }
+}
+
 #[derive(Clone, clap::Parser)]
 pub struct WebConfig {
     #[clap(flatten)]
@@ -316,4 +368,25 @@ pub struct WebConfig {
         default_value = "http://localhost:7449"
     )]
     pub(crate) broker_api_addr: String,
+
+    #[clap(long, env = "STRIPE_PUBLIC_KEY")]
+    pub(crate) stripe_public_key: Option<String>,
+
+    #[clap(long, env = "STRIPE_PRIVATE_KEY")]
+    pub(crate) stripe_private_key: Option<String>,
+
+    #[clap(long, env = "STRIPE_WEBHOOK_SECRET")]
+    pub(crate) stripe_webhook_secret: Option<String>,
+
+    #[clap(long, env = "STRIPE_PREMIUM_PRODUCT_ID")]
+    pub(crate) stripe_premium_product_id: Option<String>,
+
+    #[clap(long, env = "STRIPE_PREMIUM_PRICE_ID")]
+    pub(crate) stripe_premium_price_id: Option<String>,
+
+    #[clap(long, env = "STRIPE_LITE_PRODUCT_ID")]
+    pub(crate) stripe_lite_product_id: Option<String>,
+
+    #[clap(long, env = "STRIPE_LITE_PRICE_ID")]
+    pub(crate) stripe_lite_price_id: Option<String>,
 }

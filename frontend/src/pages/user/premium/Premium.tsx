@@ -1,5 +1,5 @@
-import { Alert, Button, ButtonProps } from "@mui/material";
-import { isErrorResponse, PremiumSlot } from "botloader-common";
+import { Button, ButtonProps, Paper } from "@mui/material";
+import { isErrorResponse, PremiumSlot, PremiumSlotTier } from "botloader-common";
 import { useRef } from "react";
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { GuildsGuard, useGuilds } from "../../../modules/guilds/GuildsProvider";
@@ -37,14 +37,106 @@ export function UserPremiumPage() {
 }
 
 export function InnerPage() {
+    const session = useSession()
+    const [isCallingApi, setIsCallingApi] = React.useState(false)
     const { value: slots } = useFetchedDataBehindGuard(slotsContext);
+    const notifications = UseNotifications()
 
+    async function startCheckout(tier: PremiumSlotTier) {
+        let resp = await session.apiClient.createStripeCheckoutSession(tier)
+        if (isErrorResponse(resp)) {
+            notifications.push({
+                class: "error",
+                message: "Something went wrong while creating checkout session, join the discord server for more info."
+            })
+        } else {
+            window.location.href = resp.url
+        }
+    }
+
+    async function customerPortal() {
+        let resp = await session.apiClient.createStripeCustomerPortalSession()
+        if (isErrorResponse(resp)) {
+            notifications.push({
+                class: "error",
+                message: "Something went wrong while creating the stripe customer portal session, join the discord server for more info."
+            })
+        } else {
+            window.location.href = resp.url
+        }
+    }
 
     return (<Box p={3}>
-        <Typography variant="h4">Premium</Typography>
-        <Alert severity="warning">Note: premium offers no benefits at the time of writing</Alert>
-        <p>It might take a minute before your subscription is processed and shows up here.</p>
-        <Button href="https://upgrade.chat/botloader">Buy premium slots through upgrade.chat</Button>
+        <Typography variant="h4" mb={2}>Premium</Typography>
+
+        <Paper sx={{ padding: 2, display: "flex", gap: 2, flexDirection: "column" }}>
+            <Box>
+                <Typography variant="h6">Premium / Lite offers the following benefits</Typography>
+            </Box>
+            <Box>
+                <Typography>Priority to the worker pool when handling events</Typography>
+                <Typography color={"text.secondary"}>If the bot is experiencing load then your sever will be given priority over other servers when handling events, leading to more reliable operation</Typography>
+            </Box>
+            <Box>
+                <Typography>Access to Premium/Lite dedicated worker pool</Typography>
+                <Typography color={"text.secondary"}>In addition to the priority mentioned above your server will get access to handling events on reserved workers, again leading to more reliable  operation</Typography>
+            </Box>
+            <Box>
+                <Typography >Higher limits</Typography>
+                <Typography color={"text.secondary"}>You get higher storage, ratelimits, task limits and so on, the exact limits are still being tuned so ask in the support server for more information.</Typography>
+            </Box>
+
+            <Box display={"flex"} flexDirection={"row"} gap={1}>
+                <Button
+                    color="success"
+                    variant="contained"
+                    disabled={isCallingApi}
+                    onClick={() => {
+                        if (isCallingApi) {
+                            return
+                        }
+                        setIsCallingApi(true)
+                        startCheckout("Lite").finally(() => setIsCallingApi(false))
+                    }}
+                >
+                    Subscribe to Lite for $3/month
+                </Button>
+                <Button
+                    color="success"
+                    variant="contained"
+                    disabled={isCallingApi}
+                    onClick={() => {
+                        if (isCallingApi) {
+                            return
+                        }
+                        setIsCallingApi(true)
+                        startCheckout("Premium").finally(() => setIsCallingApi(false))
+                    }}
+                >
+                    Subscribe to Premium for $5/month
+                </Button>
+            </Box>
+            <Box >
+                <Button
+                    color="primary"
+                    variant="contained"
+                    disabled={isCallingApi}
+                    onClick={() => {
+                        if (isCallingApi) {
+                            return
+                        }
+                        setIsCallingApi(true)
+                        customerPortal().finally(() => setIsCallingApi(false))
+                    }}
+                >
+                    Manage existing subscriptions
+                </Button>
+            </Box>
+        </Paper>
+
+        <Typography mt={1}>It might take a minute before your subscription is processed and shows up here.</Typography>
+
+
 
         <GuildsGuard>
             <Box display="flex" mt={1} gap={1} flexWrap="wrap">

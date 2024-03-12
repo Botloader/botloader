@@ -188,7 +188,7 @@ pub trait ConfigStore: Send + Sync {
         auto_update: bool,
     ) -> ConfigStoreResult<Script>;
 
-    async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<UserMeta>;
+    async fn get_user_meta(&self, user_id: u64) -> ConfigStoreResult<Option<UserMeta>>;
 
     async fn create_image(&self, create: CreateImage) -> ConfigStoreResult<Uuid>;
     async fn soft_delete_image(&self, id: Uuid) -> ConfigStoreResult<Uuid>;
