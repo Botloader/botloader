@@ -818,10 +818,10 @@ impl VmShutdownHandle {
     pub fn shutdown_vm(&self, reason: ShutdownReason, force: bool) {
         let mut inner = self.inner.write().unwrap();
         inner.shutdown_reason = Some(reason);
-        if let Some(iso_handle) = &inner.isolate_handle {
-            self.terminated
-                .store(true, std::sync::atomic::Ordering::SeqCst);
+        self.terminated
+            .store(true, std::sync::atomic::Ordering::SeqCst);
 
+        if let Some(iso_handle) = &inner.isolate_handle {
             if force {
                 iso_handle.terminate_execution();
             }
