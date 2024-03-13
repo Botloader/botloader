@@ -7,6 +7,7 @@ pub async fn start_server(addr: String, broker: BrokerHandle) {
 
     loop {
         let (socket, _) = listener.accept().await.unwrap();
+        socket.set_nodelay(true).unwrap();
         if broker
             .send(BrokerCommand::SchedulerConnected(socket))
             .is_err()

@@ -14,6 +14,7 @@ pub async fn broker_client(addr: String, scheduler_tx: UnboundedSender<Scheduler
 
         if let Ok(conn) = TcpStream::connect(&addr).await {
             info!("connected to broker");
+            conn.set_nodelay(true).unwrap();
             let client = BrokerConn {
                 scheduler_tx: scheduler_tx.clone(),
                 stream: conn,
