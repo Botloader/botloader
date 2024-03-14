@@ -2314,16 +2314,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "616cde7c720bb2bb5824a224687d8f77bfd38922027f01d825cd7453be5099fb"
 
 [[package]]
-name = "isolatecell"
-version = "0.1.0"
-dependencies = [
- "cpu-time",
- "deno_core",
- "tracing",
- "v8",
-]
-
-[[package]]
 name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6998,10 +6988,10 @@ dependencies = [
  "async-trait",
  "chrono",
  "common",
+ "cpu-time",
  "deno_core",
  "futures",
  "guild-logger",
- "isolatecell",
  "lazy_static",
  "metrics",
  "regex",

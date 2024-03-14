@@ -5,11 +5,11 @@ use crate::{
 };
 use chrono::Utc;
 use common::dispatch_event::VmDispatchEvent;
-use deno_core::{Extension, FastString, PollEventLoopOptions, RuntimeOptions, Snapshot};
+use cpu_time::ThreadTime;
+use deno_core::{Extension, FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions, Snapshot};
 use futures::{future::LocalBoxFuture, FutureExt};
 use guild_logger::entry::CreateLogEntry;
 use guild_logger::GuildLogSender;
-use isolatecell::{IsolateCell, ManagedIsolate};
 use metrics::histogram;
 use serde::Serialize;
 use std::convert::TryFrom;
@@ -19,7 +19,7 @@ use std::pin::{pin, Pin};
 use std::{
     rc::Rc,
     sync::{atomic::AtomicBool, Arc, RwLock as StdRwLock},
-    task::{Context, Poll, Wake, Waker},
+    task::{Context, Poll, Wake},
 };
 use stores::config::Script;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -52,7 +52,7 @@ struct ScriptDispatchData {
 }
 
 pub struct Vm {
-    runtime: ManagedIsolate,
+    runtime: JsRuntime,
 
     rx: UnboundedReceiver<VmCommand>,
     tx: UnboundedSender<VmEvent>,
@@ -61,8 +61,6 @@ pub struct Vm {
 
     timeout_handle: VmShutdownHandle,
     guild_logger: GuildLogSender,
-
-    isolate_cell: Rc<IsolateCell>,
 
     extension_factory: ExtensionFactory,
     module_manager: Rc<ModuleManager>,
@@ -74,18 +72,16 @@ impl Vm {
     #[instrument(skip_all)]
     pub(crate) fn create_with_handles(
         create_req: CreateRt,
-        isolate_cell: Rc<IsolateCell>,
+        vm_cpu_counter: metrics::Counter,
     ) -> CreateVmSuccess {
         let (wakeup_tx, wakeup_rx) = mpsc::unbounded_channel();
         let shutdown_handle = VmShutdownHandle::new(wakeup_tx);
 
         let shutdown_handle_clone = shutdown_handle.clone();
 
-        let fut = Box::pin(Vm::create_run(
-            create_req,
-            shutdown_handle_clone,
-            isolate_cell,
-            wakeup_rx,
+        let fut = Box::pin(VmCpuTracker::wrap(
+            vm_cpu_counter,
+            Vm::create_run(create_req, shutdown_handle_clone, wakeup_rx),
         ));
 
         CreateVmSuccess {
@@ -98,7 +94,6 @@ impl Vm {
     async fn create_init(
         create_req: CreateRt,
         timeout_handle: VmShutdownHandle,
-        isolate_cell: Rc<IsolateCell>,
         wakeup_rx: UnboundedReceiver<()>,
     ) -> Self {
         let script_store = ScriptsStateStore::new_rc();
@@ -122,7 +117,6 @@ impl Vm {
             script_store,
 
             timeout_handle,
-            isolate_cell,
             runtime: sandbox,
             extension_factory: create_req.extension_factory,
             module_manager,
@@ -144,10 +138,9 @@ impl Vm {
     async fn create_run(
         create_req: CreateRt,
         timeout_handle: VmShutdownHandle,
-        isolate_cell: Rc<IsolateCell>,
         wakeup_rx: UnboundedReceiver<()>,
     ) {
-        let mut rt = Self::create_init(create_req, timeout_handle, isolate_cell, wakeup_rx).await;
+        let mut rt = Self::create_init(create_req, timeout_handle, wakeup_rx).await;
         rt.run().await;
     }
 
@@ -156,26 +149,9 @@ impl Vm {
         module_manager: Rc<ModuleManager>,
         script_load_states: ScriptsStateStoreHandle,
         shutdown_handle: VmShutdownHandle,
-    ) -> ManagedIsolate {
-        // let create_err_fn = create_error_fn(script_load_states.clone());
-
+    ) -> JsRuntime {
         let mut extensions = extension_factory();
         let cloned_load_states = script_load_states.clone();
-        // extensions.insert(
-        //     0,
-        //     Extension::builder("bl_core_rt")
-        //         .js(deno_core::include_js_files!(
-        //           prefix "bl:core",
-        //           "botloader-core-rt.js",
-        //         ))
-        //         .state(move |op| {
-        //             op.put(cloned_load_states.clone());
-        //             Ok(())
-        //         })
-        //         .build(),
-        // );
-
-        // let core
 
         extensions.insert(
             0,
@@ -202,29 +178,29 @@ impl Vm {
         };
 
         let another_handle = shutdown_handle.clone();
-        ManagedIsolate::new_with_oom_handler_and_state(
-            options,
-            move |current, initial| {
-                info!(
-                    "near heap limit: current: {}, initial: {}",
-                    current, initial
-                );
-                shutdown_handle.shutdown_vm(ShutdownReason::OutOfMemory, true);
-                if current != initial {
-                    current
-                } else {
-                    current + initial
-                }
-            },
-            another_handle,
-        )
+
+        let mut rt = JsRuntime::new(options);
+        {
+            let op_state = rt.op_state();
+            op_state.borrow_mut().put(another_handle);
+        }
+        rt.add_near_heap_limit_callback(move |current, initial| {
+            info!(
+                "near heap limit: current: {}, initial: {}",
+                current, initial
+            );
+            shutdown_handle.shutdown_vm(ShutdownReason::OutOfMemory, true);
+            if current != initial {
+                current
+            } else {
+                current + initial
+            }
+        });
+        rt
     }
 
     fn emit_isolate_handle(&mut self) {
-        let handle = {
-            let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
-            rt.v8_isolate().thread_safe_handle()
-        };
+        let handle = self.runtime.v8_isolate().thread_safe_handle();
 
         let mut th = self.timeout_handle.inner.write().unwrap();
         th.isolate_handle = Some(handle);
@@ -242,7 +218,6 @@ impl Vm {
             let fut = TickFuture {
                 rx: &mut self.rx,
                 rt: &mut self.runtime,
-                cell: &self.isolate_cell,
                 wakeup: &mut self.wakeup_rx,
                 completed,
             };
@@ -413,41 +388,21 @@ impl Vm {
                 .set_state(script_id, ScriptLoadState::Loaded);
         }
 
-        let eval_res = {
-            let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
+        let res = self
+            .runtime
+            .load_side_module(&script.url, Some(FastString::from(compiled.output)))
+            .await;
 
-            let fut = rt.load_side_module(&script.url, Some(FastString::from(compiled.output)));
-
-            // Yes this is very hacky, we should have a proper solution for this at some point.
-            //
-            // Why is this needed? because we can't hold the IsolateGuard across an await
-            // this future should resolve instantly because our module loader has no awaits in it
-            // and does no io.
-            //
-            // this might very well break in the future when we update to a newer version of deno
-            // but hopefully it's caught before production.
-            let res = {
-                let mut pinned = Box::pin(fut);
-                let waker: Waker = Arc::new(NoOpWaker).into();
-                let mut cx = Context::from_waker(&waker);
-                match pinned.poll_unpin(&mut cx) {
-                    Poll::Pending => panic!("Future should resolve instantly!"),
-                    Poll::Ready(v) => v,
-                }
-            };
-
-            res.map(|id| rt.mod_evaluate(id))
-        };
-
-        match eval_res {
-            Err(e) => {
-                self.log_guild_err(e);
+        match res {
+            Ok(id) => {
+                let rcv = self.runtime.mod_evaluate(id);
+                self.complete_module_eval(rcv).await;
+            }
+            Err(err) => {
+                self.log_guild_err(err);
                 self.script_store
                     .borrow_mut()
                     .set_state(script_id, ScriptLoadState::Failed);
-            }
-            Ok(rcv) => {
-                self.complete_module_eval(rcv).await;
             }
         }
     }
@@ -460,11 +415,10 @@ impl Vm {
             name: event.name.to_string(),
         };
 
-        let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
-        let global_ctx = rt.main_context();
-        let ctx = global_ctx.open(rt.v8_isolate());
+        let global_ctx = self.runtime.main_context();
+        let ctx = global_ctx.open(self.runtime.v8_isolate());
 
-        let mut scope = rt.handle_scope();
+        let mut scope = self.runtime.handle_scope();
         let globals = ctx.global(&mut scope);
 
         let core_obj: v8::Local<v8::Object> =
@@ -519,8 +473,7 @@ impl Vm {
     }
 
     fn _dump_heap_stats(&mut self) {
-        let mut rt = self.isolate_cell.enter_isolate(&mut self.runtime);
-        let iso = rt.v8_isolate();
+        let iso = self.runtime.v8_isolate();
         let mut stats = v8::HeapStatistics::default();
         iso.get_heap_statistics(&mut stats);
         dbg!(stats.total_heap_size());
@@ -541,10 +494,6 @@ impl Vm {
 
     #[instrument(skip(self))]
     async fn stop_vm(&mut self) {
-        // complete the event loop and extract our core data (script event receiver)
-        // TODO: we could potentially have some long running futures
-        // so maybe call a function that cancels all long running futures or something?
-        // or at the very least have a timeout?
         if tokio::time::timeout(
             tokio::time::Duration::from_secs(15),
             self.run_until_completion(),
@@ -563,7 +512,6 @@ impl Vm {
     async fn run_until_completion(&mut self) {
         loop {
             let fut = RunUntilCompletion {
-                cell: &self.isolate_cell,
                 rt: &mut self.runtime,
             };
 
@@ -575,15 +523,10 @@ impl Vm {
         }
     }
 
-    async fn complete_module_eval(
-        &mut self,
-        mut fut: impl Future<Output = Result<(), AnyError>>,
-        // mut rcv: futures::channel::oneshot::Receiver<Result<(), AnyError>>,
-    ) {
+    async fn complete_module_eval(&mut self, mut fut: impl Future<Output = Result<(), AnyError>>) {
         let mut pinned: Pin<&mut dyn Future<Output = Result<(), AnyError>>> = pin!(fut);
         loop {
             let fut = CompleteModuleEval {
-                cell: &self.isolate_cell,
                 rt: &mut self.runtime,
                 fut: &mut pinned,
             };
@@ -652,8 +595,7 @@ pub enum TickResult {
 
 struct TickFuture<'a> {
     rx: &'a mut UnboundedReceiver<VmCommand>,
-    rt: &'a mut ManagedIsolate,
-    cell: &'a IsolateCell,
+    rt: &'a mut JsRuntime,
     wakeup: &'a mut UnboundedReceiver<()>,
     completed: bool,
 }
@@ -675,23 +617,8 @@ impl<'a> core::future::Future for TickFuture<'a> {
             return Poll::Ready(TickResult::Command(opt));
         }
 
-        let mut rt = self.cell.enter_isolate(self.rt);
-
-        // if !self.completed{
-        // }
-
-        match rt.poll_event_loop(cx, Default::default()) {
-            Poll::Pending => {
-                // let state_rc = rt.op_state();
-                // let op_state = state_rc.borrow();
-                // let pending_state = op_state.borrow::<PendingDispatchHandlers>();
-
-                // if pending_state.pending == 0 {
-                //     info!("force killed vm that was ready from non-important handlers");
-                //     return Poll::Ready(TickResult::Completed);
-                // }
-                Poll::Pending
-            }
+        match self.rt.poll_event_loop(cx, Default::default()) {
+            Poll::Pending => Poll::Pending,
             Poll::Ready(Ok(_)) => {
                 if completed {
                     Poll::Pending
@@ -706,8 +633,7 @@ impl<'a> core::future::Future for TickFuture<'a> {
 
 // future that drives the vm to completion, acquiring the isolate guard when needed
 struct RunUntilCompletion<'a> {
-    rt: &'a mut ManagedIsolate,
-    cell: &'a IsolateCell,
+    rt: &'a mut JsRuntime,
 }
 
 impl<'a> core::future::Future for RunUntilCompletion<'a> {
@@ -717,21 +643,7 @@ impl<'a> core::future::Future for RunUntilCompletion<'a> {
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        let mut rt = self.cell.enter_isolate(self.rt);
-
-        match rt.poll_event_loop(cx, Default::default()) {
-            // Poll::Pending => {
-            //     let state_rc = rt.op_state();
-            //     let op_state = state_rc.borrow();
-            //     let pending_state = op_state.borrow::<PendingDispatchHandlers>();
-
-            //     if pending_state.pending == 0 {
-            //         info!("force killed vm that was ready from non-important handlers");
-            //         Poll::Ready(Ok(()))
-            //     } else {
-            //         Poll::Pending
-            //     }
-            // }
+        match self.rt.poll_event_loop(cx, Default::default()) {
             Poll::Pending => Poll::Pending,
             Poll::Ready(Ok(_)) => Poll::Ready(Ok(())),
             Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
@@ -741,9 +653,7 @@ impl<'a> core::future::Future for RunUntilCompletion<'a> {
 
 // future that drives the vm to completion, acquiring the isolate guard when needed
 struct CompleteModuleEval<'a, 'b, 'c> {
-    rt: &'a mut ManagedIsolate,
-    cell: &'a IsolateCell,
-    // rcv: &'b mut futures::channel::oneshot::Receiver<Result<(), AnyError>>,
+    rt: &'a mut JsRuntime,
     fut: &'c mut Pin<&'b mut dyn Future<Output = Result<(), AnyError>>>,
 }
 
@@ -759,20 +669,15 @@ impl<'a, 'b, 'c> core::future::Future for CompleteModuleEval<'a, 'b, 'c> {
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        // let pinned = pin!(self.fut);
         match self.fut.as_mut().poll(cx) {
             Poll::Ready(res) => return Poll::Ready(CompleteModuleEvalResult::Completed(res)),
             Poll::Pending => {}
         }
 
-        {
-            let mut rt = self.cell.enter_isolate(self.rt);
-
-            match rt.poll_event_loop(cx, PollEventLoopOptions::default()) {
-                Poll::Pending => return Poll::Pending,
-                Poll::Ready(Err(e)) => return Poll::Ready(CompleteModuleEvalResult::VmError(e)),
-                Poll::Ready(_) => {}
-            }
+        match self.rt.poll_event_loop(cx, PollEventLoopOptions::default()) {
+            Poll::Pending => return Poll::Pending,
+            Poll::Ready(Err(e)) => return Poll::Ready(CompleteModuleEvalResult::VmError(e)),
+            Poll::Ready(_) => {}
         }
 
         // we might have gotten a result on the channel after polling the event loop
@@ -873,4 +778,33 @@ pub type VmCreateResult = Result<CreateVmSuccess, String>;
 pub struct CreateVmSuccess {
     pub future: LocalBoxFuture<'static, ()>,
     pub shutdown_handle: VmShutdownHandle,
+}
+
+struct VmCpuTracker<F> {
+    future: Pin<Box<F>>,
+    counter: metrics::Counter,
+}
+
+impl<F> VmCpuTracker<F> {
+    fn wrap(counter: metrics::Counter, fut: F) -> Self {
+        Self {
+            counter,
+            future: Box::pin(fut),
+        }
+    }
+}
+
+impl<F: Future> Future for VmCpuTracker<F> {
+    type Output = F::Output;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let started = ThreadTime::now();
+
+        let res = self.future.poll_unpin(cx);
+
+        let elapsed = started.elapsed();
+        self.counter.increment(elapsed.as_micros() as u64);
+
+        res
+    }
 }

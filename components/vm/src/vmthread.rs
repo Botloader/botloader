@@ -1,6 +1,5 @@
-use std::{rc::Rc, time::Duration};
+use std::time::Duration;
 
-use isolatecell::IsolateCell;
 use metrics::counter;
 use tokio::{
     sync::{mpsc, oneshot},
@@ -19,16 +18,13 @@ pub async fn spawn_vm_thread<F: FnOnce() -> tracing::Span + Send + Sync + 'stati
     let (ping_send, mut ping_recv) = mpsc::channel::<oneshot::Sender<()>>(1);
 
     std::thread::spawn(move || {
-        let iso_cell = Rc::new(IsolateCell::new_with_tracker(Box::new(|dur| {
-            counter!("bl.vm.cpu_microseconds_total").increment(dur.as_micros() as u64);
-        })));
-
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .unwrap();
 
-        let result = Vm::create_with_handles(create, iso_cell);
+        let cpu_counter = counter!("bl.vm.cpu_microseconds_total");
+        let result = Vm::create_with_handles(create, cpu_counter);
         vm_created_send
             .send(result.shutdown_handle.clone())
             .unwrap();

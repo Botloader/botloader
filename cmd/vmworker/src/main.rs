@@ -310,6 +310,7 @@ impl Worker {
         Ok(ContinueState::Continue)
     }
 
+    #[instrument(skip_all)]
     async fn handle_create_scripts_vm(
         &mut self,
         req: CreateScriptsVmReq,

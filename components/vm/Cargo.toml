@@ -6,12 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-isolatecell = { path = "../../components/isolatecell" }
 stores = { path = "../../components/stores" }
 guild-logger = { path = "../../components/guild-logger" }
 common = { path = "../../components/common" }
 tscompiler = { path = "../../components/tscompiler" }
 
+cpu-time = "1.0"
 deno_core = { workspace = true }
 v8 = { workspace = true }
 serde_v8 = "0.152"
