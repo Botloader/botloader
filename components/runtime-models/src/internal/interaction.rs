@@ -64,7 +64,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                     parent_name,
                     parent_parent_name,
                     options: opts,
-                    channel_id: v.channel_id.unwrap().to_string(),
+                    channel_id: v.channel.unwrap().id.to_string(),
                     id: v.id.to_string(),
                     member: Member::from_partial(v.member.unwrap()),
                     token: v.token,
@@ -81,7 +81,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
             Some(twilight_model::application::interaction::InteractionData::MessageComponent(
                 data,
             )) => Ok(Self::MessageComponent(MessageComponentInteraction {
-                channel_id: v.channel_id.unwrap().to_string(),
+                channel_id: v.channel.unwrap().id.to_string(),
                 guild_locale: v.guild_locale,
                 id: v.id.to_string(),
                 locale: v.locale.unwrap_or_default(),
@@ -94,7 +94,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
             })),
             Some(twilight_model::application::interaction::InteractionData::ModalSubmit(data)) => {
                 Ok(Self::ModalSubmit(ModalInteraction {
-                    channel_id: v.channel_id.unwrap().to_string(),
+                    channel_id: v.channel.unwrap().id.to_string(),
                     guild_locale: v.guild_locale,
                     id: v.id.to_string(),
                     locale: v.locale.unwrap_or_default(),
