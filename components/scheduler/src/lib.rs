@@ -8,8 +8,6 @@ use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::Id;
 
-use crate::vmworkerpool::WorkerLaunchConfig;
-
 mod broker_client;
 mod command_manager;
 mod dispatch_conv;
@@ -23,20 +21,27 @@ mod vm_session;
 mod vmworkerpool;
 mod worker_listener;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config: SchedulerConfig = common::load_config();
-    common::setup_tracing(&config.common, "scheduler");
-    common::setup_metrics("0.0.0.0:7803");
+pub use vmworkerpool::WorkerLaunchConfig;
 
-    let discord_config = common::fetch_discord_config(config.common.discord_token.clone())
+pub async fn run(
+    common_conf: common::config::RunConfig,
+    config: SchedulerConfig,
+    setup_metrics_and_tracing: bool,
+    vm_worker_launch_config: WorkerLaunchConfig,
+) {
+    if setup_metrics_and_tracing {
+        common::setup_tracing(&common_conf, "scheduler");
+        common::setup_metrics("0.0.0.0:7803");
+    }
+
+    let discord_config = common::fetch_discord_config(common_conf.discord_token.clone())
         .await
         .expect("failed fetching discord config");
     let integration_testing_guild = config.integration_tests_guild.map(Id::from);
 
     info!("launching scheduler!");
     let postgres_store = Arc::new(
-        Postgres::new_with_url(&config.common.database_url)
+        Postgres::new_with_url(&common_conf.database_url)
             .await
             .unwrap(),
     );
@@ -54,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         if let Some(g) = integration_testing_guild {
             // get number of ig testing scripts
-            let scripts = postgres_store.list_scripts(g).await?;
+            let scripts = postgres_store.list_scripts(g).await.unwrap();
             let tracker = Arc::new(integration_testing::Tracker::new(scripts.len() as i32));
             builder = builder.add_backend(tracker.clone());
             (builder.run(), Some(tracker))
@@ -68,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bot_rpc_server = rpc_server::Server::new(
         guild_log_sub_backend,
         scheduler_tx.clone(),
-        config.common.bot_rpc_listen_addr.clone(),
+        common_conf.bot_rpc_listen_addr.clone(),
     );
     tokio::spawn(bot_rpc_server.run());
 
@@ -80,9 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::spawn(manager.run());
 
-    let worker_pool = vmworkerpool::VmWorkerPool::new(WorkerLaunchConfig {
-        cmd: config.vmworker_bin_path.clone(),
-    });
+    let worker_pool = vmworkerpool::VmWorkerPool::new(vm_worker_launch_config);
 
     #[cfg(target_family = "unix")]
     worker_listener::listen_for_workers("/tmp/botloader_scheduler_workers", worker_pool.clone())
@@ -151,15 +154,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("shutting down....");
 
     let _ = task.await;
-
-    Ok(())
 }
 
-#[derive(Clone, clap::Parser)]
+#[derive(Clone, clap::Parser, Debug)]
 pub struct SchedulerConfig {
-    #[clap(flatten)]
-    pub(crate) common: common::config::RunConfig,
-
     #[clap(
         long,
         env = "BL_BROKER_RPC_CONNECT_ADDR",
@@ -170,13 +168,12 @@ pub struct SchedulerConfig {
     #[clap(long)]
     pub integration_tests_guild: Option<NonZeroU64>,
 
-    #[clap(
-        long,
-        env = "BL_VMWORKER_BIN_PATH",
-        default_value = "../../target/debug/vmworker"
-    )]
-    pub vmworker_bin_path: String,
-
+    // #[clap(
+    //     long,
+    //     env = "BL_VMWORKER_BIN_PATH",
+    //     default_value = "../../target/debug/vmworker"
+    // )]
+    // pub vmworker_bin_path: String,
     #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS_FREE", default_value = "2")]
     pub(crate) num_workers_free: u16,
     #[clap(long, env = "BL_SCHEDULER_NUM_WORKERS_LITE", default_value = "0")]

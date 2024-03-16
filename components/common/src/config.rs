@@ -1,6 +1,6 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 
-#[derive(Clone, clap::Parser)]
+#[derive(Clone, clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct RunConfig {
     #[clap(short, long, env = "DISCORD_BOT_TOKEN")]

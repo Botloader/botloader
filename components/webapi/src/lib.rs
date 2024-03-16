@@ -40,13 +40,17 @@ type CurrentConfigStore = Postgres;
 type AuthHandlerData = AuthHandlers<InMemoryCsrfStore, CurrentSessionStore>;
 type ApiResult<T> = Result<T, ApiErrorResponse>;
 
-#[tokio::main]
-async fn main() {
-    let web_conf: WebConfig = common::load_config();
-    common::setup_tracing(&web_conf.common, "webapi");
-    common::setup_metrics("0.0.0.0:7801");
+pub async fn run(
+    common_conf: common::config::RunConfig,
+    web_conf: WebConfig,
+    setup_tracing_and_metrics: bool,
+) {
+    if setup_tracing_and_metrics {
+        common::setup_tracing(&common_conf, "webapi");
+        common::setup_metrics("0.0.0.0:7801");
+    }
 
-    let conf = web_conf.common.clone();
+    let conf = common_conf.clone();
 
     info!("starting...");
 
@@ -101,7 +105,7 @@ async fn main() {
         .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
         .layer(Extension(ConfigData {
             oauth_client: oatuh_client,
-            frontend_base: web_conf.common.frontend_host_base.clone(),
+            frontend_base: common_conf.frontend_host_base.clone(),
         }))
         .layer(TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)))
         .layer(Extension(bot_rpc_client))
@@ -353,11 +357,8 @@ fn init_stripe_client(db: Postgres, config: &WebConfig) -> Option<stripe_premium
     }
 }
 
-#[derive(Clone, clap::Parser)]
+#[derive(Clone, clap::Parser, Debug)]
 pub struct WebConfig {
-    #[clap(flatten)]
-    pub(crate) common: common::config::RunConfig,
-
     #[clap(long, env = "BL_NEWS_CHANNELS", default_value = "")]
     pub(crate) news_channels: String,
 

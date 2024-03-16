@@ -252,6 +252,8 @@ impl VmWorkerPool {
         info!("spawning vm worker");
 
         let mut cmd = Command::new(&self.launch_config.cmd);
+        cmd.args(&self.launch_config.args);
+
         // cmd.stdin(Stdio::piped());
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -395,6 +397,7 @@ fn init_worker_handles(
 #[derive(Clone)]
 pub struct WorkerLaunchConfig {
     pub cmd: String,
+    pub args: Vec<String>,
 }
 
 const MAX_PREMIUM_SLOT_TIER: usize = 2;

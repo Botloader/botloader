@@ -1,6 +1,13 @@
 [workspace]
 members = ["components/*", "cmd/*"]
-exclude = ["cmd/dbmigrations", "cmd/schedulerwithworker"]
+exclude = [
+    "cmd/dbmigrations",
+    "cmd/schedulerwithworker",
+    "cmd/scheduler",
+    "cmd/vmworker",
+    "cmd/webapi",
+    "cmd/discordbroker",
+]
 resolver = "2"
 
 [workspace.dependencies]

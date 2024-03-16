@@ -12,9 +12,7 @@ use vm::vm::{CreateRt, VmCommand, VmEvent, VmShutdownHandle};
 
 mod metrics_forwarder;
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config: WorkerConfig = common::load_config();
+pub async fn run(config: WorkerConfig) -> Result<(), Box<dyn std::error::Error>> {
     common::setup_tracing(&config.common, "vmworker");
 
     let discord_config = common::fetch_discord_config(config.common.discord_token.clone())

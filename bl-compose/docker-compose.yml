@@ -13,14 +13,16 @@ services:
   broker:
     depends_on:
       - db
-    image: botloader/bl-broker:latest
+    image: botloader/backend:latest
+    command: discord-broker
     env_file: .env
-    restart: always
+    restart: always    
 
   schedulerwithworker:
     depends_on:
       - broker
-    image: botloader/bl-schedulerwithworker:latest
+    image: botloader/backend:latest
+    command: scheduler
     env_file: .env
     restart: always
 
@@ -28,7 +30,8 @@ services:
     restart: always
     depends_on:
       - schedulerwithworker
-    image: botloader/bl-webapi:latest
+    image: botloader/backend:latest
+    command: web-api
     env_file: .env
     ports:
       - 7447:7447
