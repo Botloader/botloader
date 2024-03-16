@@ -1,4 +1,6 @@
-import { sendScriptCompletion } from "lib";
+import { runOnce, sendScriptCompletion } from "lib";
 
-console.log("fun times");
-sendScriptCompletion();
+runOnce("basic.ts", () => {
+    console.log("fun times");
+    sendScriptCompletion();
+})

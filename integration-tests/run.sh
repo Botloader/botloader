@@ -11,19 +11,5 @@ cd -
 
 RUST_LOG=info,sqlx=error cargo run --bin prepare-integration-tests -- --scripts-path ./ --guild-id '531120790318350336' $@
 
-# compile worker
-cargo build --bin vmworker
-cargo build --bin discordbroker
-
-# run
-trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
-
-# broker
-echo "running broker"
-../target/debug/discordbroker &
-sleep 3
-
-echo "running scheduler"
-
-# scheduler
-cargo run --bin scheduler -- --integration-tests-guild '531120790318350336' --vmworker-bin-path "../target/debug/vmworker" #--guild-whitelist-disabled=true
+# run tests 
+cargo run --bin backend -- full --integration-tests-guild '531120790318350336'
