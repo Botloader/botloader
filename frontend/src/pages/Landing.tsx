@@ -2,7 +2,6 @@ import { Box, Button, Container, Divider, Typography } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import { BlLink } from '../components/BLLink';
 import showcase_editor from '../img/showcase_editor.png';
-import showcase_plugins from '../img/showcase_plugins.png';
 import showcase_plugin_settings from '../img/showcase_plugin_settings.png';
 import { ViewPlugins } from './plugins/Plugins';
 
