@@ -36,6 +36,10 @@ export const TopBarNavPages = [{
     label: "Plugins",
     path: "/plugins",
     useHref: false,
+}, {
+    label: "Discord Server",
+    path: "https://discord.gg/GhUeYeekdu",
+    useHref: true,
 }]
 
 export function TopNav() {
