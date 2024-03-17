@@ -24,7 +24,7 @@ let context = createFetchDataContext<Plugin[]>();
 export function ViewPlugins() {
     const session = useSession();
 
-    return <Container>
+    return <Container maxWidth={false}>
         <FetchDataGuarded
             loader={async () => await session.apiClient.getPublishedPublicPlugins()}
             context={context}>
