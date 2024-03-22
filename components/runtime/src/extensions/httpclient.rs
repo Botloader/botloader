@@ -105,8 +105,10 @@ fn handle_response(
 ) -> Result<ClientHttpResponse, AnyError> {
     let mut resp_headers = HashMap::<String, String>::new();
     for (k, v) in resp.headers() {
-        resp_headers.insert(k.to_string(), v.to_str()?.to_string());
+        let header_value = String::from_utf8(v.as_bytes().to_owned())?;
+        resp_headers.insert(k.to_string(), header_value);
     }
+
     let status_code = resp.status();
 
     // response body resource
