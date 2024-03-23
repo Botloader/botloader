@@ -1,4 +1,4 @@
-import { Box, Button, Container, Divider, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CardMedia, Container, Divider, Typography } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2/Grid2';
 import { BlLink } from '../components/BLLink';
 import showcase_editor from '../img/showcase_editor.png';
@@ -25,56 +25,47 @@ export function LandingPage() {
 
                 <Grid2
                     container
-                    padding={2}
-                    alignItems={"center"}
-                    marginTop={1}
-                >
-                    <Grid2 sm={6} xs={12}>
-                        <Typography variant='h6'>Plugins</Typography>
-                        <Typography color={"text.secondary"}>
-                            Use already crafted plugins from both the community and the bot authors to add functionality to your discord server without any coding.<br />
-                            Plugins can be configured in the web interface without touching the code.
-                        </Typography>
-                        <Typography>You can see a list of available plugins <BlLink to='/plugins'>On the plugin page</BlLink></Typography>
-                    </Grid2>
-                    <Grid2 sm={6} xs={12} overflow={"hidden"}>
-                        <img src={showcase_plugin_settings} alt="editor_screenshot" style={{
-                            borderRadius: "10px",
-                            marginTop: "20px",
-                            objectFit: "contain",
-                            maxWidth: "100%",
-                        }}></img>
-                    </Grid2>
-                    {/* <Grid2 sm={3} xs={12} overflow={"hidden"}>
-                        <img src={showcase_plugins} alt="editor_screenshot" style={{
-                            borderRadius: "10px",
-                            marginTop: "20px",
-                            objectFit: "contain",
-                            maxWidth: "100%",
-                        }}></img>
-                    </Grid2> */}
-                </Grid2>
-
-                <Grid2
-                    container
                     spacing={2}
                     padding={5}
-                    alignItems={"center"}
+                    alignItems={"stretch"}
                 >
-                    <Grid2 sm={6} xs={12}>
-                        <Typography variant='h6'>Fully Programmable</Typography>
-                        <Typography color={"text.secondary"}>
-                            Create custom scripts for your server in TypeScript using either the online editor or the vs code extension.<br />
-                            We provide API's for storage, timers, scheduled tasks, configuration and more!
-                        </Typography>
+                    <Grid2 xs={12} md={6}>
+                        <Card sx={{ height: "100%" }}>
+                            <CardMedia
+                                component="img"
+                                src={showcase_plugin_settings}
+                                alt="plugin showcase"
+                            />
+                            <CardContent>
+                                <Typography gutterBottom variant="h5" component="div">
+                                    Plugins
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    Use already crafted plugins from both the community and the bot authors to add functionality to your discord server without any coding.<br />
+                                    Plugins can be configured in the web interface without touching the code.
+                                </Typography>
+                                <Typography mt={2} color="text.secondary">You can see a list of available plugins <BlLink to='/plugins'>On the plugin page</BlLink></Typography>
+                            </CardContent>
+                        </Card>
                     </Grid2>
-                    <Grid2 sm={6} xs={12} overflow={"hidden"}>
-                        <img src={showcase_editor} alt="editor_screenshot" style={{
-                            borderRadius: "10px",
-                            marginTop: "20px",
-                            objectFit: "contain",
-                            maxWidth: "100%",
-                        }}></img>
+
+                    <Grid2 xs={12} md={6} >
+                        <Card sx={{ height: "100%" }}>
+                            <CardMedia
+                                component="img"
+                                src={showcase_editor}
+                                alt="editor showcase"
+                            />
+                            <CardContent>
+                                <Typography gutterBottom variant="h5" component="div">
+                                    Fully Programmable
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    Create custom scripts for your server in TypeScript using either the online editor or the vs code extension.<br />
+                                    We provide API's for storage, timers, scheduled tasks, configuration and more!
+                                </Typography>
+                            </CardContent>
+                        </Card>
                     </Grid2>
                 </Grid2>
 
