@@ -1,21 +1,25 @@
 use axum::{
-    extract::{Extension, Path},
+    extract::{Path, State},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use twilight_model::id::{marker::GuildMarker, Id};
 
-use crate::{errors::ApiErrorResponse, ApiResult};
+use crate::{app_state::AppState, errors::ApiErrorResponse, ApiResult};
 
 use tracing::error;
 
 pub async fn get_worker_statuses(
-    Extension(bot_rpc): Extension<botrpc::Client>,
+    State(state): State<AppState>,
 ) -> ApiResult<Json<Vec<ApiVmWorkerStatus>>> {
-    let response = bot_rpc.get_vm_worker_statuses().await.map_err(|err| {
-        error!(%err, "failed retrieving vm worker statuses");
-        ApiErrorResponse::InternalError
-    })?;
+    let response = state
+        .bot_rpc_client
+        .get_vm_worker_statuses()
+        .await
+        .map_err(|err| {
+            error!(%err, "failed retrieving vm worker statuses");
+            ApiErrorResponse::InternalError
+        })?;
 
     Ok(Json(
         response
@@ -40,16 +44,20 @@ pub struct GuildIdParam {
 
 pub async fn get_guild_status(
     Path(params): Path<GuildIdParam>,
-    Extension(bot_rpc): Extension<botrpc::Client>,
+    State(state): State<AppState>,
 ) -> ApiResult<Json<ApiGuildStatusResponse>> {
     let Some(guild_id) = Id::new_checked(params.guild_id) else {
         return Err(ApiErrorResponse::NoActiveGuild);
     };
 
-    let status = bot_rpc.get_guild_status(guild_id).await.map_err(|err| {
-        error!(%err, "failed retrieving guild status");
-        ApiErrorResponse::InternalError
-    })?;
+    let status = state
+        .bot_rpc_client
+        .get_guild_status(guild_id)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed retrieving guild status");
+            ApiErrorResponse::InternalError
+        })?;
 
     Ok(Json(ApiGuildStatusResponse {
         guild_id,

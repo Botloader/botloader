@@ -16,6 +16,7 @@ use crate::{
 use dbrokerapi::broker_scheduler_rpc::{DiscordEvent, DiscordEventData, HelloData};
 use guild_logger::LogEntry;
 use std::future::Future;
+use stores::Db;
 use tokio::sync::{mpsc, oneshot};
 use tracing::info;
 use twilight_model::id::{marker::GuildMarker, Id};
@@ -37,7 +38,7 @@ pub struct Scheduler {
     cmd_rx: mpsc::UnboundedReceiver<SchedulerCommand>,
     queued_events: Vec<DiscordEvent>,
     pending_starts: Vec<Id<GuildMarker>>,
-    stores: Arc<dyn Store>,
+    stores: Db,
     logger: guild_logger::LogSender,
     cmd_manager_handle: command_manager::Handle,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
@@ -50,7 +51,7 @@ impl Scheduler {
     pub fn new(
         config: Arc<SchedulerConfig>,
         scheduler_rx: mpsc::UnboundedReceiver<SchedulerCommand>,
-        stores: Arc<dyn Store>,
+        stores: Db,
         logger: guild_logger::LogSender,
         cmd_manager_handle: command_manager::Handle,
         worker_pool: crate::vmworkerpool::VmWorkerPool,
@@ -382,10 +383,6 @@ impl<'a> Future for SchedulerNextActionFuture<'a> {
         Poll::Pending
     }
 }
-
-pub trait Store: stores::config::ConfigStore + stores::timers::TimerStore {}
-
-impl<T: stores::config::ConfigStore + stores::timers::TimerStore> Store for T {}
 
 #[derive(Debug)]
 enum SuspensionReason {

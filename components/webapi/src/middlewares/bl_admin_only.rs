@@ -1,21 +1,22 @@
+use axum::extract::State;
 use axum::Extension;
 use axum::{extract::Request, middleware::Next, response::Response};
 
 use tracing::error;
 
-use stores::config::ConfigStore;
-
-use crate::{errors::ApiErrorResponse, CurrentConfigStore, CurrentSessionStore};
+use crate::app_state::AppState;
+use crate::errors::ApiErrorResponse;
 
 use super::LoggedInSession;
 
 pub async fn bl_admin_only_mw(
-    session: Extension<LoggedInSession<CurrentSessionStore>>,
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
+    session: Extension<LoggedInSession>,
     request: Request,
     next: Next,
 ) -> Result<Response, ApiErrorResponse> {
-    let user_meta = config_store
+    let user_meta = state
+        .db
         .get_user_meta(session.session.user.id.get())
         .await
         .map_err(|err| {

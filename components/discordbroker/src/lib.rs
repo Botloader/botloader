@@ -1,6 +1,6 @@
 use std::sync::{atomic::AtomicBool, Arc};
 
-use stores::postgres::Postgres;
+use stores::Db;
 use tracing::info;
 use twilight_cache_inmemory::InMemoryCacheBuilder;
 
@@ -27,11 +27,7 @@ pub async fn run(
     // let scheduler_client =
     //     Arc::new(new_scheuler_rpc_client(config.scheduler_rpc_broker_connect_addr.clone()).await?);
 
-    let postgres_store = Arc::new(
-        Postgres::new_with_url(&common_conf.database_url)
-            .await
-            .unwrap(),
-    );
+    let postgres_store = Db::new_with_url(&common_conf.database_url).await.unwrap();
 
     let ready = Arc::new(AtomicBool::new(false));
     let handle = run_broker(

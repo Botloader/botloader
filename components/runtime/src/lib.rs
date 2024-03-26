@@ -8,11 +8,7 @@ use common::DiscordConfig;
 use deno_core::{op2, Extension, Op, OpState, ResourceId, ResourceTable};
 use guild_logger::{entry::CreateLogEntry, GuildLogSender};
 use runtime_models::internal::script::{ScriptMeta, SettingsOptionValue};
-use stores::{
-    bucketstore::BucketStore,
-    config::{ConfigStore, PremiumSlotTier},
-    timers::TimerStore,
-};
+use stores::{config::PremiumSlotTier, Db};
 use tokio::sync::mpsc;
 use tracing::info;
 use twilight_model::id::marker::GuildMarker;
@@ -54,9 +50,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             premium_tier,
             main_tokio_runtime: ctx.main_tokio_runtime,
 
-            bucket_store: ctx.bucket_store.clone(),
-            config_store: ctx.config_store.clone(),
-            timer_store: ctx.timer_store.clone(),
+            db: ctx.db,
         };
 
         vec![
@@ -165,9 +159,7 @@ pub struct RuntimeContext {
     pub premium_tier: Option<PremiumSlotTier>,
     pub main_tokio_runtime: tokio::runtime::Handle,
 
-    pub bucket_store: Arc<dyn BucketStore>,
-    pub config_store: Arc<dyn ConfigStore>,
-    pub timer_store: Arc<dyn TimerStore>,
+    pub db: Db,
 }
 
 #[derive(Clone)]
@@ -182,9 +174,7 @@ pub struct CreateRuntimeContext {
     pub main_tokio_runtime: tokio::runtime::Handle,
     pub settings_values: Vec<ScriptSettingsValues>,
 
-    pub bucket_store: Arc<dyn BucketStore>,
-    pub config_store: Arc<dyn ConfigStore>,
-    pub timer_store: Arc<dyn TimerStore>,
+    pub db: Db,
 }
 
 #[derive(Clone)]

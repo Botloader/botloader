@@ -4,9 +4,9 @@ use common::DiscordConfig;
 use guild_logger::LogSender;
 use runtime::{CreateRuntimeContext, RuntimeEvent, ScriptSettingsValues};
 use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
-use stores::{config::PremiumSlotTier, postgres::Postgres};
+use stores::{config::PremiumSlotTier, Db};
 use tokio::sync::mpsc;
-use tracing::{error, info, instrument};
+use tracing::{error, info, instrument}; 
 use twilight_model::id::{marker::GuildMarker, Id};
 use vm::vm::{CreateRt, VmCommand, VmEvent, VmShutdownHandle};
 
@@ -34,11 +34,9 @@ pub async fn run(config: WorkerConfig) -> Result<(), Box<dyn std::error::Error>>
     })
     .expect("set metrics recorder");
 
-    let postgres_store = Arc::new(
-        Postgres::new_with_url(&config.common.database_url)
+    let postgres_store = Db::new_with_url(&config.common.database_url)
             .await
-            .unwrap(),
-    );
+            .unwrap();
 
     // suppress signals for now
     // TODO: remove this? do we need signals here?
@@ -109,7 +107,7 @@ struct Worker {
     broker_client: dbrokerapi::state_client::Client,
 
     premium_tier: Arc<RwLock<Option<PremiumSlotTier>>>,
-    stores: Arc<Postgres>,
+    stores: Db,
     current_state: Option<WorkerState>,
 }
 
@@ -117,7 +115,7 @@ impl Worker {
     fn new(
         scheduler_rx: mpsc::UnboundedReceiver<SchedulerMessage>,
         scheduler_tx: mpsc::UnboundedSender<WorkerMessage>,
-        stores: Arc<Postgres>,
+        stores: Db,
         guild_logger: LogSender,
         discord_config: Arc<DiscordConfig>,
         user_http_proxy: Option<String>,
@@ -357,11 +355,8 @@ impl Worker {
                     settings_values: v.settings_values.clone(),
                 })
                 .collect(),
- 
-            bucket_store: self.stores.clone(),
-            config_store: self.stores.clone(),
-            timer_store: self.stores.clone(),
-
+    
+            db: self.stores.clone(),
             event_tx: self.runtime_evt_tx.clone(),
         };
 

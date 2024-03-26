@@ -1,5 +1,8 @@
 use axum::{
-    extract::Path, extract::Request, middleware::Next, response::Response, RequestPartsExt,
+    extract::{Path, Request},
+    middleware::Next,
+    response::Response,
+    RequestPartsExt,
 };
 
 use tracing::{error, Instrument};
@@ -8,8 +11,6 @@ use twilight_model::{
     id::{marker::GuildMarker, Id},
     user::CurrentUserGuild,
 };
-
-use stores::web::SessionStore;
 
 use crate::errors::ApiErrorResponse;
 
@@ -20,20 +21,17 @@ struct GuildPath {
     guild: u64,
 }
 
-pub async fn current_guild_injector_middleware<ST>(
+pub async fn current_guild_injector_middleware(
     request: Request,
     next: Next,
-) -> Result<Response, ApiErrorResponse>
-where
-    ST: SessionStore + Send + Sync + 'static,
-{
+) -> Result<Response, ApiErrorResponse> {
     // running extractors requires a `axum::http::request::Parts`
     let (mut parts, body) = request.into_parts();
 
     let guild_path: Result<Path<GuildPath>, _> = parts.extract().await;
     let mut request = Request::from_parts(parts, body);
 
-    let session: Option<&LoggedInSession<ST>> = request.extensions().get();
+    let session: Option<&LoggedInSession> = request.extensions().get();
 
     let mut span = None;
 
@@ -53,8 +51,8 @@ where
     })
 }
 
-async fn fetch_guild<ST: SessionStore + Send + 'static>(
-    session: &LoggedInSession<ST>,
+async fn fetch_guild(
+    session: &LoggedInSession,
     guild_id: Id<GuildMarker>,
 ) -> Result<Option<CurrentUserGuild>, ApiErrorResponse> {
     let user_guilds = session
@@ -65,6 +63,7 @@ async fn fetch_guild<ST: SessionStore + Send + 'static>(
             error!(?err, "failed fetching user guild");
             ApiErrorResponse::InternalError
         })?;
+
     Ok(user_guilds.into_iter().find(|e| e.id == guild_id))
 }
 

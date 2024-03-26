@@ -8,15 +8,15 @@ use axum::{
     routing::{delete, get, patch, post},
     BoxError, Router,
 };
-use oauth2::basic::BasicClient;
+
 use routes::auth::AuthHandlers;
-use stores::{inmemory::web::InMemoryCsrfStore, postgres::Postgres};
-use stripe_premium::webhook_handler::StripeWebhookSecret;
+use stores::inmemory::web::InMemoryCsrfStore;
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-use tracing::{error, info, warn, Level};
+use tracing::{error, info, Level};
 use twilight_model::id::{marker::GuildMarker, Id};
 
+mod app_state;
 mod errors;
 mod middlewares;
 mod news_poller;
@@ -29,15 +29,6 @@ use crate::middlewares::{
 };
 use crate::{errors::ApiErrorResponse, middlewares::current_guild_injector_middleware};
 
-#[derive(Clone)]
-pub struct ConfigData {
-    oauth_client: BasicClient,
-    frontend_base: String,
-}
-
-type CurrentSessionStore = Postgres;
-type CurrentConfigStore = Postgres;
-type AuthHandlerData = AuthHandlers<InMemoryCsrfStore, CurrentSessionStore>;
 type ApiResult<T> = Result<T, ApiErrorResponse>;
 
 pub async fn run(
@@ -54,82 +45,42 @@ pub async fn run(
 
     info!("starting...");
 
-    let discord_config = common::discord::fetch_discord_config(conf.discord_token.clone())
-        .await
-        .unwrap();
+    let state = app_state::init_app_state(&common_conf, &web_conf).await;
 
-    let news_handle = if let Some(guild_id) = web_conf.news_guild {
-        let split = web_conf.news_channels.split(',');
+    let auth_handler =
+        routes::auth::AuthHandlers::new(state.db.clone(), InMemoryCsrfStore::default());
 
-        let poller = news_poller::NewsPoller::new(
-            discord_config.clone(),
-            split
-                .into_iter()
-                .map(|v| Id::new(v.parse().unwrap()))
-                .collect(),
-            guild_id,
-        )
-        .await
-        .unwrap();
-
-        let handle = poller.handle();
-        info!("running news poller");
-        tokio::spawn(poller.run());
-        handle
-    } else {
-        Default::default()
-    };
-
-    let oatuh_client = conf.get_discord_oauth2_client();
-
-    let postgres_store = Postgres::new_with_url(&conf.database_url).await.unwrap();
-    let config_store: CurrentConfigStore = postgres_store.clone();
-    let session_store: CurrentSessionStore = postgres_store.clone();
-    let bot_rpc_client = botrpc::Client::new(conf.bot_rpc_connect_addr.clone())
-        .await
-        .expect("failed connecting to bot rpc");
-
-    let auth_handler: AuthHandlerData =
-        routes::auth::AuthHandlers::new(session_store.clone(), InMemoryCsrfStore::default());
-
-    let stripe_client = init_stripe_client(postgres_store.clone(), &web_conf);
-    let session_layer = SessionLayer::new(session_store.clone(), oatuh_client.clone());
+    let session_layer = SessionLayer::new(state.db.clone(), state.discord_oauth_client.clone());
     let require_auth_layer = session_layer.require_auth_layer();
     let client_cache = session_layer.oauth_api_client_cache.clone();
-    let state_client = dbrokerapi::state_client::Client::new(web_conf.broker_api_addr);
 
     let common_middleware_stack = ServiceBuilder::new()
         .layer(axum_metrics_layer::MetricsLayer {
             name_prefix: "bl.webapi",
         })
         .layer(HandleErrorLayer::new(handle_mw_err_internal_err))
-        .layer(Extension(ConfigData {
-            oauth_client: oatuh_client,
-            frontend_base: common_conf.frontend_host_base.clone(),
-        }))
+        // .layer(Extension(ConfigData {
+        //     oauth_client: oatuh_client,
+        //     frontend_base: common_conf.frontend_host_base.clone(),
+        // }))
         .layer(TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().level(Level::INFO)))
-        .layer(Extension(bot_rpc_client))
+        // .layer(Extension(bot_rpc_client))
         .layer(Extension(Arc::new(auth_handler)))
-        .layer(Extension(config_store))
-        .layer(Extension(session_store.clone()))
+        // .layer(Extension(config_store))
+        // .layer(Extension(session_store.clone()))
         .layer(Extension(client_cache))
-        .layer(Extension(news_handle))
-        .layer(Extension(discord_config))
-        .layer(Extension(state_client))
-        .layer(Extension(Arc::new(stripe_client)))
-        .layer(Extension(StripeWebhookSecret::new(
-            web_conf.stripe_webhook_secret.unwrap_or_default(),
-        )))
-        .layer(Extension(OptionalSession::<CurrentSessionStore>::none()))
+        // .layer(Extension(news_handle))
+        // .layer(Extension(discord_config))
+        // .layer(Extension(state_client))
+        .layer(Extension(Arc::new(state.stripe_client.clone())))
+        .layer(Extension(OptionalSession::none()))
         .layer(session_layer)
         .layer(CorsLayer {
             run_config: conf.clone(),
         });
 
     let auth_guild_mw_stack = ServiceBuilder::new()
-        .layer(axum::middleware::from_fn(
-            current_guild_injector_middleware::<CurrentSessionStore>,
-        ))
+        .layer(axum::middleware::from_fn(current_guild_injector_middleware))
         .layer(axum::middleware::from_fn(
             require_current_guild_admin_middleware,
         ));
@@ -140,17 +91,17 @@ pub async fn run(
             "/guild/:guild_id/status",
             get(routes::admin::get_guild_status),
         )
-        .layer(axum::middleware::from_fn(bl_admin_only_mw));
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            bl_admin_only_mw,
+        ));
 
     let authorized_api_guild_routes = Router::new()
         .route("/reload_vm", post(routes::vm::reload_guild_vm))
-        .route(
-            "/settings",
-            get(routes::guilds::get_guild_settings::<CurrentSessionStore>),
-        )
+        .route("/settings", get(routes::guilds::get_guild_settings))
         .route(
             "/premium_slots",
-            get(routes::guilds::get_guild_premium_slots::<CurrentConfigStore>),
+            get(routes::guilds::get_guild_premium_slots),
         )
         .route(
             "/scripts",
@@ -181,73 +132,58 @@ pub async fn run(
         Router::new()
             .nest("/guilds/:guild", authorized_api_guild_routes)
             .nest("/admin", authorized_admin_routes)
-            .route(
-                "/guilds",
-                get(routes::guilds::list_user_guilds_route::<
-                    CurrentSessionStore,
-                    CurrentConfigStore,
-                >),
-            )
+            .route("/guilds", get(routes::guilds::list_user_guilds_route))
             .route(
                 "/premium_slots/:slot_id/update_guild",
-                post(
-                    routes::premium::update_premium_slot_guild::<
-                        CurrentSessionStore,
-                        CurrentConfigStore,
-                    >,
-                ),
+                post(routes::premium::update_premium_slot_guild),
             )
             .route(
                 "/premium_slots",
-                get(routes::premium::list_user_premium_slots::<
-                    CurrentSessionStore,
-                    CurrentConfigStore,
-                >),
+                get(routes::premium::list_user_premium_slots),
             )
             .route(
                 "/sessions",
-                get(routes::sessions::get_all_sessions::<CurrentSessionStore>)
-                    .delete(routes::sessions::del_session::<CurrentSessionStore>)
-                    .put(routes::sessions::create_api_token::<CurrentSessionStore>),
+                get(routes::sessions::get_all_sessions)
+                    .delete(routes::sessions::del_session)
+                    .put(routes::sessions::create_api_token),
             )
-            .route(
-                "/sessions/all",
-                delete(routes::sessions::del_all_sessions::<CurrentSessionStore>),
-            )
-            .route(
-                "/current_user",
-                get(routes::general::get_current_user::<CurrentSessionStore>),
-            )
+            .route("/sessions/all", delete(routes::sessions::del_all_sessions))
+            .route("/current_user", get(routes::general::get_current_user))
             .route(
                 "/user/plugins",
                 get(routes::plugins::get_user_plugins).put(routes::plugins::create_plugin),
             )
             .route(
                 "/user/plugins/:plugin_id",
-                patch(routes::plugins::update_plugin_meta)
-                    .layer(axum::middleware::from_fn(plugin_middleware)),
+                patch(routes::plugins::update_plugin_meta).layer(
+                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
+                ),
             )
             .route(
                 "/user/plugins/:plugin_id/dev_version",
-                patch(routes::plugins::update_plugin_dev_source)
-                    .layer(axum::middleware::from_fn(plugin_middleware)),
+                patch(routes::plugins::update_plugin_dev_source).layer(
+                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
+                ),
             )
             .route(
                 "/user/plugins/:plugin_id/publish_script_version",
-                post(routes::plugins::publish_plugin_version)
-                    .layer(axum::middleware::from_fn(plugin_middleware)),
+                post(routes::plugins::publish_plugin_version).layer(
+                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
+                ),
             )
             .route(
                 "/user/plugins/:plugin_id/images",
-                post(routes::plugins::add_plugin_image)
-                    .layer(axum::middleware::from_fn(plugin_middleware)),
+                post(routes::plugins::add_plugin_image).layer(
+                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
+                ),
             )
             .route(
                 "/user/plugins/:plugin_id/images/:image_id",
-                delete(routes::plugins::delete_plugin_image)
-                    .layer(axum::middleware::from_fn(plugin_middleware)),
+                delete(routes::plugins::delete_plugin_image).layer(
+                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
+                ),
             )
-            .route("/logout", post(AuthHandlerData::handle_logout))
+            .route("/logout", post(AuthHandlers::handle_logout))
             .route(
                 "/stripe/customer_portal",
                 post(routes::stripe::handle_create_customer_portal_session),
@@ -267,7 +203,7 @@ pub async fn run(
 
     let public_routes = Router::new()
         .route("/error", get(routes::errortest::handle_errortest))
-        .route("/login", get(AuthHandlerData::handle_login))
+        .route("/login", get(AuthHandlers::handle_login))
         .route(
             "/media/plugins/:plugin_id/images/*image_id_specifier_with_extension",
             get(routes::plugins::get_plugin_image),
@@ -278,26 +214,24 @@ pub async fn run(
         )
         .route(
             "/api/plugins/:plugin_id",
-            get(routes::plugins::get_plugin).layer(axum::middleware::from_fn(plugin_middleware)),
+            get(routes::plugins::get_plugin).layer(axum::middleware::from_fn_with_state(
+                state.clone(),
+                plugin_middleware,
+            )),
         )
         .route("/api/news", get(routes::general::get_news))
-        .route(
-            "/api/ws",
-            get(routes::ws::ws_headler::<CurrentSessionStore>),
-        )
+        .route("/api/ws", get(routes::ws::ws_handler))
         .route(
             "/api/confirm_login",
-            post(AuthHandlerData::handle_confirm_login),
+            post(AuthHandlers::handle_confirm_login),
         )
-        .route(
-            "/api/stripe/webhook",
-            post(stripe_premium::webhook_handler::handle_webhook),
-        );
+        .route("/api/stripe/webhook", post(routes::stripe::handle_webhook));
 
     let app = public_routes
         .merge(authorized_routes)
         .layer(common_middleware_stack)
-        .fallback(|| async { StatusCode::NOT_FOUND });
+        .fallback(|| async { StatusCode::NOT_FOUND })
+        .with_state(state);
 
     info!("Starting hype on address: {}", conf.listen_addr);
 
@@ -322,38 +256,6 @@ async fn handle_mw_err_no_auth(err: BoxError) -> impl IntoResponse {
     match err.downcast::<NoSession>() {
         Ok(_) => ApiErrorResponse::SessionExpired,
         Err(_) => ApiErrorResponse::InternalError,
-    }
-}
-
-fn init_stripe_client(db: Postgres, config: &WebConfig) -> Option<stripe_premium::Client> {
-    match (
-        &config.stripe_private_key,
-        &config.stripe_premium_product_id,
-        &config.stripe_premium_price_id,
-        &config.stripe_lite_product_id,
-        &config.stripe_lite_price_id,
-    ) {
-        (
-            Some(stripe_private_key),
-            Some(stripe_premium_product_id),
-            Some(stripe_premium_price_id),
-            Some(stripe_lite_product_id),
-            Some(stripe_lite_price_id),
-        ) => {
-            info!("Stripe client created");
-            Some(stripe_premium::Client::new(
-                db,
-                stripe_private_key.to_owned(),
-                stripe_lite_product_id.to_owned(),
-                stripe_lite_price_id.to_owned(),
-                stripe_premium_product_id.to_owned(),
-                stripe_premium_price_id.to_owned(),
-            ))
-        }
-        _ => {
-            warn!("One or more stripe settings not provided");
-            None
-        }
     }
 }
 

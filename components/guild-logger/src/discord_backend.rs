@@ -2,20 +2,17 @@ use std::sync::Arc;
 
 use crate::{LogEntry, LogLevel};
 use common::DiscordConfig;
-use stores::config::ConfigStore;
+use stores::Db;
 use tracing::error;
 
 pub struct DiscordLogger {
     discord_config: Arc<DiscordConfig>,
-    config_store: Arc<dyn ConfigStore>,
+    db: Db,
 }
 
 impl DiscordLogger {
-    pub fn new(discord_config: Arc<DiscordConfig>, config_store: Arc<dyn ConfigStore>) -> Self {
-        Self {
-            config_store,
-            discord_config,
-        }
+    pub fn new(discord_config: Arc<DiscordConfig>, db: Db) -> Self {
+        Self { db, discord_config }
     }
 }
 
@@ -28,11 +25,7 @@ impl crate::GuildLoggerBackend for DiscordLogger {
             None => return,
         };
 
-        let conf = match self
-            .config_store
-            .get_guild_meta_config_or_default(guild_id)
-            .await
-        {
+        let conf = match self.db.get_guild_meta_config_or_default(guild_id).await {
             Ok(v) => v,
             Err(err) => {
                 error!(%err, "failed fetching config for guild logging");

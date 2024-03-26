@@ -86,7 +86,7 @@ pub async fn op_botloader_bucket_storage_set(
     check_validate_storage_usage(rt_ctx.guild_id, &rt_ctx, state.clone()).await?;
 
     let entry = rt_ctx
-        .bucket_store
+        .db
         .set(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
@@ -116,7 +116,7 @@ pub async fn op_botloader_bucket_storage_set_if(
     check_validate_storage_usage(rt_ctx.guild_id, &rt_ctx, state.clone()).await?;
 
     let entry = rt_ctx
-        .bucket_store
+        .db
         .set_if(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
@@ -143,7 +143,7 @@ pub async fn op_botloader_bucket_storage_get(
     };
 
     let entry = rt_ctx
-        .bucket_store
+        .db
         .get(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
@@ -167,7 +167,7 @@ pub async fn op_botloader_bucket_storage_del(
     };
 
     let entry = rt_ctx
-        .bucket_store
+        .db
         .del(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
@@ -201,7 +201,7 @@ pub async fn op_botloader_bucket_storage_del_many(
     };
 
     let res = rt_ctx
-        .bucket_store
+        .db
         .del_many(
             rt_ctx.guild_id,
             plugin_id.map(Into::into),
@@ -243,7 +243,7 @@ pub async fn op_botloader_bucket_storage_list(
     };
 
     let entries = rt_ctx
-        .bucket_store
+        .db
         .get_many(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
@@ -271,7 +271,7 @@ pub async fn op_botloader_bucket_storage_count(
     };
 
     let res = rt_ctx
-        .bucket_store
+        .db
         .count(
             rt_ctx.guild_id,
             plugin_id.map(Into::into),
@@ -298,7 +298,7 @@ pub async fn op_botloader_bucket_storage_incr(
     check_validate_storage_usage(rt_ctx.guild_id, &rt_ctx, state.clone()).await?;
 
     let entry = rt_ctx
-        .bucket_store
+        .db
         .incr(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
@@ -333,7 +333,7 @@ pub async fn op_botloader_bucket_storage_sorted_list(
     };
 
     let entries = rt_ctx
-        .bucket_store
+        .db
         .sorted_entries(
             rt_ctx.guild_id,
             args.plugin_id.map(Into::into),
@@ -400,7 +400,7 @@ async fn check_validate_storage_usage(
     if do_check {
         info!("doing a storage check");
         let limit = crate::limits::storage_total_size(&state_rc);
-        let used_storage = ctx.bucket_store.guild_storage_usage_bytes(guild_id).await;
+        let used_storage = ctx.db.guild_storage_usage_bytes(guild_id).await;
 
         let mut state = state_rc.borrow_mut();
         let storage_ctx = state.borrow_mut::<StorageState>();

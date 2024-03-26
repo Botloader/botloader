@@ -1,15 +1,13 @@
-use std::{ops::Add, sync::Arc};
+use std::ops::Add;
 
 use chrono::{DateTime, Utc};
 use runtime_models::internal::script::{ScriptMeta, TaskBucketId};
-use stores::timers::ScheduledTask;
+use stores::{timers::ScheduledTask, Db};
 use tracing::{error, info};
 use twilight_model::id::{marker::GuildMarker, Id};
 
-use crate::scheduler;
-
 pub struct Manager {
-    storage: Arc<dyn scheduler::Store>,
+    storage: Db,
     guild_id: Id<GuildMarker>,
 
     // outer option: none if not fetched, some if fetched
@@ -21,7 +19,7 @@ pub struct Manager {
 }
 
 impl Manager {
-    pub fn new(guild_id: Id<GuildMarker>, storage: Arc<dyn scheduler::Store>) -> Self {
+    pub fn new(guild_id: Id<GuildMarker>, storage: Db) -> Self {
         Self {
             storage,
             guild_id,

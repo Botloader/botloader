@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use axum::{extract::Extension, http::StatusCode, routing::get, Json, Router};
 use stores::{
-    config::{ConfigStore, CreateUpdatePremiumSlotBySource, PremiumSlot},
-    postgres::Postgres,
+    config::{CreateUpdatePremiumSlotBySource, PremiumSlot},
+    Db,
 };
 use tracing::{error, info};
 
@@ -15,11 +13,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Launching!");
 
-    let postgres_store = Arc::new(
-        Postgres::new_with_url(&config.common.database_url)
-            .await
-            .unwrap(),
-    );
+    let postgres_store = Db::new_with_url(&config.common.database_url).await.unwrap();
 
     run_http_server(config, postgres_store).await;
 
@@ -39,7 +33,7 @@ pub struct BrokerConfig {
     pub(crate) http_api_listen_addr: String,
 }
 
-pub async fn run_http_server(conf: crate::BrokerConfig, postgres: Arc<Postgres>) {
+pub async fn run_http_server(conf: crate::BrokerConfig, postgres: Db) {
     let app = Router::new()
         .route(
             "/create_update_premium_slots_by_source",
@@ -61,7 +55,7 @@ pub async fn run_http_server(conf: crate::BrokerConfig, postgres: Arc<Postgres>)
 }
 
 async fn handle_post_premium_slots_by_source(
-    Extension(store): Extension<Arc<Postgres>>,
+    Extension(store): Extension<Db>,
     Json(body): Json<Vec<CreateUpdatePremiumSlotBySource>>,
 ) -> Result<Json<Vec<PremiumSlot>>, StatusCode> {
     let mut res = Vec::new();

@@ -3,86 +3,65 @@ use std::{borrow::Cow, convert::Infallible, pin::Pin, task::Poll, time::Duration
 use axum::{
     extract::{
         ws::{CloseCode, CloseFrame, Message, WebSocket, WebSocketUpgrade},
-        Extension,
+        Extension, State,
     },
     response::IntoResponse,
 };
 use discordoauthwrapper::{ClientCache, DiscordOauthApiClient, TwilightApiProvider};
 use futures::{stream::SelectAll, Stream, StreamExt};
 use guild_logger::LogEntry;
-use oauth2::basic::BasicClient;
 use serde::{Deserialize, Serialize};
-use stores::web::SessionStore;
 use twilight_model::{
     guild::Permissions,
     id::{marker::GuildMarker, Id},
     user::CurrentUser,
 };
 
-use crate::{middlewares::LoggedInSession, ConfigData};
+use crate::{app_state::AppState, middlewares::LoggedInSession};
 
-pub async fn ws_headler<ST: SessionStore + Clone + Send + Sync + 'static>(
+pub async fn ws_handler(
     ws: WebSocketUpgrade,
-    Extension(session_store): Extension<ST>,
-    Extension(config_data): Extension<ConfigData>,
-    Extension(bot_rpc): Extension<botrpc::Client>,
     Extension(client_cache): Extension<
-        ClientCache<TwilightApiProvider, oauth2::basic::BasicClient, ST>,
+        ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
     >,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(|socket| {
-        handle_socket_upgrade(
-            socket,
-            session_store,
-            config_data.oauth_client,
-            bot_rpc,
-            client_cache,
-        )
-    })
+    ws.on_upgrade(move |socket| handle_socket_upgrade(socket, client_cache, state))
 }
 
-async fn handle_socket_upgrade<ST: SessionStore + Send + Clone + 'static>(
+async fn handle_socket_upgrade(
     socket: WebSocket,
-    session_store: ST,
-    oauth_client: BasicClient,
-    bot_rpc: botrpc::Client,
-    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient, ST>,
+    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
+    state: AppState,
 ) {
-    WsConn::new(socket, session_store, oauth_client, bot_rpc, client_cache)
-        .run()
-        .await;
+    WsConn::new(socket, client_cache, state).run().await;
 }
 
-struct WsConn<ST> {
-    session_store: ST,
+struct WsConn {
     socket: WebSocket,
-    oauth_client: BasicClient,
-    bot_rpc: botrpc::Client,
-    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient, ST>,
+    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
 
     active_log_streams: SelectAll<GuildLogStream>,
 
-    state: WsState<ST>,
+    app_state: AppState,
+
+    state: WsState,
 }
 
 type WsResult = Result<(), WsCloseReason>;
 
-impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
+impl WsConn {
     fn new(
         socket: WebSocket,
-        session_store: ST,
-        oauth_client: BasicClient,
-        bot_rpc: botrpc::Client,
-        client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient, ST>,
+        client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
+        state: AppState,
     ) -> Self {
         Self {
             socket,
-            session_store,
-            oauth_client,
-            bot_rpc,
-            client_cache,
             active_log_streams: SelectAll::new(),
             state: WsState::UnAuth,
+            app_state: state,
+            client_cache,
         }
     }
 
@@ -216,7 +195,8 @@ impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
 
     async fn do_login(&mut self, token: String) -> WsResult {
         if let Some(session) = self
-            .session_store
+            .app_state
+            .db
             .get_session(&token)
             .await
             .map_err(|_| WsCloseReason::InternalError)?
@@ -227,8 +207,8 @@ impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
                     Result::<_, Infallible>::Ok(DiscordOauthApiClient::new_twilight(
                         session.user.id,
                         session.oauth_token.access_token.clone(),
-                        self.oauth_client.clone(),
-                        self.session_store.clone(),
+                        self.app_state.discord_oauth_client.clone(),
+                        self.app_state.db.clone(),
                     ))
                 })
                 .unwrap();
@@ -270,7 +250,8 @@ impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
         self.check_guild_acces(guild_id).await?;
 
         let stream = self
-            .bot_rpc
+            .app_state
+            .bot_rpc_client
             .guild_log_stream(guild_id)
             .await
             .map_err(|_| WsCloseReason::BotRpcError)?;
@@ -361,13 +342,13 @@ impl<ST: SessionStore + Clone + 'static> WsConn<ST> {
 }
 
 #[allow(clippy::large_enum_variant)]
-enum WsState<ST> {
+enum WsState {
     UnAuth,
-    Authorized(AuthorizedWsState<ST>),
+    Authorized(AuthorizedWsState),
 }
 
-struct AuthorizedWsState<ST> {
-    session: LoggedInSession<ST>,
+struct AuthorizedWsState {
+    session: LoggedInSession,
 }
 
 /// Event is something that is transferred from server -> client

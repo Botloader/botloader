@@ -3,10 +3,9 @@ use std::str::FromStr;
 use chrono::DateTime;
 use stores::{
     config::{
-        ConfigStore, ConfigStoreError, CreateUpdatePremiumSlotBySource, PremiumSlotState,
-        PremiumSlotTier,
+        ConfigStoreError, CreateUpdatePremiumSlotBySource, PremiumSlotState, PremiumSlotTier,
     },
-    postgres::Postgres,
+    Db,
 };
 use stripe::{
     BillingPortalSession, CheckoutSession, CheckoutSessionMode, CreateBillingPortalSession,
@@ -19,9 +18,10 @@ use twilight_model::id::{marker::UserMarker, Id};
 
 pub mod webhook_handler;
 
+#[derive(Clone)]
 pub struct Client {
     client: stripe::Client,
-    db: Postgres,
+    db: Db,
 
     lite_product_id: String,
     lite_price_id: String,
@@ -31,7 +31,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(
-        db: Postgres,
+        db: Db,
         secret_key: String,
         lite_product_id: String,
         lite_price_id: String,

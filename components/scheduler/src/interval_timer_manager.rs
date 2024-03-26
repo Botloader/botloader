@@ -1,14 +1,13 @@
-use std::{collections::HashMap, ops::Add, str::FromStr, sync::Arc};
+use std::{collections::HashMap, ops::Add, str::FromStr};
 
 use chrono::{DateTime, Duration, Utc};
 use stores::{
     config::IntervalTimerContrib,
     timers::{IntervalTimer, IntervalType},
+    Db,
 };
 use tracing::info;
 use twilight_model::id::{marker::GuildMarker, Id};
-
-use crate::scheduler;
 
 #[derive(Debug)]
 pub enum Error {
@@ -26,7 +25,7 @@ impl TimerId {
 }
 
 pub struct Manager {
-    storage: Arc<dyn scheduler::Store>,
+    storage: Db,
     guild_id: Id<GuildMarker>,
     loaded_intervals: HashMap<TimerId, WrappedIntervalTimer>,
     pending: Vec<TimerId>,
@@ -34,7 +33,7 @@ pub struct Manager {
 }
 
 impl Manager {
-    pub fn new(guild_id: Id<GuildMarker>, storage: Arc<dyn scheduler::Store>) -> Self {
+    pub fn new(guild_id: Id<GuildMarker>, storage: Db) -> Self {
         Self {
             storage,
             guild_id,

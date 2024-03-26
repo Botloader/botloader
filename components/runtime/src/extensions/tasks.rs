@@ -47,7 +47,7 @@ async fn op_bl_schedule_task(
     }
 
     // TODO: make a more efficient check
-    let current = rt_ctx.timer_store.get_task_count(rt_ctx.guild_id).await?;
+    let current = rt_ctx.db.get_task_count(rt_ctx.guild_id).await?;
     let limit_num_tasks = crate::limits::tasks_scheduled_count(&state);
     if current > limit_num_tasks {
         return Err(anyhow::anyhow!(
@@ -56,7 +56,7 @@ async fn op_bl_schedule_task(
     }
 
     let res = rt_ctx
-        .timer_store
+        .db
         .create_task(
             rt_ctx.guild_id,
             opts.plugin_id.map(Into::into),
@@ -81,10 +81,7 @@ async fn op_bl_del_task(
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
 
-    let del = rt_ctx
-        .timer_store
-        .del_task_by_id(rt_ctx.guild_id, task_id)
-        .await?;
+    let del = rt_ctx.db.del_task_by_id(rt_ctx.guild_id, task_id).await?;
     Ok(del > 0)
 }
 
@@ -99,7 +96,7 @@ async fn op_bl_del_task_by_key(
     RateLimiters::task_ops(&state).await;
 
     let del = rt_ctx
-        .timer_store
+        .db
         .del_task_by_key(rt_ctx.guild_id, plugin_id.map(Into::into), name, key)
         .await?;
 
@@ -118,7 +115,7 @@ async fn op_bl_del_all_tasks(
     RateLimiters::task_ops(&state).await;
 
     let del = rt_ctx
-        .timer_store
+        .db
         .del_all_tasks(rt_ctx.guild_id, plugin_id.map(Into::into), Some(name))
         .await?;
     Ok(del)
@@ -135,7 +132,7 @@ async fn op_bl_get_task(
     RateLimiters::task_ops(&state).await;
 
     Ok(rt_ctx
-        .timer_store
+        .db
         .get_task_by_id(rt_ctx.guild_id, id)
         .await?
         .map(Into::into))
@@ -153,7 +150,7 @@ async fn op_bl_get_task_by_key(
     RateLimiters::task_ops(&state).await;
 
     Ok(rt_ctx
-        .timer_store
+        .db
         .get_task_by_key(rt_ctx.guild_id, plugin_id.map(Into::into), name, key)
         .await?
         .map(Into::into))
@@ -170,7 +167,7 @@ async fn op_bl_get_all_tasks(
     RateLimiters::task_ops(&state).await;
 
     Ok(rt_ctx
-        .timer_store
+        .db
         .get_guild_tasks(rt_ctx.guild_id, filter, after_id, 25)
         .await?
         .into_iter()

@@ -1,9 +1,14 @@
-use axum::{extract::Extension, response::IntoResponse, Json};
+use axum::{
+    extract::{Extension, State},
+    response::IntoResponse,
+    Json,
+};
 use serde::{Deserialize, Serialize};
-use stores::web::{Session, SessionStore, SessionType};
+use stores::web::{Session, SessionType};
 
 use crate::{
-    errors::ApiErrorResponse, middlewares::LoggedInSession, util::EmptyResponse, ApiResult,
+    app_state::AppState, errors::ApiErrorResponse, middlewares::LoggedInSession,
+    util::EmptyResponse, ApiResult,
 };
 
 use tracing::error;
@@ -40,11 +45,12 @@ impl From<Session> for SessionMetaWithKey {
     }
 }
 
-pub async fn get_all_sessions<ST: SessionStore + 'static>(
-    Extension(session): Extension<LoggedInSession<ST>>,
-    Extension(session_store): Extension<ST>,
+pub async fn get_all_sessions(
+    Extension(session): Extension<LoggedInSession>,
+    State(state): State<AppState>,
 ) -> ApiResult<Json<Vec<SessionMeta>>> {
-    let sessions = session_store
+    let sessions = state
+        .db
         .get_all_sessions(session.session.user.id)
         .await
         .map_err(|err| {
@@ -55,11 +61,12 @@ pub async fn get_all_sessions<ST: SessionStore + 'static>(
     Ok(Json(sessions.into_iter().map(|e| e.into()).collect()))
 }
 
-pub async fn create_api_token<ST: SessionStore + 'static>(
-    Extension(session): Extension<LoggedInSession<ST>>,
-    Extension(session_store): Extension<ST>,
+pub async fn create_api_token(
+    Extension(session): Extension<LoggedInSession>,
+    State(state): State<AppState>,
 ) -> ApiResult<Json<SessionMetaWithKey>> {
-    let session = session_store
+    let session = state
+        .db
         .create_session(session.session.user.clone(), SessionType::ApiKey)
         .await
         .map_err(|err| {
@@ -75,18 +82,15 @@ pub struct DelSessionPayload {
     token: String,
 }
 
-pub async fn del_session<ST: SessionStore + 'static>(
-    Extension(session): Extension<LoggedInSession<ST>>,
-    Extension(session_store): Extension<ST>,
+pub async fn del_session(
+    Extension(session): Extension<LoggedInSession>,
+    State(state): State<AppState>,
     Json(payload): Json<DelSessionPayload>,
 ) -> ApiResult<impl IntoResponse> {
-    let deleting = session_store
-        .get_session(&payload.token)
-        .await
-        .map_err(|err| {
-            error!(%err, "failed fetching session");
-            ApiErrorResponse::InternalError
-        })?;
+    let deleting = state.db.get_session(&payload.token).await.map_err(|err| {
+        error!(%err, "failed fetching session");
+        ApiErrorResponse::InternalError
+    })?;
 
     // TODO: return proper error
     match deleting {
@@ -100,22 +104,20 @@ pub async fn del_session<ST: SessionStore + 'static>(
         }
     }
 
-    session_store
-        .del_session(&payload.token)
-        .await
-        .map_err(|err| {
-            error!(%err, "failed deleting session");
-            ApiErrorResponse::InternalError
-        })?;
+    state.db.del_session(&payload.token).await.map_err(|err| {
+        error!(%err, "failed deleting session");
+        ApiErrorResponse::InternalError
+    })?;
 
     Ok(EmptyResponse)
 }
 
-pub async fn del_all_sessions<ST: SessionStore + 'static>(
-    Extension(session): Extension<LoggedInSession<ST>>,
-    Extension(session_store): Extension<ST>,
+pub async fn del_all_sessions(
+    Extension(session): Extension<LoggedInSession>,
+    State(state): State<AppState>,
 ) -> ApiResult<impl IntoResponse> {
-    session_store
+    state
+        .db
         .del_all_sessions(session.session.user.id)
         .await
         .map_err(|err| {

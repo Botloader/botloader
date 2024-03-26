@@ -2,14 +2,13 @@ use std::sync::{Arc, RwLock};
 
 use crate::{
     command_manager,
-    scheduler::Store,
     vm_session::{VmSession, VmSessionEvent, VmSessionStatus},
     SchedulerConfig,
 };
 use chrono::{DateTime, Utc};
 use dbrokerapi::broker_scheduler_rpc::{DiscordEvent, DiscordEventData};
 use guild_logger::LogSender;
-use stores::config::PremiumSlotTier;
+use stores::{config::PremiumSlotTier, Db};
 use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
@@ -40,7 +39,7 @@ impl PremiumTierState {
 pub struct GuildHandler {
     guild_id: Id<GuildMarker>,
 
-    stores: Arc<dyn Store>,
+    stores: Db,
     _logger: LogSender,
     _worker_pool: crate::vmworkerpool::VmWorkerPool,
     scheduler_tx: mpsc::UnboundedSender<VmSessionEvent>,
@@ -57,7 +56,7 @@ pub struct GuildHandler {
 impl GuildHandler {
     pub fn new_run(
         config: Arc<SchedulerConfig>,
-        stores: Arc<dyn Store>,
+        stores: Db,
         guild_id: Id<GuildMarker>,
         logger: LogSender,
         worker_pool: crate::vmworkerpool::VmWorkerPool,

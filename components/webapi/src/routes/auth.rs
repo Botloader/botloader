@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{self},
+    extract::{self, State},
     http::{header::LOCATION, HeaderMap, HeaderValue, StatusCode},
     response::IntoResponse,
     Json,
@@ -11,13 +11,15 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info, instrument};
 use twilight_model::user::CurrentUser;
 
-use crate::{errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult, ConfigData};
+use crate::{
+    app_state::AppState, errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult,
+};
 
-use stores::web::{CsrfStore, DiscordOauthToken, SessionStore};
+use stores::{inmemory::web::InMemoryCsrfStore, web::DiscordOauthToken, Db};
 
-pub struct AuthHandlers<CT, ST> {
-    session_store: ST,
-    csrf_store: CT,
+pub struct AuthHandlers {
+    db: Db,
+    csrf_store: InMemoryCsrfStore,
 }
 
 #[derive(Deserialize)]
@@ -25,12 +27,9 @@ pub struct ConfirmLoginQuery {
     code: String,
     state: String,
 }
-impl<CT, ST> AuthHandlers<CT, ST> {
-    pub fn new(session_store: ST, csrf_store: CT) -> Self {
-        Self {
-            csrf_store,
-            session_store,
-        }
+impl AuthHandlers {
+    pub fn new(db: Db, csrf_store: InMemoryCsrfStore) -> Self {
+        Self { csrf_store, db }
     }
 }
 
@@ -40,24 +39,17 @@ pub struct ConfirmLoginSuccess {
     token: String,
 }
 
-impl<CT: CsrfStore, ST: SessionStore> AuthHandlers<CT, ST> {
-    #[instrument(skip(auth_handler, conf))]
+impl AuthHandlers {
+    #[instrument(skip_all)]
     pub async fn handle_login(
-        auth_handler: extract::Extension<Arc<AuthHandlers<CT, ST>>>,
-        conf: extract::Extension<ConfigData>,
+        auth_handler: extract::Extension<Arc<AuthHandlers>>,
+        State(state): State<AppState>,
     ) -> ApiResult<impl IntoResponse> {
-        let token = auth_handler
-            .csrf_store
-            .generate_csrf_token()
-            .await
-            .map_err(|err| {
-                error!(%err, "failed creating csrf token");
-                ApiErrorResponse::InternalError
-            })?;
+        let token = auth_handler.csrf_store.generate_csrf_token().await;
 
         // Generate the full authorization URL.
-        let (auth_url, _) = conf
-            .oauth_client
+        let (auth_url, _) = state
+            .discord_oauth_client
             .authorize_url(|| token)
             // Set the desired scopes.
             .add_scope(Scope::new("identify".to_string()))
@@ -72,27 +64,20 @@ impl<CT: CsrfStore, ST: SessionStore> AuthHandlers<CT, ST> {
         Ok((StatusCode::SEE_OTHER, headers))
     }
 
-    #[instrument(skip(auth_handler, conf, data))]
+    #[instrument(skip_all)]
     pub async fn handle_confirm_login(
-        auth_handler: extract::Extension<Arc<AuthHandlers<CT, ST>>>,
-        conf: extract::Extension<ConfigData>,
+        auth_handler: extract::Extension<Arc<AuthHandlers>>,
+        State(state): State<AppState>,
         Json(data): Json<ConfirmLoginQuery>,
     ) -> ApiResult<impl IntoResponse> {
-        let valid_csrf_token = auth_handler
-            .csrf_store
-            .check_csrf_token(&data.state)
-            .await
-            .map_err(|err| {
-                error!(%err, "failed checking csrf token");
-                ApiErrorResponse::InternalError
-            })?;
+        let valid_csrf_token = auth_handler.csrf_store.check_csrf_token(&data.state).await;
 
         if !valid_csrf_token {
             return Err(ApiErrorResponse::BadCsrfToken);
         }
 
-        let token_result = conf
-            .oauth_client
+        let token_result = state
+            .discord_oauth_client
             .exchange_code(AuthorizationCode::new(data.code))
             // Set the PKCE code verifier.
             .request_async(async_http_client)
@@ -119,7 +104,7 @@ impl<CT: CsrfStore, ST: SessionStore> AuthHandlers<CT, ST> {
             })?;
 
         let session = auth_handler
-            .session_store
+            .db
             .set_oauth_create_session(
                 DiscordOauthToken::new(user.id, token_result),
                 user.clone(),
@@ -139,11 +124,11 @@ impl<CT: CsrfStore, ST: SessionStore> AuthHandlers<CT, ST> {
 
     #[instrument(skip(auth_handler, session))]
     pub async fn handle_logout(
-        auth_handler: extract::Extension<Arc<AuthHandlers<CT, ST>>>,
-        session: extract::Extension<LoggedInSession<ST>>,
+        auth_handler: extract::Extension<Arc<AuthHandlers>>,
+        session: extract::Extension<LoggedInSession>,
     ) -> ApiResult<impl IntoResponse> {
         auth_handler
-            .session_store
+            .db
             .del_session(&session.session.token)
             .await
             .map_err(|err| {

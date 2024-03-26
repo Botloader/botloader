@@ -2,8 +2,8 @@ use std::ops::Add;
 use std::{num::NonZeroU64, path::PathBuf};
 
 use runtime_models::internal::script::SettingsOptionValue;
-use stores::config::{ConfigStore, CreateScript, CreateUpdatePremiumSlotBySource, UpdateScript};
-use stores::postgres::Postgres;
+use stores::config::{CreateScript, CreateUpdatePremiumSlotBySource, UpdateScript};
+use stores::Db;
 use tracing::info;
 use twilight_model::id::Id;
 
@@ -16,7 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("preparing scripts..");
 
-    let config_store = Postgres::new_with_url(&config.database_url).await?;
+    let config_store = Db::new_with_url(&config.database_url).await?;
     let premium_slot: stores::config::PremiumSlot = config_store
         .create_update_premium_slot_by_source(CreateUpdatePremiumSlotBySource {
             expires_at: chrono::Utc::now().add(chrono::Duration::days(100)),

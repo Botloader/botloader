@@ -1,8 +1,6 @@
 use common::{shutdown, DiscordConfig};
 use dbrokerapi::state_client::ConnectedGuildsResponse;
-use stores::{
-    bucketstore::BucketStore, config::ConfigStore, postgres::Postgres, timers::TimerStore,
-};
+use stores::Db;
 use tracing::{error, info, warn, Instrument};
 use twilight_http::error::ErrorType;
 
@@ -16,9 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .expect("failed fetching discord config");
 
-    let db = Postgres::new_with_url(&config.common.database_url)
-        .await
-        .unwrap();
+    let db = Db::new_with_url(&config.common.database_url).await.unwrap();
 
     let stop_future = shutdown::wait_shutdown_signal();
     tokio::pin!(stop_future);
@@ -79,7 +75,7 @@ struct Config {
 
 async fn scan_for_left_guilds(
     conf: &Config,
-    db: &Postgres,
+    db: &Db,
     discord_config: &DiscordConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!("Scanning for left guilds");
@@ -125,10 +121,7 @@ async fn scan_for_left_guilds(
     Ok(())
 }
 
-async fn delete_left_guilds(
-    conf: &Config,
-    db: &Postgres,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn delete_left_guilds(conf: &Config, db: &Db) -> Result<(), Box<dyn std::error::Error>> {
     info!(
         "Deleting left guilds, min left age days: {}",
         conf.delete_guilds_min_left_days

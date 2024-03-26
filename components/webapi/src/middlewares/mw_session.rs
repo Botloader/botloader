@@ -8,46 +8,41 @@ use core::fmt;
 use futures::future::BoxFuture;
 use std::{
     convert::Infallible,
-    marker::PhantomData,
     ops::Deref,
     task::{Context, Poll},
 };
 use tower::{Layer, Service};
 use tracing::{error, Instrument};
 
-use stores::web::{Session, SessionStore};
+use stores::{web::Session, Db};
 
-type OAuthApiClientWrapper<ST> =
-    DiscordOauthApiClient<TwilightApiProvider, oauth2::basic::BasicClient, ST>;
+type OAuthApiClientWrapper = DiscordOauthApiClient<TwilightApiProvider, oauth2::basic::BasicClient>;
 
 #[derive(Clone)]
-pub struct LoggedInSession<ST> {
-    pub api_client: OAuthApiClientWrapper<ST>,
+pub struct LoggedInSession {
+    pub api_client: OAuthApiClientWrapper,
     pub session: Session,
 }
 
 #[derive(Clone)]
-pub struct OptionalSession<ST>(Option<LoggedInSession<ST>>);
+pub struct OptionalSession(Option<LoggedInSession>);
 
-impl<ST> Deref for OptionalSession<ST> {
-    type Target = Option<LoggedInSession<ST>>;
+impl Deref for OptionalSession {
+    type Target = Option<LoggedInSession>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<ST> OptionalSession<ST> {
+impl OptionalSession {
     pub fn none() -> Self {
         Self(None)
     }
 }
 
-impl<T> LoggedInSession<T>
-where
-    T: SessionStore + 'static,
-{
-    pub fn new(session: Session, api_client: OAuthApiClientWrapper<T>) -> Self {
+impl LoggedInSession {
+    pub fn new(session: Session, api_client: OAuthApiClientWrapper) -> Self {
         Self {
             api_client,
             session,
@@ -56,14 +51,14 @@ where
 }
 
 #[derive(Clone)]
-pub struct SessionLayer<ST> {
-    pub session_store: ST,
+pub struct SessionLayer {
+    pub session_store: Db,
     pub oauth_conf: oauth2::basic::BasicClient,
-    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient, ST>,
+    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
 }
 
-impl<ST> SessionLayer<ST> {
-    pub fn new(session_store: ST, oauth_conf: oauth2::basic::BasicClient) -> Self {
+impl SessionLayer {
+    pub fn new(session_store: Db, oauth_conf: oauth2::basic::BasicClient) -> Self {
         Self {
             session_store,
             oauth_conf,
@@ -71,19 +66,17 @@ impl<ST> SessionLayer<ST> {
         }
     }
 
-    pub fn require_auth_layer(&self) -> RequireAuthLayer<ST> {
-        RequireAuthLayer {
-            _phantom: PhantomData,
-        }
+    pub fn require_auth_layer(&self) -> RequireAuthLayer {
+        RequireAuthLayer {}
     }
 }
 
-impl<ST: Clone, S> Layer<S> for SessionLayer<ST> {
-    type Service = SessionMiddleware<S, ST>;
+impl<S> Layer<S> for SessionLayer {
+    type Service = SessionMiddleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
         SessionMiddleware {
-            session_store: self.session_store.clone(),
+            db: self.session_store.clone(),
             oauth_conf: self.oauth_conf.clone(),
             oauth_api_client_cache: self.oauth_api_client_cache.clone(),
             inner,
@@ -92,21 +85,20 @@ impl<ST: Clone, S> Layer<S> for SessionLayer<ST> {
 }
 
 #[derive(Clone)]
-pub struct SessionMiddleware<S, ST> {
+pub struct SessionMiddleware<S> {
     pub inner: S,
-    pub session_store: ST,
+    pub db: Db,
     pub oauth_conf: oauth2::basic::BasicClient,
-    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient, ST>,
+    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
 }
 
-impl<S, ST, ReqBody, ResBody> Service<Request<ReqBody>> for SessionMiddleware<S, ST>
+impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for SessionMiddleware<S>
 where
     S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
     S::Error: Into<BoxError>,
     ReqBody: Send + 'static,
     ResBody: Send + 'static,
-    ST: 'static + SessionStore + Send + Sync + Clone,
 {
     type Response = S::Response;
     type Error = BoxError;
@@ -122,7 +114,7 @@ where
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
 
-        let store = self.session_store.clone();
+        let store = self.db.clone();
         let oauth_conf = self.oauth_conf.clone();
         let cache = self.oauth_api_client_cache.clone();
 
@@ -192,35 +184,28 @@ where
 }
 
 #[derive(Clone)]
-pub struct RequireAuthLayer<ST> {
-    _phantom: PhantomData<ST>,
-}
+pub struct RequireAuthLayer {}
 
-impl<S, ST> Layer<S> for RequireAuthLayer<ST> {
-    type Service = RequireAuthMiddleware<S, ST>;
+impl<S> Layer<S> for RequireAuthLayer {
+    type Service = RequireAuthMiddleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        RequireAuthMiddleware {
-            inner,
-            _phantom: PhantomData,
-        }
+        RequireAuthMiddleware { inner }
     }
 }
 
 #[derive(Clone)]
-pub struct RequireAuthMiddleware<S, ST> {
+pub struct RequireAuthMiddleware<S> {
     inner: S,
-    _phantom: PhantomData<ST>,
 }
 
-impl<S, ST, ReqBody, ResBody> Service<Request<ReqBody>> for RequireAuthMiddleware<S, ST>
+impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for RequireAuthMiddleware<S>
 where
     S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
     S::Error: Into<BoxError>,
     ReqBody: Send + 'static,
     ResBody: Send + 'static,
-    ST: Send + Sync + SessionStore + 'static,
 {
     type Response = S::Response;
     type Error = BoxError;
@@ -238,7 +223,7 @@ where
 
         Box::pin(async move {
             let extensions = req.extensions();
-            match extensions.get::<LoggedInSession<ST>>() {
+            match extensions.get::<LoggedInSession>() {
                 Some(_) => inner.call(req).await.map_err(|e| e.into()),
                 None => Err(NoSession(()).into()),
             }

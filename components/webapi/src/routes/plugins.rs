@@ -1,7 +1,7 @@
-use std::{io::Cursor, sync::Arc};
+use std::io::Cursor;
 
 use axum::{
-    extract::{Multipart, Path},
+    extract::{Multipart, Path, State},
     http::{header::CONTENT_TYPE, HeaderMap, HeaderValue, StatusCode},
     response::IntoResponse,
     Extension, Json,
@@ -13,8 +13,7 @@ use common::{
 use image::{codecs::webp::WebPEncoder, io::Limits, GenericImageView, ImageError};
 use serde::{Deserialize, Serialize};
 use stores::config::{
-    ConfigStore, ConfigStoreError, CreateImage, CreatePlugin, CreateUpdatePluginImage,
-    UpdatePluginMeta,
+    ConfigStoreError, CreateImage, CreatePlugin, CreateUpdatePluginImage, UpdatePluginMeta,
 };
 use tracing::error;
 use twilight_http::api_error::{ApiError, GeneralApiError};
@@ -26,10 +25,11 @@ use uuid::Uuid;
 use validation::{validate, ValidationContext, Validator};
 
 use crate::{
+    app_state::AppState,
     errors::ApiErrorResponse,
     middlewares::{plugins::fetch_plugin, LoggedInSession, OptionalSession},
     util::EmptyResponse,
-    ApiResult, CurrentConfigStore, CurrentSessionStore,
+    ApiResult,
 };
 
 #[derive(Serialize, Clone, Debug)]
@@ -57,11 +57,11 @@ pub struct PluginResponse {
 
 // get all plugins (TODO: filtering)
 pub async fn get_published_public_plugins(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(discord_config): Extension<Arc<DiscordConfig>>,
-    Extension(maybe_session): Extension<OptionalSession<CurrentSessionStore>>,
+    State(state): State<AppState>,
+    Extension(maybe_session): Extension<OptionalSession>,
 ) -> ApiResult<Json<Vec<PluginResponse>>> {
-    let plugins = config_store
+    let plugins = state
+        .db
         .get_published_public_plugins()
         .await
         .map_err(|err| {
@@ -70,7 +70,7 @@ pub async fn get_published_public_plugins(
         })?;
 
     let plugins = fetch_plugin_authors(
-        &discord_config,
+        &state.discord_config,
         maybe_session.as_ref().map(|v| &v.session.user),
         &plugins,
     )
@@ -81,11 +81,11 @@ pub async fn get_published_public_plugins(
 
 // get user plugins
 pub async fn get_user_plugins(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
-    Extension(discord_config): Extension<Arc<DiscordConfig>>,
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
 ) -> ApiResult<impl IntoResponse> {
-    let plugins = config_store
+    let plugins = state
+        .db
         .get_user_plugins(session.session.user.id.get())
         .await
         .map_err(|err| {
@@ -94,7 +94,7 @@ pub async fn get_user_plugins(
         })?;
 
     let plugins =
-        fetch_plugin_authors(&discord_config, Some(&session.session.user), &plugins).await?;
+        fetch_plugin_authors(&state.discord_config, Some(&session.session.user), &plugins).await?;
 
     Ok(Json(plugins))
 }
@@ -102,11 +102,11 @@ pub async fn get_user_plugins(
 // get plugin
 pub async fn get_plugin(
     Extension(plugin): Extension<Plugin>,
-    Extension(maybe_session): Extension<OptionalSession<CurrentSessionStore>>,
-    Extension(discord_config): Extension<Arc<DiscordConfig>>,
+    Extension(maybe_session): Extension<OptionalSession>,
+    State(state): State<AppState>,
 ) -> ApiResult<impl IntoResponse> {
     let plugin = fetch_plugin_author(
-        &discord_config,
+        &state.discord_config,
         maybe_session.as_ref().map(|v| &v.session.user),
         &plugin,
     )
@@ -124,8 +124,8 @@ pub struct CreatePluginBody {
 }
 
 pub async fn create_plugin(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
     Json(body): Json<CreatePluginBody>,
 ) -> ApiResult<impl IntoResponse> {
     let create = CreatePlugin {
@@ -142,7 +142,8 @@ pub async fn create_plugin(
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
-    let plugins = config_store
+    let plugins = state
+        .db
         .get_user_plugins(session.session.user.id.get())
         .await
         .map_err(|err| {
@@ -154,7 +155,7 @@ pub async fn create_plugin(
         return Err(ApiErrorResponse::UserPluginLimitReached);
     }
 
-    let plugin = config_store.create_plugin(create).await.map_err(|err| {
+    let plugin = state.db.create_plugin(create).await.map_err(|err| {
         error!(?err, "failed creating plugin");
         ApiErrorResponse::InternalError
     })?;
@@ -178,8 +179,8 @@ pub struct UpdatePluginMetaRequest {
 
 // update plugin meta
 pub async fn update_plugin_meta(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
     Extension(plugin): Extension<Plugin>,
     Json(body): Json<UpdatePluginMetaRequest>,
 ) -> ApiResult<impl IntoResponse> {
@@ -201,7 +202,8 @@ pub async fn update_plugin_meta(
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
-    let plugin = config_store
+    let plugin = state
+        .db
         .update_plugin_meta(plugin.id, update)
         .await
         .map_err(|err| {
@@ -226,8 +228,8 @@ impl Validator for UpdatePluginDevSourceRequest {
 
 // update plugin dev source
 pub async fn update_plugin_dev_source(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
     Extension(plugin): Extension<Plugin>,
     Json(body): Json<UpdatePluginDevSourceRequest>,
 ) -> ApiResult<impl IntoResponse> {
@@ -239,7 +241,8 @@ pub async fn update_plugin_dev_source(
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
-    let plugin = config_store
+    let plugin = state
+        .db
         .update_script_plugin_dev_version(plugin.id, body.new_source)
         .await
         .map_err(|err| {
@@ -265,10 +268,9 @@ impl Validator for PublishPluginVersionData {
 }
 
 pub async fn publish_plugin_version(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
     Extension(plugin): Extension<Plugin>,
-    Extension(bot_rpc): Extension<botrpc::Client>,
     Json(body): Json<PublishPluginVersionData>,
 ) -> ApiResult<impl IntoResponse> {
     if let Err(err) = validate(&body, &()) {
@@ -279,7 +281,8 @@ pub async fn publish_plugin_version(
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
-    let guilds = config_store
+    let guilds = state
+        .db
         .publish_script_plugin_version(plugin.id, body.new_source)
         .await
         .map_err(|err| {
@@ -290,7 +293,7 @@ pub async fn publish_plugin_version(
     // restart relevant guild vms
     // TODO: this should be done as a background task, and potentially throttled to avoid a spike
     for guild_id in guilds {
-        if let Err(err) = bot_rpc.restart_guild_vm(guild_id).await {
+        if let Err(err) = state.bot_rpc_client.restart_guild_vm(guild_id).await {
             error!(%err, "failed reloading guild vm");
         }
     }
@@ -305,19 +308,19 @@ pub struct GuildAddPluginData {
 }
 
 pub async fn guild_add_plugin(
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
     Extension(current_guild): Extension<CurrentUserGuild>,
-    Extension(bot_rpc): Extension<botrpc::Client>,
     Json(body): Json<GuildAddPluginData>,
 ) -> ApiResult<impl IntoResponse> {
-    let plugin = fetch_plugin(&config_store, body.plugin_id).await?;
+    let plugin = fetch_plugin(&state.db, body.plugin_id).await?;
 
     if !plugin.is_public && plugin.author_id != session.session.user.id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
-    let script = config_store
+    let script = state
+        .db
         .try_guild_add_script_plugin(current_guild.id, plugin.id, body.auto_update)
         .await
         .map_err(|err| match err {
@@ -328,7 +331,8 @@ pub async fn guild_add_plugin(
             }
         })?;
 
-    bot_rpc
+    state
+        .bot_rpc_client
         .restart_guild_vm(current_guild.id)
         .await
         .map_err(|err| {
@@ -458,8 +462,8 @@ pub struct AddPluginImageFormData {
 
 pub async fn add_plugin_image(
     Extension(plugin): Extension<Plugin>,
-    Extension(config_store): Extension<CurrentConfigStore>,
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
     mut multipart: Multipart,
 ) -> ApiResult<EmptyResponse> {
     if plugin.author_id != session.session.user.id {
@@ -544,7 +548,8 @@ pub async fn add_plugin_image(
         ApiErrorResponse::InternalError
     })?;
 
-    let image_id = config_store
+    let image_id = state
+        .db
         .create_image(CreateImage {
             bytes: dst,
             width,
@@ -558,7 +563,8 @@ pub async fn add_plugin_image(
             ApiErrorResponse::InternalError
         })?;
 
-    config_store
+    state
+        .db
         .upsert_plugin_image(
             plugin.id,
             CreateUpdatePluginImage {
@@ -583,8 +589,8 @@ pub struct ImageParam {
 }
 
 pub async fn delete_plugin_image(
-    Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
-    Extension(config_store): Extension<CurrentConfigStore>,
+    Extension(session): Extension<LoggedInSession>,
+    State(state): State<AppState>,
     Extension(plugin): Extension<Plugin>,
     Path(ImageParam { image_id }): Path<ImageParam>,
 ) -> ApiResult<EmptyResponse> {
@@ -592,7 +598,8 @@ pub async fn delete_plugin_image(
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
-    config_store
+    state
+        .db
         .delete_plugin_image(plugin.id, image_id)
         .await
         .map_err(|err| {
@@ -616,7 +623,7 @@ pub struct PluginImagesParam {
 const WEBP_CONTENT_TYPE: HeaderValue = HeaderValue::from_static("image/webp");
 
 pub async fn get_plugin_image(
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
     Path(PluginImagesParam {
         plugin_id,
         image_id_specifier_with_extension,
@@ -632,7 +639,8 @@ pub async fn get_plugin_image(
         return Err(ApiErrorResponse::ImageNotFound);
     };
 
-    let image = config_store
+    let image = state
+        .db
         .get_plugin_image(plugin_id, image_id)
         .await
         .map_err(|err| match err {

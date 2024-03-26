@@ -7,7 +7,7 @@ use std::{
 use dbrokerapi::broker_scheduler_rpc::{self, BrokerEvent, DiscordEventData, HelloData};
 use futures_util::StreamExt;
 
-use stores::config::ConfigStore;
+use stores::Db;
 use tokio::{
     net::TcpStream,
     sync::mpsc::{self, UnboundedSender},
@@ -33,7 +33,7 @@ use twilight_model::{
 pub async fn run_broker(
     token: String,
     discord_state: Arc<InMemoryCache>,
-    stores: Arc<dyn ConfigStore>,
+    db: Db,
     ready: Arc<AtomicBool>,
 ) -> Result<BrokerHandle, Box<dyn std::error::Error>> {
     let intents = Intents::GUILD_MESSAGES
@@ -59,7 +59,7 @@ pub async fn run_broker(
     let mut discord_manager = Broker {
         discord_state,
         cmd_rx,
-        stores,
+        db,
         ready,
         connected_scheduler: None,
         queued_events: Vec::new(),
@@ -83,7 +83,7 @@ struct Broker {
     connected_scheduler: Option<TcpStream>,
     queued_events: Vec<(Id<GuildMarker>, BrokerEvent)>,
     scheduler_disconnected_at: Instant,
-    stores: Arc<dyn ConfigStore>,
+    db: Db,
     ready: Arc<AtomicBool>,
     gateway_message_senders: Vec<MessageSender>,
 
@@ -148,12 +148,12 @@ impl Broker {
                 metrics::gauge!("bl.broker.connected_guilds_total").decrement(1.0);
 
                 if !g.unavailable {
-                    let _ = self.stores.set_guild_left_status(g.id, true).await;
+                    let _ = self.db.set_guild_left_status(g.id, true).await;
                 }
             }
             Event::GuildCreate(gc) => {
                 let _ = self
-                    .stores
+                    .db
                     .add_update_joined_guild(stores::config::JoinedGuild {
                         id: gc.id,
                         name: gc.name.clone(),

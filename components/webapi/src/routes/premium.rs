@@ -1,23 +1,23 @@
 use axum::{
-    extract::{Extension, Path},
+    extract::{Extension, Path, State},
     Json,
 };
-use stores::{
-    config::{ConfigStore, PremiumSlot},
-    web::SessionStore,
-};
+use stores::config::PremiumSlot;
 use twilight_model::id::{marker::GuildMarker, Id};
 
-use crate::{errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult};
+use crate::{
+    app_state::AppState, errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult,
+};
 
 use serde::Deserialize;
 use tracing::error;
 
-pub async fn list_user_premium_slots<ST: SessionStore + 'static, CT: ConfigStore + 'static>(
-    Extension(session): Extension<LoggedInSession<ST>>,
-    Extension(config_store): Extension<CT>,
+pub async fn list_user_premium_slots(
+    Extension(session): Extension<LoggedInSession>,
+    State(state): State<AppState>,
 ) -> ApiResult<Json<Vec<PremiumSlot>>> {
-    let slots = config_store
+    let slots = state
+        .db
         .get_user_premium_slots(session.session.user.id)
         .await
         .map_err(|err| {
@@ -28,14 +28,14 @@ pub async fn list_user_premium_slots<ST: SessionStore + 'static, CT: ConfigStore
     Ok(Json(slots))
 }
 
-pub async fn update_premium_slot_guild<ST: SessionStore + 'static, CT: ConfigStore + 'static>(
-    Extension(session): Extension<LoggedInSession<ST>>,
-    Extension(config_store): Extension<CT>,
-    Extension(bot_rpc): Extension<botrpc::Client>,
+pub async fn update_premium_slot_guild(
+    Extension(session): Extension<LoggedInSession>,
+    State(state): State<AppState>,
     Path(UpdateSlotPathParams { slot_id }): Path<UpdateSlotPathParams>,
     Json(body): Json<UpdateSlotGuildBody>,
 ) -> ApiResult<Json<PremiumSlot>> {
-    let res = config_store
+    let res = state
+        .db
         .update_premium_slot_attachment(session.session.user.id, slot_id, body.guild_id)
         .await
         .map_err(|err| {
@@ -44,10 +44,14 @@ pub async fn update_premium_slot_guild<ST: SessionStore + 'static, CT: ConfigSto
         })?;
 
     if let Some(guild_id) = res.attached_guild_id {
-        bot_rpc.restart_guild_vm(guild_id).await.map_err(|err| {
-            error!(%err, "failed reloading guild vm");
-            ApiErrorResponse::InternalError
-        })?;
+        state
+            .bot_rpc_client
+            .restart_guild_vm(guild_id)
+            .await
+            .map_err(|err| {
+                error!(%err, "failed reloading guild vm");
+                ApiErrorResponse::InternalError
+            })?;
     }
 
     Ok(Json(res))

@@ -9,7 +9,6 @@ use crate::{
     guild_handler::PremiumTierState,
     interval_timer_manager::{self, TimerId},
     scheduled_task_manager,
-    scheduler::Store,
     vmworkerpool::{WorkerHandle, WorkerRetrieved},
     SchedulerConfig,
 };
@@ -22,6 +21,7 @@ use scheduler_worker_rpc::{CreateScriptsVmReq, MetricEvent, SchedulerMessage, Wo
 use stores::{
     config::{IntervalTimerContrib, Script, ScriptContributes, UpdateScript},
     timers::{IntervalTimer, ScheduledTask},
+    Db,
 };
 use tokio::sync::oneshot;
 use tracing::{error, info, instrument};
@@ -31,7 +31,7 @@ pub struct VmSession {
     guild_id: Id<GuildMarker>,
 
     config: Arc<SchedulerConfig>,
-    stores: Arc<dyn Store>,
+    stores: Db,
     logger: GuildLogSender,
     worker_pool: crate::vmworkerpool::VmWorkerPool,
     interval_timers_man: crate::interval_timer_manager::Manager,
@@ -54,7 +54,7 @@ pub struct VmSession {
 impl VmSession {
     pub fn new(
         config: Arc<SchedulerConfig>,
-        stores: Arc<dyn Store>,
+        stores: Db,
         guild_id: Id<GuildMarker>,
         logger: GuildLogSender,
         worker_pool: crate::vmworkerpool::VmWorkerPool,

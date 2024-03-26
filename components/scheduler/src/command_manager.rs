@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 use common::DiscordConfig;
 use guild_logger::{LogEntry, LogSender};
 use stores::config::Script;
+use stores::Db;
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::application::command::{
@@ -15,8 +16,6 @@ use twilight_model::application::command::{
 use runtime_models::internal::script::{Command, CommandGroup, ScriptMeta};
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
-
-use crate::scheduler;
 
 #[derive(Clone, Debug)]
 pub struct Handle {
@@ -44,7 +43,7 @@ impl Handle {
 }
 
 pub struct Manager {
-    config_store: Arc<dyn scheduler::Store>,
+    config_store: Db,
     discord_config: Arc<DiscordConfig>,
     rcv_commands: mpsc::UnboundedReceiver<CommandManagerCommand>,
     pending_checks: Vec<PendingCheckGroup>,
@@ -54,7 +53,7 @@ pub struct Manager {
 }
 
 pub fn create_manager_pair(
-    config_store: Arc<dyn scheduler::Store>,
+    config_store: Db,
     discord_config: Arc<DiscordConfig>,
     guild_logger: LogSender,
 ) -> (Manager, Handle) {

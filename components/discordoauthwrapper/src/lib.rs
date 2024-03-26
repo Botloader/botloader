@@ -6,7 +6,7 @@ use std::{
 };
 
 use oauth2::reqwest::async_http_client;
-use stores::web::{DiscordOauthToken, SessionStore};
+use stores::{web::DiscordOauthToken, Db};
 use twilight_model::{
     id::{marker::UserMarker, Id},
     user::{CurrentUser, CurrentUserGuild},
@@ -19,21 +19,21 @@ mod twilight_api_provider;
 pub use cache::ClientCache;
 pub use twilight_api_provider::TwilightApiProvider;
 
-struct ApiClientInner<T, TU, ST> {
+struct ApiClientInner<T, TU> {
     user_id: Id<UserMarker>,
     api_provider: T,
     token_refresher: TU,
-    session_store: ST,
+    db: Db,
 
     // if the refresh token is no longer valid
     broken: AtomicBool,
 }
 
-pub struct DiscordOauthApiClient<T, TU, ST> {
-    inner: Arc<ApiClientInner<T, TU, ST>>,
+pub struct DiscordOauthApiClient<T, TU> {
+    inner: Arc<ApiClientInner<T, TU>>,
 }
 
-impl<T, TU, ST> Clone for DiscordOauthApiClient<T, TU, ST> {
+impl<T, TU> Clone for DiscordOauthApiClient<T, TU> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -41,16 +41,15 @@ impl<T, TU, ST> Clone for DiscordOauthApiClient<T, TU, ST> {
     }
 }
 
-impl<TU, ST> DiscordOauthApiClient<TwilightApiProvider, TU, ST>
+impl<TU> DiscordOauthApiClient<TwilightApiProvider, TU>
 where
     TU: TokenRefresher,
-    ST: SessionStore,
 {
     pub fn new_twilight(
         user_id: Id<UserMarker>,
         bearer_token: String,
         token_refresher: TU,
-        session_store: ST,
+        db: Db,
     ) -> Self {
         Self {
             inner: Arc::new(ApiClientInner {
@@ -59,32 +58,26 @@ where
                 ))),
                 user_id,
                 token_refresher,
-                session_store,
+                db,
                 broken: AtomicBool::new(false),
             }),
         }
     }
 }
 
-impl<T, TU, ST> DiscordOauthApiClient<T, TU, ST>
+impl<T, TU> DiscordOauthApiClient<T, TU>
 where
     T: DiscordOauthApiProvider + 'static,
     TU: TokenRefresher + 'static,
-    ST: SessionStore + 'static,
     T::OtherError: Debug + Display + Send + Sync + 'static,
 {
-    pub fn new(
-        user_id: Id<UserMarker>,
-        api_provider: T,
-        token_refresher: TU,
-        session_store: ST,
-    ) -> Self {
+    pub fn new(user_id: Id<UserMarker>, api_provider: T, token_refresher: TU, db: Db) -> Self {
         Self {
             inner: Arc::new(ApiClientInner {
                 user_id,
                 api_provider,
                 token_refresher,
-                session_store,
+                db,
                 broken: AtomicBool::new(false),
             }),
         }
@@ -137,11 +130,7 @@ where
     }
 
     pub async fn update_token(&self) -> Result<(), BoxError> {
-        let current = self
-            .inner
-            .session_store
-            .get_oauth_token(self.inner.user_id)
-            .await?;
+        let current = self.inner.db.get_oauth_token(self.inner.user_id).await?;
 
         let new_token = DiscordOauthToken::new(
             self.inner.user_id,
@@ -149,10 +138,7 @@ where
         );
 
         let access_token = new_token.access_token.clone();
-        self.inner
-            .session_store
-            .set_user_oatuh_token(new_token)
-            .await?;
+        self.inner.db.set_user_oatuh_token(new_token).await?;
 
         self.inner.api_provider.update_token(access_token).await;
 

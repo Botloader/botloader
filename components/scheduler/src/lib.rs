@@ -1,9 +1,6 @@
 use std::{num::NonZeroU64, sync::Arc, time::Duration};
 
-use stores::{
-    config::{ConfigStore, PremiumSlotTier},
-    postgres::Postgres,
-};
+use stores::{config::PremiumSlotTier, Db};
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::Id;
@@ -40,11 +37,7 @@ pub async fn run(
     let integration_testing_guild = config.integration_tests_guild.map(Id::from);
 
     info!("launching scheduler!");
-    let postgres_store = Arc::new(
-        Postgres::new_with_url(&common_conf.database_url)
-            .await
-            .unwrap(),
-    );
+    let postgres_store = Db::new_with_url(&common_conf.database_url).await.unwrap();
 
     let guild_log_sub_backend =
         Arc::new(guild_logger::guild_subscriber_backend::GuildSubscriberBackend::default());

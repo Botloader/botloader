@@ -1,10 +1,11 @@
-use axum::{extract::Extension, response::IntoResponse, Json};
+use axum::{
+    extract::{Extension, State},
+    response::IntoResponse,
+    Json,
+};
 use chrono::{DateTime, Utc};
 use dbrokerapi::models::BrokerGuild;
-use stores::{
-    config::{ConfigStore, PremiumSlot, PremiumSlotTier},
-    web::SessionStore,
-};
+use stores::config::{PremiumSlot, PremiumSlotTier};
 use twilight_model::{
     id::{
         marker::{GuildMarker, UserMarker},
@@ -13,7 +14,9 @@ use twilight_model::{
     user::CurrentUserGuild,
 };
 
-use crate::{errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult};
+use crate::{
+    app_state::AppState, errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult,
+};
 
 use serde::Serialize;
 use tracing::error;
@@ -29,9 +32,9 @@ pub struct GuildListEntry {
     guild: CurrentUserGuild,
 }
 
-pub async fn list_user_guilds_route<ST: SessionStore + 'static, CT: ConfigStore + 'static>(
-    Extension(config_store): Extension<CT>,
-    Extension(session): Extension<LoggedInSession<ST>>,
+pub async fn list_user_guilds_route(
+    State(state): State<AppState>,
+    Extension(session): Extension<LoggedInSession>,
 ) -> ApiResult<impl IntoResponse> {
     let user_guilds = session
         .api_client
@@ -44,7 +47,8 @@ pub async fn list_user_guilds_route<ST: SessionStore + 'static, CT: ConfigStore 
 
     let guild_ids = user_guilds.iter().map(|g| g.id).collect::<Vec<_>>();
 
-    let connected_guilds = config_store
+    let connected_guilds = state
+        .db
         .get_joined_guilds(&guild_ids)
         .await
         .map_err(|err| {
@@ -66,11 +70,12 @@ pub async fn list_user_guilds_route<ST: SessionStore + 'static, CT: ConfigStore 
     Ok(Json(GuildList { guilds: result }))
 }
 
-pub async fn get_guild_settings<CT: ConfigStore + 'static>(
-    Extension(config_store): Extension<CT>,
+pub async fn get_guild_settings(
+    State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
 ) -> ApiResult<impl IntoResponse> {
-    let settings = config_store
+    let settings = state
+        .db
         .get_guild_meta_config_or_default(current_guild.id)
         .await
         .map_err(|err| {
@@ -81,11 +86,12 @@ pub async fn get_guild_settings<CT: ConfigStore + 'static>(
     Ok(Json(settings))
 }
 
-pub async fn get_guild_premium_slots<CT: ConfigStore + 'static>(
-    Extension(config_store): Extension<CT>,
+pub async fn get_guild_premium_slots(
+    State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
 ) -> ApiResult<Json<Vec<GuildPremiumSlot>>> {
-    let slots = config_store
+    let slots = state
+        .db
         .get_guild_premium_slots(current_guild.id)
         .await
         .map_err(|err| {
@@ -104,10 +110,11 @@ pub struct FullGuild {
 }
 
 pub async fn get_full_guild(
-    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
+    State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
 ) -> ApiResult<Json<FullGuild>> {
-    let guild = state_client
+    let guild = state
+        .state_client
         .get_guild(current_guild.id)
         .await
         .map_err(|err| {
@@ -122,7 +129,8 @@ pub async fn get_full_guild(
         return Err(ApiErrorResponse::InternalError);
     };
 
-    let channels = state_client
+    let channels = state
+        .state_client
         .get_channels(current_guild.id)
         .await
         .map_err(|err| {
@@ -130,7 +138,8 @@ pub async fn get_full_guild(
             ApiErrorResponse::InternalError
         })?;
 
-    let roles = state_client
+    let roles = state
+        .state_client
         .get_roles(current_guild.id)
         .await
         .map_err(|err| {

@@ -1,14 +1,14 @@
 use std::rc::Rc;
 
 use axum::{
-    extract::{Extension, Path},
+    extract::{Extension, Path, State},
     response::IntoResponse,
     Json,
 };
 use common::plugin::Plugin;
 use runtime_models::internal::script::SettingsOptionValue;
 use serde::{Deserialize, Serialize};
-use stores::config::{ConfigStore, CreateScript, Script, UpdateScript};
+use stores::config::{CreateScript, Script, UpdateScript};
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
 use validation::{
@@ -18,15 +18,16 @@ use validation::{
 };
 
 use crate::{
-    errors::ApiErrorResponse, middlewares::plugins::fetch_plugin, util::EmptyResponse, ApiResult,
-    CurrentConfigStore,
+    app_state::AppState, errors::ApiErrorResponse, middlewares::plugins::fetch_plugin,
+    util::EmptyResponse, ApiResult,
 };
 
 pub async fn get_all_guild_scripts(
-    Extension(config_store): Extension<CurrentConfigStore>,
     Extension(current_guild): Extension<CurrentUserGuild>,
+    State(state): State<AppState>,
 ) -> ApiResult<impl IntoResponse> {
-    let scripts = config_store
+    let scripts = state
+        .db
         .list_scripts(current_guild.id)
         .await
         .map_err(|err| {
@@ -44,10 +45,11 @@ pub struct GetScriptsWithPluginsResponse {
 }
 
 pub async fn get_all_guild_scripts_with_plugins(
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
 ) -> ApiResult<impl IntoResponse> {
-    let scripts = config_store
+    let scripts = state
+        .db
         .list_scripts(current_guild.id)
         .await
         .map_err(|err| {
@@ -61,13 +63,10 @@ pub async fn get_all_guild_scripts_with_plugins(
         .collect::<Vec<_>>();
 
     let plugins = if !fetch_plugins.is_empty() {
-        config_store
-            .get_plugins(&fetch_plugins)
-            .await
-            .map_err(|err| {
-                error!(?err, "failed fetching plugins");
-                ApiErrorResponse::InternalError
-            })?
+        state.db.get_plugins(&fetch_plugins).await.map_err(|err| {
+            error!(?err, "failed fetching plugins");
+            ApiErrorResponse::InternalError
+        })?
     } else {
         Vec::new()
     };
@@ -88,7 +87,7 @@ pub struct CreateRequestData {
 }
 
 pub async fn create_guild_script(
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Json(payload): Json<CreateRequestData>,
 ) -> ApiResult<impl IntoResponse> {
@@ -105,7 +104,8 @@ pub async fn create_guild_script(
         return Err(ApiErrorResponse::ValidationFailed(verr));
     }
 
-    if config_store
+    if state
+        .db
         .get_script(current_guild.id, cs.name.clone())
         .await
         .is_ok()
@@ -116,7 +116,8 @@ pub async fn create_guild_script(
         }]));
     }
 
-    let script = config_store
+    let script = state
+        .db
         .create_script(current_guild.id, cs)
         .await
         .map_err(|err| {
@@ -141,13 +142,12 @@ pub struct UpdateRequestData {
 
 pub async fn update_guild_script(
     Extension(current_guild): Extension<CurrentUserGuild>,
-    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
-    Extension(bot_rpc): Extension<botrpc::Client>,
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
     Json(payload): Json<UpdateRequestData>,
 ) -> ApiResult<impl IntoResponse> {
-    let current_script = config_store
+    let current_script = state
+        .db
         .get_script_by_id(current_guild.id, script_id)
         .await
         .map_err(|err| {
@@ -172,7 +172,8 @@ pub async fn update_guild_script(
 
     {
         let validation_data = if sc.settings_definitions.is_some() {
-            let channels = state_client
+            let channels = state
+                .state_client
                 .get_channels(current_guild.id)
                 .await
                 .map_err(|err| {
@@ -180,7 +181,8 @@ pub async fn update_guild_script(
                     ApiErrorResponse::InternalError
                 })?;
 
-            let roles = state_client
+            let roles = state
+                .state_client
                 .get_roles(current_guild.id)
                 .await
                 .map_err(|err| {
@@ -204,7 +206,8 @@ pub async fn update_guild_script(
         }
     }
 
-    let script = config_store
+    let script = state
+        .db
         .update_script(current_guild.id, sc)
         .await
         .map_err(|err| {
@@ -212,7 +215,8 @@ pub async fn update_guild_script(
             ApiErrorResponse::InternalError
         })?;
 
-    bot_rpc
+    state
+        .bot_rpc_client
         .restart_guild_vm(current_guild.id)
         .await
         .map_err(|err| {
@@ -224,13 +228,13 @@ pub async fn update_guild_script(
 }
 
 pub async fn validate_script_settings(
-    Extension(state_client): Extension<dbrokerapi::state_client::Client>,
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
     Json(payload): Json<UpdateRequestData>,
 ) -> ApiResult<impl IntoResponse> {
-    let current_script = config_store
+    let current_script = state
+        .db
         .get_script_by_id(current_guild.id, script_id)
         .await
         .map_err(|err| {
@@ -254,7 +258,8 @@ pub async fn validate_script_settings(
     };
 
     let validation_data = if sc.settings_definitions.is_some() {
-        let channels = state_client
+        let channels = state
+            .state_client
             .get_channels(current_guild.id)
             .await
             .map_err(|err| {
@@ -262,7 +267,8 @@ pub async fn validate_script_settings(
                 ApiErrorResponse::InternalError
             })?;
 
-        let roles = state_client
+        let roles = state
+            .state_client
             .get_roles(current_guild.id)
             .await
             .map_err(|err| {
@@ -289,11 +295,12 @@ pub async fn validate_script_settings(
 }
 
 pub async fn delete_guild_script(
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
 ) -> ApiResult<impl IntoResponse> {
-    let script = config_store
+    let script = state
+        .db
         .get_script_by_id(current_guild.id, script_id)
         .await
         .map_err(|err| {
@@ -301,7 +308,8 @@ pub async fn delete_guild_script(
             ApiErrorResponse::InternalError
         })?;
 
-    config_store
+    state
+        .db
         .del_script(current_guild.id, script.name.clone())
         .await
         .map_err(|err| {
@@ -313,13 +321,13 @@ pub async fn delete_guild_script(
 }
 
 pub async fn update_script_plugin(
-    Extension(config_store): Extension<CurrentConfigStore>,
+    State(state): State<AppState>,
     // Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
     Extension(current_guild): Extension<CurrentUserGuild>,
-    Extension(bot_rpc): Extension<botrpc::Client>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
 ) -> ApiResult<impl IntoResponse> {
-    let script = config_store
+    let script = state
+        .db
         .get_script_by_id(current_guild.id, script_id)
         .await
         .map_err(|err| {
@@ -331,7 +339,7 @@ pub async fn update_script_plugin(
         return Err(ApiErrorResponse::ScriptNotAPlugin);
     };
 
-    let plugin = fetch_plugin(&config_store, plugin_id).await?;
+    let plugin = fetch_plugin(&state.db, plugin_id).await?;
     let new_source = match plugin.data {
         common::plugin::PluginData::ScriptPlugin(p) => p.published_version.unwrap_or_default(),
     };
@@ -355,7 +363,8 @@ pub async fn update_script_plugin(
         settings_values: None,
     };
 
-    let script = config_store
+    let script = state
+        .db
         .update_script(current_guild.id, sc)
         .await
         .map_err(|err| {
@@ -363,7 +372,8 @@ pub async fn update_script_plugin(
             ApiErrorResponse::InternalError
         })?;
 
-    bot_rpc
+    state
+        .bot_rpc_client
         .restart_guild_vm(current_guild.id)
         .await
         .map_err(|err| {
