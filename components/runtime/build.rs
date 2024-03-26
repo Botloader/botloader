@@ -9,7 +9,7 @@ use std::{
 // Example custom build script.
 fn main() {
     // Tell Cargo that if the given file changes, to rerun this build script.
-    println!("cargo:rerun-if-changed=src/ts/*");
+    println!("cargo:rerun-if-changed=src/ts");
 
     // let files = vec!["op_wrappers", "core_util", "jack"];
 
@@ -60,6 +60,10 @@ fn compile_folder(path: &Path) -> Vec<String> {
         if filename.ends_with(".d.ts") || !filename.ends_with(".ts") {
             let data = std::fs::metadata(file).unwrap();
             if data.is_dir() {
+                if filename == "node_modules" {
+                    continue;
+                }
+
                 let mut compiled = compile_folder(file);
                 result.append(&mut compiled);
             }

@@ -15,8 +15,9 @@ axum = { workspace = true }
 chrono = { workspace = true }
 twilight-model = { workspace = true }
 
-async-stripe = { version = "0.34.1", features = [
+async-stripe = { version = "0.34.1", default-features = false, features = [
     "webhook-events",
     "checkout",
     "runtime-tokio-hyper",
+    "connect",
 ] }

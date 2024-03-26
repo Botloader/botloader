@@ -351,7 +351,6 @@ dependencies = [
  "smol_str",
  "thiserror",
  "tokio",
- "uuid 0.8.2",
 ]
 
 [[package]]
@@ -904,7 +903,7 @@ dependencies = [
  "tracing-subscriber",
  "twilight-http",
  "twilight-model",
- "uuid 1.7.0",
+ "uuid",
 ]
 
 [[package]]
@@ -1129,7 +1128,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
  "serde",
- "uuid 1.7.0",
+ "uuid",
 ]
 
 [[package]]
@@ -4340,7 +4339,7 @@ dependencies = [
  "thiserror",
  "time",
  "url",
- "uuid 1.7.0",
+ "uuid",
 ]
 
 [[package]]
@@ -4750,7 +4749,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "url",
- "uuid 1.7.0",
+ "uuid",
  "webpki-roots",
 ]
 
@@ -4834,7 +4833,7 @@ dependencies = [
  "stringprep",
  "thiserror",
  "tracing",
- "uuid 1.7.0",
+ "uuid",
  "whoami",
 ]
 
@@ -4875,7 +4874,7 @@ dependencies = [
  "stringprep",
  "thiserror",
  "tracing",
- "uuid 1.7.0",
+ "uuid",
  "whoami",
 ]
 
@@ -4901,7 +4900,7 @@ dependencies = [
  "tracing",
  "url",
  "urlencoding",
- "uuid 1.7.0",
+ "uuid",
 ]
 
 [[package]]
@@ -4969,7 +4968,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "twilight-model",
- "uuid 1.7.0",
+ "uuid",
 ]
 
 [[package]]
@@ -6927,15 +6926,6 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom 0.2.11",
-]
-
-[[package]]
-name = "uuid"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f00cc9702ca12d3c81455259621e676d0f7251cec66a21e98fe2e9a37db93b2a"
@@ -7201,7 +7191,7 @@ dependencies = [
  "tracing-log",
  "twilight-http",
  "twilight-model",
- "uuid 1.7.0",
+ "uuid",
  "validation",
 ]
 
