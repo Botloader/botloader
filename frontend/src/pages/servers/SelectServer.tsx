@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { BotGuild } from "botloader-common";
 import { GuildsGuard, useGuilds } from "../../modules/guilds/GuildsProvider"
 import "./SelectServer.css"
@@ -6,12 +6,16 @@ import { Alert, Button, Container, } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { GuildIcon } from "../../components/GuildIcon";
 import { BlLink } from "../../components/BLLink";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export function SelectServerPage() {
     return <GuildsGuard ><InnerPage /></GuildsGuard>
 }
 
 function InnerPage() {
+
+    const location = useLocation()
+    const navigate = useNavigate()
 
     const guilds = useGuilds()!;
 
@@ -27,6 +31,23 @@ function InnerPage() {
         return [joinedHasAdmin, notJoinedHasAdmin];
 
     }, [guilds])
+
+    useEffect(() => {
+        let split = location.search.substring(1).split("&")
+
+        for (const queryItemPair of split) {
+            const kvSplit = queryItemPair.split("=", 2)
+            if (kvSplit.length < 2) {
+                continue
+            }
+
+            if (kvSplit[0] === "guild_id") {
+                navigate(`/servers/${kvSplit[1]}`)
+                break
+            }
+        }
+
+    }, [location, navigate])
 
     if (!guilds) {
         return <p>Loading guilds.... (unless you're not logged in that is)</p>

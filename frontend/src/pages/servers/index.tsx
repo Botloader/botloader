@@ -7,6 +7,7 @@ import { OurRouteObject } from "../../misc/ourRoute";
 import { RequireLoggedInSession } from "../../modules/session/RequireLoggedInSession";
 import { useCurrentGuild } from "../../modules/guilds/CurrentGuild";
 import { Loading } from "../../components/Loading";
+import { useEffect } from "react";
 
 export const routes: OurRouteObject[] = [
     {
@@ -77,6 +78,13 @@ export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
 
 
 function InviteGuildPage(props: { guild: BotGuild }) {
+    const baseUrl = window.location.origin
+    const redirectUrl = encodeURIComponent(baseUrl + "/servers/")
+    const addBotUrl = `https://discord.com/api/oauth2/authorize?client_id=${BuildConfig.botloaderClientId}&permissions=515463572672&scope=bot%20applications.commands&guild_id=${props.guild.guild.id}&redirect_uri=${redirectUrl}&response_type=code`
+    useEffect(() => {
+        window.location.href = addBotUrl
+    }, [addBotUrl])
+
     return <a href={`https://discord.com/api/oauth2/authorize?client_id=${BuildConfig.botloaderClientId}&permissions=515463572672&scope=bot%20applications.commands&guild_id=${props.guild.guild.id}`} className="add-to-server" target="_blank" rel="noreferrer">Click here to add to server!</a>;
 }
 
