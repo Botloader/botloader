@@ -72,7 +72,7 @@ function PremiumPanel(props: { guildId: string }) {
     }
 
     return <Alert severity="info">
-        This server is on the free tier<br />
+        <AlertTitle>This server is on the free tier</AlertTitle>
         Botloader is developed and run by a single person in their spare time, please consider lite or premium to support the project.<br /><br />
         <BlLink to="/user/premium" variant="contained" color="success">Check out Lite/Premium</BlLink>
     </Alert>
@@ -148,6 +148,7 @@ function GuildScripts(props: { guild: BotGuild }) {
     }
 
     return <>
+        {(scripts?.plugins.length ?? 0) < 1 && (scripts?.scripts.length ?? 0) < 1 ? <GetStartedPanel></GetStartedPanel> : null}
         <Typography variant="h4">Create a new script</Typography>
         <Paper sx={{ p: 1 }}>
             {isCreating && <Loading />}
@@ -168,6 +169,7 @@ function GuildScripts(props: { guild: BotGuild }) {
         <Typography variant="h4" sx={{ ml: 1, mb: 1 }}>Scripts</Typography>
         <Paper>
             <Stack spacing={1}>
+                {normalScripts.length < 1 && <Typography padding={1}>No scripts have been added to this server yet.</Typography>}
                 {normalScripts.map(script => <ScriptItem key={script.id}
                     script={script}
                     guildId={props.guild.guild.id}
@@ -179,6 +181,7 @@ function GuildScripts(props: { guild: BotGuild }) {
         <Typography variant="h4" sx={{ ml: 1, mb: 1 }}>Plugins</Typography>
         <Paper>
             <Stack spacing={1}>
+                {pluginScripts.length < 1 && <Typography padding={1}>No plugins have been added to this server yet.</Typography>}
                 {pluginScripts.map(script => <ScriptItem key={script.id}
                     script={script}
                     plugin={scripts!.plugins.find((p) => p.id === script.plugin_id)}
@@ -251,4 +254,13 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
                 </>}
         </Stack>
     </Box>
+}
+
+function GetStartedPanel() {
+    return <Alert sx={{ padding: 1 }} severity="success">
+        <AlertTitle>Welcome to Botloader!</AlertTitle>
+        <Typography>Check out the<BlLink to="/book/" newTab skipClientRouting>Guides</BlLink>for a getting starting guide!</Typography>
+        <Typography>Check out the<BlLink to="/plugins">plugins page</BlLink>to add pre-made plugins to your server</Typography>
+        <Typography>Join the<BlLink to="https://discord.gg/GhUeYeekdu" newTab skipClientRouting>Discord Server</BlLink>to ask any questions, provide feedback or just talk to other people and the dev!</Typography>
+    </Alert>
 }
