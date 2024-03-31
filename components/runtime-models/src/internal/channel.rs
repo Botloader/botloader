@@ -395,7 +395,10 @@ pub struct EditChannel {
     nsfw: Option<bool>,
 
     #[ts(optional)]
-    #[serde(deserialize_with = "crate::deserialize_undefined_null_optional_field")]
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
     parent_id: Option<Option<String>>,
 
     #[ts(optional)]

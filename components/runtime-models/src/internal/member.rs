@@ -13,7 +13,10 @@ use twilight_model::id::{
 pub struct UpdateGuildMemberFields {
     #[ts(optional)]
     #[ts(type = "string|null")]
-    #[serde(deserialize_with = "crate::deserialize_undefined_null_optional_field")]
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
     pub channel_id: Option<Option<Id<ChannelMarker>>>,
 
     #[ts(optional)]
@@ -23,7 +26,10 @@ pub struct UpdateGuildMemberFields {
     pub mute: Option<bool>,
 
     #[ts(optional)]
-    #[serde(deserialize_with = "crate::deserialize_undefined_null_optional_field")]
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
     pub nick: Option<Option<String>>,
 
     #[ts(optional)]
@@ -32,7 +38,10 @@ pub struct UpdateGuildMemberFields {
 
     #[ts(optional)]
     #[ts(type = "number|null")]
-    #[serde(deserialize_with = "crate::deserialize_undefined_null_optional_field")]
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
     pub communication_disabled_until: Option<Option<NotBigU64>>,
 }
 
