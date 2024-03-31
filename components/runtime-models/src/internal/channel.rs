@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use twilight_model::id::Id;
+use twilight_http::request::guild::update_guild_channel_positions::Position;
+use twilight_model::id::{marker::ChannelMarker, Id};
 use twilight_validate::channel::ChannelValidationError;
 
 use crate::{
@@ -756,4 +757,29 @@ pub struct ListThreadMembersRequest {
 pub struct ForumThreadResponse {
     pub message: Message,
     pub channel: GuildChannel,
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "IEditGuildChannelPosition",
+    export_to = "bindings/internal/IEditGuildChannelPosition.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct EditGuildChannelPosition {
+    pub channel_id: String,
+    pub position: i32,
+    // Because of a bug in twilight, i cant enable these yet
+    // pub lock_permissions: Option<bool>,
+    // pub parent_id: Option<bool>,
+}
+
+impl TryFrom<EditGuildChannelPosition> for Position {
+    type Error = anyhow::Error;
+
+    fn try_from(value: EditGuildChannelPosition) -> Result<Self, Self::Error> {
+        let parsed_channel_id: Id<ChannelMarker> = value.channel_id.parse()?;
+
+        Ok((parsed_channel_id, value.position as u64).into())
+    }
 }

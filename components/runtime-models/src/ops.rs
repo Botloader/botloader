@@ -2,9 +2,9 @@ use crate::{
     discord::guild::Guild,
     internal::{
         channel::{
-            CreateForumThread, CreateThread, CreateThreadFromMessage, ForumThreadResponse,
-            GuildChannel, ListThreadMembersRequest, ListThreadsRequest, ThreadMember,
-            ThreadsListing, UpdateThread,
+            CreateForumThread, CreateThread, CreateThreadFromMessage, EditGuildChannelPosition,
+            ForumThreadResponse, GuildChannel, ListThreadMembersRequest, ListThreadsRequest,
+            ThreadMember, ThreadsListing, UpdateThread,
         },
         messages::{
             Message, OpCreateChannelMessage, OpDeleteMessage, OpDeleteMessagesBulk,
@@ -116,5 +116,7 @@ ops_async! {
     discord_list_active_threads(()) => ThreadsListing,
     discord_list_public_archived_threads(ListThreadsRequest) => ThreadsListing,
     discord_list_private_archived_threads(ListThreadsRequest) => ThreadsListing,
-    discord_edit_thread(UpdateThread) => GuildChannel
+    discord_edit_thread(UpdateThread) => GuildChannel,
+
+    discord_bulk_edit_channels(Vec<EditGuildChannelPosition>) => ()
 }

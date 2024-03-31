@@ -15,8 +15,8 @@ use runtime_models::{
     internal::{
         channel::{
             CreateChannel, CreateForumThread, CreateThread, CreateThreadFromMessage, EditChannel,
-            ForumThreadResponse, GuildChannel, ListThreadMembersRequest, ListThreadsRequest,
-            ThreadMember, ThreadsListing, UpdateThread,
+            EditGuildChannelPosition, ForumThreadResponse, GuildChannel, ListThreadMembersRequest,
+            ListThreadsRequest, ThreadMember, ThreadsListing, UpdateThread,
         },
         events::VoiceState,
         interactions::InteractionCallback,
@@ -865,6 +865,30 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .model()
         .await?
         .into())
+    }
+
+    async fn discord_bulk_edit_channels(
+        &self,
+        arg: Vec<EditGuildChannelPosition>,
+    ) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        discord_request_with_extra_error(&self.state, async move {
+            let positions = arg
+                .into_iter()
+                .map(|v| v.try_into())
+                .collect::<Result<Vec<_>, _>>()?;
+
+            let req = rt_ctx
+                .discord_config
+                .client
+                .update_guild_channel_positions(rt_ctx.guild_id, &positions);
+
+            Ok(req.await)
+        })
+        .await?;
+
+        Ok(())
     }
 }
 

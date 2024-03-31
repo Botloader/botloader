@@ -301,6 +301,23 @@ export async function editChannel(channelId: string, fields: IEditChannel): Prom
     return guildChannelFromInternal(await OpWrappers.editChannel(channelId, fields));
 }
 
+export interface EditChannelPosition {
+    channelId: string,
+    position: number,
+}
+
+/**
+ * Edits the positions of multiple channels at the same time
+ * 
+ * Requires `MANAGE_CHANNELS` permission
+ */
+export async function editChannelPositions(channels: EditChannelPosition[]): Promise<void> {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_bulk_edit_channels",
+        arg: channels,
+    })
+}
+
 export async function deleteChannel(channelId: string): Promise<GuildChannel> {
     return guildChannelFromInternal(await OpWrappers.deleteChannel(channelId));
 }

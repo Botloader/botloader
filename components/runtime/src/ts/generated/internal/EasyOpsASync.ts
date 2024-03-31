@@ -2,6 +2,7 @@
 import type { ICreateForumThread } from "./ICreateForumThread";
 import type { ICreateThread } from "./ICreateThread";
 import type { ICreateThreadFromMessage } from "./ICreateThreadFromMessage";
+import type { IEditGuildChannelPosition } from "./IEditGuildChannelPosition";
 import type { IListThreadMembersRequest } from "./IListThreadMembersRequest";
 import type { IListThreadsRequest } from "./IListThreadsRequest";
 import type { IUpdateThread } from "./IUpdateThread";
@@ -38,4 +39,8 @@ export type EasyOpsASync =
     "kind": "discord_list_private_archived_threads";
     "arg": IListThreadsRequest;
   }
-  | { "kind": "discord_edit_thread"; "arg": IUpdateThread };
+  | { "kind": "discord_edit_thread"; "arg": IUpdateThread }
+  | {
+    "kind": "discord_bulk_edit_channels";
+    "arg": Array<IEditGuildChannelPosition>;
+  };
