@@ -11,7 +11,7 @@ use futures::{future::LocalBoxFuture, FutureExt};
 use guild_logger::entry::CreateLogEntry;
 use guild_logger::GuildLogSender;
 use metrics::histogram;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::future::Future;
@@ -40,7 +40,6 @@ pub enum VmCommand {
 
 #[derive(Debug)]
 pub enum VmEvent {
-    Shutdown(ShutdownReason),
     DispatchedEvent(u64),
     VmFinished,
 }
@@ -59,7 +58,7 @@ pub struct Vm {
 
     script_store: ScriptsStateStoreHandle,
 
-    timeout_handle: VmShutdownHandle,
+    shutdown_handle: VmShutdownHandle,
     guild_logger: GuildLogSender,
 
     extension_factory: ExtensionFactory,
@@ -93,7 +92,7 @@ impl Vm {
     #[instrument(skip_all)]
     async fn create_init(
         create_req: CreateRt,
-        timeout_handle: VmShutdownHandle,
+        shutdown_handle: VmShutdownHandle,
         wakeup_rx: UnboundedReceiver<()>,
     ) -> Self {
         let script_store = ScriptsStateStore::new_rc();
@@ -107,7 +106,7 @@ impl Vm {
             &create_req.extension_factory,
             module_manager.clone(),
             script_store.clone(),
-            timeout_handle.clone(),
+            shutdown_handle.clone(),
         );
 
         let mut rt = Self {
@@ -116,7 +115,7 @@ impl Vm {
             tx: create_req.tx,
             script_store,
 
-            timeout_handle,
+            shutdown_handle,
             runtime: sandbox,
             extension_factory: create_req.extension_factory,
             module_manager,
@@ -202,7 +201,7 @@ impl Vm {
     fn emit_isolate_handle(&mut self) {
         let handle = self.runtime.v8_isolate().thread_safe_handle();
 
-        let mut th = self.timeout_handle.inner.write().unwrap();
+        let mut th = self.shutdown_handle.inner.write().unwrap();
         th.isolate_handle = Some(handle);
     }
 
@@ -247,31 +246,16 @@ impl Vm {
 
         info!("terminating runtime for guild");
 
-        let shutdown_reason = {
-            self.timeout_handle
-                .inner
-                .read()
-                .unwrap()
-                .shutdown_reason
-                .clone()
-        };
+        let shutdown_reason = { self.shutdown_handle.read_shutdown_reason() };
 
-        if let Some(ShutdownReason::ThreadTermination) = shutdown_reason {
+        if let Some(ShutdownReason::Request) = shutdown_reason {
             // cleanly finish the futures
             self.stop_vm().await;
         }
-
-        self.tx
-            .send(VmEvent::Shutdown(if let Some(reason) = shutdown_reason {
-                reason
-            } else {
-                ShutdownReason::Unknown
-            }))
-            .unwrap();
     }
 
     fn check_terminated(&mut self) -> bool {
-        self.timeout_handle
+        self.shutdown_handle
             .terminated
             .load(std::sync::atomic::Ordering::SeqCst)
     }
@@ -571,7 +555,7 @@ impl Vm {
             &self.extension_factory,
             self.module_manager.clone(),
             self.script_store.clone(),
-            self.timeout_handle.clone(),
+            self.shutdown_handle.clone(),
         );
 
         self.runtime = new_rt;
@@ -722,20 +706,34 @@ impl VmShutdownHandle {
 
     pub fn shutdown_vm(&self, reason: ShutdownReason, force: bool) {
         let mut inner = self.inner.write().unwrap();
-        inner.shutdown_reason = Some(reason);
-        self.terminated
-            .store(true, std::sync::atomic::Ordering::SeqCst);
+
+        // only write shutdown reason once
+        if self
+            .terminated
+            .compare_exchange(
+                false,
+                true,
+                std::sync::atomic::Ordering::SeqCst,
+                std::sync::atomic::Ordering::SeqCst,
+            )
+            .is_ok()
+        {
+            inner.shutdown_reason = Some(reason);
+        };
 
         if let Some(iso_handle) = &inner.isolate_handle {
             if force {
                 iso_handle.terminate_execution();
             }
-        } else {
-            inner.shutdown_reason = None;
         }
 
         // trigger a shutdown check if we weren't in the js runtime
         self.wakeup.send(()).ok();
+    }
+
+    pub fn read_shutdown_reason(&self) -> Option<ShutdownReason> {
+        let inner = self.inner.read().unwrap();
+        inner.shutdown_reason
     }
 }
 
@@ -765,12 +763,12 @@ impl Wake for NoOpWaker {
     fn wake(self: Arc<Self>) {}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ShutdownReason {
-    Unknown,
     Runaway,
-    ThreadTermination,
+    Request,
     OutOfMemory,
+    DiscordInvalidRequestsRatelimit,
 }
 
 pub type VmCreateResult = Result<CreateVmSuccess, String>;

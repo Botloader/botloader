@@ -131,16 +131,8 @@ impl GuildHandler {
             }
             NextGuildAction::VmAction(action) => {
                 if let Some(evt) = self.scripts_session.handle_action(action).await {
-                    match evt {
-                        crate::vm_session::VmSessionEvent::TooManyInvalidRequests => {
-                            let _ = self.scheduler_tx.send(evt);
-                            return false;
-                        }
-                        crate::vm_session::VmSessionEvent::ForciblyShutdown => {
-                            let _ = self.scheduler_tx.send(evt);
-                            return false;
-                        }
-                    }
+                    let _ = self.scheduler_tx.send(evt);
+                    return false;
                 }
             }
         }

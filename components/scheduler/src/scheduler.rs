@@ -168,11 +168,14 @@ impl Scheduler {
 
     fn handle_guild_handler_event(&mut self, guild_id: Id<GuildMarker>, event: VmSessionEvent) {
         match event {
-            VmSessionEvent::ForciblyShutdown => {
-                info!("guild {} forcibly shut down, blacklisting it", guild_id);
+            VmSessionEvent::ShutdownExcessCpu => {
+                info!(
+                    "guild {} forcibly shut down for excess cpu usage, blacklisting it",
+                    guild_id
+                );
                 self.mark_guild_as_suspended(guild_id, SuspensionReason::ExcessCpu);
             }
-            VmSessionEvent::TooManyInvalidRequests => {
+            VmSessionEvent::ShutdownTooManyInvalidRequests => {
                 info!(
                     "guild {} forcibly shut down from too many invalid requests, blacklisting it",
                     guild_id

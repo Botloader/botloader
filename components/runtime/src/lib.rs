@@ -311,7 +311,6 @@ pub fn try_insert_resource_table<T: deno_core::Resource>(
 pub enum RuntimeEvent {
     ScriptStarted(ScriptMeta),
     NewTaskScheduled,
-    InvalidRequestsExceeded,
 }
 
 impl RuntimeEvent {
@@ -319,7 +318,6 @@ impl RuntimeEvent {
         match self {
             RuntimeEvent::ScriptStarted(_) => "RuntimeEvent::ScriptStarted",
             RuntimeEvent::NewTaskScheduled => "RuntimeEvent::NewTaskScheduled",
-            RuntimeEvent::InvalidRequestsExceeded => "RuntimeEvent::InvalidRequestsExceeded",
         }
     }
 }
