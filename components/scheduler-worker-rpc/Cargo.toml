@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 runtime-models = { path = "../../components/runtime-models" }
+vm = { path = "../../components/vm" }
 common = { path = "../../components/common" }
 stores = { path = "../../components/stores" }
 guild-logger = { path = "../../components/guild-logger" }

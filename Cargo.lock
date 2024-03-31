@@ -4148,6 +4148,7 @@ dependencies = [
  "tracing",
  "twilight-http",
  "twilight-model",
+ "vm",
 ]
 
 [[package]]
@@ -4163,6 +4164,7 @@ dependencies = [
  "stores",
  "tokio",
  "twilight-model",
+ "vm",
 ]
 
 [[package]]

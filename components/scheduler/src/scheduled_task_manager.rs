@@ -91,6 +91,12 @@ impl Manager {
         }
     }
 
+    pub fn remove_pending(&mut self, id: u64) {
+        if let Some(index) = self.pending.iter().position(|v| *v == id) {
+            self.pending.swap_remove(index);
+        }
+    }
+
     pub async fn ack_triggered_task(&mut self, id: u64) {
         if let Some(index) =
             self.pending

@@ -24,8 +24,9 @@ use stores::{
     Db,
 };
 use tokio::sync::oneshot;
-use tracing::{error, info, instrument};
+use tracing::{error, info, instrument, warn};
 use twilight_model::id::{marker::GuildMarker, Id};
+use vm::vm::ShutdownReason;
 
 pub struct VmSession {
     guild_id: Id<GuildMarker>,
@@ -44,7 +45,9 @@ pub struct VmSession {
     current_worker: Option<WorkerHandle>,
     force_load_scripts_next: bool,
     scripts: Vec<Script>,
-    id_gen: u64,
+
+    dispatch_id_gen: u64,
+    current_vm_session_id: u64,
 
     last_claimed_worker_id: Option<u64>,
     last_claimed_worker_at: Instant,
@@ -73,7 +76,8 @@ impl VmSession {
             logger,
             worker_pool,
             premium_tier,
-            id_gen: 1,
+            dispatch_id_gen: 1,
+            current_vm_session_id: 1,
             pending_acks: HashMap::new(),
             current_worker: None,
             scripts: Vec::new(),
@@ -96,7 +100,7 @@ impl VmSession {
 
     pub async fn start(&mut self) {
         self.try_retry_load_guild_scripts().await;
-        self.load_contribs().await;
+        self.start_fresh_vm().await;
     }
 
     pub fn get_status(&self) -> VmSessionStatus {
@@ -112,20 +116,52 @@ impl VmSession {
     #[instrument(skip(self, action), fields(guild_id = self.guild_id.get()))]
     pub async fn handle_action(&mut self, action: NextAction) -> Option<VmSessionEvent> {
         match action {
-            NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(reason))) => {
-                self.logger.log(CreateLogEntry::critical(format!(
-                    "vm was forcibly shut down, reason: {reason:?}"
-                )));
+            NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(shutdown))) => {
+                self.cancel_old_vm_session_pending_acks(shutdown.vm_session_id);
 
-                self.reset_contribs();
-                self.pending_acks.clear();
+                // we will be receiving a new set of tasks and timers for the new vm
+                self.scheduled_tasks_man.clear_task_names();
+                self.interval_timers_man.clear_loaded_timers();
 
-                match reason {
-                    scheduler_worker_rpc::ShutdownReason::TooManyInvalidRequests => {
-                        return Some(VmSessionEvent::TooManyInvalidRequests);
+                match shutdown.reason {
+                    Some(ShutdownReason::DiscordInvalidRequestsRatelimit) => {
+                        self.logger.log(CreateLogEntry::critical(
+                            "VM was forcibly shut down for issuing too many invalid discord \
+                             requests. Your guild has also been temporarily blacklisted for this \
+                             reason."
+                                .to_string(),
+                        ));
+
+                        return Some(VmSessionEvent::ShutdownTooManyInvalidRequests);
                     }
-                    _ => {
-                        return Some(VmSessionEvent::ForciblyShutdown);
+                    Some(ShutdownReason::Runaway) => {
+                        self.logger.log(CreateLogEntry::critical(
+                            "VM was forcibly shut down for blocking the thread for too long, this \
+                             means you might have an infinite loop somewhere."
+                                .to_string(),
+                        ));
+
+                        return Some(VmSessionEvent::ShutdownExcessCpu);
+                    }
+                    Some(ShutdownReason::OutOfMemory) => {
+                        self.logger.log(CreateLogEntry::critical(
+                            "VM ran out of memory, this should not normally happen from normal \
+                             use but if this was not intentional abuse please join the support \
+                             server and let us know."
+                                .to_owned(),
+                        ));
+                        warn!("VM ran out of memory");
+                    }
+                    Some(ShutdownReason::Request) => {
+                        self.logger.log(CreateLogEntry::info(
+                            "Vm was shut down gracefully.".to_owned(),
+                        ));
+                    }
+                    None => {
+                        error!("Unknown vm shutdown reason");
+                        self.logger.log(CreateLogEntry::error(
+                            "Vm was shut down due to a unknown reason?".to_owned(),
+                        ));
                     }
                 }
             }
@@ -136,62 +172,18 @@ impl VmSession {
                 self.broken_worker().await;
             }
             NextAction::CheckScheduledTasks => {
-                // Complicated logic to avoid runaway workers and duplicated runs
-                // TODO: should add some proper protection for duplicated runs to simplify this
-                if self.current_worker.is_some() {
-                    let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
-                    for task in tasks {
-                        self.dispatch_scheduled_task(task).await;
-                    }
-                } else {
-                    match self.ensure_claim_worker().await {
-                        ClaimWorkerResult::Reused => {
-                            let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
-                            if tasks.is_empty() {
-                                if self.pending_acks.is_empty() {
-                                    self.return_worker();
-                                }
-                            } else {
-                                for task in tasks {
-                                    self.dispatch_scheduled_task(task).await;
-                                }
-                            }
-                        }
-                        ClaimWorkerResult::Reloaded => {
-                            // contribs was cleared, no tasks/timers to fire.
-                        }
-                    }
+                let tasks = self.scheduled_tasks_man.start_triggered_tasks().await;
+                for task in tasks {
+                    self.dispatch_scheduled_task(task).await;
                 }
             }
             NextAction::CheckIntervalTimers => {
-                // Complicated logic to avoid runaway workers and duplicated runs
-                // TODO: should add some proper protection for duplicated runs to simplify this
-                if self.current_worker.is_some() {
-                    let timers = self.interval_timers_man.trigger_timers().await;
-                    for timer in timers {
-                        self.dispatch_interval_timer(timer).await;
-                    }
-                } else {
-                    match self.ensure_claim_worker().await {
-                        ClaimWorkerResult::Reused => {
-                            let timers = self.interval_timers_man.trigger_timers().await;
-                            if timers.is_empty() {
-                                if self.pending_acks.is_empty() {
-                                    self.return_worker();
-                                }
-                            } else {
-                                for timer in timers {
-                                    self.dispatch_interval_timer(timer).await;
-                                }
-                            }
-                        }
-                        ClaimWorkerResult::Reloaded => {
-                            // contribs was cleared, no tasks/timers to fire.
-                        }
-                    }
+                let timers = self.interval_timers_man.trigger_timers().await;
+                for timer in timers {
+                    self.dispatch_interval_timer(timer).await;
                 }
             }
-        }
+        };
 
         None
     }
@@ -221,6 +213,11 @@ impl VmSession {
             }
 
             match self.next_action().await {
+                NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(evt))) => {
+                    info!("Got shutdown event form vm! reason: {:?}", evt.reason);
+                    self.return_worker();
+                    break;
+                }
                 NextAction::WorkerMessage(Some(msg)) => self.handle_worker_msg(msg).await,
                 NextAction::WorkerMessage(None) => {
                     self.broken_worker().await;
@@ -237,7 +234,7 @@ impl VmSession {
         *r
     }
 
-    pub async fn load_contribs(&mut self) {
+    pub async fn start_fresh_vm(&mut self) {
         info!("loading contribs");
 
         if self.scripts.is_empty() {
@@ -250,7 +247,8 @@ impl VmSession {
                 self.broken_worker().await;
             }
         } else {
-            self.reset_contribs();
+            // if we have not claimed a worker then there's no pending acks
+            self.clear_loaded_timers_and_tasks();
 
             if self.scripts.is_empty() {
                 return;
@@ -278,9 +276,7 @@ impl VmSession {
 
     pub async fn next_action(&mut self) -> NextAction {
         let scheduled_task_sleep_check = match self.scheduled_tasks_man.next_action() {
-            scheduled_task_manager::NextAction::None => {
-                tokio::time::sleep(Duration::from_secs(60 * 60))
-            }
+            scheduled_task_manager::NextAction::None => tokio::time::sleep(Duration::MAX),
             scheduled_task_manager::NextAction::Wait(until) => {
                 let sleep_dur = (until - chrono::Utc::now())
                     .to_std()
@@ -293,9 +289,7 @@ impl VmSession {
         };
 
         let interval_timers_sleep_check = match self.interval_timers_man.next_action() {
-            interval_timer_manager::NextAction::None => {
-                tokio::time::sleep(Duration::from_secs(60 * 60))
-            }
+            interval_timer_manager::NextAction::None => tokio::time::sleep(Duration::MAX),
             interval_timer_manager::NextAction::Wait(until) => {
                 let sleep_dur = (until - chrono::Utc::now())
                     .to_std()
@@ -342,18 +336,18 @@ impl VmSession {
         match msg {
             WorkerMessage::Ack(id) => {
                 if let Some(item) = self.pending_acks.remove(&id) {
-                    match item {
-                        PendingAck::Dispatch(Some(resp)) => {
+                    match item.kind {
+                        PendingAckType::Dispatch(Some(resp)) => {
                             let _ = resp.send(());
                         }
-                        PendingAck::Dispatch(_) => {}
-                        PendingAck::ScheduledTask(t_id) => {
+                        PendingAckType::Dispatch(_) => {}
+                        PendingAckType::ScheduledTask(t_id) => {
                             self.scheduled_tasks_man.ack_triggered_task(t_id).await;
                         }
-                        PendingAck::IntervalTimer(timer) => {
+                        PendingAckType::IntervalTimer(timer) => {
                             self.interval_timers_man.timer_ack(&timer).await;
                         }
-                        PendingAck::Restart => {}
+                        PendingAckType::Restart => {}
                     }
                 }
             }
@@ -417,7 +411,7 @@ impl VmSession {
 
     pub async fn reload_guild_scripts(&mut self) {
         self.try_retry_load_guild_scripts().await;
-        self.load_contribs().await;
+        self.start_fresh_vm().await;
     }
 
     async fn dispatch_scheduled_task(&mut self, task: ScheduledTask) {
@@ -428,7 +422,7 @@ impl VmSession {
         self.dispatch_worker_evt(
             "BOTLOADER_SCHEDULED_TASK_FIRED".to_string(),
             serialized,
-            PendingAck::ScheduledTask(task_id),
+            PendingAckType::ScheduledTask(task_id),
             EventSource::Timer,
             Utc::now(),
         )
@@ -446,7 +440,7 @@ impl VmSession {
         self.dispatch_worker_evt(
             "BOTLOADER_INTERVAL_TIMER_FIRED".to_string(),
             serialized,
-            PendingAck::IntervalTimer(TimerId::new(timer.plugin_id, timer.name)),
+            PendingAckType::IntervalTimer(TimerId::new(timer.plugin_id, timer.name)),
             EventSource::Timer,
             Utc::now(),
         )
@@ -461,7 +455,7 @@ impl VmSession {
                 self.dispatch_worker_evt(
                     converted_evt.name.to_string(),
                     converted_evt.data,
-                    PendingAck::Dispatch(None),
+                    PendingAckType::Dispatch(None),
                     EventSource::Discord,
                     ts_clone,
                 )
@@ -480,7 +474,7 @@ impl VmSession {
         &mut self,
         t: String,
         data: serde_json::Value,
-        ack: PendingAck,
+        ack: PendingAckType,
         source: EventSource,
         ts: DateTime<Utc>,
     ) {
@@ -491,7 +485,7 @@ impl VmSession {
         loop {
             self.ensure_claim_worker().await;
 
-            let evt_id = self.gen_id();
+            let evt_id = self.gen_dispatch_id();
 
             if let Some(worker) = &self.current_worker {
                 match worker.tx.send(SchedulerMessage::Dispatch(VmDispatchEvent {
@@ -502,7 +496,13 @@ impl VmSession {
                     source_timestamp: ts,
                 })) {
                     Ok(_) => {
-                        self.pending_acks.insert(evt_id, ack);
+                        self.pending_acks.insert(
+                            evt_id,
+                            PendingAck {
+                                dispatched_session_id: self.current_vm_session_id,
+                                kind: ack,
+                            },
+                        );
                         return;
                     }
                     Err(_) => {
@@ -534,9 +534,9 @@ impl VmSession {
             self.last_claimed_worker_at = Instant::now();
 
             let res = if should_create_vm {
-                // new worker, reset acks and whatnot
-                self.pending_acks.clear();
-                self.reset_contribs();
+                // new vm, we will receive new timers
+                self.clear_loaded_timers_and_tasks();
+
                 if self.send_create_scripts_vm().await.is_err() {
                     self.broken_worker().await;
                     // try again
@@ -552,20 +552,17 @@ impl VmSession {
         }
     }
 
-    // TODO: this should reset contribs in some way, reason for this being
-    // task handlers/interval timers could have been removed
-    //
-    // but we would have to wait for potential in flight tasks/timers
-    // and the only downside for not resetting contribs is timers being fired that's not used
     #[instrument(skip_all)]
     async fn send_create_scripts_vm(&mut self) -> Result<(), ()> {
-        let evt_id = self.gen_id();
+        let evt_id = self.gen_dispatch_id();
+        let new_session_id = self.invalidate_create_new_session_id();
 
         if let Some(worker) = &self.current_worker {
             if worker
                 .tx
                 .send(SchedulerMessage::CreateScriptsVm(CreateScriptsVmReq {
                     seq: evt_id,
+                    session_id: new_session_id,
                     guild_id: self.guild_id,
                     premium_tier: self.get_premium_tier().option(),
                     scripts: self.scripts.clone(),
@@ -575,7 +572,13 @@ impl VmSession {
                 return Err(());
             }
 
-            self.pending_acks.insert(evt_id, PendingAck::Restart);
+            self.pending_acks.insert(
+                evt_id,
+                PendingAck {
+                    dispatched_session_id: self.current_vm_session_id,
+                    kind: PendingAckType::Restart,
+                },
+            );
         } else {
             panic!("no worker");
         }
@@ -593,17 +596,56 @@ impl VmSession {
             }
 
             self.worker_pool.return_worker(worker, true);
-            self.reset_contribs();
+            self.clear_loaded_timers_and_tasks();
+            self.clear_all_pending_timer_acks();
             self.pending_acks.clear();
+
+            // We could start a new vm here but im unsure if that's a wise choice.
+            // If the issue is recurring this will continue to break workers in a loop effectively
+            // will have to do some thinking on this one.
         }
     }
 
-    fn reset_contribs(&mut self) {
+    fn cancel_old_vm_session_pending_acks(&mut self, session_id: u64) {
+        let to_cancel = self
+            .pending_acks
+            .iter()
+            .filter_map(|(id, pending)| {
+                (pending.dispatched_session_id <= session_id).then_some(*id)
+            })
+            .collect::<Vec<_>>();
+
+        for id in to_cancel {
+            self.cancel_pending_ack(id)
+        }
+    }
+
+    fn cancel_pending_ack(&mut self, evt_id: u64) {
+        let Some(pending) = self.pending_acks.remove(&evt_id) else {
+            return;
+        };
+
+        match pending.kind {
+            PendingAckType::Dispatch(_) => {}
+            PendingAckType::ScheduledTask(task) => {
+                self.scheduled_tasks_man.remove_pending(task);
+            }
+            PendingAckType::IntervalTimer(timer) => {
+                self.interval_timers_man.remove_pending(timer);
+            }
+            PendingAckType::Restart => {}
+        }
+    }
+
+    fn clear_loaded_timers_and_tasks(&mut self) {
         self.interval_timers_man.clear_loaded_timers();
-        self.interval_timers_man.clear_pending_acks();
-        self.scheduled_tasks_man.clear_pending();
         self.scheduled_tasks_man.clear_task_names();
         self.scheduled_tasks_man.clear_next();
+    }
+
+    fn clear_all_pending_timer_acks(&mut self) {
+        self.interval_timers_man.clear_pending_acks();
+        self.scheduled_tasks_man.clear_pending();
     }
 
     fn should_send_scripts(&mut self, wr: WorkerRetrieved) -> bool {
@@ -617,9 +659,14 @@ impl VmSession {
         true
     }
 
-    fn gen_id(&mut self) -> u64 {
-        self.id_gen += 1;
-        self.id_gen
+    fn gen_dispatch_id(&mut self) -> u64 {
+        self.dispatch_id_gen += 1;
+        self.dispatch_id_gen
+    }
+
+    fn invalidate_create_new_session_id(&mut self) -> u64 {
+        self.current_vm_session_id += 1;
+        self.current_vm_session_id
     }
 
     async fn script_loaded(&mut self, evt: ScriptMeta) {
@@ -709,11 +756,16 @@ pub enum NextAction {
 }
 
 pub enum VmSessionEvent {
-    TooManyInvalidRequests,
-    ForciblyShutdown,
+    ShutdownTooManyInvalidRequests,
+    ShutdownExcessCpu,
 }
 
-pub enum PendingAck {
+pub struct PendingAck {
+    dispatched_session_id: u64,
+    kind: PendingAckType,
+}
+
+pub enum PendingAckType {
     Dispatch(Option<oneshot::Sender<()>>),
     ScheduledTask(u64),
     IntervalTimer(TimerId),

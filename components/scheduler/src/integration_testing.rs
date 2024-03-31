@@ -5,7 +5,7 @@ use std::{
 
 use guild_logger::LogEntry;
 use serde::Deserialize;
-use tracing::info;
+use tracing::{error, info};
 
 pub struct State {
     completions: i32,
@@ -74,6 +74,7 @@ impl Tracker {
     }
 
     fn handle_err(&self, err: String) {
+        error!("Got guild log error: {err}");
         let mut locked = self.state.write().unwrap();
         locked.err = Some(err);
     }

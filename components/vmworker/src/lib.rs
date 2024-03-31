@@ -3,10 +3,12 @@ use std::sync::{Arc, RwLock};
 use common::DiscordConfig;
 use guild_logger::LogSender;
 use runtime::{CreateRuntimeContext, RuntimeEvent, ScriptSettingsValues};
-use scheduler_worker_rpc::{CreateScriptsVmReq, SchedulerMessage, ShutdownReason, WorkerMessage};
+use scheduler_worker_rpc::{
+    CreateScriptsVmReq, SchedulerMessage, VmSessionShutdownEvent, WorkerMessage,
+};
 use stores::{config::PremiumSlotTier, Db};
 use tokio::sync::mpsc;
-use tracing::{error, info, instrument}; 
+use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
 use vm::vm::{CreateRt, VmCommand, VmEvent, VmShutdownHandle};
 
@@ -21,22 +23,19 @@ pub async fn run(config: WorkerConfig) -> Result<(), Box<dyn std::error::Error>>
 
     info!("worker starting");
 
-    #[cfg(target_family = "unix")] 
+    #[cfg(target_family = "unix")]
     let (scheduler_tx, scheduler_rx) =
         connect_scheduler("/tmp/botloader_scheduler_workers", config.worker_id).await;
 
-    #[cfg(target_family = "windows")] 
-    let (scheduler_tx, scheduler_rx) =
-        connect_scheduler("localhost:7885", config.worker_id).await;
+    #[cfg(target_family = "windows")]
+    let (scheduler_tx, scheduler_rx) = connect_scheduler("localhost:7885", config.worker_id).await;
 
     metrics::set_global_recorder(metrics_forwarder::MetricsForwarder {
         tx: scheduler_tx.clone(),
     })
     .expect("set metrics recorder");
 
-    let postgres_store = Db::new_with_url(&config.common.database_url)
-            .await
-            .unwrap();
+    let postgres_store = Db::new_with_url(&config.common.database_url).await.unwrap();
 
     // suppress signals for now
     // TODO: remove this? do we need signals here?
@@ -90,9 +89,10 @@ pub struct WorkerConfig {
 
 struct WorkerState {
     guild_id: Id<GuildMarker>,
-    vm_thread: VmShutdownHandle,
+    shutdown_handle: VmShutdownHandle,
     scripts_vm: mpsc::UnboundedSender<VmCommand>,
     evt_rx: mpsc::UnboundedReceiver<VmEvent>,
+    session_id: u64,
 }
 
 struct Worker {
@@ -161,9 +161,8 @@ impl Worker {
                             self.handle_vm_evt(evt).await
                         }else{
                             info!("vm shut down: channel closed");
-                            self.current_state = None;
-
-                            self.write_message(WorkerMessage::Shutdown(ShutdownReason::Other)).await.map(|_| ContinueState::Continue)
+                            let current = self.current_state.take().unwrap();
+                            self.handle_vm_channel_closed(&current).await.map(|_|ContinueState::Continue)
                         }
                     }
                 }
@@ -195,13 +194,15 @@ impl Worker {
             }
         }
 
-        self.wait_shutdown_current_vm().await;
+        if let Err(err) = self.wait_shutdown_current_vm().await {
+            error!(%err, "failed shutting down current vm")
+        }
     }
 
     #[instrument(
         skip(self, cmd),
         fields(
-            guild_id = cmd.guild_id().or(self.current_guild_id()).map(|v| v.to_string()), 
+            guild_id = ?self.span_guild_id_or_scheduler_message_guild_id(&cmd),
             message_type = cmd.span_name()
         )
     )]
@@ -213,9 +214,7 @@ impl Worker {
             SchedulerMessage::Dispatch(evt) => {
                 info!("worker is dispatching {}", evt.name);
                 if let Some(current) = &self.current_state {
-                    let _ = current
-                        .scripts_vm
-                        .send(VmCommand::DispatchEvent(evt));
+                    let _ = current.scripts_vm.send(VmCommand::DispatchEvent(evt));
                 }
 
                 Ok(ContinueState::Continue)
@@ -226,8 +225,8 @@ impl Worker {
                 // complete the vm
                 if let Some(current) = &self.current_state {
                     current
-                        .vm_thread
-                        .shutdown_vm(vm::vm::ShutdownReason::ThreadTermination, false);
+                        .shutdown_handle
+                        .shutdown_vm(vm::vm::ShutdownReason::Request, false);
                 }
                 Ok(ContinueState::Continue)
             }
@@ -237,7 +236,7 @@ impl Worker {
     #[instrument(
         skip(self, evt),
         fields(
-            guild_id = self.current_guild_id().map(|v| v.to_string()), 
+            guild_id = ?self.current_guild_id(),
             evt = evt.span_name()
         )
     )]
@@ -249,12 +248,6 @@ impl Worker {
             RuntimeEvent::NewTaskScheduled => {
                 self.write_message(WorkerMessage::TaskScheduled).await?;
             }
-            RuntimeEvent::InvalidRequestsExceeded => {
-                self.write_message(WorkerMessage::Shutdown(
-                    ShutdownReason::TooManyInvalidRequests,
-                ))
-                .await?;
-            }
         }
         Ok(ContinueState::Continue)
     }
@@ -262,37 +255,11 @@ impl Worker {
     #[instrument(
         skip(self),
         fields(
-            guild_id = self.current_guild_id().map(|v| v.to_string()),
+            guild_id = ?self.current_guild_id(),
         )
     )]
     async fn handle_vm_evt(&mut self, evt: VmEvent) -> anyhow::Result<ContinueState> {
         match evt {
-            VmEvent::Shutdown(reason) => {
-                info!("vm shut down: {:?}", reason);
-                // shut down the vm thread
-                self.wait_shutdown_current_vm().await;
-
-                while let Ok(evt) = self.runtime_evt_rx.try_recv() {
-                    self.handle_runtime_evt(evt).await?;
-                }
-
-                match reason {
-                    vm::vm::ShutdownReason::OutOfMemory => {
-                        self.write_message(WorkerMessage::Shutdown(ShutdownReason::OutOfMemory))
-                            .await?
-                    }
-                    vm::vm::ShutdownReason::Runaway => {
-                        self.write_message(WorkerMessage::Shutdown(ShutdownReason::Runaway))
-                            .await?
-                    }
-                    vm::vm::ShutdownReason::Unknown | vm::vm::ShutdownReason::ThreadTermination => {
-                        self.write_message(WorkerMessage::Shutdown(ShutdownReason::Other))
-                            .await?
-                    }
-                }
-
-                self.write_message(WorkerMessage::NonePending).await?
-            }
             VmEvent::DispatchedEvent(id) => self.write_message(WorkerMessage::Ack(id)).await?,
             VmEvent::VmFinished => {
                 while let Ok(evt) = self.runtime_evt_rx.try_recv() {
@@ -312,10 +279,7 @@ impl Worker {
         req: CreateScriptsVmReq,
     ) -> anyhow::Result<ContinueState> {
         if self.current_state.is_some() {
-        // if let Some(_) = &self.current_state {
-            // if current.guild_id != req.guild_id {
-                self.wait_shutdown_current_vm().await;
-            // }
+            self.wait_shutdown_current_vm().await?;
         };
 
         {
@@ -355,7 +319,7 @@ impl Worker {
                     settings_values: v.settings_values.clone(),
                 })
                 .collect(),
-    
+
             db: self.stores.clone(),
             event_tx: self.runtime_evt_tx.clone(),
         };
@@ -378,7 +342,8 @@ impl Worker {
             guild_id: req.guild_id,
             scripts_vm: vm_cmd_tx,
             evt_rx: vm_evt_rx,
-            vm_thread: vmthread,
+            shutdown_handle: vmthread,
+            session_id: req.session_id,
         });
 
         self.write_message(WorkerMessage::Ack(req.seq)).await?;
@@ -393,19 +358,49 @@ impl Worker {
         }
     }
 
-    async fn wait_shutdown_current_vm(&mut self) {
-        if let Some(current) = &self.current_state {
-            current
-                .vm_thread
-                .shutdown_vm(vm::vm::ShutdownReason::ThreadTermination, false);
+    async fn wait_shutdown_current_vm(&mut self) -> anyhow::Result<()> {
+        let Some(current) = self.current_state.take() else {
+            return Ok(());
+        };
 
-            current.scripts_vm.closed().await;
-            self.current_state = None;
+        current
+            .shutdown_handle
+            .shutdown_vm(vm::vm::ShutdownReason::Request, false);
+
+        current.scripts_vm.closed().await;
+
+        self.handle_vm_channel_closed(&current).await
+    }
+
+    async fn handle_vm_channel_closed(&mut self, state: &WorkerState) -> anyhow::Result<()> {
+        self.drain_runtime_events().await?;
+
+        let reason = state.shutdown_handle.read_shutdown_reason();
+
+        self.write_message(WorkerMessage::Shutdown(VmSessionShutdownEvent {
+            reason,
+            vm_session_id: state.session_id,
+        }))
+        .await
+    }
+
+    async fn drain_runtime_events(&mut self) -> anyhow::Result<()> {
+        while let Ok(evt) = self.runtime_evt_rx.try_recv() {
+            self.handle_runtime_evt(evt).await?;
         }
+
+        Ok(())
     }
 
     fn current_guild_id(&self) -> Option<Id<GuildMarker>> {
         self.current_state.as_ref().map(|v| v.guild_id)
+    }
+
+    fn span_guild_id_or_scheduler_message_guild_id(
+        &self,
+        cmd: &SchedulerMessage,
+    ) -> Option<Id<GuildMarker>> {
+        cmd.guild_id().or(self.current_guild_id())
     }
 }
 
@@ -424,15 +419,15 @@ impl guild_logger::GuildLoggerBackend for GuildLogForwarder {
         let _ = self.tx.send(WorkerMessage::GuildLog(entry));
     }
 }
-  
-#[cfg(target_family = "unix")] 
+
+#[cfg(target_family = "unix")]
 async fn connect_scheduler(
     path: &str,
     id: u64,
 ) -> (
     mpsc::UnboundedSender<WorkerMessage>,
     mpsc::UnboundedReceiver<SchedulerMessage>,
-) { 
+) {
     let mut stream = tokio::net::UnixStream::connect(path)
         .await
         .expect("scheduler should have opened socket");
@@ -460,16 +455,14 @@ async fn connect_scheduler(
     (scheduler_tx, scheduler_rx)
 }
 
-
-  
-#[cfg(target_family = "windows")] 
+#[cfg(target_family = "windows")]
 async fn connect_scheduler(
     addr: &str,
     id: u64,
 ) -> (
     mpsc::UnboundedSender<WorkerMessage>,
     mpsc::UnboundedReceiver<SchedulerMessage>,
-) { 
+) {
     let mut stream = tokio::net::TcpStream::connect(addr)
         .await
         .expect("scheduler should have opened socket");

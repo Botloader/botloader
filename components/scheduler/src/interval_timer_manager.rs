@@ -22,13 +22,17 @@ impl TimerId {
     pub fn new(plugin_id: Option<u64>, name: String) -> Self {
         TimerId(plugin_id, name)
     }
+
+    pub fn identifies_timer(&self, timer: &IntervalTimer) -> bool {
+        timer.plugin_id == self.0 && timer.name == self.1
+    }
 }
 
 pub struct Manager {
     storage: Db,
     guild_id: Id<GuildMarker>,
     loaded_intervals: HashMap<TimerId, WrappedIntervalTimer>,
-    pending: Vec<TimerId>,
+    pending: Vec<IntervalTimer>,
     cron_smear: Duration,
 }
 
@@ -71,8 +75,7 @@ impl Manager {
             // we need to trigger some timers
             let triggered = self.get_triggered_timers(now);
             for t in &triggered {
-                self.pending
-                    .push(TimerId(t.inner.plugin_id, t.inner.name.clone()))
+                self.pending.push(t.inner.clone())
             }
             triggered.into_iter().map(|v| v.inner).collect()
         } else {
@@ -80,28 +83,16 @@ impl Manager {
         }
     }
 
-    pub async fn timer_ack(&mut self, timer: &TimerId) {
-        if let Some(index) =
-            self.pending
-                .iter()
-                .enumerate()
-                .find_map(|(i, v)| if v == timer { Some(i) } else { None })
+    pub async fn timer_ack(&mut self, timer_id: &TimerId) {
+        if let Some(index) = self
+            .pending
+            .iter()
+            .position(|v| timer_id.identifies_timer(v))
         {
-            self.pending.swap_remove(index);
-            self.update_next_run(Utc::now(), timer).await;
+            let timer = self.pending.swap_remove(index);
+            self.update_last_run(Utc::now(), timer).await;
         }
     }
-
-    // pub async fn timer_ack_failed(&mut self, timer: String) {
-    //     if let Some(index) =
-    //         self.pending
-    //             .iter()
-    //             .enumerate()
-    //             .find_map(|(i, v)| if *v == timer { Some(i) } else { None })
-    //     {
-    //         self.pending.swap_remove(index);
-    //     }
-    // }
 
     pub async fn script_started(&mut self, timers: Vec<IntervalTimerContrib>) {
         if timers.is_empty() {
@@ -131,37 +122,54 @@ impl Manager {
         self.pending.clear();
     }
 
+    pub fn remove_pending(&mut self, id: TimerId) {
+        if let Some(index) = self.pending.iter().position(|v| id.identifies_timer(v)) {
+            self.pending.swap_remove(index);
+        }
+    }
+
     fn get_triggered_timers(&self, now: DateTime<Utc>) -> Vec<WrappedIntervalTimer> {
         self.loaded_intervals
             .iter()
-            .filter(|(name, _)| !self.pending.contains(name))
+            .filter(|(name, _)| {
+                !self
+                    .pending
+                    .iter()
+                    .any(|pending| name.identifies_timer(pending))
+            })
             .filter(|(_, t)| t.is_triggered(now))
             .map(|(_, t)| t.clone())
             .collect::<Vec<_>>()
     }
 
-    async fn update_next_run(&mut self, t: DateTime<Utc>, timer_id: &TimerId) {
-        let timer = if let Some(timer) = self.loaded_intervals.get_mut(timer_id) {
-            timer
-        } else {
-            return;
-        };
+    async fn update_last_run(&mut self, t: DateTime<Utc>, triggered_timer: IntervalTimer) {
+        let mut triggered_inner_clone = triggered_timer.clone();
+        triggered_inner_clone.last_run = t;
 
-        timer.inner.last_run = t;
-        if let Some(next) = timer.parsed_type.next_run_time(t) {
-            timer.next_run = next;
-        } else {
-            timer.next_run = t.add(Duration::hours(1000));
-        }
-
-        // update last run
         if let Err(err) = self
             .storage
-            .update_interval_timer(self.guild_id, timer.inner.clone())
+            .update_interval_timer(self.guild_id, triggered_inner_clone)
             .await
         {
             tracing::error!(%err, "failed updating timer")
         };
+
+        // update next time if the timer is loaded
+        let Some(loaded_timer) = self.loaded_intervals.get_mut(&TimerId(
+            triggered_timer.plugin_id,
+            triggered_timer.name.clone(),
+        )) else {
+            // timer is not loaded, we have already updated the last run time so we don't need to do more
+            return;
+        };
+
+        loaded_timer.inner.last_run = t;
+        if let Some(next) = loaded_timer.parsed_type.next_run_time(t) {
+            loaded_timer.next_run = next;
+        } else {
+            // TODO: proper handling of unknown next time, this could happen with invalid cron times for example
+            loaded_timer.next_run = t.add(Duration::days(100 * 365));
+        }
     }
 
     async fn init_timer(
@@ -203,7 +211,13 @@ impl Manager {
         let lowest_interval = self
             .loaded_intervals
             .iter()
-            .filter(|(name, _)| !self.pending.contains(name))
+            .filter(|(name, _)| {
+                // filter timers already triggered that were waiting to hear back from being run
+                !self
+                    .pending
+                    .iter()
+                    .any(|pending| name.identifies_timer(pending))
+            })
             .min_by(|(_, a), (_, b)| a.next_run.cmp(&b.next_run));
 
         lowest_interval.map(|(_, v)| v.next_run_with_cron_smear(self.cron_smear))

@@ -5,6 +5,7 @@ use runtime_models::internal::script::ScriptMeta;
 use serde::{Deserialize, Serialize};
 use stores::config::{PremiumSlotTier, Script};
 use twilight_model::id::{marker::GuildMarker, Id};
+use vm::vm::ShutdownReason;
 
 #[derive(Deserialize, Serialize)]
 pub enum SchedulerMessage {
@@ -38,15 +39,22 @@ impl SchedulerMessage {
 #[derive(Deserialize, Serialize)]
 pub struct CreateScriptsVmReq {
     pub seq: u64,
+    pub session_id: u64,
     pub premium_tier: Option<PremiumSlotTier>,
     pub guild_id: Id<GuildMarker>,
     pub scripts: Vec<Script>,
 }
 
 #[derive(Deserialize, Serialize)]
+pub struct VmSessionShutdownEvent {
+    pub vm_session_id: u64,
+    pub reason: Option<ShutdownReason>,
+}
+
+#[derive(Deserialize, Serialize)]
 pub enum WorkerMessage {
     Ack(u64),
-    Shutdown(ShutdownReason),
+    Shutdown(VmSessionShutdownEvent),
     ScriptStarted(ScriptMeta),
     ScriptsInit,
     NonePending,
@@ -70,14 +78,6 @@ impl WorkerMessage {
             WorkerMessage::Metric(_, _, _) => "Metric",
         }
     }
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub enum ShutdownReason {
-    Runaway,
-    OutOfMemory,
-    Other,
-    TooManyInvalidRequests,
 }
 
 #[derive(Deserialize, Serialize, Debug)]

@@ -56,7 +56,7 @@ use twilight_model::{
 use vm::AnyError;
 
 use super::{get_guild_channel, parse_discord_id, parse_get_guild_channel, parse_str_snowflake_id};
-use crate::{get_rt_ctx, limits::RateLimiters, RuntimeContext, RuntimeEvent};
+use crate::{get_rt_ctx, limits::RateLimiters, RuntimeContext};
 
 deno_core::extension!(
     bl_discord,
@@ -209,8 +209,10 @@ pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Er
                     guild_id = rt_ctx.guild_id.get(),
                     "guild hit >30 invalid requests within 60s, suspending it"
                 );
-                let _ = rt_ctx.event_tx.send(RuntimeEvent::InvalidRequestsExceeded);
-                handle.shutdown_vm(vm::vm::ShutdownReason::Unknown, false);
+                handle.shutdown_vm(
+                    vm::vm::ShutdownReason::DiscordInvalidRequestsRatelimit,
+                    false,
+                );
             }
         }
     }
