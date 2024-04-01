@@ -2,7 +2,7 @@ import { Tasks } from "botloader";
 import { runOnce, sendScriptCompletion } from "lib"
 
 // this test checks the validation of the max value size
-runOnce("tasks_data.ts", async () => {
+runOnce(script.name, async () => {
 
     let data: any[] | null = [];
     for (let i = 0; i < 1000; i++) {
@@ -15,7 +15,7 @@ runOnce("tasks_data.ts", async () => {
         });
     } catch (e) {
         data = null;
-        sendScriptCompletion();
+        sendScriptCompletion(script.name);
         return;
     }
 

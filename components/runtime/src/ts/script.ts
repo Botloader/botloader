@@ -16,6 +16,7 @@ import { SettingsManager } from "./settings";
  */
 export class Script {
     readonly scriptId: number;
+    readonly name: string;
     readonly description: string;
     readonly pluginId: string | null;
 
@@ -33,8 +34,9 @@ export class Script {
     /**
      * @internal
      */
-    constructor(id: number, pluginId: string | null) {
+    constructor(name: string, id: number, pluginId: string | null) {
         this.description = `script id ${id}`;
+        this.name = name;
         this.scriptId = id;
         this.pluginId = pluginId;
         this.settings = new SettingsManager(id)

@@ -3,7 +3,7 @@ import { assertExpected, runOnce, sendScriptCompletion } from 'lib';
 
 const { Permissions } = Discord;
 
-runOnce("permissions.ts", () => {
+runOnce(script.name, () => {
     let _ = new Permissions("1");
 
     let fun = new Permissions(Permissions.AddReactions, Permissions.SendMessages, Permissions.ManageChannels);
@@ -28,5 +28,5 @@ runOnce("permissions.ts", () => {
     assertExpected(true, removed.hasAll(Permissions.ManageChannels));
     assertExpected(true, addedBack.hasAll(Permissions.SendMessages, Permissions.ManageChannels));
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 });

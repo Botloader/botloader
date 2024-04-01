@@ -4,7 +4,7 @@ import { assertExpected, runOnce, sendScriptCompletion } from "lib";
 const channelId = "959455076898975884";
 const messageId1 = "959455086885609562";
 const messageId2 = "959455089154728006";
-runOnce("pins.ts", async () => {
+runOnce(script.name, async () => {
 
     await Discord.createPin(channelId, messageId1);
     await Discord.createPin(channelId, messageId2);
@@ -23,5 +23,5 @@ script.onTask("pins.ts_1", async (t) => {
     let pins = await Discord.getPins(channelId);
     assertExpected(0, pins.length);
 
-    sendScriptCompletion()
+    sendScriptCompletion(script.name)
 })

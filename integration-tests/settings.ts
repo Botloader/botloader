@@ -94,10 +94,10 @@ function testListOptions() {
     }
 }
 
-runOnce("settings", () => {
+runOnce(script.name, () => {
     testTopLevelOptions()
 
     testListOptions()
 
-    sendScriptCompletion()
+    sendScriptCompletion(script.name)
 }) 

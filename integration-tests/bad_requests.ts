@@ -1,10 +1,9 @@
 import { Discord, Tasks } from "botloader";
 import { runOnce, sendScriptCompletion } from "lib";
 
-runOnce("bad_requests", async () => {
+runOnce(script.name, async () => {
     for (let i = 0; i < 15; i++) {
         try {
-
             await Discord.createMessage("959117510161076266", { content: "invalid test" });
         } catch (e) { }
 
@@ -21,5 +20,5 @@ script.onTask("bad_requests_send_more", async (t) => {
         } catch (e) { }
     }
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 })

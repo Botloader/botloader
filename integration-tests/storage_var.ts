@@ -2,7 +2,7 @@ import { assertExpected, runOnce, sendScriptCompletion } from "lib";
 
 const counter = script.createStorageVarNumber("storage_var_counter");
 
-runOnce("storage_var.ts", async () => {
+runOnce(script.name, async () => {
 
     const entry = await counter.incr(1);
     const anotherEntry = await counter.incr(1);
@@ -13,5 +13,5 @@ runOnce("storage_var.ts", async () => {
     let changed = await counter.get();
     assertExpected(100, changed?.value);
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 });

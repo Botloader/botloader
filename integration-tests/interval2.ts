@@ -13,7 +13,7 @@ script.onInterval("test2", "* * * * *", async () => {
     if (lr) {
         assertElapsed(lr.value, 60000);
         await completed.set(1);
-        sendScriptCompletion();
+        sendScriptCompletion(script.name);
     } else {
         await lastRun.set(Date.now());
     }

@@ -23,10 +23,10 @@ script.onTask<Data>("simple", (t) => {
     data.scheduledAt = t.data.scheduledAt;
     assetJsonEquals(t.data, data);
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 })
 
-runOnce("tasks_simple.ts", async () => {
+runOnce(script.name, async () => {
     await Tasks.schedule("simple", new Date(data.scheduledAt + 10000), {
         data: data
     });

@@ -49,10 +49,10 @@ async function testDelNamespace() {
     assetJsonEquals(await Tasks.getById(taskOtherNs.id), taskOtherNs);
 }
 
-runOnce("tasks_del.ts", async () => {
+runOnce(script.name, async () => {
     await testDelId();
     await testDelKey();
     await testDelNamespace();
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 })

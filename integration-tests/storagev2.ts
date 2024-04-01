@@ -2,7 +2,7 @@
 import { assertExpected, runOnce, sendScriptCompletion } from "lib"
 
 // @ts-ignore
-const scriptPlugin: typeof script = new Script(script.scriptId, "1")
+const scriptPlugin: typeof script = new Script("__FAKE.ts", script.scriptId, "1")
 
 interface TestStorageType {
     a: number,
@@ -16,10 +16,10 @@ const bucketNumber = script.createStorageNumber("storagev2_number")
 const bucketNumberInPlugin = scriptPlugin.createStorageNumber("storagev2_number")
 
 // this test checks the validation of the max value size
-runOnce("storagev2.ts", async () => {
+runOnce(script.name, async () => {
     await testJson()
     await testNumber()
-    sendScriptCompletion()
+    sendScriptCompletion(script.name)
 })
 
 async function testJson() {

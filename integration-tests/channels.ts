@@ -54,11 +54,11 @@ script.on("CHANNEL_DELETE", async (channel) => {
             ]
         })
     } else if (channel.name === "bl-chtest-2") {
-        sendScriptCompletion();
+        sendScriptCompletion(script.name);
     }
 })
 
-runOnce("channels.ts", async () => {
+runOnce(script.name, async () => {
     let channel = await Discord.createChannel({
         name: "bl-chtest-1",
         topic: "We are gaming",

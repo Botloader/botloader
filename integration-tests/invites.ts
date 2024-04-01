@@ -39,11 +39,11 @@ script.on("INVITE_DELETE", async (evt) => {
         return
     }
 
-    sendScriptCompletion()
+    sendScriptCompletion(script.name)
 
 })
 
-runOnce("invites.ts", async () => {
+runOnce(script.name, async () => {
     await Discord.createChannelInvite(channelId, {
         maxUses: 10,
         maxAgeSeconds: 200,

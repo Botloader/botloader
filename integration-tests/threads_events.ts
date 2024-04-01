@@ -8,7 +8,7 @@ const threadsTestChannelId = "1206878101473329183"
 const threadStorageState = script.createStorageVarJson<"adding_member" | "removing_member" | "archiving" | "complete">("threads_events_state")
 const threadStorage = script.createStorageVarJson<string>("threads_events")
 
-runOnce("threads_events.ts", async () => {
+runOnce(script.name, async () => {
     let channel = await Discord.createStandaloneThread({
         // invitable: true,
         channelId: threadsTestChannelId,
@@ -57,7 +57,7 @@ script.on("THREAD_UPDATE", async (evt) => {
                 // success
                 const newState = await threadStorageState.delete()
                 if (newState) {
-                    sendScriptCompletion()
+                    sendScriptCompletion(script.name)
                 }
             }
         }

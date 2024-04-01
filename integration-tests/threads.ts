@@ -5,13 +5,13 @@ const testForumId = "1206877897529364541"
 const testMemberId = "204255221017214977"
 const threadsTestChannelId = "1206878101473329183"
 
-runOnce("threads.ts", async () => {
+runOnce(script.name, async () => {
     await testPublicStandaloneThread()
     await testPrivateStandaloneThread()
     await testMessageThread()
     await testForumThread()
 
-    sendScriptCompletion()
+    sendScriptCompletion(script.name)
 })
 
 async function testPublicStandaloneThread() {

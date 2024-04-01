@@ -1,7 +1,7 @@
 import { Storage } from "botloader";
 import { assertExpected, runOnce, sendScriptCompletion } from "lib";
 
-runOnce("storage_simple2", async () => {
+runOnce(script.name, async () => {
     let bucket = script.createStorageNumber("storage_simple2.ts");
 
     await assertCount(bucket, 0);
@@ -21,7 +21,7 @@ runOnce("storage_simple2", async () => {
     assertExpected(2, deleted)
     await assertCount(bucket, 3);
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 });
 
 async function assertCount<T>(bucket: Storage.Bucket<T>, expected: number, pattern?: string) {

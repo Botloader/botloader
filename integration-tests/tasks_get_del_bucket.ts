@@ -14,12 +14,12 @@ const bucketPluginCustom = script.createTaskBucket({
     customScope: { kind: "Plugin", pluginId: "1" }
 }, () => { })
 
-runOnce("tasks_get_del_bucket.ts", async () => {
+runOnce(script.name, async () => {
     await testGetDelKeys()
     await testGetAll()
     await testDelSingular()
 
-    sendScriptCompletion()
+    sendScriptCompletion(script.name)
 })
 
 async function testGetDelKeys() {

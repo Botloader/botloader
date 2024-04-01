@@ -4,7 +4,7 @@ import { assertExpected, runOnce, sendScriptCompletion } from "lib";
 const emoji = { unicode: "😀" }
 const channelId = "531120790318350338";
 
-runOnce("reactions.ts", async () => {
+runOnce(script.name, async () => {
     let msg = await Discord.createMessage(channelId, { content: "Reactions testing 1" });
     const messageId = msg.id;
 
@@ -38,5 +38,5 @@ runOnce("reactions.ts", async () => {
     reactions = await Discord.getReactions(channelId, messageId, emoji);
     assertExpected(0, reactions.length);
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 })

@@ -40,6 +40,6 @@ script.createCommand(
         })
 );
 
-runOnce("commands.ts", () => {
-    sendScriptCompletion();
+runOnce(script.name, () => {
+    sendScriptCompletion(script.name);
 });
