@@ -15,7 +15,7 @@ interface State {
 
 let stateStore = script.createGuildStorageJson<State>("reactions_events.ts");
 
-runOnce("reactions_events.ts", async () => {
+runOnce(script.name, async () => {
     let msg = await Discord.createMessage(channelId, { content: "Reactions testing 2" });
     const messageId = msg.id;
 
@@ -84,5 +84,5 @@ script.on("MESSAGE_REACTION_REMOVE_ALL_EMOJI", async (evt) => {
         return
     }
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 });

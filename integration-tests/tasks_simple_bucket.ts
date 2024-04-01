@@ -23,10 +23,10 @@ const bucket = script.createTaskBucket<Data>({
     data.scheduledAt = t.data.scheduledAt;
     assetJsonEquals(t.data, data);
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 })
 
-runOnce("tasks_simple_bucket.ts", async () => {
+runOnce(script.name, async () => {
     await bucket.schedule({
         executeAt: new Date(data.scheduledAt + 10000),
         data,

@@ -31,13 +31,15 @@ pub fn prepend_script_source_header(source: &str, script: Option<&Script>) -> St
 fn gen_script_source_header(script: Option<&Script>) -> String {
     match script {
         None => {
-            r#"import {Script} from "/script"; const script = new Script(0, null);"#.to_string()
+            r#"import {Script} from "/script"; const script = new Script("unknown.ts", 0, null);"#
+                .to_string()
         }
-        Some(h) => {
+        Some(s) => {
             format!(
-                r#"import {{Script}} from "/script";const script = new Script({}, {});"#,
-                h.id,
-                h.plugin_id
+                r#"import {{Script}} from "/script";const script = new Script("{}.ts", {}, {});"#,
+                s.name,
+                s.id,
+                s.plugin_id
                     .map(|v| format!("'{v}'"))
                     .unwrap_or("null".to_string()),
             )

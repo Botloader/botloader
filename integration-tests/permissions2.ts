@@ -1,7 +1,7 @@
 import { assertExpected, runOnce, sendScriptCompletion } from "lib";
 import { Discord } from 'botloader';
 
-runOnce("permissions2.ts", async () => {
+runOnce(script.name, async () => {
     let botUser = Discord.getBotUser();
     let guildPerms = await Discord.getMemberGuildPermissions(botUser.id);
     console.log("Guild perms: ", guildPerms.value.toString());
@@ -13,5 +13,5 @@ runOnce("permissions2.ts", async () => {
 
     assertExpected(guildPerms.value.toString(), channelPerms.guild.toString());
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 })

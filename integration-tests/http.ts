@@ -1,8 +1,8 @@
 import { HttpClient } from 'botloader';
 import { runOnce, sendScriptCompletion } from 'lib';
 
-runOnce("http.ts", async () => {
+runOnce(script.name, async () => {
     let resp = await HttpClient.get("http://example.com/");
 
-    sendScriptCompletion();
+    sendScriptCompletion(script.name);
 })
