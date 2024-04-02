@@ -9,7 +9,7 @@ edition = "2021"
 stores = { path = "../../components/stores" }
 runtime-models = { path = "../../components/runtime-models" }
 
-regex = "1.5"
+regex = { workspace = true }
 lazy_static = { workspace = true }
 twilight-model = { workspace = true }
 serde = { workspace = true }
