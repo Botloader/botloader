@@ -119,9 +119,15 @@ impl VmSession {
             NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(shutdown))) => {
                 self.cancel_old_vm_session_pending_acks(shutdown.vm_session_id);
 
-                // we will be receiving a new set of tasks and timers for the new vm
-                self.scheduled_tasks_man.clear_task_names();
-                self.interval_timers_man.clear_loaded_timers();
+                if self.current_vm_session_id == shutdown.vm_session_id {
+                    // return to pool and reset
+                    self.force_load_scripts_next = true;
+                    self.return_worker();
+                } else {
+                    // we will be receiving a new set of tasks and timers for the new vm
+                    self.scheduled_tasks_man.clear_task_names();
+                    self.interval_timers_man.clear_loaded_timers();
+                }
 
                 match shutdown.reason {
                     Some(ShutdownReason::DiscordInvalidRequestsRatelimit) => {
@@ -215,8 +221,12 @@ impl VmSession {
             match self.next_action().await {
                 NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(evt))) => {
                     info!("Got shutdown event form vm! reason: {:?}", evt.reason);
-                    self.return_worker();
-                    break;
+
+                    if evt.vm_session_id == self.current_vm_session_id {
+                        self.return_worker();
+                        self.force_load_scripts_next = true;
+                        break;
+                    }
                 }
                 NextAction::WorkerMessage(Some(msg)) => self.handle_worker_msg(msg).await,
                 NextAction::WorkerMessage(None) => {
