@@ -255,7 +255,8 @@ export interface ICreateChannel {
 
     /**
      * You can use the {@see PermissionOverwrite} class here. 
-     * @example ```ts
+     * @example 
+     * ```ts
      * {
      *      permissionOverwrites: [Discord.PermissionOverwrite.member("213", new Permissions(Permissions.CreateInstantInvite, Permissions.SendMessages), new Permissions()]
      * }
@@ -283,7 +284,8 @@ export interface IEditChannel {
 
     /**
      * You can use the {@see PermissionOverwrite} class here. 
-     * @example ```ts
+     * @example 
+     * ```ts
      * {
      *      permissionOverwrites: [Discord.PermissionOverwrite.member("213", new Permissions(Permissions.CreateInstantInvite, Permissions.SendMessages), new Permissions()]
      * }

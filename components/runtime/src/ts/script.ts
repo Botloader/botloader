@@ -85,7 +85,8 @@ export class Script {
      * @param namespace a "name" or "id" for the bucket. 
      * This is not script scoped and the same storage bucket can be registered in multiple scripts to have access to the same data, this is perfectly safe.
      * 
-     * @example ```ts
+     * @example 
+     * ```ts
      * interface Data{
      *     key: string,
      * }
@@ -166,7 +167,8 @@ export class Script {
      * 
      * @deprecated Use {@link createTaskBucket} instead.
      * 
-     * @example ```ts
+     * @example 
+     * ```ts
      * interface Data{
      *     key: string,
      * }
@@ -247,7 +249,8 @@ export class Script {
      * 
      * @param callback Callback to run at every interval
      * 
-     * @example ```ts
+     * @example 
+     * ```ts
      *  script.onInterval("gaming", "*\/5 * * * *", () => {
      *     // do stuff here
      * });

@@ -368,7 +368,8 @@ export namespace Commands {
      * @returns a builder
      * 
      * 
-     * @example ```ts
+     * @example 
+     * ```ts
      * script.createCommand(Commands.slashCommand("echo", "echo's your input")
      * .addOptionString("what", "what to echo")
      * .build(async (ctx, args) => {
@@ -400,7 +401,8 @@ export namespace Commands {
         /**
          * Assigns a group to this command
          * 
-         * @example ```ts
+         * @example 
+         * ```ts
          * const group = new Commands.Group("some-group", "some description")
          * script.addCommand(Commands.slashCommand("some-cmd", "some description").setGroup(grou).build(...))
          * ```

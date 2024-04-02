@@ -201,7 +201,8 @@ export class Permissions {
 /**
  * This is a helper class to make creating permission overwrites easier.
  * 
- * @example ```ts
+ * @example 
+ * ```ts
  * // create a member overwrite that targets a single member
  * let member_overwrite = PermissionOverwrite.member("123", new Permissions(Permissions.CreateInstantInvite, Permissions.SendMessages), new Permissions())
  * 
