@@ -6,8 +6,8 @@ use swc::{
 };
 
 use swc_common::{self, FileName, SourceMap};
-use swc_ecma_ast::EsVersion;
-use swc_ecma_parser::{Syntax, TsConfig};
+use swc_ecmascript::ast::EsVersion;
+use swc_ecmascript::parser::{Syntax, TsConfig};
 
 pub fn compile_typescript(input: &str, filename: String) -> Result<CompiledItem, String> {
     compile_typescript_inner(input, filename)

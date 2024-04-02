@@ -16,7 +16,7 @@ deno_core = { workspace = true }
 
 tracing = { workspace = true }
 
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
