@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map, HashMap},
+    collections::HashMap,
     pin::Pin,
     sync::Arc,
     task::Poll,
@@ -125,12 +125,7 @@ impl Scheduler {
     }
 
     async fn check_queue_start_worker(&mut self, guild_id: Id<GuildMarker>) {
-        if let Some(index) = self
-            .pending_starts
-            .iter()
-            .enumerate()
-            .find_map(|(i, v)| (*v == guild_id).then_some(i))
-        {
+        if let Some(index) = self.pending_starts.iter().position(|v| *v == guild_id) {
             self.pending_starts.remove(index);
             self.get_or_start_guild(guild_id);
         }
@@ -149,7 +144,7 @@ impl Scheduler {
             })
             .collect::<Vec<_>>();
 
-        // reverse to avoid inavlidating indexes as we remove their items
+        // reverse to avoid invalidating indexes as we remove their items
         indexes.reverse();
 
         let mut evts = indexes
@@ -193,19 +188,9 @@ impl Scheduler {
         self.suspended_guilds
             .insert(guild_id, GuildSuspension::new(guild_id, reason));
 
-        // remove all queued starts and events
-        let new_pending_starts = self
-            .pending_starts
-            .iter()
-            .filter_map(|v| (*v != guild_id).then_some(*v))
-            .collect::<Vec<_>>();
-        self.pending_starts = new_pending_starts;
-
-        let old_events = std::mem::take(&mut self.queued_events);
-        self.queued_events = old_events
-            .into_iter()
-            .filter(|v| v.guild_id != guild_id)
-            .collect();
+        // remove all queued starts and events for this guild
+        self.pending_starts.retain(|v| *v != guild_id);
+        self.queued_events.retain(|v| v.guild_id != guild_id);
     }
 
     async fn handle_scheduler_command(&mut self, cmd: SchedulerCommand) {
