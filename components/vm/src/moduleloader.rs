@@ -1,5 +1,6 @@
-use deno_core::{ModuleLoader, ModuleSource, ModuleType, ResolutionKind};
-use futures::future::ready;
+use deno_core::{
+    ModuleLoadResponse, ModuleLoader, ModuleSource, ModuleType, RequestedModuleType, ResolutionKind,
+};
 use url::Url;
 
 use crate::{ScriptLoadState, ScriptsStateStoreHandle};
@@ -22,6 +23,7 @@ impl ModuleManager {
                     ModuleType::JavaScript,
                     deno_core::ModuleSourceCode::Bytes(e.source.as_bytes().into()),
                     &e.specifier,
+                    None,
                 )
             })
     }
@@ -41,8 +43,11 @@ impl ModuleManager {
 
                 return Some(ModuleSource::new(
                     ModuleType::JavaScript,
-                    deno_core::ModuleSourceCode::Bytes(compiled.output.as_bytes().into()),
+                    deno_core::ModuleSourceCode::Bytes(deno_core::ModuleCodeBytes::Boxed(
+                        Box::from(compiled.output.as_bytes()),
+                    )),
                     module_specifier,
+                    None,
                 ));
             }
         }
@@ -90,10 +95,9 @@ impl ModuleLoader for ModuleManager {
         module_specifier: &deno_core::ModuleSpecifier,
         _maybe_referrer: Option<&deno_core::ModuleSpecifier>,
         _is_dyn_import: bool,
-    ) -> std::pin::Pin<Box<deno_core::ModuleSourceFuture>> {
-        // info!("loading module: {}", module_specifier.to_string());
-
-        Box::pin(ready(
+        _requested_module_type: RequestedModuleType,
+    ) -> ModuleLoadResponse {
+        ModuleLoadResponse::Sync(
             if let Some(l) = self.try_load_std_module(module_specifier) {
                 Ok(l)
             } else if let Some(l) = self.try_load_script_module(module_specifier) {
@@ -104,7 +108,7 @@ impl ModuleLoader for ModuleManager {
                     module_specifier
                 ))
             },
-        ))
+        )
     }
 }
 

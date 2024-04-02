@@ -76,7 +76,7 @@ const {
     op_discord_get_channel_invites,
     op_discord_create_channel_invite,
     op_easyops_async,
-} = Deno.core.ensureFastOps()
+} = Deno.core.ops
 
 export namespace OpWrappers {
 

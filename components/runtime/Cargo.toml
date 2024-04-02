@@ -23,7 +23,6 @@ twilight-util = { workspace = true }
 tracing = { workspace = true }
 
 deno_core = { workspace = true }
-v8 = { workspace = true }
 
 serde = { version = "1.0", features = ["derive"] }
 tokio = { workspace = true }

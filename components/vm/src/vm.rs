@@ -6,7 +6,8 @@ use crate::{
 use chrono::Utc;
 use common::dispatch_event::VmDispatchEvent;
 use cpu_time::ThreadTime;
-use deno_core::{Extension, FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions, Snapshot};
+use deno_core::v8::{self, CreateParams, IsolateHandle};
+use deno_core::{Extension, FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions};
 use futures::{future::LocalBoxFuture, FutureExt};
 use guild_logger::entry::CreateLogEntry;
 use guild_logger::GuildLogSender;
@@ -24,7 +25,6 @@ use std::{
 use stores::config::Script;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, instrument};
-use v8::{CreateParams, IsolateHandle};
 
 #[derive(Debug, Clone)]
 pub enum VmCommand {
@@ -170,9 +170,9 @@ impl Vm {
                     .heap_limits(512 * 1024, 60 * 512 * 1024)
                     .allow_atomics_wait(false),
             ),
-            startup_snapshot: Some(Snapshot::Static(crate::BOTLOADER_CORE_SNAPSHOT)),
+            startup_snapshot: Some(crate::BOTLOADER_CORE_SNAPSHOT),
             // js_error_create_fn: Some(create_err_fn),
-            source_map_getter: Some(Box::new(ScriptStateStoreWrapper(script_load_states))),
+            source_map_getter: Some(Rc::new(ScriptStateStoreWrapper(script_load_states))),
             ..Default::default()
         };
 
@@ -374,7 +374,7 @@ impl Vm {
 
         let res = self
             .runtime
-            .load_side_module(&script.url, Some(FastString::from(compiled.output)))
+            .load_side_es_module_from_code(&script.url, FastString::from(compiled.output))
             .await;
 
         match res {
@@ -434,7 +434,7 @@ impl Vm {
             return;
         };
 
-        let v = serde_v8::to_v8(&mut scope, &data).unwrap();
+        let v = deno_core::serde_v8::to_v8(&mut scope, &data).unwrap();
         let _ = dispatch_fn.call(&mut scope, globals.into(), &[v]);
 
         let elapsed = Utc::now().signed_duration_since(event.source_timestamp);

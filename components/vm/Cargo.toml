@@ -13,8 +13,6 @@ tscompiler = { path = "../../components/tscompiler" }
 
 cpu-time = "1.0"
 deno_core = { workspace = true }
-v8 = { workspace = true }
-serde_v8 = "0.152"
 
 tracing = { workspace = true }
 
