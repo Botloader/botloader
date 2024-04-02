@@ -18,7 +18,7 @@ lazy_static = "1.4.0"
 tracing = "0.1"
 tracing-futures = { version = "0.2.5" }
 async-trait = "0.1"
-reqwest = { version = "0.11.11", features = ["json", "stream"] }
+reqwest = { version = "0.12.2", features = ["json", "stream"] }
 tokio = { version = "1.35.1", features = ["full"] }
 thiserror = "1.0"
 clap = { version = "4.1.4", features = ["derive", "env"] }

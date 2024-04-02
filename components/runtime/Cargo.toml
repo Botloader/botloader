@@ -34,7 +34,7 @@ url = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 lazy_static = { workspace = true }
-reqwest = { version = "0.11", features = ["stream"] }
+reqwest = { workspace = true }
 bytes = "1.5.0"
 governor = "0.6"
 chrono = { workspace = true }
