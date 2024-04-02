@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{hash_map, HashMap},
     pin::Pin,
     sync::Arc,
     task::Poll,
@@ -312,27 +312,17 @@ impl Scheduler {
         }
     }
 
-    // if this function body looks weird to you, then you're correct, it is weird.
-    // reason for that being the borrow checker, try to make it look prettier, i dare you.
     fn get_or_start_guild(&mut self, guild_id: Id<GuildMarker>) -> &GuildHandle {
-        if let std::collections::hash_map::Entry::Vacant(e) = self.guilds.entry(guild_id) {
-            let handle = GuildHandler::new_run(
+        self.guilds.entry(guild_id).or_insert_with(|| {
+            GuildHandler::new_run(
                 self.config.clone(),
                 self.stores.clone(),
                 guild_id,
                 self.logger.clone(),
                 self.worker_pool.clone(),
                 self.cmd_manager_handle.clone(),
-            );
-            e.insert(handle);
-            return self.guilds.get(&guild_id).unwrap();
-        }
-
-        if let Some(worker) = self.guilds.get(&guild_id) {
-            worker
-        } else {
-            unreachable!();
-        }
+            )
+        })
     }
 
     fn shutdown_all(&mut self) {
