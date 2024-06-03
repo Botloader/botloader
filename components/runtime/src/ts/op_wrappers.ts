@@ -76,6 +76,8 @@ const {
     op_discord_get_channel_invites,
     op_discord_create_channel_invite,
     op_easyops_async,
+    op_base64_encode,
+    op_base64_decode,
 } = Deno.core.ops
 
 export namespace OpWrappers {
@@ -152,6 +154,14 @@ export namespace OpWrappers {
 
     export async function callAsyncOp<T extends Internal.EasyOpsASync>(call: T): Promise<Internal.EasyOpsReturnTypesASync[T["kind"]]> {
         return await op_easyops_async(call)
+    }
+
+    function forgivingBase64Encode(data: Uint8Array): string {
+        return op_base64_encode(data);
+    }
+
+    function forgivingBase64Decode(data: string): Uint8Array {
+        return op_base64_decode(data);
     }
 
     // export async function getGuild(): Promise<Discord.Guild> {

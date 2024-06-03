@@ -153,3 +153,11 @@ export class AsyncLock {
         }
     }
 }
+
+export function base64Encode(data: Uint8Array): string {
+    return OpWrappers.forgivingBase64Encode(data)
+}
+
+export function base64Decode(data: string): Uint8Array {
+    return OpWrappers.forgivingBase64Decode(data)
+}
