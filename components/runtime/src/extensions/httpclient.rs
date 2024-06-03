@@ -33,17 +33,24 @@ deno_core::extension!(
 //         .build()
 // }
 
-#[op2(fast)]
-#[smi]
-pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<ResourceId, AnyError> {
+#[op2]
+#[serde]
+pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<(ResourceId, ResourceId), AnyError> {
     let (tx, rx) = mpsc::channel(2);
-    let resource = RequestBodyResource {
+
+    let sender = RequestBodySender {
         cancel: CancelHandle::new(),
         tx,
-        rx: RefCell::new(Some(rx)),
+    };
+    let receiver = RequestBodyReceiver {
+        cancel: CancelHandle::new(),
+        rx,
     };
 
-    crate::try_insert_resource_table(&mut state.resource_table, resource)
+    let r_rid = crate::try_insert_resource_table(&mut state.resource_table, receiver)?;
+    let s_rid = crate::try_insert_resource_table(&mut state.resource_table, sender)?;
+
+    Ok((s_rid, r_rid))
 }
 
 #[op2(async)]
@@ -56,8 +63,8 @@ pub async fn op_bl_http_request_send(
 
     // lookup the body stream resource
     let req_resource = if let Some(rid) = args.body_resource_id {
-        let state = state_rc.borrow();
-        Some(state.resource_table.get::<RequestBodyResource>(rid)?)
+        let mut state = state_rc.borrow_mut();
+        Some(state.resource_table.take::<RequestBodyReceiver>(rid)?)
     } else {
         None
     };
@@ -74,27 +81,12 @@ pub async fn op_bl_http_request_send(
 
     // set the body
     if let Some(req_resource) = req_resource {
-        let rx = req_resource
-            .rx
-            .borrow_mut()
-            .take()
-            .ok_or_else(|| anyhow::anyhow!("failed retrieving body resource stream"))?;
-
-        builder = builder.body(Body::wrap_stream(ReceiverStream::new(rx)))
+        // let rx = req_resource
+        let inner = Rc::<RequestBodyReceiver>::into_inner(req_resource).unwrap();
+        builder = builder.body(Body::wrap_stream(ReceiverStream::new(inner.rx)))
     }
 
     let res = builder.send().await;
-
-    // close the req body stream
-    if let Some(rid) = args.body_resource_id {
-        if let Ok(r) = state_rc
-            .borrow_mut()
-            .resource_table
-            .take::<RequestBodyResource>(rid)
-        {
-            r.close()
-        };
-    }
 
     handle_response(state_rc, res?)
 }
@@ -146,17 +138,19 @@ fn handle_response(
     })
 }
 
-struct RequestBodyResource {
-    tx: mpsc::Sender<std::io::Result<Vec<u8>>>,
-    rx: RefCell<Option<mpsc::Receiver<std::io::Result<Vec<u8>>>>>,
+struct RequestBodyReceiver {
+    rx: mpsc::Receiver<std::io::Result<Vec<u8>>>,
     cancel: CancelHandle,
 }
 
-impl Resource for RequestBodyResource {
-    fn name(&self) -> Cow<str> {
-        "requestBodyResource".into()
-    }
+impl Resource for RequestBodyReceiver {}
 
+struct RequestBodySender {
+    tx: mpsc::Sender<std::io::Result<Vec<u8>>>,
+    cancel: CancelHandle,
+}
+
+impl Resource for RequestBodySender {
     // TODO: proper implementation with partial write handling
     fn write(self: Rc<Self>, buf: BufView) -> AsyncResult<WriteOutcome> {
         Box::pin(async move {

@@ -95,7 +95,7 @@ export namespace OpWrappers {
     }
 
     export namespace http {
-        export function createRequestStream(): number {
+        export function createRequestStream(): [number, number] {
             return Deno.core.ops.op_bl_http_client_stream()
         }
 
