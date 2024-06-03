@@ -23,7 +23,7 @@ sqlx = { version = "0.7.2", features = [
     "json",
     "uuid",
 ] }
-oauth2 = "4.1"
+oauth2 = { workspace = true }
 dashmap = "5.4.0"
 rand = "0.8"
 base64 = "0.13"

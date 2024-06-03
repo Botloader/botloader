@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-stores = {path="../../components/stores"}
+stores = { path = "../../components/stores" }
 
-async-trait = {workspace = true}
-oauth2 = "4.1"
-tokio = {workspace = true}
-anyhow = {workspace = true}
+async-trait = { workspace = true }
+oauth2 = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
 lru = "0.7"
 
-twilight-model = {workspace = true}
-twilight-http = {workspace = true}
+twilight-model = { workspace = true }
+twilight-http = { workspace = true }

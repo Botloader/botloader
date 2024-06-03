@@ -11,7 +11,7 @@ exclude = [
 resolver = "2"
 
 [workspace.dependencies]
-metrics = "0.22"
+metrics = "0.23"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 lazy_static = "1.4.0"
@@ -32,6 +32,7 @@ url = "2.2"
 tracing-log = "0.2"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 regex = "1.10"
+oauth2 = "4.4.2"
 
 twilight-model = { version = "0.15.4" }
 twilight-http = { version = "0.15.4" }

@@ -17,7 +17,7 @@ axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
 stripe-premium = { path = "../../components/stripe-premium" }
 runtime-models = { path = "../../components/runtime-models" }
 
-oauth2 = "4.1"
+oauth2 = { workspace = true }
 anyhow = { workspace = true }
 thiserror = "1.0"
 serde = { workspace = true }
