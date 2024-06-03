@@ -165,7 +165,7 @@ export namespace HttpClient {
                 body.setHeaders(this.headers);
 
                 reqBodyRid = OpWrappers.http.createRequestStream();
-                this.writeBody(body, reqBodyRid).finally(() => Deno.core.tryClose(reqBodyRid!));
+                this.writeBody(body, reqBodyRid);
             }
 
             let resp = await OpWrappers.http.requestSend({
