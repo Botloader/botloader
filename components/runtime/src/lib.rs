@@ -90,9 +90,9 @@ deno_core::extension!(
     },
     middleware = |op_decl|match op_decl.name {
         // we have our own custom print function
-        "op_print" => disabled_op::DECL,
-        "op_wasm_streaming_feed" => disabled_op::DECL,
-        "op_wasm_streaming_set_url" => disabled_op::DECL,
+        "op_print" => disabled_op(),
+        "op_wasm_streaming_feed" => disabled_op(),
+        "op_wasm_streaming_set_url" => disabled_op(),
         _ => op_decl,
     },
     state = |state, options| {
@@ -120,9 +120,9 @@ deno_core::extension!(
     },
     middleware = |op_decl|match op_decl.name {
         // we have our own custom print function
-        "op_print" => disabled_op::DECL,
-        "op_wasm_streaming_feed" => disabled_op::DECL,
-        "op_wasm_streaming_set_url" => disabled_op::DECL,
+        "op_print" => disabled_op(),
+        "op_wasm_streaming_feed" => disabled_op(),
+        "op_wasm_streaming_set_url" => disabled_op(),
         _ => op_decl,
     },
     state = |state, options| {
