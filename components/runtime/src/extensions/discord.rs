@@ -31,9 +31,11 @@ use runtime_models::{
     },
     ops::{handle_async_op, EasyOpsASync, EasyOpsHandlerASync},
 };
+use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     collections::VecDeque,
+    fmt::{Display, Formatter},
     future::Future,
     time::{Duration, Instant},
 };
@@ -222,18 +224,35 @@ pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Er
             // 10008 is unknown message
             error: ApiError::General(GeneralApiError { code, message, .. }),
             status,
-            ..
-        } => error_from_code(*status, *code, message),
+            body,
+        } => error_from_code(*status, *code, message, body),
         _ => err.into(),
     }
 }
 
-pub fn error_from_code(resp_code: StatusCode, code: u64, message: &str) -> AnyError {
+pub fn error_from_code(
+    resp_code: StatusCode,
+    code: u64,
+    message: &str,
+    body: &Vec<u8>,
+) -> AnyError {
     match resp_code.get() {
         404 => not_found_error(format!("{code}: {message}")),
         403 => custom_error("DiscordPermissionsError", format!("{code}: {message}")),
         400..=499 => match code {
             30001..=40000 => custom_error("DiscordLimitReachedError", format!("{code}: {message}")),
+            50035 => {
+                if let Ok(parsed) = serde_json::from_slice::<BlDiscordApiError>(&body) {
+                    if let Some(errors) = parsed.errors {
+                        return custom_error(
+                            "DiscordFormError",
+                            format!("{code}: {message} - {}", errors),
+                        );
+                    }
+                }
+
+                custom_error("DiscordGenericErrorResponse", format!("{code}: {message}"))
+            }
             _ => custom_error("DiscordGenericErrorResponse", format!("{code}: {message}")),
         },
         status @ 500..=599 => custom_error(
@@ -2090,4 +2109,29 @@ pub async fn op_discord_get_member_permissions(
         guild_perms.bits().to_string(),
         channel_perms.map(|v| v.bits().to_string()),
     ))
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[non_exhaustive]
+pub struct BlDiscordApiError {
+    pub code: u64,
+    pub message: String,
+    pub errors: Option<serde_json::Value>,
+}
+
+impl Display for BlDiscordApiError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
+        f.write_str("Error code ")?;
+        Display::fmt(&self.code, f)?;
+        f.write_str(": ")?;
+
+        f.write_str(&self.message)?;
+        if let Some(errors) = &self.errors {
+            f.write_str(" (")?;
+            Display::fmt(errors, f)?;
+            f.write_str(")")?;
+        }
+
+        Ok(())
+    }
 }

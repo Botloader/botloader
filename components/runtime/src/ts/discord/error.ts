@@ -43,8 +43,18 @@ export class GenericError extends Error {
     }
 }
 
+export class DiscordFormError extends Error {
+    message: string;
+
+    constructor(message: string) {
+        super(message)
+        this.message = "Discord.FormError: " + message;
+    }
+}
+
 Deno.core.registerErrorClass("DiscordNotFoundError", NotFoundError);
 Deno.core.registerErrorClass("DiscordPermissionsError", PermissionsError);
 Deno.core.registerErrorClass("DiscordLimitReachedError", LimitReachedError);
 Deno.core.registerErrorClass("DiscordServerErrorResponse", ServerError);
 Deno.core.registerErrorClass("DiscordGenericErrorResponse", GenericError);
+Deno.core.registerErrorClass("DiscordFormError", DiscordFormError);
