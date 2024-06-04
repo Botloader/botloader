@@ -391,11 +391,17 @@ export namespace Commands {
         private ackMode: AckMode = "DeferredMessage";
         private ackMessageFlags: MessageFlags = {}
 
+        /**
+         * @internal
+         */
+        onBuilt?: (cmd: Command) => void
+
         constructor(name: string, description: string, options: OptionMap, group?: Group) {
             this.name = name;
             this.description = description;
             this.options = options;
             this.group = group;
+            this.onBuilt = undefined;
         }
 
         /**
@@ -546,7 +552,7 @@ export namespace Commands {
          * @returns The built command, pass it to @{link Script.createCommand} to actually create it on discord 
          */
         build(callback: (ctx: ExecutedCommandContext, args: ParsedOptionsMap<TOpts>) => void | Promise<any>): Command {
-            return {
+            const built: Command = {
                 name: this.name,
                 description: this.description,
                 kind: "Chat",
@@ -556,6 +562,12 @@ export namespace Commands {
                 ackMessageFlags: this.ackMessageFlags,
                 cb: callback as any,
             };
+
+            if (this.onBuilt) {
+                this.onBuilt(built)
+            }
+
+            return built
         }
     }
 
@@ -609,6 +621,11 @@ export namespace Commands {
         ackMode: AckMode = "DeferredMessage";
         private ackMessageFlags: MessageFlags = {}
 
+        /**
+         * @internal
+         */
+        onBuilt?: (cmd: Command) => void
+
         constructor(name: string) {
             this.name = name;
         }
@@ -639,7 +656,7 @@ export namespace Commands {
         }
 
         build(cb: (ctx: ExecutedCommandContext, target: InteractionUser) => any): Command {
-            return {
+            const built: Command = {
                 name: this.name,
                 kind: "User",
                 description: "",
@@ -647,6 +664,12 @@ export namespace Commands {
                 cb: cb as any,
                 ackMessageFlags: this.ackMessageFlags,
             }
+
+            if (this.onBuilt) {
+                this.onBuilt(built)
+            }
+
+            return built
         }
     }
 
@@ -665,6 +688,11 @@ export namespace Commands {
         name: string;
         ackMode: AckMode = "DeferredMessage";
         private ackMessageFlags: MessageFlags = {}
+
+        /**
+         * @internal
+         */
+        onBuilt?: (cmd: Command) => void
 
         constructor(name: string) {
             this.name = name;
@@ -696,7 +724,7 @@ export namespace Commands {
         }
 
         build(cb: (ctx: ExecutedCommandContext, target: Message) => any): Command {
-            return {
+            const built: Command = {
                 name: this.name,
                 kind: "Message",
                 description: "",
@@ -704,6 +732,12 @@ export namespace Commands {
                 cb: cb as any,
                 ackMessageFlags: this.ackMessageFlags,
             }
+
+            if (this.onBuilt) {
+                this.onBuilt(built)
+            }
+
+            return built
         }
     }
 }

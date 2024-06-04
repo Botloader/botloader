@@ -57,6 +57,27 @@ export class Script {
         EventSystem.commandSystem.addCommand(command);
     }
 
+    createSlashCommand(name: string, description: string): Commands.SlashCommandBuilder<{}> {
+        const builder = Commands.slashCommand(name, description)
+        builder.onBuilt = (cmd) => this.createCommand(cmd)
+
+        return builder
+    }
+
+    createUserCommand(name: string): Commands.UserCommandBuilder {
+        const builder = Commands.userCommand(name)
+        builder.onBuilt = (cmd) => this.createCommand(cmd)
+
+        return builder
+    }
+
+    createMessageCommand(name: string): Commands.MessageCommandBuilder {
+        const builder = Commands.messageCommand(name)
+        builder.onBuilt = (cmd) => this.createCommand(cmd)
+
+        return builder
+    }
+
     private storagePluginId() {
         if (this.customStorageScope) {
             if (this.customStorageScope.kind === "Guild") {
