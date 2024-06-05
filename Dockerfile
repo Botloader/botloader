@@ -1,7 +1,7 @@
 # This is the base Docker file we use to build the executables
 # this way we can reuse the image layer caching across all the executables
 # since they mostly use the same ones anwyays
-FROM lukemathwalker/cargo-chef:latest-rust-1.75.0-bookworm AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.78.0-bookworm AS chef
 WORKDIR /app
 
 FROM chef AS planner
