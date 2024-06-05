@@ -432,11 +432,11 @@ export namespace Commands {
      * 
      * @example 
      * ```ts
-     * script.createCommand(Commands.slashCommand("echo", "echo's your input")
+     * script.createSlashCommand("echo", "echo's your input")
      * .addOptionString("what", "what to echo")
      * .build(async (ctx, args) => {
      *      await ctx.sendResponse(args.what);
-     * }))
+     * })
      * ```
      */
     export function slashCommand(name: string, description: string) {
@@ -611,7 +611,7 @@ export namespace Commands {
 
         /**
          * Build the command, providing a callback that runs when the command gets executed
-         * @returns The built command, pass it to @{link Script.createCommand} to actually create it on discord 
+         * @returns The built command, if you used `script.createSlashCommand` you can ignore the return value but if not you pass it to @{link Script.createCommand} to actually create it on discord 
          */
         build(callback: (ctx: ExecutedCommandContext, args: ParsedOptionsMap<TOpts>) => void | Promise<any>): Command {
             const built: Command = {

@@ -19,15 +19,17 @@ Then it's creating the command itself, all scripts in botloader have a `script` 
 So, through the `script` we create a new command:
 
 ```ts
-script.createCommand(/* TODO: what do we pass it? */);
+script.createSlashCommand(/* ... */);
+script.createUserCommand(/* ... */);
+script.createMessageCommand(/* ... */);
 ```
 
-This createCommand function takes in a command object that can be created from either the slash command, user command or message command builders, in this tutorial we'll be using the slash command builder. The user and message commands show up when you right click on users and messages, while slash commands shows up when you type a `/` in the chat input area on discord.
+In this tutorial we'll be creating a "slash command". The user and message commands show up when you right click on users and messages, while slash commands shows up when you type a `/` in the chat input area on discord.
 
-`Commands.slashCommand` takes a name and description. Note that the name requirements are quite strict, it can't contain spaces or special characters besides `-`
+`script.createSlashCommand` takes a name and description. Note that the name requirements are quite strict, it can't contain spaces or special characters besides `-`
 
 ```ts
-script.createCommand(Commands.slashCommand("echo", "echoes back your input"))
+script.createSlashCommand("echo", "echoes back your input")
 ```
 
 Were not done yet! This command takes in some input from the user to echo back, we need to define this input, and this is called `options` when dealing with commands. To add a `option` use one of the `addOption` methods, were going to use `addOptionString` and this takes in a name and a description, as well as some additional optional options (such as making this option optional/required) that were not gonna go into here.
@@ -35,24 +37,18 @@ Were not done yet! This command takes in some input from the user to echo back, 
 This is how it looks then:
 
 ```ts
-script.createCommand(
-    Commands.slashCommand("echo", "echo back what i give you")
+script.createSlashCommand("echo", "echo back what i give you")
     .addOptionString("what", "what to echo back")
-)
 ```
-
-I've gone ahead and formatted it a bit nicer to make it more readable.
 
 Were still not done yet! This will still show an error and that's because we must build our command and give it a function to run when someone uses the command, you do that using the `build` method:
 
 ```ts
-script.createCommand(
-    Commands.slashCommand("echo", "echo back what i give you")
+script.createSlashCommand("echo", "echo back what i give you")
     .addOptionString("what", "what to echo back")
     .build(async (ctx, args) => {
         // Code that runs when someone uses the command
     })
-)
 ```
 
 This is now a fully valid command and there should be no errors, if you save it and enable the script in the sidebar, after a short delay (around 10 seconds - a minute), it should show up in discord. But if you run it, it will have no output, it will just show the bot thinking forever...
@@ -74,13 +70,11 @@ In the end the full script should look like this:
 ```ts
 import { Commands } from 'botloader';
 
-script.createCommand(
-    Commands.slashCommand("echo", "echo back what i give you")
+script.createSlashCommand("echo", "echo back what i give you")
     .addOptionString("what", "what to echo back")
     .build(async (ctx, args) => {
         await ctx.createFollowup(args.what);
     })
-)
 ```
 
-The reason we `await` it is so that the function does not return before we send the response, although it's not really needed.
+The reason we `await` it is so that the function does not return before we send the response.

@@ -28,7 +28,7 @@ const reminders = script.createTaskBucket<ReminderData>({
     })
 })
 
-script.createCommand(Commands.slashCommand("remindme", "Set a reminder for yourself")
+script.createSlashCommand("remindme", "Set a reminder for yourself")
     .addOptionInteger("minutes", "in how many minutes")
     .addOptionString("message", "reminder message")
     .build(async (ctx, args) => {
@@ -46,8 +46,7 @@ script.createCommand(Commands.slashCommand("remindme", "Set a reminder for yours
         });
 
         await ctx.createFollowup(`Reminder scheduled for <t:${Math.floor(execAt.getTime() / 1000)}> `)
-    })
-);
+    });
 ```
 
 ## Optional unique "Key"
