@@ -402,3 +402,15 @@ export function parseInteractionCustomId(raw: string): [string, unknown] {
 
     return [name, extras]
 }
+
+export class AutocompleteInteraction {
+    member: Member;
+    input: string;
+    channelId: string;
+
+    constructor(interaction: Internal.CommandInteraction, input: string) {
+        this.member = new Member(interaction.member);
+        this.channelId = interaction.channelId
+        this.input = input
+    }
+}

@@ -154,6 +154,7 @@ pub struct CommandOption {
     pub kind: CommandOptionType,
     pub required: bool,
     pub extra_options: ExtraCommandOptions,
+    pub autocomplete_enabled: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
@@ -183,8 +184,8 @@ pub struct ExtraCommandOptions {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/CommandOptionChoice.ts")]
 pub struct CommandOptionChoice {
-    name: String,
-    value: CommandOptionChoiceValue,
+    pub name: String,
+    pub value: CommandOptionChoiceValue,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
@@ -232,7 +233,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 description: v.description,
                 required: Some(v.required),
                 kind: twilight_model::application::command::CommandOptionType::String,
-                autocomplete: None,
+                autocomplete: Some(v.autocomplete_enabled),
                 channel_types: None,
                 choices: v
                     .extra_options
@@ -259,7 +260,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                     .extra_options
                     .max_value
                     .map(|v| CommandOptionValue::Integer(v as i64)),
-                autocomplete: None,
+                autocomplete: Some(v.autocomplete_enabled),
                 channel_types: None,
                 choices: v
                     .extra_options
@@ -366,7 +367,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 kind: twilight_model::application::command::CommandOptionType::Number,
                 min_value: v.extra_options.min_value.map(CommandOptionValue::Number),
                 max_value: v.extra_options.max_value.map(CommandOptionValue::Number),
-                autocomplete: None,
+                autocomplete: Some(v.autocomplete_enabled),
                 channel_types: None,
                 choices: v
                     .extra_options

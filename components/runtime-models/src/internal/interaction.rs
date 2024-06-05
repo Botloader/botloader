@@ -59,6 +59,8 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                     }
                 }
 
+                let is_autocomplete = matches!(v.kind, twilight_model::application::interaction::InteractionType::ApplicationCommandAutocomplete);
+
                 Ok(Self::Command(Box::new(CommandInteraction {
                     name,
                     parent_name,
@@ -76,6 +78,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
 
                     kind: data.kind.into(),
                     target_id: data.target_id.as_ref().map(ToString::to_string),
+                    is_autocomplete,
                 })))
             }
             Some(twilight_model::application::interaction::InteractionData::MessageComponent(
@@ -180,6 +183,8 @@ pub struct CommandInteraction {
 
     pub kind: CommandType,
     pub target_id: Option<String>,
+
+    pub is_autocomplete: bool,
 }
 
 #[derive(Clone, Debug, Serialize, TS, Default)]

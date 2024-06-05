@@ -8,4 +8,5 @@ export interface CommandOption {
   kind: CommandOptionType;
   required: boolean;
   extraOptions: ExtraCommandOptions;
+  autocompleteEnabled: boolean;
 }

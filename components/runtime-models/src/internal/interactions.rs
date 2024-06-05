@@ -11,7 +11,7 @@ use crate::{
 };
 use twilight_model::application::interaction::application_command;
 
-use super::messages::OpCreateMessageFields;
+use super::{messages::OpCreateMessageFields, script::CommandOptionChoice};
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
@@ -88,7 +88,7 @@ pub enum InteractionResponse {
     DeferredUpdateMessage,
     UpdateMessage(InteractionCallbackData),
     Modal(ModalCallbackData),
-    // Autocomplete(Autocomplete),
+    Autocomplete(AutocompleteCallbackData),
 }
 
 impl From<InteractionResponse> for twilight_model::http::interaction::InteractionResponse {
@@ -119,6 +119,10 @@ impl From<InteractionResponse> for twilight_model::http::interaction::Interactio
             InteractionResponse::Modal(src) => Self {
                 kind: TwilightInteractionResponseType::Modal,
                 data: Some(src.into()),
+            },
+            InteractionResponse::Autocomplete(data) => Self {
+                kind: TwilightInteractionResponseType::ApplicationCommandAutocompleteResult,
+                data: Some(data.into()),
             },
         }
     }
@@ -177,6 +181,23 @@ impl From<ModalCallbackData> for TwilightCallbackData {
             title: Some(v.title),
             custom_id: Some(v.custom_id),
             components: Some(v.components.into_iter().map(Into::into).collect()),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/AutocompleteCallbackData.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct AutocompleteCallbackData {
+    pub choices: Vec<CommandOptionChoice>,
+}
+
+impl From<AutocompleteCallbackData> for TwilightCallbackData {
+    fn from(v: AutocompleteCallbackData) -> Self {
+        Self {
+            choices: Some(v.choices.into_iter().map(Into::into).collect()),
             ..Default::default()
         }
     }

@@ -16,4 +16,5 @@ export interface CommandInteraction {
   dataMap: CommandInteractionDataMap;
   kind: CommandType;
   targetId: string | null;
+  isAutocomplete: boolean;
 }

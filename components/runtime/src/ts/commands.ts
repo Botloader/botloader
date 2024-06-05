@@ -1,5 +1,5 @@
 import * as Internal from "./generated/internal/index";
-import { ChannelType, Interaction, Message, Role, IModalFields, MessageFlags } from "./discord/index";
+import { ChannelType, Interaction, Message, Role, IModalFields, MessageFlags, AutocompleteInteraction } from "./discord/index";
 import { User } from "./discord/user";
 import { Member } from "./discord/member";
 import { OpWrappers } from "./op_wrappers";
@@ -34,6 +34,11 @@ export namespace Commands {
             let command = this.commands.find(cmd => matchesCommand(cmd, interaction.name, interaction.parentName, interaction.parentParentName));
             if (!command) {
                 return;
+            }
+
+            if (interaction.isAutocomplete) {
+                await this.handleAutoComplete(command, interaction)
+                return
             }
 
             let ctx = new ExecutedCommandContext(interaction);
@@ -72,6 +77,48 @@ export namespace Commands {
             } else {
                 throw new Error("Unknown command type")
             }
+        }
+
+        async handleAutoComplete(command: Command, interaction: Internal.CommandInteraction) {
+            let options: OptionChoice<number | string>[] = []
+            try {
+                options = await this.getAutocompleteResponse(command, interaction)
+            } catch (error) {
+                console.log("Autocomplete handler threw an error: ", error)
+                options = []
+            }
+
+            await OpWrappers.interactionCallback({
+                interactionId: interaction.id,
+                interactionToken: interaction.token,
+                data: {
+                    kind: "Autocomplete",
+                    choices: options,
+                }
+            })
+        }
+
+        async getAutocompleteResponse(command: Command, interaction: Internal.CommandInteraction): Promise<OptionChoice<string>[] | OptionChoice<number>[]> {
+            const focusedInteractionOption = interaction.options.find(v => v.value.kind === "focused")
+            if (!focusedInteractionOption || focusedInteractionOption.value.kind !== "focused") {
+                console.log("Could not find focused option in autocomplete interaction")
+                return []
+            }
+
+            const interactionArg = new AutocompleteInteraction(interaction, focusedInteractionOption.value.value)
+            const definition = command.options ? command.options[focusedInteractionOption.name] : null
+            if (!definition) {
+                console.log("Could not find option deifnition for focused option ", { command: command.name, option: focusedInteractionOption.name })
+                return []
+            }
+
+            if (!("autocomplete" in definition.extraOptions) || !definition.extraOptions.autocomplete) {
+                console.log("Command option does not have autocomplete ", { command: command.name, option: focusedInteractionOption.name })
+                return []
+            }
+
+            const optionsOutput = await definition.extraOptions.autocomplete(interactionArg)
+            return optionsOutput
         }
 
         private resolveOption(map: Internal.CommandInteractionDataMap, opt: Internal.CommandInteractionOptionValue): unknown {
@@ -214,7 +261,6 @@ export namespace Commands {
         }
     }
 
-
     export interface InteractionUser {
         user: User,
         member?: Internal.InteractionPartialMember,
@@ -248,7 +294,7 @@ export namespace Commands {
 
     export type OptionType = Option["kind"];
 
-    export type AutocompleteProvider<T> = (data: {}) => Promise<OptionChoice<T>[]> | OptionChoice<T>[];
+    export type AutocompleteProvider<T> = (interaction: AutocompleteInteraction) => Promise<OptionChoice<T>[]> | OptionChoice<T>[];
 
     export type OptionMap = {
         [key: string]: Option,
@@ -266,7 +312,13 @@ export namespace Commands {
          * A list of choices to present the user, up to 25 entries.
          */
         choices?: OptionChoice<string>[],
-        // autocomplete?: AutocompleteProvider<string>,
+
+        /**
+         * Enables autocomplete for this option.
+         * 
+         * The callback will be called as users type and you respond with options that will show up on the fly.
+         */
+        autocomplete?: AutocompleteProvider<string>,
     }
 
     export interface NumberOption {
@@ -278,7 +330,12 @@ export namespace Commands {
         minValue?: number,
         maxValue?: number,
 
-        // // autocomplete?: AutocompleteProvider<number>,
+        /**
+         * Enables autocomplete for this option.
+         * 
+         * The callback will be called as users type and you respond with options that will show up on the fly.
+         */
+        autocomplete?: AutocompleteProvider<number>,
     }
 
     export interface IntegerOption {
@@ -290,7 +347,12 @@ export namespace Commands {
         minValue?: number,
         maxValue?: number,
 
-        // // autocomplete?: AutocompleteProvider<number>,
+        /**
+         * Enables autocomplete for this option.
+         * 
+         * The callback will be called as users type and you respond with options that will show up on the fly.
+         */
+        autocomplete?: AutocompleteProvider<number>,
     }
 
     export interface BooleanOption {

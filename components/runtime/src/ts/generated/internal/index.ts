@@ -1,5 +1,6 @@
 // generated index file using gen-index.bash
 export * from './AllowedMentions'
+export * from './AutocompleteCallbackData'
 export * from './Ban'
 export * from './CategoryChannel'
 export * from './ClientHttpRequest'

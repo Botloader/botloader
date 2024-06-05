@@ -378,6 +378,7 @@ export class Script {
                         kind: entry.kind,
                         required: entry.required || false,
                         extraOptions: entry.extraOptions,
+                        autocompleteEnabled: "autocomplete" in entry.extraOptions ? Boolean(entry.extraOptions.autocomplete) : false
                     })
                 }
             }
