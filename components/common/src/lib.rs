@@ -3,8 +3,8 @@ use std::{net::SocketAddr, str::FromStr};
 
 use clap::Parser;
 use metrics_exporter_prometheus::PrometheusBuilder;
-use opentelemetry::KeyValue;
-use opentelemetry_otlp::WithExportConfig;
+// use opentelemetry::KeyValue;
+// use opentelemetry_otlp::WithExportConfig;
 use sentry_tracing::EventFilter;
 use tracing::{info, Level};
 use tracing_subscriber::filter::Targets;
@@ -71,23 +71,23 @@ pub fn setup_tracing(config: &config::RunConfig, service_name: &str) {
     }
 }
 
-pub fn setup_tracing_otlp(url: &str, service_name: String) {
-    let otlp_exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_endpoint(url);
+pub fn setup_tracing_otlp(_url: &str, _service_name: String) {
+    // let otlp_exporter = opentelemetry_otlp::new_exporter()
+    //     .tonic()
+    //     .with_endpoint(url);
 
-    let tracer = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(otlp_exporter)
-        .with_trace_config(opentelemetry_sdk::trace::config().with_resource(
-            opentelemetry_sdk::Resource::new(vec![KeyValue::new("service.name", service_name)]),
-        ))
-        .install_simple()
-        .expect("valid tracing config");
+    // let tracer = opentelemetry_otlp::new_pipeline()
+    //     .tracing()
+    //     .with_exporter(otlp_exporter)
+    //     .with_trace_config(opentelemetry_sdk::trace::config().with_resource(
+    //         opentelemetry_sdk::Resource::new(vec![KeyValue::new("service.name", service_name)]),
+    //     ))
+    //     .install_simple()
+    //     .expect("valid tracing config");
 
     let env_filter = EnvFilter::from_default_env();
 
-    let otlp_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+    // let otlp_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
     let sentry_layer = sentry_tracing::layer().event_filter(|md| match md.level() {
         &tracing::Level::ERROR => EventFilter::Exception,
@@ -97,7 +97,7 @@ pub fn setup_tracing_otlp(url: &str, service_name: String) {
     // We need to register our layer with `tracing`.
     tracing_subscriber::registry()
         .with(global_filters())
-        .with(otlp_layer)
+        // .with(otlp_layer)
         // Tracing error sadly can't be used as it results in deadlocks
         .with(tracing_subscriber::fmt::Layer::new())
         .with(sentry_layer)
