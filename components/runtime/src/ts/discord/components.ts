@@ -204,6 +204,11 @@ export abstract class TextInput extends BaseComponent implements ITextInput {
         this.value = value;
         return this;
     }
+
+    setRequired(required: boolean) {
+        this.required = required;
+        return this;
+    }
 }
 
 export class ShortTextInput extends TextInput implements ITextInput {
