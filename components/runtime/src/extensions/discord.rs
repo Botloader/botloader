@@ -28,7 +28,7 @@ use runtime_models::{
             OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessages,
         },
         misc_op::{CreateBanFields, GetReactionsFields},
-        role::{OpCreateRoleFields, OpUpdateRoleFields},
+        role::{OpCreateRoleFields, OpUpdateRoleFields, UpdateRolePosition},
         user::User,
     },
     ops::{handle_async_op, EasyOpsASync, EasyOpsHandlerASync},
@@ -989,6 +989,39 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?;
 
         Ok(updated.into())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_update_role_positions(
+        &self,
+        arg: Vec<UpdateRolePosition>,
+    ) -> Result<Vec<Role>, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let positions = arg
+            .into_iter()
+            .map(|v| {
+                Ok((
+                    parse_discord_id::<RoleMarker>(&v.role_id)?,
+                    v.position as u64,
+                ))
+            })
+            .collect::<Result<Vec<_>, AnyError>>()?;
+
+        dbg!(&positions);
+
+        let out = discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .update_role_positions(rt_ctx.guild_id, &positions)
+                .await
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(out.into_iter().map(Into::into).collect())
     }
 
     #[allow(async_fn_in_trait)]

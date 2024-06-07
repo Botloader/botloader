@@ -10,7 +10,7 @@ use crate::{
             Message, OpCreateChannelMessage, OpDeleteMessage, OpDeleteMessagesBulk,
             OpEditChannelMessage, OpGetMessages,
         },
-        role::{OpCreateRoleFields, OpUpdateRoleFields},
+        role::{OpCreateRoleFields, OpUpdateRoleFields, UpdateRolePosition},
     },
 };
 
@@ -123,5 +123,6 @@ ops_async! {
 
     discord_create_role(OpCreateRoleFields) => Role,
     discord_update_role(OpUpdateRoleFields) => Role,
+    discord_update_role_positions(Vec<UpdateRolePosition>) => Vec<Role>,
     discord_delete_role(String) => ()
 }

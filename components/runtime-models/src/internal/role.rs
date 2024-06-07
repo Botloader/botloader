@@ -61,3 +61,15 @@ pub struct OpUpdateRoleFields {
     #[ts(optional)]
     pub unicode_emoji: Option<String>,
 }
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(
+    export,
+    rename = "UpdateRolePosition",
+    export_to = "bindings/internal/UpdateRolePosition.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateRolePosition {
+    pub role_id: String,
+    pub position: i32,
+}

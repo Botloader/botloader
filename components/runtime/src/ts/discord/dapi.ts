@@ -290,6 +290,21 @@ export async function editRole(roleId: string, args: EditRoleFields): Promise<Ro
     })
 }
 
+// Disabled because of a twilight bug 
+// https://github.com/twilight-rs/twilight/pull/2342
+//
+// export interface EditRolePosition {
+//     roleId: string,
+//     position: number,
+// }
+
+// export async function editRolePositions(roles: EditRolePosition[]): Promise<Role[]> {
+//     return await OpWrappers.callAsyncOp({
+//         kind: "discord_update_role_positions",
+//         arg: roles,
+//     })
+// }
+
 export async function deleteRole(roleId: string) {
     await OpWrappers.callAsyncOp({
         kind: "discord_delete_role",

@@ -1,0 +1,42 @@
+import { Discord } from "botloader";
+import { assertExpected, runOnce, sendScriptCompletion } from "lib";
+
+runOnce(script.name, async () => {
+    const created_1 = await Discord.createRole({})
+    const created_2 = await Discord.createRole({})
+
+    const updated = await Discord.editRolePositions([{
+        position: 0,
+        roleId: created_1.id
+    }, {
+        position: 1,
+        roleId: created_2.id
+    }])
+
+    const updated_1 = updated.find(v => v.id === created_1.id)
+    const updated_2 = updated.find(v => v.id === created_2.id)
+
+    assertExpected(updated_1?.position, 0)
+    assertExpected(updated_2?.position, 1)
+
+
+    const secondUpdate = await Discord.editRolePositions([{
+        position: 1,
+        roleId: created_1.id
+    }, {
+        position: 0,
+        roleId: created_2.id
+    }])
+
+
+    const secondUpdated_1 = updated.find(v => v.id === created_1.id)
+    const secondUpdated_2 = updated.find(v => v.id === created_2.id)
+
+    assertExpected(secondUpdated_1?.position, 1)
+    assertExpected(secondUpdated_2?.position, 0)
+
+    await Discord.deleteRole(created_1.id)
+    await Discord.deleteRole(created_2.id)
+
+    sendScriptCompletion(script.name)
+})

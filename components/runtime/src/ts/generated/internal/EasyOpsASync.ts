@@ -13,6 +13,7 @@ import type { OpDeleteMessagesBulk } from "./DeleteMessagesBulk";
 import type { OpEditChannelMessage } from "./EditChannelMessage";
 import type { OpGetMessages } from "./GetMessages";
 import type { OpUpdateRoleFields } from "./UpdateRoleFields";
+import type { UpdateRolePosition } from "./UpdateRolePosition";
 
 export type EasyOpsASync =
   | { "kind": "discord_get_guild"; "arg": null }
@@ -48,4 +49,8 @@ export type EasyOpsASync =
   }
   | { "kind": "discord_create_role"; "arg": OpCreateRoleFields }
   | { "kind": "discord_update_role"; "arg": OpUpdateRoleFields }
+  | {
+    "kind": "discord_update_role_positions";
+    "arg": Array<UpdateRolePosition>;
+  }
   | { "kind": "discord_delete_role"; "arg": string };

@@ -29,5 +29,6 @@ export interface EasyOpsReturnTypesASync {
   discord_bulk_edit_channels: null;
   discord_create_role: Role;
   discord_update_role: Role;
+  discord_update_role_positions: Array<Role>;
   discord_delete_role: null;
 }
