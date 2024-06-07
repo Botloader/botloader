@@ -10,6 +10,7 @@ use runtime_models::{
         channel::{PermissionOverwrite, PermissionOverwriteType},
         guild::Guild,
         message::SendEmoji,
+        role::Role,
         util::AuditLogExtras,
     },
     internal::{
@@ -27,6 +28,7 @@ use runtime_models::{
             OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessages,
         },
         misc_op::{CreateBanFields, GetReactionsFields},
+        role::{OpCreateRoleFields, OpUpdateRoleFields},
         user::User,
     },
     ops::{handle_async_op, EasyOpsASync, EasyOpsHandlerASync},
@@ -906,6 +908,103 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 .update_guild_channel_positions(rt_ctx.guild_id, &positions);
 
             Ok(req.await)
+        })
+        .await?;
+
+        Ok(())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_create_role(&self, arg: OpCreateRoleFields) -> Result<Role, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let created = discord_request_with_extra_error(&self.state, async move {
+            let mut create_role = rt_ctx.discord_config.client.create_role(rt_ctx.guild_id);
+
+            if let Some(color) = arg.color {
+                create_role = create_role.color(color);
+            }
+            if let Some(hoist) = arg.hoist {
+                create_role = create_role.hoist(hoist);
+            }
+            if let Some(mentionable) = arg.mentionable {
+                create_role = create_role.mentionable(mentionable);
+            }
+            if let Some(name) = &arg.name {
+                create_role = create_role.name(&name);
+            }
+            if let Some(permissions) = arg.permissions {
+                let parsed: u64 = permissions.parse()?;
+                create_role = create_role.permissions(Permissions::from_bits_truncate(parsed));
+            }
+            if let Some(unicode_emoji) = &arg.unicode_emoji {
+                create_role = create_role.unicode_emoji(&unicode_emoji);
+            }
+
+            Ok(create_role.await)
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(created.into())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_update_role(&self, arg: OpUpdateRoleFields) -> Result<Role, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let role_id = parse_discord_id(&arg.role_id)?;
+
+        let updated = discord_request_with_extra_error(&self.state, async move {
+            let mut update_role = rt_ctx
+                .discord_config
+                .client
+                .update_role(rt_ctx.guild_id, role_id);
+
+            if let Some(color) = arg.color {
+                update_role = update_role.color(color);
+            }
+            if let Some(hoist) = arg.hoist {
+                update_role = update_role.hoist(hoist);
+            }
+            if let Some(mentionable) = arg.mentionable {
+                update_role = update_role.mentionable(mentionable);
+            }
+            if let Some(name) = &arg.name {
+                update_role = update_role.name(name.as_deref());
+            }
+            if let Some(permissions) = arg.permissions {
+                let parsed: u64 = permissions.parse()?;
+                update_role = update_role.permissions(Permissions::from_bits_truncate(parsed));
+            }
+            if let Some(unicode_emoji) = &arg.unicode_emoji {
+                update_role = update_role.unicode_emoji(&unicode_emoji);
+            }
+
+            Ok(update_role.await)
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(updated.into())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_delete_role(&self, arg: String) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let role_id = parse_discord_id(&arg)?;
+
+        discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .delete_role(rt_ctx.guild_id, role_id)
+                .await
+
+            // update_role.await
         })
         .await?;
 

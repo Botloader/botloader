@@ -6,6 +6,7 @@ pub fn discord_event_to_dispatch(
     evt: DiscordEvent,
 ) -> Result<Option<DiscordDispatchEvent>, anyhow::Error> {
     Ok(match evt.event {
+        // Messages
         DiscordEventData::MessageCreate(m) => Some(DiscordDispatchEvent {
             name: "MESSAGE_CREATE",
             guild_id: evt.guild_id,
@@ -30,6 +31,8 @@ pub fn discord_event_to_dispatch(
             ))
             .unwrap(),
         }),
+
+        // Members
         DiscordEventData::MemberAdd(m) => Some(DiscordDispatchEvent {
             name: "MEMBER_ADD",
             guild_id: m.guild_id,
@@ -49,6 +52,8 @@ pub fn discord_event_to_dispatch(
             ))
             .unwrap(),
         }),
+
+        // Reactions
         DiscordEventData::ReactionAdd(r) => Some(DiscordDispatchEvent {
             name: "MESSAGE_REACTION_ADD",
             guild_id: r.guild_id.expect("only guild event sent to guild worker"),
@@ -81,6 +86,8 @@ pub fn discord_event_to_dispatch(
             )
             .unwrap(),
         }),
+
+        // Channels
         DiscordEventData::ChannelCreate(cc) => Some(DiscordDispatchEvent {
             name: "CHANNEL_CREATE",
             guild_id: evt.guild_id,
@@ -105,6 +112,8 @@ pub fn discord_event_to_dispatch(
             ))
             .unwrap(),
         }),
+
+        // Threads
         DiscordEventData::ThreadCreate(r) => Some(DiscordDispatchEvent {
             name: "THREAD_CREATE",
             guild_id: evt.guild_id,
@@ -147,6 +156,26 @@ pub fn discord_event_to_dispatch(
             )
             .unwrap(),
         }),
+
+        // Roles
+        DiscordEventData::RoleCreate(v) => Some(DiscordDispatchEvent {
+            name: "ROLE_CREATE",
+            guild_id: evt.guild_id,
+            data: serde_json::to_value(&runtime_models::discord::role::Role::from(v.role)).unwrap(),
+        }),
+        DiscordEventData::RoleUpdate(v) => Some(DiscordDispatchEvent {
+            name: "ROLE_UPDATE",
+            guild_id: evt.guild_id,
+            data: serde_json::to_value(&runtime_models::discord::role::Role::from(v.role)).unwrap(),
+        }),
+        DiscordEventData::RoleDelete(v) => Some(DiscordDispatchEvent {
+            name: "ROLE_DELETE",
+            guild_id: evt.guild_id,
+            data: serde_json::to_value(&runtime_models::discord::events::EventRoleDelete::from(v))
+                .unwrap(),
+        }),
+
+        // Interactions
         DiscordEventData::InteractionCreate(interaction) => {
             let guild_id = evt.guild_id;
 
@@ -175,6 +204,8 @@ pub fn discord_event_to_dispatch(
                 }),
             }
         }
+
+        // Invites
         DiscordEventData::InviteCreate(invite) => Some(DiscordDispatchEvent {
             guild_id: invite.guild_id,
             name: "INVITE_CREATE",
@@ -191,6 +222,8 @@ pub fn discord_event_to_dispatch(
             ))
             .unwrap(),
         }),
+
+        // Voice states
         DiscordEventData::VoiceStateUpdate { event, old_state } => Some(DiscordDispatchEvent {
             guild_id: evt.guild_id,
             name: "VOICE_STATE_UPDATE",

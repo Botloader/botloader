@@ -1,5 +1,5 @@
 use crate::{
-    discord::guild::Guild,
+    discord::{guild::Guild, role::Role},
     internal::{
         channel::{
             CreateForumThread, CreateThread, CreateThreadFromMessage, EditGuildChannelPosition,
@@ -10,6 +10,7 @@ use crate::{
             Message, OpCreateChannelMessage, OpDeleteMessage, OpDeleteMessagesBulk,
             OpEditChannelMessage, OpGetMessages,
         },
+        role::{OpCreateRoleFields, OpUpdateRoleFields},
     },
 };
 
@@ -118,5 +119,9 @@ ops_async! {
     discord_list_private_archived_threads(ListThreadsRequest) => ThreadsListing,
     discord_edit_thread(UpdateThread) => GuildChannel,
 
-    discord_bulk_edit_channels(Vec<EditGuildChannelPosition>) => ()
+    discord_bulk_edit_channels(Vec<EditGuildChannelPosition>) => (),
+
+    discord_create_role(OpCreateRoleFields) => Role,
+    discord_update_role(OpUpdateRoleFields) => Role,
+    discord_delete_role(String) => ()
 }

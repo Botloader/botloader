@@ -113,3 +113,22 @@ impl From<twilight_model::gateway::payload::incoming::ThreadDelete> for EventThr
         }
     }
 }
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/discord/EventRoleDelete.ts",
+    rename = "EventRoleDelete"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct EventRoleDelete {
+    role_id: String,
+}
+
+impl From<twilight_model::gateway::payload::incoming::RoleDelete> for EventRoleDelete {
+    fn from(value: twilight_model::gateway::payload::incoming::RoleDelete) -> Self {
+        Self {
+            role_id: value.role_id.to_string(),
+        }
+    }
+}

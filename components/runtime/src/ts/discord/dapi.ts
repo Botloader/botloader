@@ -7,7 +7,7 @@ import { VoiceState } from './events';
 import { Invite } from './invite';
 import { Ban, Member } from './member';
 import { Message } from './message';
-import { Permissions } from './permissions';
+import { PermissionResolvable, Permissions } from './permissions';
 import { User } from './user';
 
 /**
@@ -234,9 +234,68 @@ export function getRoles(): Promise<Role[]> {
     return OpWrappers.getRoles();
 }
 
-async function createRole() { }
-async function editRole() { }
-async function deleteRole() { }
+export interface CreateRoleFields {
+    name?: string;
+    color?: number;
+
+    /**
+     * "Hoisted" roles makes members show up under the role in the members list
+     */
+    hoist?: boolean;
+
+    mentionable?: boolean;
+    permissions?: PermissionResolvable;
+    unicodeEmoji?: string;
+}
+
+export async function createRole(args: CreateRoleFields): Promise<Role> {
+    return await OpWrappers.callAsyncOp({
+        kind: "discord_create_role",
+        arg: {
+            name: args.name,
+            color: args.color,
+            hoist: args.hoist,
+            mentionable: args.mentionable,
+            permissions: args.permissions ? new Permissions(args.permissions).toString() : undefined,
+            unicodeEmoji: args.unicodeEmoji,
+        },
+    })
+}
+
+export interface EditRoleFields {
+    name?: string;
+    color?: number | null;
+
+    /**
+     * "Hoisted" roles makes members show up under the role in the members list
+     */
+    hoist?: boolean;
+    mentionable?: boolean;
+    permissions?: PermissionResolvable;
+    unicodeEmoji?: string;
+}
+
+export async function editRole(roleId: string, args: EditRoleFields): Promise<Role> {
+    return await OpWrappers.callAsyncOp({
+        kind: "discord_update_role",
+        arg: {
+            roleId: roleId,
+            name: args.name,
+            color: args.color,
+            hoist: args.hoist,
+            mentionable: args.mentionable,
+            permissions: args.permissions ? new Permissions(args.permissions).toString() : undefined,
+            unicodeEmoji: args.unicodeEmoji,
+        },
+    })
+}
+
+export async function deleteRole(roleId: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_delete_role",
+        arg: roleId,
+    })
+}
 
 // Channel functions
 export async function getChannel(channelId: string): Promise<GuildChannel> {

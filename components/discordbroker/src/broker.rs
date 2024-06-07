@@ -328,6 +328,10 @@ impl Broker {
             DispatchEvent::ChannelUpdate(v) => (v.guild_id?, DiscordEventData::ChannelUpdate(v)),
             DispatchEvent::ChannelDelete(v) => (v.guild_id?, DiscordEventData::ChannelDelete(v)),
 
+            DispatchEvent::RoleCreate(v) => (v.guild_id, DiscordEventData::RoleCreate(v)),
+            DispatchEvent::RoleUpdate(v) => (v.guild_id, DiscordEventData::RoleUpdate(v)),
+            DispatchEvent::RoleDelete(v) => (v.guild_id, DiscordEventData::RoleDelete(v)),
+
             DispatchEvent::ThreadCreate(v) => (v.guild_id?, DiscordEventData::ThreadCreate(v)),
             DispatchEvent::ThreadUpdate(v) => (v.guild_id?, DiscordEventData::ThreadUpdate(v)),
             DispatchEvent::ThreadDelete(v) => (v.guild_id, DiscordEventData::ThreadDelete(v)),

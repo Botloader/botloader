@@ -311,6 +311,9 @@ export class Script {
     on(eventType: "THREAD_CREATE", cb: (evt: EventSystem.EventTypes["THREAD_CREATE"]) => void): void;
     on(eventType: "THREAD_UPDATE", cb: (evt: EventSystem.EventTypes["THREAD_UPDATE"]) => void): void;
     on(eventType: "THREAD_DELETE", cb: (evt: EventSystem.EventTypes["THREAD_DELETE"]) => void): void;
+    on(eventType: "ROLE_CREATE", cb: (evt: EventSystem.EventTypes["ROLE_CREATE"]) => void): void;
+    on(eventType: "ROLE_UPDATE", cb: (evt: EventSystem.EventTypes["ROLE_UPDATE"]) => void): void;
+    on(eventType: "ROLE_DELETE", cb: (evt: EventSystem.EventTypes["ROLE_DELETE"]) => void): void;
     on(eventType: "THREAD_LIST_SYNC", cb: (evt: EventSystem.EventTypes["THREAD_LIST_SYNC"]) => void): void;
     on(eventType: "THREAD_MEMBER_UPDATE", cb: (evt: EventSystem.EventTypes["THREAD_MEMBER_UPDATE"]) => void): void;
     on(eventType: "THREAD_MEMBERS_UPDATE", cb: (evt: EventSystem.EventTypes["THREAD_MEMBERS_UPDATE"]) => void): void;

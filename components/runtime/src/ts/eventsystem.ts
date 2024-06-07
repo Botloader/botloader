@@ -24,7 +24,9 @@ import {
     EventThreadListSync,
     EventThreadMembersUpdate,
     threadChannelFromInternal,
-    Thread
+    Thread,
+    Role,
+    EventRoleDelete
 } from './discord/index';
 import * as Internal from './generated/internal/index';
 
@@ -119,6 +121,10 @@ export namespace EventSystem {
         CHANNEL_CREATE: GuildChannel,
         CHANNEL_UPDATE: GuildChannel,
         CHANNEL_DELETE: GuildChannel,
+
+        ROLE_CREATE: Role,
+        ROLE_UPDATE: Role,
+        ROLE_DELETE: EventRoleDelete,
 
         THREAD_CREATE: Thread,
         THREAD_UPDATE: Thread,
