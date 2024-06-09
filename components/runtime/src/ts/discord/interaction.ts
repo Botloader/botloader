@@ -18,9 +18,19 @@ export class Interaction {
     member: Member;
 
     protected _hasSentCallback = false;
+    protected _isResponseDeferred = false;
+    protected _isDeferredResponseSent = false;
 
     get hasSentCallback() {
         return this._hasSentCallback;
+    }
+
+    get isResponseDeferred() {
+        return this._isResponseDeferred;
+    }
+
+    get isDeferredResponseSent() {
+        return this._isDeferredResponseSent;
     }
 
     constructor(id: string, token: string, member: Member) {
@@ -83,6 +93,7 @@ export class Interaction {
      */
     async ackWithDeferredMessage(fields?: InteractionCreateMessageFields) {
         this.setCallbackSent();
+        this._isResponseDeferred = true
 
         return OpWrappers.interactionCallback({
             interactionId: this.interactionId,
@@ -107,10 +118,12 @@ export class Interaction {
     }
 
     async editOriginalResponse(fields: InteractionCreateMessageFields) {
+        this._isDeferredResponseSent = true
         return editInteractionOriginalResponse(this.token, fields)
     }
 
     async deleteOriginalResponse() {
+        this._isDeferredResponseSent = true
         return deleteInteractionOriginalResponse(this.token);
     }
 
@@ -122,10 +135,12 @@ export class Interaction {
      * @deprecated use {@link createFollowup} instead
      */
     async sendFollowup(resp: string | InteractionCreateMessageFields) {
+        this._isDeferredResponseSent = true
         return createInteractionFollowupMessage(this.token, resp);
     }
 
     async createFollowup(resp: string | InteractionCreateMessageFields) {
+        this._isDeferredResponseSent = true
         return createInteractionFollowupMessage(this.token, resp);
     }
 

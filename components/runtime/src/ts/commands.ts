@@ -54,11 +54,11 @@ export namespace Commands {
                     optionsMap[opt.name] = this.resolveOption(interaction.dataMap, opt.value);
                 }
 
-                await command.cb(ctx, optionsMap)
+                await this.runCommand(command, ctx, optionsMap)
             } else if (interaction.kind === "Message") {
                 if (interaction.targetId) {
                     let message = interaction.dataMap.messages[interaction.targetId];
-                    await command.cb(ctx, new Message(message))
+                    await this.runCommand(command, ctx, new Message(message))
                 } else {
                     throw new Error("message not found in datamap")
                 }
@@ -70,12 +70,90 @@ export namespace Commands {
                         user: new User(user),
                         member,
                     };
-                    await command.cb(ctx, args)
+
+                    await this.runCommand(command, ctx, args)
                 } else {
                     throw new Error("member not found in datamap")
                 }
             } else {
                 throw new Error("Unknown command type")
+            }
+        }
+
+        async runCommand(command: Command, ctx: ExecutedCommandContext, args: any) {
+            try {
+                await command.cb(ctx, args)
+
+                const fullName = fullCommandName(ctx.commandName, ctx.parentName, ctx.parentParentName)
+                if (!ctx.hasSentCallback) {
+                    ctx.ackWithMessage({
+                        embeds: [{
+                            title: "Script Error",
+                            description: "Command handler returned without acking the interaction.",
+                            color: 0xdb4444,
+                        }],
+                        flags: {
+                            ephemeral: true,
+                        }
+                    })
+
+                    console.output({
+                        items: [`Command handler [${fullName}] did not send a callback before it returned.`],
+                        level: "error",
+                        includeCaller: false
+                    })
+                } else if (ctx.isResponseDeferred && !ctx.isDeferredResponseSent) {
+                    ctx.createFollowup({
+                        embeds: [{
+                            title: "Script Error",
+                            description: "Command handler returned without sending a response.",
+                            color: 0xdb4444,
+                        }],
+                        flags: {
+                            ephemeral: true,
+                        }
+                    })
+
+                    console.output({
+                        items: [`Command handler [${fullName}] did not send a response before it returned.`],
+                        level: "error",
+                        includeCaller: false
+                    })
+                }
+            } catch (error: any) {
+                let origStack = error.stack
+
+                if (ctx.hasSentCallback) {
+                    ctx.createFollowup({
+                        embeds: [{
+                            title: "Script Error",
+                            description: `Command handler threw an exception, the error has been logged to the console for admins to view.`,
+                            color: 0xdb4444,
+                        }],
+                        flags: {
+                            ephemeral: true,
+                        }
+                    })
+
+                } else {
+                    ctx.ackWithMessage({
+                        embeds: [{
+                            title: "Script Error",
+                            description: `Command handler threw an exception, the error has been logged to the console for admins to view.`,
+                            color: 0xdb4444,
+                        }],
+                        flags: {
+                            ephemeral: true,
+                        }
+                    })
+                }
+
+                const fullName = fullCommandName(ctx.commandName, ctx.parentName, ctx.parentParentName)
+                console.output({
+                    items: [`Command handler [${fullName}] threw an exception: ${error.message}\n${origStack}`],
+                    level: "error",
+                    includeCaller: false
+                })
             }
         }
 
@@ -802,4 +880,10 @@ export namespace Commands {
             return built
         }
     }
+}
+
+function fullCommandName(commandName: string, parentName: string | undefined, parentParentName: string | undefined) {
+    let parent = parentName ? (parentName + " ") : ""
+    let parentParent = parentParentName ? (parentParentName + " ") : ""
+    return "/" + parentParent + parent + commandName
 }
