@@ -1,18 +1,46 @@
 import { OpWrappers } from "./op_wrappers";
+import * as Internal from "./generated/internal/index";
 
 const non_json = ["boolean", "number", "string"];
 
-/** 
- * @deprecated console is now a global, please remove the import
- */
 export namespace console {
     export function log(...args: any[]) {
+        console.output({
+            items: args,
+            level: "log",
+            skipCallers: 1,
+        })
+    }
+
+    export function warn(...args: any[]) {
+        console.output({
+            items: args,
+            level: "warn",
+            skipCallers: 1,
+        })
+    }
+
+    export function error(...args: any[]) {
+        console.output({
+            items: args,
+            level: "error",
+            skipCallers: 1,
+        })
+    }
+
+    /**
+     * Lower level output function providing more controls than the simpler log/warn/error functions
+     * 
+     * @internal
+     */
+    export function output({ level, items, includeCaller, skipCallers }: ConsoleOutputOptions) {
         let output = "";
-        const first = true;
-        for (let arg of args) {
+        let first = true;
+        for (let arg of items) {
             if (!first) {
                 output += ", ";
             }
+            first = false
 
             if (non_json.includes(typeof arg)) {
                 output += arg;
@@ -21,43 +49,94 @@ export namespace console {
             }
         }
 
-        let [file, line, col] = getCaller(2);
+        const skip = 2 + (skipCallers ?? 0)
+        let [file, line, col] = (includeCaller ?? true)
+            ? getCaller(skip)
+            : [undefined, undefined, undefined];
 
         OpWrappers.consoleLog({
             message: output,
             fileName: file,
             lineNumber: line,
             colNumber: col,
+            level,
         })
     }
 }
 
+export interface ConsoleOutputOptions {
+    /**
+     * The items to log, they will be serialized to json if they're not a string
+     */
+    items: any[],
+
+    level: Internal.ConsoleLogLevel,
+
+    /**
+     * @internal
+     * 
+     * Wheter to include the caller script, line and column number
+     * 
+     * Defaults to `true` if not provided
+     * 
+     * Marked as internal as im not sure if there is any use cases for this outside the botloader sdk
+     */
+    includeCaller?: boolean,
+
+    /**
+     * @internal
+     * The number of callers to skip in the stack trace
+     */
+    skipCallers?: number,
+
+    /**
+     * @internal
+     * 
+     * Custom filename, line and column that will should in the log message prefix
+     * 
+     * Marked as internal as im not sure if there is any use cases for this outside the botloader sdk
+     */
+    customFileLineCol?: { file: string, line: string, col: string }
+}
+
 // after the many hours i've spent digging around in v8, i still don't know the proper way of getting a stack trace.
 // so here's a hacky solution for now
-function getCaller(skip: number): [string | undefined, number | undefined, number | undefined] {
+function getCaller(skip: number) {
     const stack = (new Error()).stack;
+    return parseStackEntry(skip, stack || "")
+}
+
+/** 
+ * Returns a single line of a stack trace
+ * 
+ * @internal
+ */
+export function parseStackEntry(skip: number, stack: string) {
     const lines = stack!.split("\n");
 
     // get the correct line
-    let selected_line: string;
+    let selectedLine: string;
     if (skip >= lines.length - 2) {
-        selected_line = lines[lines.length - 1];
+        selectedLine = lines[lines.length - 1];
     } else {
-        selected_line = lines[skip + 1];
+        selectedLine = lines[skip + 1];
     }
 
     // parse it
     const re = /(file:\/\/\/.+):(\d+):(\d+)/
-    const match = selected_line.match(re);
+    const match = selectedLine.match(re);
     if (!match || match.length < 4) {
-        return [undefined, undefined, undefined]
+        return [undefined, undefined, undefined] as const
     }
 
-    return [match[1], parseInt(match[2]), parseInt(match[3])]
+    return [match[1], parseInt(match[2]), parseInt(match[3])] as const
 }
 
 (globalThis as any).console = {
     log: console.log,
+    warn: console.warn,
+    error: console.error,
+    output: console.output,
 };
 
 /**

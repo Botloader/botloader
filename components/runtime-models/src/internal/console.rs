@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use ts_rs::TS;
+
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/internal/ConsoleLogMessage.ts")]
@@ -16,4 +17,16 @@ pub struct ConsoleLogMessage {
     pub col_number: Option<u32>,
 
     pub message: String,
+
+    pub level: ConsoleLogLevel,
+}
+
+#[derive(Clone, Debug, Deserialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/ConsoleLogLevel.ts")]
+#[serde(rename_all = "camelCase")]
+pub enum ConsoleLogLevel {
+    Log,
+    Warn,
+    Error,
 }
