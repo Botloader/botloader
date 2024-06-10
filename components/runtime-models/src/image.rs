@@ -1,9 +1,10 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-#[derive(Clone, Debug, Deserialize, TS)]
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/image/SupportedImageFormats.ts")]
-pub enum SupportedImageFormats {
+#[ts(export_to = "bindings/image/SupportedImageFormat.ts")]
+pub enum SupportedImageFormat {
     Png,
     Jpeg,
     Gif,
@@ -29,7 +30,21 @@ pub enum SupportedImageFormats {
     RawRgba32F,
 }
 
-pub enum ImageFormat {
-    Encoded(image::ImageFormat),
-    Decoded(image::ColorType),
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/image/SupportedEncodeImageFormat.ts")]
+pub enum SupportedEncodeImageFormat {
+    Png,
+    Jpeg,
+    Gif,
+    WebP,
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/image/ImageProperties.ts")]
+pub struct ImageProperties {
+    pub format: SupportedEncodeImageFormat,
+    pub width: u32,
+    pub height: u32,
 }

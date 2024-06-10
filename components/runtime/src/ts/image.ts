@@ -1,6 +1,7 @@
+import { SupportedEncodeImageFormat } from "./generated/image/SupportedEncodeImageFormat";
+import { SupportedImageFormat } from "./generated/image/SupportedImageFormat";
 import { HttpClient } from "./httpclient"
 
-export type ImageEncodeSupportedFormats = "gif" | "png" | "jpeg" | "webp" | "rgba8"
 
 export class Image {
 
@@ -22,20 +23,17 @@ export class Image {
 
     }
 
-    async transcode(intoFormat: ImageEncodeSupportedFormats) {
+    async transcode(intoFormat: SupportedEncodeImageFormat) {
 
     }
 
-    async dataUri(): string {
+    dataUri(): string {
+        return ""
     }
 }
 
-op_image_transcode
-op_imade_resize
-
-
 interface ImageProperties {
-    format: string
+    format: SupportedImageFormat
     width: number
     height: number
 }

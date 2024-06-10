@@ -18,6 +18,7 @@ pub mod base64;
 pub mod console;
 pub mod discord;
 pub mod httpclient;
+pub mod image;
 pub mod storage;
 pub mod tasks;
 
