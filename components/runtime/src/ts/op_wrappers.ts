@@ -1,6 +1,8 @@
 import * as Internal from "./generated/internal/index";
 import * as Discord from './generated/discord/index';
 import { VoiceState } from "./discord/events";
+import { SupportedImageFormat } from "./generated/image/SupportedImageFormat";
+import { SupportedEncodeImageFormat } from "./generated/image/SupportedEncodeImageFormat";
 
 // This file contains op wrappers
 // They are used internally and you should NEVER use them in your own scripts
@@ -76,6 +78,8 @@ const {
     op_discord_get_channel_invites,
     op_discord_create_channel_invite,
     op_easyops_async,
+    op_base64_encode,
+    op_base64_decode,
 } = Deno.core.ops
 
 export namespace OpWrappers {
@@ -152,6 +156,14 @@ export namespace OpWrappers {
 
     export async function callAsyncOp<T extends Internal.EasyOpsASync>(call: T): Promise<Internal.EasyOpsReturnTypesASync[T["kind"]]> {
         return await op_easyops_async(call)
+    }
+
+    export function forgivingBase64Encode(data: ArrayBuffer): string {
+        return op_base64_encode(data);
+    }
+
+    export function forgivingBase64Decode(data: string): ArrayBuffer {
+        return op_base64_decode(data);
     }
 
     // export async function getGuild(): Promise<Discord.Guild> {
@@ -477,6 +489,21 @@ export namespace OpWrappers {
     }
     export async function discord_delete_all_reactions_for_emoji(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
         return op_discord_delete_all_reactions_for_emoji([channelId, messageId], emoji)
+    }
+
+    export function opImageProperties(data: ArrayBuffer): Internal.ImageProperties {
+        return Deno.core.ops.op_bl_image_properties(data)
+    }
+
+    export function opImageTranscode(args: {
+        data: ArrayBuffer,
+        inFormat: SupportedImageFormat,
+        outFormat: SupportedEncodeImageFormat,
+        resize?: readonly [number, number],
+    }): ArrayBuffer {
+        const resizeWidth = args.resize ? args.resize[0] : null
+        const resizeHeight = args.resize ? args.resize[1] : null
+        return Deno.core.ops.op_bl_image_transcode(args.data, args.inFormat, args.outFormat, resizeWidth, resizeHeight)
     }
 }
 

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer};
 
 pub mod discord;
+pub mod image;
 pub mod internal;
 pub mod ops;
 pub mod util;

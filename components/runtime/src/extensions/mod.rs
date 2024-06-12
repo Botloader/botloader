@@ -14,9 +14,11 @@ use crate::RuntimeContext;
 
 use self::discord::{discord_request, not_found_error};
 
+pub mod base64;
 pub mod console;
 pub mod discord;
 pub mod httpclient;
+pub mod image;
 pub mod storage;
 pub mod tasks;
 

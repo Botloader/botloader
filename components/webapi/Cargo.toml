@@ -32,7 +32,7 @@ tower = "0.4"
 axum = { workspace = true }
 tonic = { workspace = true }
 uuid = { workspace = true }
-image = { version = "0.24.8", features = ["webp-encoder"] }
+image = { workspace = true }
 
 tracing = { workspace = true }
 tracing-log = { workspace = true }

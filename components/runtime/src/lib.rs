@@ -56,6 +56,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
         vec![
             bl_script_core::init_ops_and_esm(core_ctx, rt_ctx, http_client, premium_tier),
             extensions::storage::bl_storage::init_ops_and_esm(),
+            extensions::base64::bl_base64::init_ops_and_esm(),
             extensions::discord::bl_discord::init_ops_and_esm(),
             extensions::console::bl_console::init_ops_and_esm(),
             extensions::httpclient::bl_http::init_ops_and_esm(),
@@ -65,6 +66,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
         vec![
             bl_script_core_no_guild::init_ops_and_esm(core_ctx, http_client, premium_tier),
             extensions::storage::bl_storage::init_ops_and_esm(),
+            extensions::base64::bl_base64::init_ops_and_esm(),
             extensions::discord::bl_discord::init_ops_and_esm(),
             extensions::console::bl_console::init_ops_and_esm(),
             extensions::httpclient::bl_http::init_ops_and_esm(),
