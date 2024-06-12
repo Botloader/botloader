@@ -32,7 +32,7 @@ url = "2.2"
 tracing-log = "0.2"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 regex = "1.10"
-image = { version = "0.24.8", features = ["webp-encoder"] }
+image = { version = "0.25.1" }
 
 twilight-model = { version = "0.15.4" }
 twilight-http = { version = "0.15.4" }

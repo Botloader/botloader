@@ -1,6 +1,8 @@
 import * as Internal from "./generated/internal/index";
 import * as Discord from './generated/discord/index';
 import { VoiceState } from "./discord/events";
+import { SupportedImageFormat } from "./generated/image/SupportedImageFormat";
+import { SupportedEncodeImageFormat } from "./generated/image/SupportedEncodeImageFormat";
 
 // This file contains op wrappers
 // They are used internally and you should NEVER use them in your own scripts
@@ -156,11 +158,11 @@ export namespace OpWrappers {
         return await op_easyops_async(call)
     }
 
-    function forgivingBase64Encode(data: Uint8Array): string {
+    export function forgivingBase64Encode(data: ArrayBuffer): string {
         return op_base64_encode(data);
     }
 
-    function forgivingBase64Decode(data: string): Uint8Array {
+    export function forgivingBase64Decode(data: string): ArrayBuffer {
         return op_base64_decode(data);
     }
 
@@ -487,6 +489,21 @@ export namespace OpWrappers {
     }
     export async function discord_delete_all_reactions_for_emoji(channelId: string, messageId: string, emoji: Discord.SendEmoji): Promise<void> {
         return op_discord_delete_all_reactions_for_emoji([channelId, messageId], emoji)
+    }
+
+    export function opImageProperties(data: ArrayBuffer): Internal.ImageProperties {
+        return Deno.core.ops.op_bl_image_properties(data)
+    }
+
+    export function opImageTranscode(args: {
+        data: ArrayBuffer,
+        inFormat: SupportedImageFormat,
+        outFormat: SupportedEncodeImageFormat,
+        resize?: readonly [number, number],
+    }): ArrayBuffer {
+        const resizeWidth = args.resize ? args.resize[0] : null
+        const resizeHeight = args.resize ? args.resize[1] : null
+        return Deno.core.ops.op_bl_image_transcode(args.data, args.inFormat, args.outFormat, resizeWidth, resizeHeight)
     }
 }
 

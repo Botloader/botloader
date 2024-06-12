@@ -4,6 +4,7 @@ use ts_rs::TS;
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/image/SupportedImageFormat.ts")]
+#[serde(rename_all = "lowercase")]
 pub enum SupportedImageFormat {
     Png,
     Jpeg,
@@ -17,22 +18,36 @@ pub enum SupportedImageFormat {
     Hdr,
     OpenExr,
     Qoi,
+    Avif,
+}
 
-    RawL8,
-    RawLa8,
-    RawRgb8,
-    RawRgba8,
-    RawL16,
-    RawLa16,
-    RawRgb16,
-    RawRgba16,
-    RawRgb32F,
-    RawRgba32F,
+impl TryFrom<image::ImageFormat> for SupportedImageFormat {
+    type Error = ();
+
+    fn try_from(value: image::ImageFormat) -> Result<Self, Self::Error> {
+        match value {
+            image::ImageFormat::Png => Ok(Self::Png),
+            image::ImageFormat::Jpeg => Ok(Self::Jpeg),
+            image::ImageFormat::Gif => Ok(Self::Gif),
+            image::ImageFormat::WebP => Ok(Self::WebP),
+            image::ImageFormat::Pnm => Ok(Self::Pnm),
+            image::ImageFormat::Tiff => Ok(Self::Tiff),
+            image::ImageFormat::Tga => Ok(Self::Tga),
+            image::ImageFormat::Bmp => Ok(Self::Bmp),
+            image::ImageFormat::Ico => Ok(Self::Ico),
+            image::ImageFormat::Hdr => Ok(Self::Hdr),
+            image::ImageFormat::OpenExr => Ok(Self::OpenExr),
+            image::ImageFormat::Avif => Ok(Self::Avif),
+            image::ImageFormat::Qoi => Ok(Self::Qoi),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/image/SupportedEncodeImageFormat.ts")]
+#[serde(rename_all = "lowercase")]
 pub enum SupportedEncodeImageFormat {
     Png,
     Jpeg,
@@ -42,9 +57,10 @@ pub enum SupportedEncodeImageFormat {
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "bindings/image/ImageProperties.ts")]
+#[ts(export_to = "bindings/internal/ImageProperties.ts")]
 pub struct ImageProperties {
-    pub format: SupportedEncodeImageFormat,
+    #[serde(rename = "formatName")]
+    pub format: SupportedImageFormat,
     pub width: u32,
     pub height: u32,
 }

@@ -39,6 +39,7 @@ bytes = "1.5.0"
 governor = "0.6"
 chrono = { workspace = true }
 base64-simd = "0.8.0"
+image = { workspace = true }
 
 [build-dependencies]
 tscompiler = { path = "../../components/tscompiler" }
