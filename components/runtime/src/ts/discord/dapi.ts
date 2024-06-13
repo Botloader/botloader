@@ -1,8 +1,10 @@
 import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
+import { Image } from '../image';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, Thread, ThreadMember, guildChannelFromInternal, threadChannelFromInternal } from './channel';
 import type { AutoArchiveMinutes } from './channel';
+import { CustomEmoji } from './emoji';
 import { VoiceState } from './events';
 import { Invite } from './invite';
 import { Ban, Member } from './member';
@@ -485,11 +487,81 @@ export async function deletePin(channelId: string, messageId: string): Promise<v
 }
 
 // Emoji functions
-async function getEmoji() { }
-async function getEmojis() { }
-async function createEmoji() { }
-async function editEmoji() { }
-async function deleteEmoji() { }
+export async function getEmoji(id: string): Promise<CustomEmoji | undefined> {
+    const emojis = await getEmojis()
+    return emojis.find(v => v.id === id)
+}
+
+export async function getEmojis() {
+    const emojis = await OpWrappers.callAsyncOp({
+        kind: "discord_get_emojis",
+        arg: null,
+    })
+
+    return emojis.map(v => CustomEmoji.fromInternal(v))
+}
+
+export interface CreateEmoji {
+    name: string;
+
+    /**
+     * Image data in base64 data uri format, or a image instance
+     */
+    data: string | Image;
+
+    /**
+     * Roles that can use the emoji
+     */
+    roles?: string[];
+}
+
+export async function createEmoji(fields: CreateEmoji) {
+    let imageData: string;
+    if (fields.data instanceof Image) {
+        imageData = fields.data.dataUri()
+    } else {
+        imageData = fields.data
+    }
+
+    const created = await OpWrappers.callAsyncOp({
+        kind: "discord_create_emoji",
+        arg: {
+            name: fields.name,
+            data: imageData,
+            roles: fields.roles ?? [],
+        }
+    })
+
+    return CustomEmoji.fromInternal(created)
+}
+
+export interface UpdateEmojiFields {
+    name: string | null;
+
+    /**
+     * Roles that can use the emoji
+     */
+    roles?: string[];
+}
+
+export async function editEmoji(id: string, fields: UpdateEmojiFields) {
+    const edited = await OpWrappers.callAsyncOp({
+        kind: "discord_edit_emoji",
+        arg: {
+            id,
+            name: fields.name,
+            roles: fields.roles ?? [],
+        }
+    })
+
+    return CustomEmoji.fromInternal(edited)
+}
+export async function deleteEmoji(id: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_delete_emoji",
+        arg: id,
+    })
+}
 
 
 // Sticker functions

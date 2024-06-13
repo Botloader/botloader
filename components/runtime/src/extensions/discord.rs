@@ -19,6 +19,7 @@ use runtime_models::{
             EditGuildChannelPosition, ForumThreadResponse, GuildChannel, ListThreadMembersRequest,
             ListThreadsRequest, ThreadMember, ThreadsListing, UpdateThread,
         },
+        emoji::{CustomEmoji, OpCreateEmoji, OpUpdateEmoji},
         events::VoiceState,
         interactions::InteractionCallback,
         invite::CreateInviteFields,
@@ -60,7 +61,9 @@ use twilight_model::{
 use vm::AnyError;
 
 use super::{get_guild_channel, parse_discord_id, parse_get_guild_channel, parse_str_snowflake_id};
-use crate::{get_rt_ctx, limits::RateLimiters, RuntimeContext};
+use crate::{
+    extensions::parse_str_snowflake_ids, get_rt_ctx, limits::RateLimiters, RuntimeContext,
+};
 
 deno_core::extension!(
     bl_discord,
@@ -1038,6 +1041,90 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 .await
 
             // update_role.await
+        })
+        .await?;
+
+        Ok(())
+    }
+
+    async fn discord_get_emojis(&self, _arg: ()) -> Result<Vec<CustomEmoji>, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let emojis = rt_ctx.bot_state.get_guild_emojis(rt_ctx.guild_id).await?;
+
+        Ok(emojis.into_iter().map(Into::into).collect())
+    }
+
+    async fn discord_create_emoji(&self, arg: OpCreateEmoji) -> Result<CustomEmoji, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let roles = arg
+            .roles
+            .map(|v| parse_str_snowflake_ids::<RoleMarker>(v.into_iter()))
+            .transpose()?;
+
+        let out = discord_request(&self.state, async move {
+            let mut req =
+                rt_ctx
+                    .discord_config
+                    .client
+                    .create_emoji(rt_ctx.guild_id, &arg.name, &arg.data);
+
+            if let Some(roles) = &roles {
+                req = req.roles(roles.as_slice());
+            }
+
+            req.await
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(out.into())
+    }
+
+    async fn discord_edit_emoji(&self, arg: OpUpdateEmoji) -> Result<CustomEmoji, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let roles = arg
+            .roles
+            .map(|v| parse_str_snowflake_ids::<RoleMarker>(v.into_iter()))
+            .transpose()?;
+
+        let parsed_id = parse_str_snowflake_id(&arg.id)?;
+
+        let out = discord_request(&self.state, async move {
+            let mut req = rt_ctx
+                .discord_config
+                .client
+                .update_emoji(rt_ctx.guild_id, parsed_id.cast());
+
+            if let Some(name) = &arg.name {
+                req = req.name(name);
+            }
+
+            if let Some(roles) = &roles {
+                req = req.roles(roles.as_slice());
+            }
+
+            req.await
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(out.into())
+    }
+
+    async fn discord_delete_emoji(&self, arg: String) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+        let parsed_id = parse_str_snowflake_id(&arg)?;
+
+        discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .delete_emoji(rt_ctx.guild_id, parsed_id.cast())
+                .await
         })
         .await?;
 

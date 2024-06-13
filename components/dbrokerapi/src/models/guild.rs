@@ -5,7 +5,9 @@ use twilight_model::{
         PremiumTier, SystemChannelFlags, VerificationLevel,
     },
     id::{
-        marker::{ApplicationMarker, ChannelMarker, GuildMarker, UserMarker},
+        marker::{
+            ApplicationMarker, ChannelMarker, EmojiMarker, GuildMarker, RoleMarker, UserMarker,
+        },
         Id,
     },
     util::Timestamp,
@@ -51,4 +53,16 @@ pub struct BrokerGuild {
     pub verification_level: VerificationLevel,
     pub widget_channel_id: Option<Id<ChannelMarker>>,
     pub widget_enabled: Option<bool>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct BrokerEmoji {
+    pub animated: bool,
+    pub available: bool,
+    pub id: Id<EmojiMarker>,
+    pub managed: bool,
+    pub name: String,
+    pub require_colons: bool,
+    pub roles: Vec<Id<RoleMarker>>,
+    pub user_id: Option<Id<UserMarker>>,
 }

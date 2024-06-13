@@ -10,6 +10,8 @@ use twilight_model::id::Id;
 use twilight_model::voice::VoiceState;
 use twilight_model::{channel::Channel, guild::Role};
 
+use crate::models::BrokerEmoji;
+
 #[derive(Clone)]
 pub struct Client {
     server_addr: String,
@@ -69,6 +71,12 @@ impl Client {
         ))
         .await
         .map(|v| v.unwrap_or_default())
+    }
+
+    pub async fn get_guild_emojis(&self, guild_id: Id<GuildMarker>) -> ApiResult<Vec<BrokerEmoji>> {
+        self.get_option(format!("{}/guilds/{}/emojis", self.server_addr, guild_id))
+            .await
+            .map(|v| v.unwrap_or_default())
     }
 
     pub async fn get_channel(

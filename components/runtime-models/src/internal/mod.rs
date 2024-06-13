@@ -1,5 +1,6 @@
 pub mod channel;
 pub mod console;
+pub mod emoji;
 pub mod events;
 pub mod httpclient;
 pub mod interaction;

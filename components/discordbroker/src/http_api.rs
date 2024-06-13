@@ -11,7 +11,7 @@ use axum::{
     Json, Router,
 };
 use axum_extra::extract::Query;
-use dbrokerapi::state_client::ConnectedGuildsResponse;
+use dbrokerapi::{models::BrokerEmoji, state_client::ConnectedGuildsResponse};
 use serde::Deserialize;
 use tokio::sync::mpsc::unbounded_channel;
 use tracing::info;
@@ -80,6 +80,7 @@ pub async fn run_http_server(
             "/guilds/:guild_id/voice_states",
             get(handle_get_guild_voice_states),
         )
+        .route("/guilds/:guild_id/emojis", get(handle_get_emojis))
         .route("/guilds/:guild_id/channels", get(handle_get_channels))
         .route(
             "/guilds/:guild_id/channels/:channel_id",
@@ -187,6 +188,32 @@ async fn handle_get_channels(
             .value()
             .iter()
             .filter_map(|v| state.discord_state.channel(*v).map(|c| c.value().clone()));
+
+        return Ok(Json(conv.collect()));
+    }
+
+    Err(ApiError::GuildNotFound)
+}
+
+async fn handle_get_emojis(
+    Path(guild_id_u): Path<u64>,
+    State(state): State<RouterState>,
+) -> ApiResult<Json<Vec<BrokerEmoji>>> {
+    let guild_id = Id::new_checked(guild_id_u).ok_or(ApiError::BadGuildId)?;
+
+    if let Some(c) = state.discord_state.guild_emojis(guild_id) {
+        let conv = c.value().iter().filter_map(|v| {
+            state.discord_state.emoji(*v).map(|c| BrokerEmoji {
+                id: c.id(),
+                animated: c.animated(),
+                available: c.available(),
+                managed: c.managed(),
+                name: c.name().to_string(),
+                require_colons: c.require_colons(),
+                roles: c.roles().to_vec(),
+                user_id: c.user_id(),
+            })
+        });
 
         return Ok(Json(conv.collect()));
     }

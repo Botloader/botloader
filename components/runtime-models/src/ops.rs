@@ -6,6 +6,7 @@ use crate::{
             ForumThreadResponse, GuildChannel, ListThreadMembersRequest, ListThreadsRequest,
             ThreadMember, ThreadsListing, UpdateThread,
         },
+        emoji::{CustomEmoji, OpCreateEmoji, OpUpdateEmoji},
         messages::{
             Message, OpCreateChannelMessage, OpDeleteMessage, OpDeleteMessagesBulk,
             OpEditChannelMessage, OpGetMessages,
@@ -124,5 +125,10 @@ ops_async! {
     discord_create_role(OpCreateRoleFields) => Role,
     discord_update_role(OpUpdateRoleFields) => Role,
     discord_update_role_positions(Vec<UpdateRolePosition>) => Vec<Role>,
-    discord_delete_role(String) => ()
+    discord_delete_role(String) => (),
+
+    discord_get_emojis(()) => Vec<CustomEmoji>,
+    discord_create_emoji(OpCreateEmoji) => CustomEmoji,
+    discord_edit_emoji(OpUpdateEmoji) => CustomEmoji,
+    discord_delete_emoji(String) => ()
 }

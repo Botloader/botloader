@@ -240,3 +240,7 @@ export function base64Encode(data: ArrayBuffer): string {
 export function base64Decode(data: string): ArrayBuffer {
     return OpWrappers.forgivingBase64Decode(data)
 }
+
+type PickKeysByValue<T, V> = { [K in keyof T]: T[K] extends V ? K : never }[keyof T];
+export type OmitProperties<T, P> = Omit<T, PickKeysByValue<T, P>>;
+export type ExractClassProperties<T> = OmitProperties<T, Function>

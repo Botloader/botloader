@@ -7,11 +7,13 @@ import type { IListThreadMembersRequest } from "./IListThreadMembersRequest";
 import type { IListThreadsRequest } from "./IListThreadsRequest";
 import type { IUpdateThread } from "./IUpdateThread";
 import type { OpCreateChannelMessage } from "./CreateChannelMessage";
+import type { OpCreateEmoji } from "./OpCreateEmoji";
 import type { OpCreateRoleFields } from "./CreateRoleFields";
 import type { OpDeleteMessage } from "./DeleteMessage";
 import type { OpDeleteMessagesBulk } from "./DeleteMessagesBulk";
 import type { OpEditChannelMessage } from "./EditChannelMessage";
 import type { OpGetMessages } from "./GetMessages";
+import type { OpUpdateEmoji } from "./OpUpdateEmoji";
 import type { OpUpdateRoleFields } from "./UpdateRoleFields";
 import type { UpdateRolePosition } from "./UpdateRolePosition";
 
@@ -53,4 +55,8 @@ export type EasyOpsASync =
     "kind": "discord_update_role_positions";
     "arg": Array<UpdateRolePosition>;
   }
-  | { "kind": "discord_delete_role"; "arg": string };
+  | { "kind": "discord_delete_role"; "arg": string }
+  | { "kind": "discord_get_emojis"; "arg": null }
+  | { "kind": "discord_create_emoji"; "arg": OpCreateEmoji }
+  | { "kind": "discord_edit_emoji"; "arg": OpUpdateEmoji }
+  | { "kind": "discord_delete_emoji"; "arg": string };

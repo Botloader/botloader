@@ -82,3 +82,14 @@ pub(crate) fn parse_str_snowflake_id(id_str: &str) -> Result<Id<GenericMarker>, 
         Err(anyhow::anyhow!("invalid channel id"))
     }
 }
+
+pub(crate) fn parse_str_snowflake_ids<M>(
+    ids: impl Iterator<Item = String>,
+) -> Result<Vec<Id<M>>, AnyError> {
+    let parsed = ids
+        .into_iter()
+        .map(|v| Ok(parse_discord_id::<M>(&v)?))
+        .collect::<Result<Vec<_>, AnyError>>()?;
+
+    Ok(parsed)
+}
