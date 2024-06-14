@@ -9,13 +9,13 @@
         "declaration": true,
         "strictNullChecks": true,
         "emitDeclarationOnly": true,
-        "declarationDir": "src/ts/typings/",
+        "declarationDir": "typings/",
         "strict": true,
         "lib": [
             "ESNext",
         ]
     },
     "exclude": [
-        "src/ts/typings"
+        "typings"
     ],
 }
