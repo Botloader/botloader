@@ -182,8 +182,8 @@ export namespace HttpClient {
             return new Response(resp.statusCode, resp.headers, respBody);
         }
 
-        then(cb: (val: Response) => any) {
-            return this.send().then(cb);
+        then(okay: (val: Response) => any, rejected: (err: any) => unknown) {
+            return this.send().then(okay).catch(rejected);
         }
 
         private async writeBody(body: RequestBody, rid: number) {
