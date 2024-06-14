@@ -1,9 +1,9 @@
 import { isErrorResponse, NewsItem } from "botloader-common";
 import { useEffect, useState } from "react"
-import { Panel } from "../components/Panel";
-import ReactMarkdown from 'react-markdown'
 import { useSession } from "../modules/session/useSession";
 import { Loading } from "../components/Loading";
+import { NewsItemComponent } from "../components/NewsItem";
+import { Container, Stack } from "@mui/material";
 
 export function NewsPage() {
     const session = useSession();
@@ -22,20 +22,12 @@ export function NewsPage() {
         fetchNews();
     }, [session])
 
-    return <>
-        {news === undefined ? <Loading />
-            : news === null ? <p>Failed fetching news... :(</p>
-                : news.map(item_ => <NewsItemComponent key={item_.message_id} item={item_}></NewsItemComponent>)
-        }
-    </>
-}
-
-function NewsItemComponent(props: { item: NewsItem }) {
-    return <Panel>
-        <div className="news-item">
-            <h3>#{props.item.channel_name} - {new Date(props.item.posted_at).toLocaleString()}</h3>
-            <ReactMarkdown>{props.item.content}</ReactMarkdown>
-            {/* <p>{marked.parse(props.item.content)}</p> */}
-        </div>
-    </Panel>
+    return <Container>
+        <Stack gap={5} marginTop={2}>
+            {news === undefined ? <Loading />
+                : news === null ? <p>Failed fetching news... :(</p>
+                    : news.map(item_ => <NewsItemComponent key={item_.message_id} item={item_}></NewsItemComponent>)
+            }
+        </Stack>
+    </Container>
 }
