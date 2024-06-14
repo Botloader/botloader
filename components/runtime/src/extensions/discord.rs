@@ -25,8 +25,8 @@ use runtime_models::{
         invite::CreateInviteFields,
         member::{Ban, UpdateGuildMemberFields},
         messages::{
-            Message, OpCreateChannelMessage, OpCreateFollowUpMessage, OpDeleteMessage,
-            OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessages,
+            convert_attachments, Message, OpCreateChannelMessage, OpCreateFollowUpMessage,
+            OpDeleteMessage, OpDeleteMessagesBulk, OpEditChannelMessage, OpGetMessages,
         },
         misc_op::{CreateBanFields, GetReactionsFields},
         role::{OpCreateRoleFields, OpUpdateRoleFields, UpdateRolePosition},
@@ -393,6 +393,8 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
 
+        let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
+
         discord_request_with_extra_error(&self.state, async move {
             let maybe_embeds = args
                 .fields
@@ -430,6 +432,10 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 mc = mc.reply(parse_discord_id(reply)?);
             }
 
+            if attachments.len() > 0 {
+                mc = mc.attachments(&attachments)?;
+            }
+
             Ok(mc.await)
         })
         .await?
@@ -446,6 +452,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &args.channel_id).await?;
         let message_id = parse_str_snowflake_id(&args.message_id)?;
+        let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
 
         let res = discord_request_with_extra_error(&self.state, async move {
             let maybe_embeds = args
@@ -472,6 +479,10 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             let mentions = args.fields.allowed_mentions.map(Into::into);
             if mentions.is_some() {
                 mc = mc.allowed_mentions(mentions.as_ref());
+            }
+
+            if !attachments.is_empty() {
+                mc = mc.attachments(&attachments)?;
             }
 
             Ok(mc.await)
@@ -1249,10 +1260,13 @@ pub async fn op_discord_interaction_callback(
 
     let interaction_id: Id<InteractionMarker> = parse_discord_id(&args.interaction_id)?;
 
+    let response_fields: twilight_model::http::interaction::InteractionResponse =
+        args.data.try_into()?;
+
     discord_request(&state, async move {
         let client = rt_ctx.discord_config.interaction_client();
         client
-            .create_response(interaction_id, &args.interaction_token, &args.data.into())
+            .create_response(interaction_id, &args.interaction_token, &response_fields)
             .await
     })
     .await?;
@@ -1296,6 +1310,8 @@ pub async fn op_discord_interaction_edit_original_response(
         .components
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
+    let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
+
     discord_request_with_extra_error(&state, async move {
         let interaction_client = rt_ctx.discord_config.interaction_client();
 
@@ -1304,7 +1320,8 @@ pub async fn op_discord_interaction_edit_original_response(
             .content(args.fields.content.as_deref())?
             .embeds(maybe_embeds.as_deref())?
             .components(components.as_deref())?
-            .content(args.fields.content.as_deref())?;
+            .content(args.fields.content.as_deref())?
+            .attachments(&attachments)?;
 
         let mentions = args.fields.allowed_mentions.map(Into::into);
         if mentions.is_some() {
@@ -1378,13 +1395,16 @@ pub async fn op_discord_interaction_followup_message(
         .map(Into::into)
         .collect::<Vec<_>>();
 
+    let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
+
     discord_request_with_extra_error(&state, async move {
         let interaction_client = rt_ctx.discord_config.interaction_client();
 
         let mut mc = interaction_client
             .create_followup(&args.interaction_token)
             .embeds(&maybe_embeds)?
-            .components(&components)?;
+            .components(&components)?
+            .attachments(&attachments)?;
 
         if let Some(flags) = args.flags {
             mc = mc.flags(flags.into());
@@ -1426,6 +1446,8 @@ pub async fn op_discord_interaction_edit_followup_message(
         .components
         .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
 
+    let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
+
     discord_request_with_extra_error(&state, async move {
         let interaction_client = rt_ctx.discord_config.interaction_client();
 
@@ -1434,7 +1456,8 @@ pub async fn op_discord_interaction_edit_followup_message(
             .content(args.fields.content.as_deref())?
             .embeds(maybe_embeds.as_deref())?
             .components(components.as_deref())?
-            .content(args.fields.content.as_deref())?;
+            .content(args.fields.content.as_deref())?
+            .attachments(&attachments)?;
 
         let mentions = args.fields.allowed_mentions.map(Into::into);
         if mentions.is_some() {

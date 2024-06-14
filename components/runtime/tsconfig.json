@@ -17,5 +17,5 @@
     },
     "exclude": [
         "src/ts/typings"
-    ]
+    ],
 }

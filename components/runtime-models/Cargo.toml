@@ -16,6 +16,7 @@ serde = { version = "1.0", features = ["derive"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 image = { workspace = true }
+base64-simd = { workspace = true }
 
 twilight-model = { workspace = true }
 twilight-cache-inmemory = { workspace = true }

@@ -11,7 +11,10 @@ use crate::{
 };
 use twilight_model::application::interaction::application_command;
 
-use super::{messages::OpCreateMessageFields, script::CommandOptionChoice};
+use super::{
+    messages::{convert_attachments, OpCreateMessageFields},
+    script::CommandOptionChoice,
+};
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
@@ -91,22 +94,23 @@ pub enum InteractionResponse {
     Autocomplete(AutocompleteCallbackData),
 }
 
-impl From<InteractionResponse> for twilight_model::http::interaction::InteractionResponse {
-    fn from(v: InteractionResponse) -> Self {
-        use twilight_model::http::interaction::InteractionResponseType as TwilightInteractionResponseType;
+impl TryFrom<InteractionResponse> for twilight_model::http::interaction::InteractionResponse {
+    type Error = anyhow::Error;
 
-        match v {
+    fn try_from(v: InteractionResponse) -> Result<Self, Self::Error> {
+        use twilight_model::http::interaction::InteractionResponseType as TwilightInteractionResponseType;
+        Ok(match v {
             InteractionResponse::Pong => Self {
                 kind: TwilightInteractionResponseType::Pong,
                 data: None,
             },
             InteractionResponse::ChannelMessageWithSource(src) => Self {
                 kind: TwilightInteractionResponseType::ChannelMessageWithSource,
-                data: Some(src.into()),
+                data: Some(src.try_into()?),
             },
             InteractionResponse::DeferredChannelMessageWithSource(src) => Self {
                 kind: TwilightInteractionResponseType::DeferredChannelMessageWithSource,
-                data: Some(src.into()),
+                data: Some(src.try_into()?),
             },
             InteractionResponse::DeferredUpdateMessage => Self {
                 kind: TwilightInteractionResponseType::DeferredUpdateMessage,
@@ -114,7 +118,7 @@ impl From<InteractionResponse> for twilight_model::http::interaction::Interactio
             },
             InteractionResponse::UpdateMessage(src) => Self {
                 kind: TwilightInteractionResponseType::UpdateMessage,
-                data: Some(src.into()),
+                data: Some(src.try_into()?),
             },
             InteractionResponse::Modal(src) => Self {
                 kind: TwilightInteractionResponseType::Modal,
@@ -124,7 +128,7 @@ impl From<InteractionResponse> for twilight_model::http::interaction::Interactio
                 kind: TwilightInteractionResponseType::ApplicationCommandAutocompleteResult,
                 data: Some(data.into()),
             },
-        }
+        })
     }
 }
 
@@ -138,9 +142,11 @@ pub struct InteractionCallbackData {
 }
 
 use twilight_model::http::interaction::InteractionResponseData as TwilightCallbackData;
-impl From<InteractionCallbackData> for TwilightCallbackData {
-    fn from(v: InteractionCallbackData) -> Self {
-        Self {
+impl TryFrom<InteractionCallbackData> for TwilightCallbackData {
+    type Error = anyhow::Error;
+
+    fn try_from(v: InteractionCallbackData) -> Result<Self, Self::Error> {
+        Ok(Self {
             allowed_mentions: v.fields.allowed_mentions.map(Into::into),
             components: v
                 .fields
@@ -154,11 +160,11 @@ impl From<InteractionCallbackData> for TwilightCallbackData {
             flags: v.flags.map(Into::into),
             tts: None,
 
-            attachments: None,
+            attachments: v.fields.attachments.map(convert_attachments).transpose()?,
             choices: None,
             custom_id: None,
             title: None,
-        }
+        })
     }
 }
 

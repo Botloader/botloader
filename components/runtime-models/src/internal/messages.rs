@@ -87,6 +87,50 @@ pub struct OpCreateMessageFields {
     #[serde(default)]
     #[ts(optional)]
     pub reply_to_message_id: Option<String>,
+
+    #[serde(default)]
+    #[ts(optional)]
+    pub attachments: Option<Vec<OpCreateMessageAttachment>>,
+}
+
+// Converts attachments from our internal runtime_models to twilight's models
+// Needed because we store data in b64 in our translation layer
+pub fn convert_attachments(
+    internal: Vec<OpCreateMessageAttachment>,
+) -> Result<Vec<twilight_model::http::attachment::Attachment>, anyhow::Error> {
+    Ok(internal
+        .into_iter()
+        .map(|v| {
+            let decoded = match v.decode_data() {
+                Ok(d) => d,
+                Err(err) => return Err(err),
+            };
+
+            Ok(twilight_model::http::attachment::Attachment {
+                description: v.description,
+                file: decoded,
+                filename: v.filename,
+                id: v.id.0,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/OpCreateMessageAttachment.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct OpCreateMessageAttachment {
+    pub description: Option<String>,
+    pub data_b64: String,
+    pub filename: String,
+    pub id: NotBigU64,
+}
+
+impl OpCreateMessageAttachment {
+    pub fn decode_data(&self) -> Result<Vec<u8>, base64_simd::Error> {
+        base64_simd::forgiving_decode_to_vec(self.data_b64.as_bytes())
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]

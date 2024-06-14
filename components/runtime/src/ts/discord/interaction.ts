@@ -48,16 +48,6 @@ export class Interaction {
     }
 
     /**
-     * @deprecated use {@link ackWithMessage} 
-     */
-    async sendCallbackWithMessage(fields: Internal.OpCreateMessageFields, flags?: InteractionMessageFlags) {
-        this.ackWithMessage({
-            ...fields,
-            flags: flags,
-        })
-    }
-
-    /**
      * @deprecated use {@link ackWithDeferredMessage} 
      */
     async sendCallbackWithDeferredMessage(fields: CreateMessageFields, flags?: InteractionMessageFlags) {

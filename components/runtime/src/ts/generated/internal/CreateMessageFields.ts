@@ -2,6 +2,7 @@
 import type { AllowedMentions } from "./AllowedMentions";
 import type { Embed } from "../discord/Embed";
 import type { IComponent } from "../discord/IComponent";
+import type { OpCreateMessageAttachment } from "./OpCreateMessageAttachment";
 
 export interface OpCreateMessageFields {
   content?: string;
@@ -9,4 +10,5 @@ export interface OpCreateMessageFields {
   allowedMentions?: AllowedMentions;
   components?: Array<IComponent>;
   replyToMessageId?: string;
+  attachments?: Array<OpCreateMessageAttachment>;
 }
