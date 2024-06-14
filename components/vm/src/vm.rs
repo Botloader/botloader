@@ -167,7 +167,7 @@ impl Vm {
             // if it breaks when you update deno or v8 try different values until it works, if only they'd document the alignment requirements somewhere...
             create_params: Some(
                 CreateParams::default()
-                    .heap_limits(512 * 1024, 60 * 512 * 1024)
+                    .heap_limits(512 * 1024, 50 * 1024 * 1024)
                     .allow_atomics_wait(false),
             ),
             startup_snapshot: Some(crate::BOTLOADER_CORE_SNAPSHOT),
