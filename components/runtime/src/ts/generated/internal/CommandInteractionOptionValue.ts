@@ -10,4 +10,5 @@ export type CommandInteractionOptionValue =
   | { "kind": "role"; value: string }
   | { "kind": "mentionable"; value: string }
   | { "kind": "number"; value: number }
+  | { "kind": "attachment"; value: string }
   | { "kind": "focused"; value: string; option_kind: CommandOptionType };

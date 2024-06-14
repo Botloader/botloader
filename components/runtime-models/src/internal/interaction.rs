@@ -1,5 +1,8 @@
 use super::{member::Member, messages::Message, script::CommandOptionType};
-use crate::{discord::component::ComponentType, util::NotBigI64};
+use crate::{
+    discord::{component::ComponentType, message::Attachment},
+    util::NotBigI64,
+};
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -197,6 +200,7 @@ pub struct CommandInteractionDataMap {
     pub messages: HashMap<String, Message>,
     pub roles: HashMap<String, Role>,
     pub users: HashMap<String, User>,
+    pub attachments: HashMap<String, Attachment>,
 }
 
 impl TryFrom<CommandInteractionDataResolved> for CommandInteractionDataMap {
@@ -226,6 +230,11 @@ impl TryFrom<CommandInteractionDataResolved> for CommandInteractionDataMap {
                 .collect(),
             users: v
                 .users
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v.into()))
+                .collect(),
+            attachments: v
+                .attachments
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v.into()))
                 .collect(),
@@ -281,6 +290,9 @@ pub enum CommandInteractionOptionValue {
     Number {
         value: f64,
     },
+    Attachment {
+        value: String,
+    },
     Focused {
         value: String,
         option_kind: CommandOptionType,
@@ -313,8 +325,8 @@ impl From<CommandOptionValue> for CommandInteractionOptionValue {
             // aaa i should change it yeah.... later
             CommandOptionValue::SubCommand(_) => unreachable!(),
             CommandOptionValue::SubCommandGroup(_) => unreachable!(),
-            CommandOptionValue::Attachment(_) => Self::String {
-                value: "TODO".to_string(),
+            CommandOptionValue::Attachment(v) => Self::Attachment {
+                value: v.to_string(),
             },
             CommandOptionValue::Focused(ov, k) => Self::Focused {
                 value: ov,
@@ -350,7 +362,7 @@ impl From<CommandOptionValue> for CommandInteractionOptionValue {
                         unreachable!()
                     }
                     twilight_model::application::command::CommandOptionType::Attachment => {
-                        unreachable!()
+                        CommandOptionType::Attachment
                     }
                     _ => todo!(),
                 },

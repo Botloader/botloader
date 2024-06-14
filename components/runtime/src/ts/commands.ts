@@ -1,5 +1,5 @@
 import * as Internal from "./generated/internal/index";
-import { ChannelType, Interaction, Message, Role, IModalFields, MessageFlags, AutocompleteInteraction } from "./discord/index";
+import { ChannelType, Interaction, Message, Role, IModalFields, MessageFlags, AutocompleteInteraction, Attachment } from "./discord/index";
 import { User } from "./discord/user";
 import { Member } from "./discord/member";
 import { OpWrappers } from "./op_wrappers";
@@ -254,6 +254,13 @@ export namespace Commands {
                     }
                     return channel;
 
+                case "attachment":
+                    const attachment: Attachment = map.attachments[opt.value];
+                    if (attachment === undefined) {
+                        throw new Error("interaction attachment not found in data map");
+                    }
+                    return attachment;
+
                 default:
                     return opt.value;
             }
@@ -379,7 +386,7 @@ export namespace Commands {
     }
 
     export interface Option {
-        kind: "String" | "Number" | "Integer" | "Boolean" | "User" | "Channel" | "Role" | "Mentionable",
+        kind: "String" | "Number" | "Integer" | "Boolean" | "User" | "Channel" | "Role" | "Mentionable" | "Attachment",
         description: string,
         required: boolean,
         extraOptions: StringOption | NumberOption | BooleanOption | ChannelOption | RoleOption | MentionableOption,
@@ -450,6 +457,10 @@ export namespace Commands {
     }
 
     export interface MentionableOption {
+
+    }
+
+    export interface AttachmentOption {
 
     }
 
@@ -646,6 +657,14 @@ export namespace Commands {
         }
 
         /**
+         * See {@link addOption}
+         */
+        addOptionAttachment<TKey extends string, TRequired extends boolean | undefined>
+            (name: TKey, description: string, opts?: AttachmentOption & BaseOptionSettings<TRequired>) {
+            return this.addOption(name, "Attachment", description, opts)
+        }
+
+        /**
          * Adds a option/argument to this command.
          * 
          * Each type of option has different settings you can adjust, but all of them have a "required" field that defaults
@@ -728,6 +747,7 @@ export namespace Commands {
         Channel: ChannelOption,
         Role: RoleOption,
         Mentionable: MentionableOption,
+        Attachment: AttachmentOption,
     }
 
     type ParsedOptionsMap<T> = {
@@ -743,6 +763,7 @@ export namespace Commands {
         T extends { kind: "Channel" } ? Internal.InteractionPartialChannel :
         T extends { kind: "Role" } ? Role :
         T extends { kind: "Mentionable" } ? InteractionMentionable :
+        T extends { kind: "Attachment" } ? Attachment :
         unknown;
 
     /**

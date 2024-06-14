@@ -127,6 +127,7 @@ pub enum CommandOptionType {
     Role,
     Mentionable,
     Number,
+    Attachment,
 }
 
 impl From<CommandOptionType> for twilight_model::application::command::CommandOptionType {
@@ -140,6 +141,7 @@ impl From<CommandOptionType> for twilight_model::application::command::CommandOp
             CommandOptionType::Role => Self::Role,
             CommandOptionType::Mentionable => Self::Mentionable,
             CommandOptionType::Number => Self::Number,
+            CommandOptionType::Attachment => Self::Attachment,
         }
     }
 }
@@ -373,6 +375,22 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                     .extra_options
                     .choices
                     .map(|iv| iv.into_iter().map(Into::into).collect()),
+                description_localizations: None,
+                max_length: None,
+                min_length: None,
+                name_localizations: None,
+                options: None,
+            },
+            CommandOptionType::Attachment => Self {
+                name: v.name,
+                description: v.description,
+                required: Some(v.required),
+                kind: twilight_model::application::command::CommandOptionType::Attachment,
+                min_value: None,
+                max_value: None,
+                autocomplete: None,
+                channel_types: None,
+                choices: None,
                 description_localizations: None,
                 max_length: None,
                 min_length: None,

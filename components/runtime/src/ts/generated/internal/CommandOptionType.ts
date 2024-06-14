@@ -8,4 +8,5 @@ export type CommandOptionType =
   | "Channel"
   | "Role"
   | "Mentionable"
-  | "Number";
+  | "Number"
+  | "Attachment";
