@@ -6,7 +6,7 @@ use image::{
     codecs::{
         gif::{GifDecoder, GifEncoder},
         jpeg::JpegEncoder,
-        png::{ApngDecoder, PngDecoder, PngEncoder},
+        png::{PngDecoder, PngEncoder},
         webp::{WebPDecoder, WebPEncoder},
     },
     imageops, AnimationDecoder, ImageDecoder,

@@ -42,10 +42,7 @@ pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<(ResourceId, Reso
         cancel: CancelHandle::new(),
         tx,
     };
-    let receiver = RequestBodyReceiver {
-        cancel: CancelHandle::new(),
-        rx,
-    };
+    let receiver = RequestBodyReceiver { rx };
 
     let r_rid = crate::try_insert_resource_table(&mut state.resource_table, receiver)?;
     let s_rid = crate::try_insert_resource_table(&mut state.resource_table, sender)?;
@@ -140,7 +137,6 @@ fn handle_response(
 
 struct RequestBodyReceiver {
     rx: mpsc::Receiver<std::io::Result<Vec<u8>>>,
-    cancel: CancelHandle,
 }
 
 impl Resource for RequestBodyReceiver {}
