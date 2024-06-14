@@ -60,6 +60,8 @@ fn op_bl_image_transcode(
         }
     };
 
+    tracing::info!("transcoding input {:?} output {:?}", in_format, out_format);
+
     let new_image_data = match in_format {
         SupportedImageFormat::Gif => transcode_animation(
             input,
@@ -219,9 +221,16 @@ fn transcode_animation(
     let mut output = Vec::<u8>::new();
 
     let mut encoder = GifEncoder::new(&mut output);
+    encoder.set_repeat(image::codecs::gif::Repeat::Infinite)?;
 
     for frame in frame_iter {
-        let frame = frame?;
+        let frame = match frame {
+            Ok(v) => v,
+            Err(err) => {
+                return Err(anyhow!("failed decoding animation frame {}", err));
+            }
+        };
+
         let left = frame.left();
         let top = frame.top();
         let delay = frame.delay();

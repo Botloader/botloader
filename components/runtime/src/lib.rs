@@ -5,7 +5,7 @@ use std::{
 };
 
 use common::DiscordConfig;
-use deno_core::{op2, Extension, Op, OpState, ResourceId, ResourceTable};
+use deno_core::{op2, Extension, OpState, ResourceId, ResourceTable};
 use guild_logger::{entry::CreateLogEntry, GuildLogSender};
 use runtime_models::internal::script::{ScriptMeta, SettingsOptionValue};
 use stores::{config::PremiumSlotTier, Db};
@@ -61,6 +61,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             extensions::console::bl_console::init_ops_and_esm(),
             extensions::httpclient::bl_http::init_ops_and_esm(),
             extensions::tasks::bl_tasks::init_ops_and_esm(),
+            extensions::image::bl_image::init_ops_and_esm(),
         ]
     } else {
         vec![
@@ -71,6 +72,7 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
             extensions::console::bl_console::init_ops_and_esm(),
             extensions::httpclient::bl_http::init_ops_and_esm(),
             extensions::tasks::bl_tasks::init_ops_and_esm(),
+            extensions::image::bl_image::init_ops_and_esm(),
         ]
     }
 }

@@ -9,5 +9,6 @@ export * as Settings from './settings';
 export * from './storage';
 export * from './httpclient';
 export * from './scheduled_tasks';
+export * from './image';
 export * as Discord from './discord/index';
 export * as Unstable from './unstable/index';

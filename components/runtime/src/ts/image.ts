@@ -4,9 +4,41 @@ import { SupportedImageFormat } from "./generated/image/SupportedImageFormat";
 import { HttpClient } from "./httpclient"
 import { OpWrappers } from "./op_wrappers";
 
+/**
+ * The image class provides basic image manipulation and inspection.
+ * 
+ * This API is currently considered somewhat unstable, there are bugs here as working with a lot of image formats (and animations) is surprisingly hard
+ * 
+ * Decoding Formats supported are:
+ * - png
+ * - jpeg
+ * - gif
+ * - webp
+ * - pnm
+ * - tiff
+ * - tga
+ * - bmp
+ * - ico
+ * - hdr
+ * - openexr
+ * - qoi
+ * - avif
+ * 
+ * Encoding formats supported:
+ * - png (encoding animations not supported yet)
+ * - jpeg
+ * - gif
+ * - webp (encoding animations not supported yet)
+ *
+ * There are known bugs and issues currently with some of these formats so consider this API to be in beta. 
+ * 
+ * @beta
+ * 
+ */
 export class Image {
 
     readonly properties: ImageProperties;
+
     readonly data: ArrayBuffer;
 
     constructor(data: ArrayBuffer, properties?: ImageProperties) {
@@ -74,7 +106,7 @@ function isEncodable(format: SupportedImageFormat): format is SupportedEncodeIma
     return format === "png" || format === "webp" || format === "jpeg" || format === "gif"
 }
 
-interface ImageProperties {
+export interface ImageProperties {
     formatName: SupportedImageFormat
     width: number
     height: number
