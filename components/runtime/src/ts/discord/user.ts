@@ -9,10 +9,30 @@ export class User {
     discriminator: string;
     id: string;
     locale: string | null;
+
     username: string;
+
+    /**
+     * Global nickname
+     */
+    globalName: string | null;
+
     premiumType: PremiumType | null;
     publicFlags: UserFlags | null;
     system: boolean | null;
+
+    /**
+     * Banner hash
+     */
+    banner: string | null;
+
+    /**
+     * The user's banner color encoded as an integer representation of hexadecimal color code
+     * 
+     * For example: 0xff0000 for red
+     */
+    accentColor: number | null;
+
 
     /**
      * @internal
@@ -27,6 +47,9 @@ export class User {
         this.premiumType = json.premiumType;
         this.publicFlags = json.publicFlags;
         this.system = json.system;
+        this.accentColor = json.accentColor;
+        this.globalName = json.globalName;
+        this.banner = json.banner;
     }
 
     mention() {

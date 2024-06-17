@@ -12,9 +12,12 @@ pub struct User {
     pub id: String,
     pub locale: Option<String>,
     pub username: String,
+    pub global_name: Option<String>,
     pub premium_type: Option<PremiumType>,
     pub public_flags: Option<UserFlags>,
     pub system: Option<bool>,
+    pub banner: Option<String>,
+    pub accent_color: Option<u32>,
 }
 
 impl From<twilight_model::user::User> for User {
@@ -29,6 +32,9 @@ impl From<twilight_model::user::User> for User {
             premium_type: v.premium_type.map(From::from),
             public_flags: v.public_flags.map(From::from),
             system: v.system,
+            banner: v.banner.as_ref().map(ToString::to_string),
+            accent_color: v.accent_color,
+            global_name: v.global_name,
         }
     }
 }
@@ -44,6 +50,9 @@ impl From<twilight_model::user::CurrentUser> for User {
             premium_type: v.premium_type.map(From::from),
             public_flags: v.public_flags.map(From::from),
             system: Some(false),
+            banner: v.banner.as_ref().map(ToString::to_string),
+            accent_color: v.accent_color,
+            global_name: None,
         }
     }
 }

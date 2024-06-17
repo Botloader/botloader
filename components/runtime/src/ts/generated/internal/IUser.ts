@@ -9,7 +9,10 @@ export interface IUser {
   id: string;
   locale: string | null;
   username: string;
+  globalName: string | null;
   premiumType: PremiumType | null;
   publicFlags: IUserFlags | null;
   system: boolean | null;
+  banner: string | null;
+  accentColor: number | null;
 }

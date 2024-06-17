@@ -296,6 +296,9 @@ impl From<twilight_model::channel::message::Mention> for UserMention {
                 locale: None,
                 premium_type: None,
                 system: None,
+                global_name: None,
+                banner: None,
+                accent_color: None,
             },
             member: v.member.map(From::from),
         }
