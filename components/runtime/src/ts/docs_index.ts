@@ -7,6 +7,7 @@ export * from './eventsystem';
 export * from './script';
 export * from './storage';
 export * from './httpclient';
+export * from './image';
 export * from './scheduled_tasks';
 export * as Settings from './settings';
 export * as Discord from './discord/index';
