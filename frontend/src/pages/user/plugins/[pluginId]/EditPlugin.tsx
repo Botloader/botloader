@@ -46,7 +46,7 @@ export function EditPluginPage() {
             <Typography variant="h3">{plugin.name}</Typography>
         </Stack>
         <GuildsGuard>
-            <AddPluginToServerButton />
+            <AddPluginToServerButton plugin={plugin} />
             <BlLink to={`/plugins/${plugin.id}`} disabled={!Boolean(plugin.is_public)}>
                 View public page
             </BlLink>

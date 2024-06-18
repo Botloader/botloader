@@ -5,6 +5,7 @@ import {
     CardContent,
     CardHeader,
     CardMedia,
+    Chip,
     Container,
     Paper,
     Typography
@@ -18,6 +19,11 @@ import { useSession } from "../../modules/session/useSession";
 import { PluginIcon } from "../../components/PluginIcon";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { pluginImageUrl } from "../../misc/pluginImageUrl";
+import VerifiedIcon from '@mui/icons-material/Verified';
+import PeopleIcon from '@mui/icons-material/People';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import { DisplayRelativeDateTime } from "../../components/DateTime";
+import { AddPluginToServerButton } from "../../components/AddPluginToServer";
 
 let context = createFetchDataContext<Plugin[]>();
 
@@ -59,26 +65,48 @@ function PluginItem({ plugin }: { plugin: Plugin }) {
             justifyContent: "start"
         }}
     >
-        <CardHeader
-            avatar={
-                <PluginIcon plugin={plugin} />
-            }
-            title={plugin.name}
-            titleTypographyProps={{
-                variant: "h5",
-            }}
-            subheader={<>{plugin.author
-                ? <Stack mt={1} direction={"row"} alignItems={"center"} gap={1}>
-                    <Avatar
-                        alt={plugin.author.username}
-                        src={userAvatarUrl(plugin.author, 64)}
-                        sx={{ width: 32, height: 32 }}
-                    />
-                    {plugin.author.username}
-                </Stack>
-                : "unknown user"}</>
-            }
-        />
+        <Box display={"flex"}>
+            <CardHeader
+                sx={{
+                    flexGrow: 1,
+                    paddingTop: 1,
+                    paddingBottom: 1
+                }}
+                avatar={
+                    <PluginIcon plugin={plugin} />
+                }
+                title={plugin.name}
+                titleTypographyProps={{
+                    variant: "h5",
+                }}
+                subheader={<>{plugin.author
+                    ? <Stack mt={1} direction={"row"} alignItems={"center"} gap={1}>
+                        <Avatar
+                            alt={plugin.author.username}
+                            src={userAvatarUrl(plugin.author, 64)}
+                            sx={{ width: 32, height: 32 }}
+                        />
+                        {plugin.author.username}
+                    </Stack>
+                    : "unknown user"}</>
+                }
+            />
+
+
+        </Box>
+
+        <Box padding={1} display={"flex"} flexDirection={"row"} gap={1} alignItems={"center"} >
+            {plugin.author?.is_bl_staff
+                ? <Chip label="Official" size="small" color="success" variant="outlined" icon={<VerifiedIcon />} />
+                : <Chip label="Community Plugin" size="small" color="default" variant="outlined" icon={<PeopleIcon />} />}
+
+            <Chip label={`${plugin.installed_guilds ?? "?"} Server` + (plugin.installed_guilds !== 1 ? "s" : "")} size="small" color="primary" variant="outlined" icon={<TimelineIcon />} />
+
+            <Typography fontSize={"0.8em"}>{plugin.published_version_updated_at &&
+                <>updated <DisplayRelativeDateTime dt={plugin.published_version_updated_at} /></>
+            }</Typography>
+        </Box>
+
         {bannerImage && <CardMedia
             component="img"
             image={pluginImageUrl(plugin.id, bannerImage.image_id)}
@@ -100,21 +128,13 @@ function PluginItem({ plugin }: { plugin: Plugin }) {
         <Stack
             direction={"row"}
             alignItems={"center"}
-            justifyContent={"space-between"}
+            justifyContent={"space-around"}
             padding={1}
+            gap={1}
             justifySelf={"flex-end"}
         >
-            {/* <CardContent> */}
-            <Box flexGrow={1} marginRight={1}>
-                {plugin.author?.is_bl_staff
-                    ? <Alert severity="success">Official plugin</Alert>
-                    : <Alert severity="info">Community Plugin</Alert>}
-            </Box>
-
-            {/* </CardContent> */}
-            {/* <CardActions sx={{ justifyContent: "center" }} > */}
-            <BlLink variant="contained" to={`/plugins/${plugin.id}`}>Open</BlLink>
-            {/* </CardActions> */}
+            <BlLink variant="outlined" fullWidth to={`/plugins/${plugin.id}`}>View</BlLink>
+            <AddPluginToServerButton buttonProps={{ fullWidth: true }} plugin={plugin} />
         </Stack>
     </Paper>
 }

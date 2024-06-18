@@ -10,6 +10,8 @@ import { userAvatarUrl } from "../../../components/Util";
 import { useSession } from "../../../modules/session/useSession";
 import { PluginIcon } from "../../../components/PluginIcon";
 import { pluginImageUrl } from "../../../misc/pluginImageUrl";
+import TimelineIcon from '@mui/icons-material/Timeline';
+import { DisplayRelativeDateTime } from "../../../components/DateTime";
 
 export function ViewPlugin() {
     const session = useSession()
@@ -38,11 +40,12 @@ export function ViewPlugin() {
                 <Stack direction={"row"} alignItems={"center"} spacing={1}>
                     <PluginIcon plugin={plugin} />
                     <Typography variant="h4">{plugin.name}</Typography>
+                    <Chip label={`${plugin.installed_guilds ?? "?"} Server` + (plugin.installed_guilds !== 1 ? "s" : "")} color="primary" variant="outlined" icon={<TimelineIcon />} />
                 </Stack>
 
                 <Stack direction={"row"} alignItems="center" spacing={1} mt={1} mb={1}>
                     <Avatar alt={plugin.author?.username} sx={{ width: 32, height: 32 }} src={userAvatarUrl(plugin.author!, 64)} />
-                    <Typography>{plugin.author?.username}#{plugin.author?.discriminator.padStart(4, "0")}</Typography>
+                    <Typography>{plugin.author?.username}</Typography>
                     {plugin.author?.is_bl_staff ? <Chip label="Staff" size="small" variant="outlined" /> : null}
                 </Stack>
 
@@ -51,14 +54,19 @@ export function ViewPlugin() {
                 <Typography mb={2} mt={2}>{plugin.short_description}</Typography>
                 {plugin.author?.is_bl_staff ? null : <Alert severity="warning">This plugin is from a community member, you should only add plugins from people you trust.</Alert>}
 
-                <AddPluginToServerButton />
+                <AddPluginToServerButton plugin={plugin} />
 
                 <ReactMarkdown>{plugin.long_description}</ReactMarkdown>
 
                 <Divider />
 
-                {session.user?.id === plugin.author_id ? <BlLink to={`/user/plugins/${plugin.id}/`}>Edit</BlLink> : null}
-                <BlLink to={`/plugins/${plugin.id}/source`}>View source</BlLink>
+                <Box display={"flex"} alignItems={"center"}>
+                    <Typography>{plugin.published_version_updated_at &&
+                        <>updated <DisplayRelativeDateTime dt={plugin.published_version_updated_at} /></>
+                    }</Typography>
+                    {session.user?.id === plugin.author_id ? <BlLink to={`/user/plugins/${plugin.id}/`}>Edit</BlLink> : null}
+                    <BlLink to={`/plugins/${plugin.id}/source`}>View source</BlLink>
+                </Box>
 
                 <Divider />
                 {showcaseImages.length > 0

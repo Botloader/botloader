@@ -1,20 +1,21 @@
-import { Alert, Button, CircularProgress, Snackbar, Typography } from "@mui/material";
-import { BotGuild, isErrorResponse } from "botloader-common";
+import { Alert, Button, ButtonProps, CircularProgress, Snackbar, Tooltip, Typography } from "@mui/material";
+import { BotGuild, Plugin, isErrorResponse } from "botloader-common";
 import React from "react";
-import { useFetchedDataBehindGuard } from "./FetchData";
+// import { useFetchedDataBehindGuard } from "./FetchData";
 import { GuildSelectionDialog } from "./GuildSelectionDialog";
 import { useGuilds } from "../modules/guilds/GuildsProvider";
-import { pluginContext } from "./PluginProvider";
+// import { pluginContext } from "./PluginProvider";
 import { useSession } from "../modules/session/useSession";
 
-export function AddPluginToServerButton() {
+export function AddPluginToServerButton({ plugin, buttonProps }: { plugin: Plugin, buttonProps?: ButtonProps }) {
     const [open, setOpen] = React.useState(false);
     const [addingToServer, setAddingToServer] = React.useState<BotGuild | null>(null);
     const [addedToServer, setAddedToServer] = React.useState<BotGuild | null>(null);
     const [addError, setAddError] = React.useState<string | null>(null);
     const session = useSession();
-    let { value: plugin } = useFetchedDataBehindGuard(pluginContext);
     const guilds = useGuilds();
+
+    const loggedIn = Boolean(session.user)
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -40,12 +41,19 @@ export function AddPluginToServerButton() {
 
 
     return <>
-        <Button
-            variant="outlined"
-            disabled={Boolean(addingToServer) || !Boolean(guilds)}
-            onClick={handleClickOpen}>
-            Add to server
-        </Button>
+        <Tooltip title={!loggedIn ? "You have to log in to add this plugin to servers" : ""}>
+            <span style={{ width: "100%" }}>
+                <Button
+                    variant="outlined"
+                    disabled={Boolean(addingToServer) || !Boolean(guilds) || !loggedIn}
+                    onClick={handleClickOpen}
+
+                    {...buttonProps}
+                >
+                    Add to server
+                </Button>
+            </span>
+        </Tooltip>
 
         {addingToServer ?
             <>

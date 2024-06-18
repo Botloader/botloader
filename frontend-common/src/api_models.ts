@@ -158,6 +158,8 @@ export interface Plugin<Variant = ScriptPluginData> {
     current_version: number,
     images: PluginImage[],
 
+    published_version_updated_at: string,
+
     discord_thread_id: string | null,
     installed_guilds: number | null,
     installed_guilds_updated_at: string | null,
