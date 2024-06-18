@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE plugins SET\nscript_dev_source = $2, \nscript_dev_version_updated_at = now()\nWHERE id = $1\nRETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public",
+  "query": "INSERT INTO plugins (\n    created_at,\n    name,\n    short_description,\n    long_description,\n    is_published,\n    is_official,\n    plugin_kind,\n    current_version_number,\n    script_published_source,\n    script_published_version_updated_at,\n    script_dev_source,\n    script_dev_version_updated_at,\n    author_id,\n    is_public\n) VALUES (\n    now(), -- created_at\n    $1, -- name\n    $2, -- short_description\n    $3, -- long_description\n    false, -- is_published\n    $4, -- is_official\n    $5, -- plugin_kind\n    0, -- current_version_number\n    null, -- script_published_source\n    null, -- script_published_version_updated_at\n    null, -- script_dev_source\n    null, -- script_dev_version_updated_at\n    $6, -- author_id\n    $7 -- is_public\n) RETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public,\ndiscord_thread_id,\ninstalled_guilds,\ninstalled_guilds_updated_at",
   "describe": {
     "columns": [
       {
@@ -77,12 +77,32 @@
         "ordinal": 14,
         "name": "is_public",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 15,
+        "name": "discord_thread_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 16,
+        "name": "installed_guilds",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "installed_guilds_updated_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Bool",
+        "Int2",
         "Int8",
-        "Text"
+        "Bool"
       ]
     },
     "nullable": [
@@ -100,8 +120,11 @@
       true,
       true,
       false,
-      false
+      false,
+      true,
+      true,
+      true
     ]
   },
-  "hash": "adb107cb78eb4be8f7989559f7d3edc59b9205ec5a1881d62896d9567cfe7dea"
+  "hash": "eb295d59e55fcd9b5e78715169160370b063119843e4f00d575cb44d348f7ad0"
 }

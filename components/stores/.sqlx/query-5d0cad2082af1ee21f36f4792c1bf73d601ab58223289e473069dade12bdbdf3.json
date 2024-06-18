@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE plugins SET\nname = COALESCE($2, plugins.name),\nshort_description = COALESCE($3, plugins.short_description),\nlong_description = COALESCE($4, plugins.long_description),\nis_official = COALESCE($5, plugins.is_official),\nauthor_id = COALESCE($6, plugins.author_id),\nis_public = COALESCE($7, plugins.is_public),\nis_published = COALESCE($8, plugins.is_published)\nWHERE id = $1\nRETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public",
+  "query": "UPDATE plugins SET\nname = COALESCE($2, plugins.name),\nshort_description = COALESCE($3, plugins.short_description),\nlong_description = COALESCE($4, plugins.long_description),\nis_official = COALESCE($5, plugins.is_official),\nauthor_id = COALESCE($6, plugins.author_id),\nis_public = COALESCE($7, plugins.is_public),\nis_published = COALESCE($8, plugins.is_published),\ndiscord_thread_id = COALESCE($9, plugins.discord_thread_id)\nWHERE id = $1\nRETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public,\ndiscord_thread_id,\ninstalled_guilds,\ninstalled_guilds_updated_at",
   "describe": {
     "columns": [
       {
@@ -77,6 +77,21 @@
         "ordinal": 14,
         "name": "is_public",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 15,
+        "name": "discord_thread_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 16,
+        "name": "installed_guilds",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "installed_guilds_updated_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -88,7 +103,8 @@
         "Bool",
         "Int8",
         "Bool",
-        "Bool"
+        "Bool",
+        "Int8"
       ]
     },
     "nullable": [
@@ -106,8 +122,11 @@
       true,
       true,
       false,
-      false
+      false,
+      true,
+      true,
+      true
     ]
   },
-  "hash": "f734a75427d66511f4290328198f37513acc21853e4bd2c359388c4ce6ec068f"
+  "hash": "5d0cad2082af1ee21f36f4792c1bf73d601ab58223289e473069dade12bdbdf3"
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE plugins SET installed_guilds = (SELECT COUNT(*) FROM guild_scripts WHERE plugin_id = plugins.id);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "b52036bab2b54cc5a1440770338a0718f875ac7e99680e6e4dcc22da415fb4a6"
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public\nFROM plugins WHERE id = ANY($1)\nORDER BY id ASC",
+  "query": "SELECT id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public,\ndiscord_thread_id,\ninstalled_guilds,\ninstalled_guilds_updated_at\nFROM plugins WHERE id = ANY($1)\nORDER BY id ASC",
   "describe": {
     "columns": [
       {
@@ -77,6 +77,21 @@
         "ordinal": 14,
         "name": "is_public",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 15,
+        "name": "discord_thread_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 16,
+        "name": "installed_guilds",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "installed_guilds_updated_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -99,8 +114,11 @@
       true,
       true,
       false,
-      false
+      false,
+      true,
+      true,
+      true
     ]
   },
-  "hash": "0c24cb397250fe8f42162846d46fd26f4108cf7abb6a3070a48f07740bf60c53"
+  "hash": "efa50ee481b4eb78f618788fdd09b123a336ef365ff82516440dafa4b7d32ea2"
 }

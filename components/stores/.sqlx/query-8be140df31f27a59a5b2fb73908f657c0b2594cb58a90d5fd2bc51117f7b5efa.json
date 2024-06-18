@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE plugins SET\nscript_published_source = $2, \nscript_published_version_updated_at = now(),\ncurrent_version_number = current_version_number +1\nWHERE id = $1\nRETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public",
+  "query": "UPDATE plugins SET\nscript_published_source = $2, \nscript_published_version_updated_at = now(),\ncurrent_version_number = current_version_number +1\nWHERE id = $1\nRETURNING id,\ncreated_at,\nname,\nshort_description,\nlong_description,\nis_published,\nis_official,\nplugin_kind,\ncurrent_version_number,\nscript_published_source,\nscript_published_version_updated_at,\nscript_dev_source,\nscript_dev_version_updated_at,\nauthor_id,\nis_public,\ndiscord_thread_id,\ninstalled_guilds,\ninstalled_guilds_updated_at\n",
   "describe": {
     "columns": [
       {
@@ -77,6 +77,21 @@
         "ordinal": 14,
         "name": "is_public",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 15,
+        "name": "discord_thread_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 16,
+        "name": "installed_guilds",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "installed_guilds_updated_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -100,8 +115,11 @@
       true,
       true,
       false,
-      false
+      false,
+      true,
+      true,
+      true
     ]
   },
-  "hash": "081bca92d7b89f0b0f204e4a674747a9e72aca993ecd285ad17199c095d2bba6"
+  "hash": "8be140df31f27a59a5b2fb73908f657c0b2594cb58a90d5fd2bc51117f7b5efa"
 }
