@@ -192,6 +192,7 @@ pub async fn update_plugin_meta(
         is_official: None,
         author_id: None,
         is_published: body.is_published,
+        discord_thread_id: None,
     };
 
     if let Err(err) = validate(&update, &()) {

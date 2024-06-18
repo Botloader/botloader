@@ -9,6 +9,7 @@ edition = "2021"
 scheduler = { path = "../../components/scheduler" }
 discordbroker = { path = "../../components/discordbroker" }
 webapi = { path = "../../components/webapi" }
+jobs = { path = "../../components/jobs" }
 vmworker = { path = "../../components/vmworker" }
 
 common = { path = "../../components/common" }

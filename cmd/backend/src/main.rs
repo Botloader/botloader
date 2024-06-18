@@ -2,6 +2,7 @@ use std::env::current_exe;
 
 use clap::{Parser, Subcommand};
 use discordbroker::BrokerConfig;
+use jobs::JobsConfig;
 use scheduler::{SchedulerConfig, WorkerLaunchConfig};
 use vmworker::WorkerConfig;
 use webapi::WebConfig;
@@ -27,7 +28,6 @@ async fn main() {
         Commands::Full(full_conf) => {
             common::setup_tracing(&full_conf.common, "full");
             common::setup_metrics("0.0.0.0:7801");
-
             tokio::spawn(discordbroker::run(
                 full_conf.common.clone(),
                 full_conf.broker_config,
@@ -38,7 +38,6 @@ async fn main() {
                 full_conf.web_config,
                 false,
             ));
-
             scheduler::run(
                 full_conf.common.clone(),
                 full_conf.scheduler_config,
@@ -47,6 +46,7 @@ async fn main() {
             )
             .await;
         }
+        Commands::Jobs(conf) => jobs::run(conf.common, conf.jobs_config, true).await,
     }
 }
 
@@ -63,6 +63,7 @@ enum Commands {
     DiscordBroker(WrappedBrokerConfig),
     Scheduler(WrappedSchedulerConfig),
     VmWorker(WorkerConfig),
+    Jobs(WrappedJobsConfig),
     Full(Box<AllConfig>),
 }
 
@@ -114,4 +115,13 @@ struct WrappedSchedulerConfig {
 
     #[clap(flatten)]
     scheduler_config: SchedulerConfig,
+}
+
+#[derive(Clone, clap::Parser, Debug)]
+struct WrappedJobsConfig {
+    #[clap(flatten)]
+    common: common::config::RunConfig,
+
+    #[clap(flatten)]
+    jobs_config: JobsConfig,
 }

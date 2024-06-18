@@ -37,10 +37,10 @@ jobs:
       #     name: Build webapi
       #     command: |
       #       docker build -t botloader/bl-webapi -f cmd/webapi/Dockerfile .
-      - run:
-          name: Build jobs
-          command: |
-            docker build -t botloader/bl-jobs -f cmd/jobs/Dockerfile .
+      # - run:
+      #     name: Build jobs
+      #     command: |
+      #       docker build -t botloader/bl-jobs -f cmd/jobs/Dockerfile .
       # - run:
       #     name: Build dbserver
       #     command: |
@@ -68,13 +68,13 @@ jobs:
             docker tag botloader/backend:latest "botloader/backend:$CIRCLE_BUILD_NUM"
             # docker tag botloader/bl-discordbroker:latest "botloader/bl-discordbroker:$CIRCLE_BUILD_NUM"
             # docker tag botloader/bl-schedulerwithworker:latest "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
-            docker tag botloader/bl-jobs:latest "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
+            # docker tag botloader/bl-jobs:latest "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
             # docker tag botloader/bl-dbserver:latest "botloader/bl-dbserver:$CIRCLE_BUILD_NUM"
             # push
             docker push "botloader/backend:$CIRCLE_BUILD_NUM"
             # docker push "botloader/bl-discordbroker:$CIRCLE_BUILD_NUM"
             # docker push "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
-            docker push "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
+            # docker push "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
             # docker push "botloader/bl-dbserver:$CIRCLE_BUILD_NUM"
   build-publish-db-migration-image:
     docker:

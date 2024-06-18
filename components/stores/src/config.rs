@@ -171,7 +171,10 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at
 FROM plugins WHERE id = $1"#,
             plugin_id as i64,
         )
@@ -680,7 +683,10 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public"#,
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at"#,
             create_plugin.name,
             create_plugin.short_description,
             create_plugin.long_description,
@@ -709,7 +715,8 @@ long_description = COALESCE($4, plugins.long_description),
 is_official = COALESCE($5, plugins.is_official),
 author_id = COALESCE($6, plugins.author_id),
 is_public = COALESCE($7, plugins.is_public),
-is_published = COALESCE($8, plugins.is_published)
+is_published = COALESCE($8, plugins.is_published),
+discord_thread_id = COALESCE($9, plugins.discord_thread_id)
 WHERE id = $1
 RETURNING id,
 created_at,
@@ -725,7 +732,10 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public"#,
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at"#,
             plugin_id as i64,
             update_plugin.name,
             update_plugin.short_description,
@@ -734,6 +744,7 @@ is_public"#,
             update_plugin.author_id.map(|v| v as i64),
             update_plugin.is_public,
             update_plugin.is_published,
+            update_plugin.discord_thread_id.map(|v| v as i64),
         )
         .fetch_one(&self.pool)
         .await?;
@@ -741,6 +752,16 @@ is_public"#,
         let images = self.get_plugin_images_with_pool(plugin_id).await?;
 
         Ok(PluginAndImages(res, images).into())
+    }
+
+    pub async fn batch_update_plugins_stats(&self) -> ConfigStoreResult<()> {
+        sqlx::query!(
+            r#"UPDATE plugins SET installed_guilds = (SELECT COUNT(*) FROM guild_scripts WHERE plugin_id = plugins.id);"#,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 
     pub async fn upsert_plugin_image(
@@ -822,7 +843,11 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public"#,
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at
+"#,
             plugin_id as i64,
             new_source,
         )
@@ -860,7 +885,11 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public"#,
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at
+"#,
             plugin_id as i64,
             new_source,
         )
@@ -922,7 +951,10 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at
 FROM plugins WHERE id = ANY($1)
 ORDER BY id ASC"#,
             &ids,
@@ -956,7 +988,10 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at
 FROM plugins WHERE author_id = $1
 ORDER BY id ASC"#,
             user_id as i64,
@@ -990,7 +1025,10 @@ script_published_version_updated_at,
 script_dev_source,
 script_dev_version_updated_at,
 author_id,
-is_public
+is_public,
+discord_thread_id,
+installed_guilds,
+installed_guilds_updated_at
 FROM plugins WHERE is_published = true AND is_public = true
 ORDER BY id ASC"#,
         )
@@ -1268,6 +1306,9 @@ struct DbPlugin {
     script_dev_version_updated_at: Option<DateTime<Utc>>,
     author_id: i64,
     is_public: bool,
+    discord_thread_id: Option<i64>,
+    installed_guilds: Option<i32>,
+    installed_guilds_updated_at: Option<DateTime<Utc>>,
 }
 
 struct PluginAndImages(DbPlugin, Vec<DbPluginImage>);
@@ -1285,6 +1326,10 @@ impl From<PluginAndImages> for Plugin {
             is_official: plugin.is_official,
             is_published: plugin.is_published,
             current_version: plugin.current_version_number as u32,
+            discord_thread_id: plugin.discord_thread_id.map(|v| Id::new(v as u64)),
+            installed_guilds: plugin.installed_guilds.map(|v| v as u32),
+            installed_guilds_updated_at: plugin.installed_guilds_updated_at,
+            published_version_updated_at: plugin.script_published_version_updated_at,
             data: match plugin.plugin_kind {
                 0 => PluginData::ScriptPlugin(ScriptPluginData {
                     published_version: plugin.script_published_source,
@@ -1514,6 +1559,7 @@ pub struct UpdatePluginMeta {
     pub author_id: Option<u64>,
     pub is_public: Option<bool>,
     pub is_published: Option<bool>,
+    pub discord_thread_id: Option<u64>,
 }
 
 pub struct CreateImage {

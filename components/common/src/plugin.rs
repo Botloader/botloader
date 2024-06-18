@@ -1,6 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use twilight_model::id::{marker::UserMarker, Id};
+use twilight_model::id::{
+    marker::{GuildMarker, UserMarker},
+    Id,
+};
 use uuid::Uuid;
 
 #[derive(Serialize, Clone)]
@@ -15,6 +18,12 @@ pub struct Plugin {
     pub is_official: bool,
     pub is_published: bool,
     pub current_version: u32,
+
+    pub published_version_updated_at: Option<DateTime<Utc>>,
+
+    pub installed_guilds: Option<u32>,
+    pub installed_guilds_updated_at: Option<DateTime<Utc>>,
+    pub discord_thread_id: Option<Id<GuildMarker>>,
 
     pub images: Vec<PluginImage>,
 
