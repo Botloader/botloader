@@ -1,15 +1,16 @@
 import { Box, Button, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { BotGuild, ErrorCode, isErrorResponse, ScriptPlugin } from "botloader-common";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { BlLink } from "../../../../components/BLLink";
-import { DevConsole } from "../../../../components/DevConsole";
 import { useFetchedDataBehindGuard } from "../../../../components/FetchData";
 import { GuildSelectionDialog } from "../../../../components/GuildSelectionDialog";
 import { useGuilds } from "../../../../modules/guilds/GuildsProvider";
 import { pluginContext } from "../../../../components/PluginProvider";
-import { ScriptingIde } from "../../../../components/ScriptIde";
 import { debugMessageStore } from "../../../../misc/DebugMessages";
 import { useSession } from "../../../../modules/session/useSession";
+import { pluginToFiles } from "../../../../components/ScriptEditor";
+import { DevelopmentIde } from "../../../../components/DevelopmentIde";
+import { UserSideNavContext } from "../..";
 
 export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) {
     const session = useSession();
@@ -23,6 +24,15 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
     } | null>(null);
     const [testGuildSelectionOpen, setTestGuildSelectionOpen] = useState(false);
     const guilds = useGuilds();
+    const hideSideNavContext = useContext(UserSideNavContext)
+
+    useEffect(() => {
+        hideSideNavContext.setShown(false)
+
+        return () => {
+            hideSideNavContext.setShown(true)
+        }
+    })
 
     async function selectTestGuild(selection: BotGuild | null) {
         setTestGuildSelectionOpen(false);
@@ -129,12 +139,15 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
 
     }
 
-    return <ScriptingIde
-        initialSource={cast.data.dev_version || undefined}
+    const files = pluginToFiles(plugin)
+
+    return <DevelopmentIde
         onSave={save}
-        files={[]}
+        files={[files.dev, files.published]}
+        selectedFile={files.dev.name}
         isDiffEditor={diffSource !== null}
-        diffSource={diffSource === "dev" ? cast.data.dev_version ?? "" : cast.data.published_version ?? ""}
+        customDiffContent={diffSource === "dev" ? cast.data.dev_version ?? "" : cast.data.published_version ?? ""}
+        consoleGuildId={selectedTestGuild?.guildId ?? undefined}
     >
         <Box p={1}>
             <Typography>Editing development version of plugin</Typography>
@@ -167,13 +180,10 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
             }
             <Button disabled={!Boolean(guilds)} onClick={() => setTestGuildSelectionOpen(true)}>Set testing server</Button>
         </Box>
-        <Box sx={{ overflowY: "auto" }}>
-            <DevConsole guildId={selectedTestGuild?.guildId ?? undefined} />
-        </Box>
         <GuildSelectionDialog
             open={testGuildSelectionOpen}
             onClose={selectTestGuild}
             guilds={guilds?.value?.hasAdmin.filter((v) => v.connected) ?? []}
         />
-    </ScriptingIde >
+    </DevelopmentIde >
 }

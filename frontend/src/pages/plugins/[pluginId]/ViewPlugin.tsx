@@ -5,13 +5,14 @@ import { AddPluginToServerButton } from "../../../components/AddPluginToServer";
 import { BlLink } from "../../../components/BLLink";
 import { useFetchedDataBehindGuard } from "../../../components/FetchData";
 import { pluginContext } from "../../../components/PluginProvider";
-import { ScriptingIde } from "../../../components/ScriptIde";
+import { ScriptingEditorWrapper } from "../../../components/ScriptEditorWrapper";
 import { userAvatarUrl } from "../../../components/Util";
 import { useSession } from "../../../modules/session/useSession";
 import { PluginIcon } from "../../../components/PluginIcon";
 import { pluginImageUrl } from "../../../misc/pluginImageUrl";
 import TimelineIcon from '@mui/icons-material/Timeline';
 import { DisplayRelativeDateTime } from "../../../components/DateTime";
+import { pluginToFiles } from "../../../components/ScriptEditor";
 
 export function ViewPlugin() {
     const session = useSession()
@@ -94,10 +95,13 @@ export function ViewPluginSource() {
         throw new Error("plugin value was null")
     }
 
-    return <ScriptingIde
-        initialSource={plugin.data.published_version || undefined}
+    const files = pluginToFiles(plugin)
+
+    return <ScriptingEditorWrapper
+        // initialSource={plugin.data.published_version || undefined}
         onSave={() => { }}
-        files={[]}
+        files={[files.published]}
+        selectedFileName={files.published.name}
         isReadyOnly={true}
         isDiffEditor={false}
     >
@@ -108,5 +112,5 @@ export function ViewPluginSource() {
             <BlLink fullWidth to={`/plugins/${plugin.id}`}>Back to plugin page</BlLink>
             <Divider sx={{ mb: 1 }} />
         </Box>
-    </ScriptingIde >
+    </ScriptingEditorWrapper >
 }

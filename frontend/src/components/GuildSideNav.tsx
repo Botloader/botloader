@@ -91,7 +91,7 @@ export function GuildSideNav() {
     </SideNav>
 }
 
-function ScriptEnabledIndicator({ enabled }: { enabled: boolean }) {
+export function ScriptEnabledIndicator({ enabled }: { enabled: boolean }) {
     return <Box
         width={"8px"}
         height={"8px"}

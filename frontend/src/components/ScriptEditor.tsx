@@ -3,6 +3,7 @@ import Editor, { DiffEditor } from "@monaco-editor/react";
 import monaco from "monaco-editor";
 import { useBotloaderMonaco } from "./BotloaderSdk";
 import { Loading } from "./Loading";
+import { Plugin, Script } from "botloader-common";
 
 const DEFAULT_EMPTY_SCRIPT_CONTENT =
     `import { Commands, Discord, HttpClient, Tasks } from 'botloader';
@@ -26,10 +27,10 @@ const DEFAULT_EMPTY_SCRIPT_CONTENT =
 export function ScriptEditor(props: {
     onSave: (content: string) => any,
     onChange?: (content: string | undefined) => any,
-    initialSource?: string,
-    originalDiffSource?: string,
     isDiffEditor?: boolean,
-    files?: IncludeFile[],
+    customDiffContent?: string,
+    files: IncludeFile[],
+    selectedFileName: string,
     isReadOnly?: boolean,
 }) {
     const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -38,7 +39,9 @@ export function ScriptEditor(props: {
     // we track it separately because otherwise it would clear when swapping between diff and code editor
     // 
     // the proper way is probably saving the model but ehh
-    const editedValue = useRef(props.initialSource || DEFAULT_EMPTY_SCRIPT_CONTENT);
+
+    const selectedFile = props.files?.find(v => v.name === props.selectedFileName)
+    // const editedValue = useRef(props.initialSource || DEFAULT_EMPTY_SCRIPT_CONTENT);
 
     useEffect(() => {
         let ctrlSIsDown = false;
@@ -65,11 +68,26 @@ export function ScriptEditor(props: {
         }
     })
 
+    useEffect(() => {
+        function onResize() {
+            monacoRef.current?.layout()
+        }
+
+        window.addEventListener("resize", onResize)
+
+        return () => {
+            window.removeEventListener("resize", onResize)
+        }
+    }, [monacoRef])
+
+    if (!selectedFile) {
+        return <>Couldn't find file</>
+    }
+
     function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
         // here is another way to get monaco instance
         // you can also store it in `useRef` for further usage
         monacoRef.current = editor;
-
     }
 
     function handleEditorDidMountDiff(editor: monaco.editor.IStandaloneDiffEditor) {
@@ -89,7 +107,8 @@ export function ScriptEditor(props: {
 
         await monacoRef.current.getAction('editor.action.formatDocument')?.run()
         const value = monacoRef.current.getValue();
-        let innerIsDirty = value !== props.initialSource
+
+        let innerIsDirty = value !== selectedFile?.content
 
         if (!innerIsDirty || isSaving) {
             return;
@@ -99,7 +118,7 @@ export function ScriptEditor(props: {
     }
 
     function onValueChange(value: string | undefined) {
-        editedValue.current = value || "";
+        // editedValue.current = value || "";
         if (props.onChange) {
             props.onChange(value);
         }
@@ -111,31 +130,47 @@ export function ScriptEditor(props: {
 
     if (props.isDiffEditor) {
         return <DiffEditor
-            modified={editedValue.current || ""}
-            modifiedModelPath="file:///temp.ts"
-            original={props.originalDiffSource}
-            originalModelPath="file://temp_og.ts"
+            // modified={editedValue.current || ""}
+            modifiedModelPath={"file:///" + selectedFile.name + ".ts"}
+            original={(props.customDiffContent ?? selectedFile.content) || DEFAULT_EMPTY_SCRIPT_CONTENT}
+            // originalModelPath="file://temp_og.ts"
             originalLanguage="typescript"
             modifiedLanguage="typescript"
             theme="vs-dark"
             onMount={handleEditorDidMountDiff}
-            options={{ readOnly: props.isReadOnly }}
-            key="diff-editor"
+            options={{
+                readOnly: props.isReadOnly,
+                inlayHints: {
+                    enabled: "on",
+                    padding: true,
+                    fontSize: 10,
+                }
+            }}
+            key={"diff-editor-" + props.customDiffContent ?? selectedFile.content}
             keepCurrentOriginalModel={false}
-            keepCurrentModifiedModel={false}
+            keepCurrentModifiedModel={true}
         />
 
     } else {
         return <Editor
-            path="file:///some_script.ts"
+            path={"file:///" + selectedFile.name + ".ts"}
+            // path="file:///some_script.ts"
             theme="vs-dark"
             defaultLanguage="typescript"
-            defaultValue={editedValue.current}
+            defaultValue={DEFAULT_EMPTY_SCRIPT_CONTENT}
             saveViewState={false}
             onChange={onValueChange}
             onMount={handleEditorDidMount}
-            options={{ readOnly: props.isReadOnly }}
+            options={{
+                readOnly: props.isReadOnly,
+                inlayHints: {
+                    enabled: "on",
+                    padding: true,
+                    fontSize: 10,
+                },
+            }}
             key="normal-editor"
+            keepCurrentModel={true}
         />
     }
 
@@ -146,4 +181,31 @@ export interface IncludeFile {
     content: string,
 }
 
+export function guildScriptToFile(guildScript: Script): IncludeFile {
+    if (guildScript.plugin_id !== null) {
+        return {
+            content: guildScript.original_source || DEFAULT_EMPTY_SCRIPT_CONTENT,
+            name: "plugins/" + guildScript.plugin_id
+        }
+    } else {
+        return {
+            content: guildScript.original_source || DEFAULT_EMPTY_SCRIPT_CONTENT,
+            name: guildScript.name
+        }
+    }
+}
+
+export function pluginToFiles(plugin: Plugin): { published: IncludeFile, dev: IncludeFile } {
+    return {
+        dev: {
+            name: "plugins-dev/" + plugin.id,
+            content: plugin.data.dev_version || DEFAULT_EMPTY_SCRIPT_CONTENT,
+        },
+
+        published: {
+            name: "plugins-published/" + plugin.id,
+            content: plugin.data.published_version || DEFAULT_EMPTY_SCRIPT_CONTENT,
+        }
+    }
+}
 

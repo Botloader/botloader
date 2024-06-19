@@ -21,14 +21,28 @@ export function useBotloaderMonaco(extraSources?: { name: string, content: strin
                             filePath: "file:///" + v.name,
                         }
                     }),
-                ...(extraSources?.map(v => {
-                    return {
-                        content: v.content,
-                        filePath: "file:///" + v.name + ".ts"
-                    }
-                }) ?? [])
             ]
         )
+
+        const uris = []
+        for (const file of (extraSources ?? [])) {
+            const uri = monaco.Uri.parse("file:///" + file.name + ".ts")
+            uris.push(uri)
+            if (monaco.editor.getModel(uri)) {
+                continue;
+            }
+
+            monaco.editor.createModel(file.content, "typescript", uri)
+        }
+
+        // Dispose of unknown models
+        for (const model of monaco.editor.getModels()) {
+            if (uris.find(v => v.path === model.uri.path)) {
+                continue
+            }
+            console.log("DISPOSING", model.uri, uris)
+            model.dispose()
+        }
 
         monaco.languages.typescript.typescriptDefaults.setInlayHintsOptions({
             includeInlayFunctionLikeReturnTypeHints: true,
@@ -36,14 +50,16 @@ export function useBotloaderMonaco(extraSources?: { name: string, content: strin
             includeInlayVariableTypeHints: true,
             includeInlayFunctionParameterTypeHints: true,
             includeInlayPropertyDeclarationTypeHints: true,
-            includeInlayEnumMemberValueHints: true
+            includeInlayEnumMemberValueHints: true,
         })
+
+        monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true)
 
         monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
             moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
             module: monaco.languages.typescript.ModuleKind.ESNext,
             lib: [
-                "es2021",
+                "esnext",
             ],
             allowNonTsExtensions: true,
             noImplicitAny: true,

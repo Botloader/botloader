@@ -1,24 +1,28 @@
 import { BotGuild, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import "./EditScript.css";
 import { AsyncOpButton } from "../../../../../../components/AsyncOpButton";
 import { debugMessageStore } from "../../../../../../misc/DebugMessages";
-import { DevConsole } from "../../../../../../components/DevConsole";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../../../../components/FetchData";
 import { Alert, Box, Chip, Divider, Switch, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import { ScriptingIde } from "../../../../../../components/ScriptIde";
 import { BlLink } from "../../../../../../components/BLLink";
 import { useSession } from "../../../../../../modules/session/useSession";
+import { guildScriptToFile } from "../../../../../../components/ScriptEditor";
+import { DevelopmentIde } from "../../../../../../components/DevelopmentIde";
+import { ScriptEnabledIndicator } from "../../../../../../components/GuildSideNav";
+import { useNavigate } from "react-router-dom";
+import { useCurrentGuildId } from "../../../../../../modules/guilds/CurrentGuild";
 
 export const scriptsContext = createFetchDataContext<ScriptsWithPlugins>();
 
 export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     const session = useSession();
 
-    async function fetchScripts() {
-        let resp = await session.apiClient.getAllScriptsWithPlugins(props.guild.guild.id);
+    const guildId = props.guild.guild.id
+    const fetchScripts = useCallback(async () => {
+        let resp = await session.apiClient.getAllScriptsWithPlugins(guildId);
         return resp;
-    }
+    }, [guildId, session.apiClient])
 
     return <FetchDataGuarded loader={fetchScripts} context={scriptsContext}>
         <InnerPage guild={props.guild} scriptId={props.scriptId} />
@@ -42,7 +46,10 @@ export function InnerPage(props: { guild: BotGuild, scriptId: number }) {
 function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) {
     const { value: scripts, setData } = useFetchedDataBehindGuard(scriptsContext);
     const session = useSession();
-    const [isDirty, setIsDirty] = useState(false);
+
+    const [dirtyFiles, setDirtyFiles] = useState([] as number[])
+    const isDirty = dirtyFiles.includes(props.script.id)
+
     const newSource = useRef(props.script.original_source);
     const [diffSource, setDiffSource] = useState<"unsaved" | "pluginPublished" | null>(() => {
         let query = new URLSearchParams(window.location.search);
@@ -96,30 +103,32 @@ function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) 
             message: "Changes are live!"
         });
 
-        setIsDirty(false);
+        setDirtyFiles((current) => (current.filter(v => v !== props.script.id)))
     }
 
+    const files = useMemo(() => {
+        return scripts.scripts.map(guildScriptToFile)
+    }, [scripts])
+
     return <Box display={"flex"} flexGrow="1">
-        <ScriptingIde
-            initialSource={props.script.original_source}
+        <DevelopmentIde
             onSave={save}
-            files={scripts.scripts.filter((v) => v.id !== props.script.id && v.plugin_id === null)
-                .map((v) => ({ name: v.name, content: v.original_source }))}
+            files={files}
             isDiffEditor={diffSource !== null}
-            diffSource={diffSource === "unsaved" ? props.script.original_source ?? "" : props.plugin?.data.published_version ?? ""}
+            selectedFile={props.script.name}
             onChange={(source) => {
                 newSource.current = source ?? "";
                 if (source !== props.script.original_source) {
                     if (!isDirty) {
-                        setIsDirty(true);
+                        setDirtyFiles((current) => ([...current, props.script.id]))
                     }
                 } else {
                     if (isDirty) {
-                        setIsDirty(false);
+                        setDirtyFiles((current) => (current.filter(v => v !== props.script.id)))
                     }
                 }
             }}
-
+            consoleGuildId={props.guild.guild.id}
         >
             <Box p={1}>
                 <Box display={"flex"} justifyContent={"space-around"} >
@@ -163,10 +172,42 @@ function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) 
                     <><Typography>Changes have been made <AsyncOpButton className="primary" label="Save" onClick={() => save(newSource.current)}></AsyncOpButton></Typography></>
                     : <Typography>No changes made</Typography>}
                 <Divider sx={{ mb: 1 }} />
+
             </Box>
             <Box sx={{ overflowY: "auto" }}>
-                <DevConsole guildId={props.guild.guild.id} />
+                <Typography p={1} variant="overline" color="grey">Scripts</Typography>
+                {scripts.scripts.filter(v => v.plugin_id === null).map(v => (
+                    <SidebarScriptItem script={v} key={v.id} dirty={dirtyFiles.includes(v.id)} selected={v.id === props.script.id} />
+                ))}
+
+                <Divider sx={{ mb: 1 }} />
+
+                <Typography variant="overline" color={"grey"} p={1}>Plugins</Typography>
+
+                {scripts.scripts.filter(v => v.plugin_id !== null).map(v => (
+                    <SidebarScriptItem script={v} plugin={scripts.plugins.find(p => p.id === v.plugin_id)} key={v.id} dirty={dirtyFiles.includes(v.id)} selected={v.id === props.script.id} />
+                ))}
+
             </Box>
-        </ScriptingIde >
+        </DevelopmentIde>
+    </Box>
+}
+
+function SidebarScriptItem(props: { script: Script, plugin?: Plugin, dirty: boolean, selected: boolean }) {
+    const navigate = useNavigate()
+    const guildId = useCurrentGuildId()
+
+    return <Box display={"flex"} p={1} alignItems={"center"} gap={1} sx={{
+        ":hover": {
+            backgroundColor: "rgba(0,0,0,0.5)",
+            cursor: "pointer"
+        },
+        backgroundColor: props.selected ? "rgba(255,255,255,0.2)" : "",
+    }} onClick={() => {
+        navigate(`/servers/${guildId}/scripts/${props.script.id}/edit`)
+    }}>
+        <ScriptEnabledIndicator enabled={props.script.enabled}></ScriptEnabledIndicator>
+        <Typography>{props.script.name}</Typography>
+        {props.dirty ? <Chip size="small" label="unsaved"></Chip> : null}
     </Box>
 }

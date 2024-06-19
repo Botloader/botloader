@@ -5,6 +5,7 @@ import { routes as premiumRoutes } from "./premium";
 import { Box } from "@mui/material";
 import { SideNav } from "../../components/SideNav";
 import { RequireLoggedInSession } from "../../modules/session/RequireLoggedInSession";
+import { createContext, useState } from "react";
 
 export const routes: RouteObject[] = [
     {
@@ -54,16 +55,24 @@ export function UserSideNav() {
     return <SideNav items={navItems}></SideNav>
 }
 
+export const UserSideNavContext = createContext({
+    setShown: (shown: boolean) => { }
+})
+
 function UserPages() {
+    const [sideNavShown, setSideNavShown] = useState(true)
+
     return <>
         <RequireLoggedInSession>
             <Box sx={{ display: 'flex', flexGrow: 1 }}>
-                <UserSideNav />
+                {sideNavShown && <UserSideNav />}
                 <Box
                     component="main"
                     sx={{ display: "flex", flexGrow: 1, alignItems: "stretch", flexDirection: "column", bgcolor: 'background.default' }}
                 >
-                    <Outlet />
+                    <UserSideNavContext.Provider value={{ setShown: (value) => setSideNavShown(value) }}>
+                        <Outlet />
+                    </UserSideNavContext.Provider>
                 </Box>
             </Box>
         </RequireLoggedInSession>
