@@ -53,7 +53,7 @@ export function DevelopmentIde(props: Props) {
             >
                 {props.children}
             </Box>
-            <Box sx={{ flexGrow: 1 }} display={"flex"} flexDirection={"column"} minHeight={0} >
+            <Box sx={{ flexGrow: 1, textWrap: "stable" }} display={"flex"} flexDirection={"column"} minHeight={0} alignItems={"stretch"} >
                 <Box sx={{ flexGrow: 1, minHeight: 100, flexBasis: 0 }}>
                     <ScriptEditor
                         // initialSource={props.initialSource}
@@ -67,9 +67,8 @@ export function DevelopmentIde(props: Props) {
                         isReadOnly={props.isReadyOnly}
                     />
                 </Box>
-
                 {props.consoleGuildId &&
-                    <Box height={consoleHeight + "px"} sx={{ overflowY: "auto" }}>
+                    <Box height={consoleHeight + "px"} maxWidth={"100%"} display={"flex"} flexDirection={"column"}>
                         <div
                             style={{
                                 backgroundColor: "black",
@@ -83,7 +82,9 @@ export function DevelopmentIde(props: Props) {
                                 setResizingConsole({ startPosition: consoleHeight, target: evt.target, pageYStart: evt.pageY })
                             }}
                         ></div>
-                        <DevConsole guildId={props.consoleGuildId} />
+                        <Box sx={{ overflowY: "auto", overflowX: "hidden", width: "calc(100vw - 300px)" }} maxHeight={"100%"} minWidth={0} flexGrow={1} flexBasis={0}>
+                            <DevConsole guildId={props.consoleGuildId} />
+                        </Box>
                     </Box>
                 }
             </Box>
