@@ -1,5 +1,15 @@
 import * as Internal from "./generated/internal/index";
-import { ChannelType, Interaction, Message, Role, IModalFields, MessageFlags, AutocompleteInteraction, Attachment } from "./discord/index";
+import {
+    ChannelType,
+    Interaction,
+    Message,
+    Role,
+    IModalFields,
+    MessageFlags,
+    AutocompleteInteraction,
+    Attachment,
+    ThreadMetadata
+} from "./discord/index";
 import { User } from "./discord/user";
 import { Member } from "./discord/member";
 import { OpWrappers } from "./op_wrappers";
@@ -346,9 +356,16 @@ export namespace Commands {
         }
     }
 
+    export interface InteractionMember {
+        joinedAt: number;
+        nick: string | null;
+        premiumSince?: number;
+        roles: Array<string>;
+    }
+
     export interface InteractionUser {
         user: User,
-        member?: Internal.InteractionPartialMember,
+        member?: InteractionMember,
     }
 
     export type InteractionMentionable = {
@@ -358,6 +375,16 @@ export namespace Commands {
         kind: "User",
         value: InteractionUser
     }
+
+    export interface InteractionChannel {
+        id: string;
+        kind: ChannelType;
+        name: string;
+        parentId?: string;
+        permissionsRaw: string;
+        threadMetadata?: ThreadMetadata;
+    }
+
 
     /**
      * Raw form of a command handled by botloader
@@ -760,7 +787,7 @@ export namespace Commands {
         T extends { kind: "Integer" } ? number :
         T extends { kind: "Boolean" } ? boolean :
         T extends { kind: "User" } ? InteractionUser :
-        T extends { kind: "Channel" } ? Internal.InteractionPartialChannel :
+        T extends { kind: "Channel" } ? InteractionChannel :
         T extends { kind: "Role" } ? Role :
         T extends { kind: "Mentionable" } ? InteractionMentionable :
         T extends { kind: "Attachment" } ? Attachment :
