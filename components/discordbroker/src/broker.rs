@@ -381,6 +381,7 @@ impl Broker {
                     },
                 )
             }
+            DispatchEvent::WebhooksUpdate(w) => (w.guild_id, DiscordEventData::WebhooksUpdate(w)),
 
             _ => return None,
         };

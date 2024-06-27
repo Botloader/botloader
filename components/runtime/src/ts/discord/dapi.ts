@@ -12,6 +12,7 @@ import { Ban, Member } from './member';
 import { Message } from './message';
 import { PermissionResolvable, Permissions } from './permissions';
 import { User } from './user';
+import { Webhook } from './webhook';
 
 /**
  * @returns Botloader's discord user 
@@ -1117,4 +1118,201 @@ export async function getPrivateArchivedThreads(options: IListThreads): Promise<
         members: resp.members.map(v => new ThreadMember(v)),
         threads: resp.threads.map(v => threadChannelFromInternal(v))
     }
+}
+
+export async function getWebhook(id: string, token?: string) {
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_get",
+        arg: {
+            webhook_id: id,
+            token: token ?? null,
+        },
+    })
+
+    return Webhook.fromInternal(resp)
+}
+
+export async function getGuildWebhooks() {
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_get_guild",
+        arg: null,
+    })
+
+    return resp.map(Webhook.fromInternal)
+}
+
+export async function getChannelWebhooks(channelId: string) {
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_get_guild",
+        arg: null,
+    })
+
+    return resp.filter(v => v.channelId === channelId).map(Webhook.fromInternal)
+}
+
+export interface CreateWebhookFields {
+    /**
+     * The webhook user default avatar, shows up as the sender when the webhook is executed
+     * 
+     * Image data in base64 data uri format, or a image instance
+     */
+    avatar?: string | Image;
+
+    /**
+     * The webhook user default name, shows up as the sender when the webhook is executed
+     */
+    name: string;
+
+    channel_id: string;
+}
+
+export async function createWebhook(fields: CreateWebhookFields) {
+    let imageData: string | null = null;
+    if (fields.avatar) {
+        if (fields.avatar instanceof Image) {
+            imageData = fields.avatar.dataUri()
+        } else {
+            imageData = fields.avatar
+        }
+    }
+
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_create",
+        arg: {
+            channel_id: fields.channel_id,
+            icon: imageData,
+            name: fields.name,
+        }
+    })
+
+    return Webhook.fromInternal(resp)
+}
+
+
+
+export interface EditWebhookFields {
+    /**
+     * The webhook user default avatar, shows up as the sender when the webhook is executed
+     * 
+     * Image data in base64 data uri format, or a image instance
+     */
+    avatar?: string | Image | null;
+
+    /**
+     * The webhook user default name, shows up as the sender when the webhook is executed
+     */
+    name?: string;
+
+    channel_id?: string;
+}
+
+export async function editWebhook(id: string, fields: EditWebhookFields) {
+    let imageData: string | null | undefined = undefined;
+    if (fields.avatar) {
+        if (fields.avatar instanceof Image) {
+            imageData = fields.avatar.dataUri()
+        } else {
+            imageData = fields.avatar
+        }
+    } else if (fields.avatar === null) {
+        imageData = null
+    }
+
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_edit",
+        arg: {
+            webhook_id: id,
+            channel_id: fields.channel_id ?? null,
+            icon: imageData,
+            name: fields.name ?? null,
+        }
+    })
+
+    return Webhook.fromInternal(resp)
+}
+
+export async function editWebhookWithToken(id: string, token: string, fields: Omit<EditWebhookFields, "channel_id">) {
+    let imageData: string | null | undefined = undefined;
+    if (fields.avatar) {
+        if (fields.avatar instanceof Image) {
+            imageData = fields.avatar.dataUri()
+        } else {
+            imageData = fields.avatar
+        }
+    } else if (fields.avatar === null) {
+        imageData = null
+    }
+
+    let resp = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_edit_with_token",
+        arg: {
+            webhook_id: id,
+            token: token,
+            icon: imageData,
+            name: fields.name ?? null,
+        }
+    })
+
+    return Webhook.fromInternal(resp)
+}
+
+export async function deleteWebhook(id: string, token?: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_delete",
+        arg: {
+            webhook_id: id,
+            token: token ?? null,
+        }
+    })
+}
+
+export async function executeWebhook(id: string, token: string, fields: CreateMessageFields) {
+    const message = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_execute",
+        arg: {
+            webhook_id: id,
+            token: token,
+            fields: toOpMessageFields(fields),
+        }
+    })
+
+    return new Message(message)
+}
+
+export async function getWebhookMessage(webhookId: string, token: string, messageId: string) {
+    const message = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_message_get",
+        arg: {
+            webhook_id: webhookId,
+            token: token,
+            message_id: messageId,
+        }
+    })
+
+    return new Message(message)
+}
+
+export async function editWebhookMessage(webhookId: string, token: string, messageId: string, fields: CreateMessageFields) {
+    const message = await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_message_edit",
+        arg: {
+            webhook_id: webhookId,
+            token: token,
+            message_id: messageId,
+            fields: toOpMessageFields(fields)
+        }
+    })
+
+    return new Message(message)
+}
+
+export async function deleteWebhookMessage(webhookId: string, token: string, messageId: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_webhook_message_delete",
+        arg: {
+            webhook_id: webhookId,
+            token: token,
+            message_id: messageId,
+        }
+    })
 }

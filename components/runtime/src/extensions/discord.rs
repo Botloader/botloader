@@ -31,6 +31,11 @@ use runtime_models::{
         misc_op::{CreateBanFields, GetReactionsFields},
         role::{OpCreateRoleFields, OpUpdateRoleFields, UpdateRolePosition},
         user::User,
+        webhook::{
+            DiscordWebhook, OpCreateWebhook, OpEditWebhook, OpEditWebhookWithToken,
+            OpExecuteWebhook, OpUpdateWebhookMessage, OpWebhookMessageSpecifier,
+            OpWebhookSpecifier,
+        },
     },
     ops::{handle_async_op, EasyOpsASync, EasyOpsHandlerASync},
 };
@@ -51,7 +56,7 @@ use twilight_http::{
     response::StatusCode,
 };
 use twilight_model::id::marker::{
-    GenericMarker, InteractionMarker, MessageMarker, RoleMarker, TagMarker,
+    GenericMarker, InteractionMarker, MessageMarker, RoleMarker, TagMarker, WebhookMarker,
 };
 use twilight_model::id::Id;
 use twilight_model::{
@@ -160,6 +165,26 @@ impl DiscordOpsState {
 
         self.recent_bad_requests[0].elapsed() < Duration::from_secs(60)
     }
+}
+
+pub async fn discord_request_any<T: Send + Sync + 'static>(
+    state: &Rc<RefCell<OpState>>,
+    f: impl Future<Output = Result<T, AnyError>> + Send + 'static,
+) -> Result<T, AnyError> {
+    let rt_handle = {
+        let state = state.borrow();
+        let rt_ctx: &RuntimeContext = state.borrow();
+        rt_ctx.main_tokio_runtime.clone()
+    };
+
+    rt_handle
+        .spawn(f)
+        .await
+        .unwrap()
+        .map_err(|err| match err.downcast::<twilight_http::Error>() {
+            Ok(discord_err) => handle_discord_error(state, discord_err),
+            Err(err) => err,
+        })
 }
 
 pub async fn discord_request<T: Send + Sync + 'static>(
@@ -1140,6 +1165,352 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?;
 
         Ok(())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_get(
+        &self,
+        arg: OpWebhookSpecifier,
+    ) -> Result<DiscordWebhook, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id = parse_str_snowflake_id(&arg.webhook_id)?;
+        let has_provided_token = arg.token.is_some();
+
+        let webhook = discord_request(&self.state, async move {
+            let mut req = rt_ctx.discord_config.client.webhook(parsed_id.cast());
+
+            if let Some(token) = &arg.token {
+                req = req.token(&token)
+            }
+
+            req.await
+        })
+        .await?
+        .model()
+        .await?;
+
+        if !has_provided_token {
+            if webhook.guild_id != Some(rt_ctx.guild_id) {
+                return Err(anyhow!("This webhook does not belong to this server"));
+            }
+        }
+
+        Ok(webhook.into())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_get_guild(
+        &self,
+        _arg: (),
+    ) -> Result<Vec<DiscordWebhook>, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let webhooks = discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .guild_webhooks(rt_ctx.guild_id)
+                .await
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(webhooks.into_iter().map(Into::into).collect())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_create(
+        &self,
+        arg: OpCreateWebhook,
+    ) -> Result<DiscordWebhook, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+
+        let webhook = discord_request_with_extra_error(&self.state, async move {
+            let mut req = rt_ctx
+                .discord_config
+                .client
+                .create_webhook(channel.id, &arg.name)?;
+
+            if let Some(icon) = &arg.icon {
+                req = req.avatar(icon)
+            }
+
+            Ok(req.await)
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(webhook.into())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_edit(
+        &self,
+        arg: OpEditWebhook,
+    ) -> Result<DiscordWebhook, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id = parse_discord_id(&arg.webhook_id)?;
+
+        let webhook = discord_request_any(&self.state, async move {
+            let webhook = rt_ctx
+                .discord_config
+                .client
+                .webhook(parsed_id)
+                .await?
+                .model()
+                .await?;
+            if webhook.guild_id != Some(rt_ctx.guild_id) {
+                return Err(anyhow!("This webhook does not belong to this server"));
+            }
+
+            let mut req = rt_ctx.discord_config.client.update_webhook(parsed_id);
+
+            if let Some(icon) = &arg.icon {
+                req = req.avatar(icon.as_deref())
+            }
+
+            if let Some(name) = &arg.name {
+                req = req.name(&name)?
+            }
+
+            if let Some(channel_id) = &arg.channel_id {
+                let parsed_channel_id = parse_discord_id(&channel_id)?;
+                req = req.channel_id(parsed_channel_id)
+            }
+
+            Ok(req.await?)
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(webhook.into())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_edit_with_token(
+        &self,
+        arg: OpEditWebhookWithToken,
+    ) -> Result<DiscordWebhook, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id = parse_discord_id(&arg.webhook_id)?;
+
+        let webhook = discord_request_any(&self.state, async move {
+            let mut req = rt_ctx
+                .discord_config
+                .client
+                .update_webhook_with_token(parsed_id, &arg.token);
+
+            if let Some(icon) = &arg.icon {
+                req = req.avatar(icon.as_deref())
+            }
+
+            if let Some(name) = &arg.name {
+                req = req.name(&name)?
+            }
+
+            Ok(req.await?)
+        })
+        .await?
+        .model()
+        .await?;
+
+        Ok(webhook.into())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_delete(&self, arg: OpWebhookSpecifier) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id = parse_str_snowflake_id(&arg.webhook_id)?;
+
+        discord_request_any(&self.state, async move {
+            if arg.token.is_none() {
+                // ensure the webhook is part of the current guild
+                let webhook = rt_ctx
+                    .discord_config
+                    .client
+                    .webhook(parsed_id.cast())
+                    .await?
+                    .model()
+                    .await?;
+
+                if webhook.guild_id != Some(rt_ctx.guild_id) {
+                    return Err(anyhow!("This webhook does not belong to this server"));
+                }
+            }
+            let mut req = rt_ctx
+                .discord_config
+                .client
+                .delete_webhook(parsed_id.cast());
+
+            if let Some(token) = &arg.token {
+                req = req.token(&token)
+            }
+
+            Ok(req.await?)
+        })
+        .await?;
+
+        Ok(())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_execute(
+        &self,
+        arg: OpExecuteWebhook,
+    ) -> Result<Message, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id: Id<WebhookMarker> = parse_str_snowflake_id(&arg.webhook_id)?.cast();
+
+        let attachments = convert_attachments(arg.fields.attachments.unwrap_or_default())?;
+
+        let message = discord_request_any(&self.state, async move {
+            let maybe_embeds = arg
+                .fields
+                .embeds
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>();
+
+            let components = arg
+                .fields
+                .components
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>();
+
+            let mut mc = rt_ctx
+                .discord_config
+                .client
+                .execute_webhook(parsed_id, &arg.token)
+                .embeds(&maybe_embeds)?
+                .components(&components)?;
+
+            if let Some(content) = &arg.fields.content {
+                mc = mc.content(content)?
+            }
+
+            let mentions = arg.fields.allowed_mentions.map(Into::into);
+            if mentions.is_some() {
+                mc = mc.allowed_mentions(mentions.as_ref());
+            }
+
+            if attachments.len() > 0 {
+                mc = mc.attachments(&attachments)?;
+            }
+
+            Ok(mc.wait().await?.model().await?)
+        })
+        .await?;
+
+        message.try_into()
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_message_get(
+        &self,
+        arg: OpWebhookMessageSpecifier,
+    ) -> Result<Message, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id: Id<WebhookMarker> = parse_str_snowflake_id(&arg.webhook_id)?.cast();
+        let parsed_message_id: Id<MessageMarker> = parse_str_snowflake_id(&arg.message_id)?.cast();
+
+        let message = discord_request_any(&self.state, async move {
+            Ok(rt_ctx
+                .discord_config
+                .client
+                .webhook_message(parsed_id, &arg.token, parsed_message_id)
+                .await?
+                .model()
+                .await?)
+        })
+        .await?;
+
+        message.try_into()
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_message_delete(
+        &self,
+        arg: OpWebhookMessageSpecifier,
+    ) -> Result<(), anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id: Id<WebhookMarker> = parse_str_snowflake_id(&arg.webhook_id)?.cast();
+        let parsed_message_id: Id<MessageMarker> = parse_str_snowflake_id(&arg.message_id)?.cast();
+
+        discord_request_any(&self.state, async move {
+            Ok(rt_ctx
+                .discord_config
+                .client
+                .delete_webhook_message(parsed_id, &arg.token, parsed_message_id)
+                .await?)
+        })
+        .await?;
+
+        Ok(())
+    }
+
+    #[allow(async_fn_in_trait)]
+    async fn discord_webhook_message_edit(
+        &self,
+        arg: OpUpdateWebhookMessage,
+    ) -> Result<Message, anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let parsed_id: Id<WebhookMarker> = parse_str_snowflake_id(&arg.webhook_id)?.cast();
+        let parsed_message_id: Id<MessageMarker> = parse_str_snowflake_id(&arg.message_id)?.cast();
+
+        let attachments = convert_attachments(arg.fields.attachments.unwrap_or_default())?;
+
+        let message = discord_request_any(&self.state, async move {
+            let maybe_embeds = arg
+                .fields
+                .embeds
+                .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+
+            let components = arg
+                .fields
+                .components
+                .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+
+            let mut mc = rt_ctx
+                .discord_config
+                .client
+                .update_webhook_message(parsed_id, &arg.token, parsed_message_id)
+                .embeds(maybe_embeds.as_deref())?
+                .components(components.as_deref())?;
+
+            if let Some(content) = &arg.fields.content {
+                mc = mc.content(Some(content))?
+            }
+
+            let mentions = arg.fields.allowed_mentions.map(Into::into);
+            if mentions.is_some() {
+                mc = mc.allowed_mentions(mentions.as_ref());
+            }
+
+            if attachments.len() > 0 {
+                mc = mc.attachments(&attachments)?;
+            }
+
+            Ok(mc.await?.model().await?)
+        })
+        .await?;
+
+        message.try_into()
     }
 }
 

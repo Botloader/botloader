@@ -9,12 +9,19 @@ import type { IUpdateThread } from "./IUpdateThread";
 import type { OpCreateChannelMessage } from "./CreateChannelMessage";
 import type { OpCreateEmoji } from "./OpCreateEmoji";
 import type { OpCreateRoleFields } from "./CreateRoleFields";
+import type { OpCreateWebhook } from "./OpCreateWebhook";
 import type { OpDeleteMessage } from "./DeleteMessage";
 import type { OpDeleteMessagesBulk } from "./DeleteMessagesBulk";
 import type { OpEditChannelMessage } from "./EditChannelMessage";
+import type { OpEditWebhook } from "./OpEditWebhook";
+import type { OpEditWebhookWithToken } from "./OpEditWebhookWithToken";
+import type { OpExecuteWebhook } from "./OpExecuteWebhook";
 import type { OpGetMessages } from "./GetMessages";
 import type { OpUpdateEmoji } from "./OpUpdateEmoji";
 import type { OpUpdateRoleFields } from "./UpdateRoleFields";
+import type { OpUpdateWebhookMessage } from "./OpUpdateWebhookMessage";
+import type { OpWebhookMessageSpecifier } from "./OpWebhookMessageSpecifier";
+import type { OpWebhookSpecifier } from "./OpWebhookSpecifier";
 import type { UpdateRolePosition } from "./UpdateRolePosition";
 
 export type EasyOpsASync =
@@ -59,4 +66,17 @@ export type EasyOpsASync =
   | { "kind": "discord_get_emojis"; "arg": null }
   | { "kind": "discord_create_emoji"; "arg": OpCreateEmoji }
   | { "kind": "discord_edit_emoji"; "arg": OpUpdateEmoji }
-  | { "kind": "discord_delete_emoji"; "arg": string };
+  | { "kind": "discord_delete_emoji"; "arg": string }
+  | { "kind": "discord_webhook_get"; "arg": OpWebhookSpecifier }
+  | { "kind": "discord_webhook_get_guild"; "arg": null }
+  | { "kind": "discord_webhook_create"; "arg": OpCreateWebhook }
+  | { "kind": "discord_webhook_edit"; "arg": OpEditWebhook }
+  | { "kind": "discord_webhook_edit_with_token"; "arg": OpEditWebhookWithToken }
+  | { "kind": "discord_webhook_delete"; "arg": OpWebhookSpecifier }
+  | { "kind": "discord_webhook_execute"; "arg": OpExecuteWebhook }
+  | { "kind": "discord_webhook_message_get"; "arg": OpWebhookMessageSpecifier }
+  | {
+    "kind": "discord_webhook_message_delete";
+    "arg": OpWebhookMessageSpecifier;
+  }
+  | { "kind": "discord_webhook_message_edit"; "arg": OpUpdateWebhookMessage };

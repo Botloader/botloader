@@ -1,7 +1,10 @@
 import type { IUser } from "../generated/internal/IUser";
 import type { CdnImageSize } from "./common";
 import type { PremiumType } from "../generated/internal/PremiumType"
+import { ExractClassProperties } from "../core_util";
 export type { PremiumType } from "../generated/internal/PremiumType"
+
+export type UserFields = ExractClassProperties<User>
 
 export class User {
     avatar: string | null;

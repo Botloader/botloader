@@ -12,6 +12,11 @@ use crate::{
             OpEditChannelMessage, OpGetMessages,
         },
         role::{OpCreateRoleFields, OpUpdateRoleFields, UpdateRolePosition},
+        webhook::{
+            DiscordWebhook, OpCreateWebhook, OpEditWebhook, OpEditWebhookWithToken,
+            OpExecuteWebhook, OpUpdateWebhookMessage, OpWebhookMessageSpecifier,
+            OpWebhookSpecifier,
+        },
     },
 };
 
@@ -130,5 +135,16 @@ ops_async! {
     discord_get_emojis(()) => Vec<CustomEmoji>,
     discord_create_emoji(OpCreateEmoji) => CustomEmoji,
     discord_edit_emoji(OpUpdateEmoji) => CustomEmoji,
-    discord_delete_emoji(String) => ()
+    discord_delete_emoji(String) => (),
+
+    discord_webhook_get(OpWebhookSpecifier) => DiscordWebhook,
+    discord_webhook_get_guild(()) => Vec<DiscordWebhook>,
+    discord_webhook_create(OpCreateWebhook) => DiscordWebhook,
+    discord_webhook_edit(OpEditWebhook) => DiscordWebhook,
+    discord_webhook_edit_with_token(OpEditWebhookWithToken) => DiscordWebhook,
+    discord_webhook_delete(OpWebhookSpecifier) => (),
+    discord_webhook_execute(OpExecuteWebhook) => Message,
+    discord_webhook_message_get(OpWebhookMessageSpecifier) => Message,
+    discord_webhook_message_delete(OpWebhookMessageSpecifier) => (),
+    discord_webhook_message_edit(OpUpdateWebhookMessage) => Message
 }

@@ -233,6 +233,11 @@ pub fn discord_event_to_dispatch(
             })
             .unwrap(),
         }),
+        DiscordEventData::WebhooksUpdate(wu) => Some(DiscordDispatchEvent {
+            guild_id: evt.guild_id,
+            name: "WEBHOOKS_UPDATE",
+            data: serde_json::to_value(wu.channel_id.to_string()).unwrap(),
+        }),
         DiscordEventData::GuildDelete(_) => None,
         DiscordEventData::GuildCreate(_) => None,
         DiscordEventData::MessageDeleteBulk(_) => None,

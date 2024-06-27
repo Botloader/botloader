@@ -225,3 +225,7 @@ export class EventThreadMembersUpdate {
         this.removedMemberIds = json.removedMemberIds
     }
 }
+
+export interface EventWebhooksUpdate {
+    channelId: string,
+}

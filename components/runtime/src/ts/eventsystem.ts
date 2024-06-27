@@ -26,7 +26,8 @@ import {
     threadChannelFromInternal,
     Thread,
     Role,
-    EventRoleDelete
+    EventRoleDelete,
+    EventWebhooksUpdate
 } from './discord/index';
 import * as Internal from './generated/internal/index';
 
@@ -135,6 +136,8 @@ export namespace EventSystem {
 
         INVITE_CREATE: EventInviteCreate,
         INVITE_DELETE: EventInviteDelete,
+
+        WEBHOOKS_UPDATE: EventWebhooksUpdate
     }
 
 
@@ -295,5 +298,7 @@ export namespace EventSystem {
 
         INVITE_CREATE: (v: Internal.IEventInviteCreate) => new EventInviteCreate(v),
         INVITE_DELETE: (v: Internal.IEventInviteDelete) => new EventInviteDelete(v),
+
+        WEBHOOKS_UPDATE: (v: string) => ({ channelId: v }),
     }
 }

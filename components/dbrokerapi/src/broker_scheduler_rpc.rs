@@ -6,7 +6,7 @@ use twilight_model::{
         MessageDelete, MessageDeleteBulk, MessageUpdate, ReactionAdd, ReactionRemove,
         ReactionRemoveAll, ReactionRemoveEmoji, RoleCreate, RoleDelete, RoleUpdate, ThreadCreate,
         ThreadDelete, ThreadListSync, ThreadMemberUpdate, ThreadMembersUpdate, ThreadUpdate,
-        VoiceStateUpdate,
+        VoiceStateUpdate, WebhooksUpdate,
     },
     id::{marker::GuildMarker, Id},
     voice::VoiceState,
@@ -75,6 +75,8 @@ pub enum DiscordEventData {
         event: Box<VoiceStateUpdate>,
         old_state: Option<Box<VoiceState>>,
     },
+
+    WebhooksUpdate(WebhooksUpdate),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
