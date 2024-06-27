@@ -197,15 +197,21 @@ function SidebarScriptItem(props: { script: Script, plugin?: Plugin, dirty: bool
     const navigate = useNavigate()
     const guildId = useCurrentGuildId()
 
-    return <Box display={"flex"} p={1} alignItems={"center"} gap={1} sx={{
-        ":hover": {
-            backgroundColor: "rgba(0,0,0,0.5)",
-            cursor: "pointer"
-        },
-        backgroundColor: props.selected ? "rgba(255,255,255,0.2)" : "",
-    }} onClick={() => {
-        navigate(`/servers/${guildId}/scripts/${props.script.id}/edit`)
-    }}>
+    return <Box
+        display={"flex"}
+        p={1}
+        alignItems={"center"}
+        gap={1}
+        sx={{
+            ":hover": {
+                backgroundColor: "rgba(0,0,0,0.5)",
+                cursor: "pointer"
+            },
+            backgroundColor: props.selected ? "rgba(255,255,255,0.2)" : "",
+        }}
+        onClick={(evt) => {
+            navigate(`/servers/${guildId}/scripts/${props.script.id}/edit`)
+        }}>
         <ScriptEnabledIndicator enabled={props.script.enabled}></ScriptEnabledIndicator>
         <Typography>{props.script.name}</Typography>
         {props.dirty ? <Chip size="small" label="unsaved"></Chip> : null}

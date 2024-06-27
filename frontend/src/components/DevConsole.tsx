@@ -31,6 +31,10 @@ export function DevConsole({ guildId }: { guildId?: string }) {
 
     function onNewMessage(message: DebugMessage) {
         setMessages((current) => {
+            if (current.some(v => v.id === message.id)) {
+                return current
+            }
+
             let newMessages = [
                 ...current,
                 message
