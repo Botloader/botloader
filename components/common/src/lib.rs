@@ -89,10 +89,12 @@ pub fn setup_tracing_otlp(_url: &str, _service_name: String) {
 
     // let otlp_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
-    let sentry_layer = sentry_tracing::layer().event_filter(|md| match md.level() {
-        &tracing::Level::ERROR => EventFilter::Exception,
-        _ => EventFilter::Ignore,
-    });
+    let sentry_layer = sentry_tracing::layer()
+        .event_filter(|md| match md.level() {
+            &tracing::Level::ERROR => EventFilter::Exception,
+            _ => EventFilter::Ignore,
+        })
+        .enable_span_attributes();
 
     // We need to register our layer with `tracing`.
     tracing_subscriber::registry()
