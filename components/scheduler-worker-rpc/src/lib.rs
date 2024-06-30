@@ -48,6 +48,7 @@ pub struct CreateScriptsVmReq {
 #[derive(Deserialize, Serialize)]
 pub struct VmSessionShutdownEvent {
     pub vm_session_id: u64,
+    pub guild_id: Id<GuildMarker>,
     pub reason: Option<ShutdownReason>,
 }
 

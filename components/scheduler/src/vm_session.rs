@@ -117,6 +117,11 @@ impl VmSession {
     pub async fn handle_action(&mut self, action: NextAction) -> Option<VmSessionEvent> {
         match action {
             NextAction::WorkerMessage(Some(WorkerMessage::Shutdown(shutdown))) => {
+                if shutdown.guild_id != self.guild_id {
+                    // not relevant to our guild
+                    return None;
+                }
+
                 self.cancel_old_vm_session_pending_acks(shutdown.vm_session_id);
 
                 if self.current_vm_session_id == shutdown.vm_session_id {
@@ -734,7 +739,7 @@ impl VmSession {
             )
             .await
         {
-            error!(%err, "failed updating db contribs");
+            error!(%err, script_id = evt.script_id.0, "failed updating db contribs",);
         }
 
         if let Err(err) = self
@@ -754,7 +759,7 @@ impl VmSession {
             )
             .await
         {
-            error!(%err, "failed updating db contribs (settings)");
+            error!(%err, script_id = evt.script_id.0, "failed updating db contribs (settings)");
         }
     }
 }

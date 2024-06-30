@@ -380,6 +380,7 @@ impl Worker {
         self.write_message(WorkerMessage::Shutdown(VmSessionShutdownEvent {
             reason,
             vm_session_id: state.session_id,
+            guild_id: state.guild_id,
         }))
         .await
     }
