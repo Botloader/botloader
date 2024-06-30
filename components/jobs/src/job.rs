@@ -133,7 +133,6 @@ pub struct JobSlot {
     spawner: Box<dyn JobSpawner>,
     last_run: Option<chrono::DateTime<Utc>>,
 
-    last_started: Option<chrono::DateTime<Utc>>,
     last_completed: Option<chrono::DateTime<Utc>>,
     job: Option<Arc<dyn Job>>,
     last_result: Result<(), anyhow::Error>,
@@ -144,7 +143,6 @@ impl JobSlot {
         Self {
             spawner: spawner,
             last_run: None,
-            last_started: None,
             last_completed: None,
             job: None,
             last_result: Ok(()),
@@ -169,7 +167,7 @@ impl JobSlot {
         self.last_completed = Some(now);
 
         let elapsed = self
-            .last_started
+            .last_run
             .map(|v| now.signed_duration_since(v))
             .unwrap_or_default();
 
