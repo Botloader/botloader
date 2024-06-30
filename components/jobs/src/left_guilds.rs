@@ -86,7 +86,7 @@ impl LeftGuildJob {
                         body: _,
                         error: _,
                         status,
-                    } if status.get() == 403 => {
+                    } if status.get() == 403 || status.get() == 404 => {
                         info!("marking guild as left: {}", guild.id);
                         self.db.set_guild_left_status(guild.id, true).await?;
                     }
