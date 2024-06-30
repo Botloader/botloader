@@ -5,4 +5,5 @@ export type ButtonStyle =
   | "Secondary"
   | "Success"
   | "Danger"
-  | "Link";
+  | "Link"
+  | "Premium";
