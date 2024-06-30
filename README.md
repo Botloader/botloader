@@ -1,6 +1,6 @@
 # Botloader
 
-https://botloader.io
+https://botloader.io | https://discord.gg/GhUeYeekdu
 
 Botloader is a fully programmable discord bot where you can use plugins created by the author and community or create custom scripts for custom functionality.
 
