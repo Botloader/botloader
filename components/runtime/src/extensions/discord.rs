@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use chrono::TimeZone;
+use common::DiscordConfig;
 use deno_core::{
     error::{custom_error, get_custom_error_class},
     op2, OpState,
@@ -45,6 +46,7 @@ use std::{
     collections::VecDeque,
     fmt::{Display, Formatter},
     future::Future,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -167,6 +169,73 @@ impl DiscordOpsState {
     }
 }
 
+pub async fn discord_request_retry<T, Fut>(
+    state: &Rc<RefCell<OpState>>,
+    f: impl Fn(Arc<DiscordConfig>) -> Fut,
+) -> Result<T, AnyError>
+where
+    Fut: Future<Output = Result<T, AnyError>>,
+{
+    let rt_handle = {
+        let state = state.borrow();
+        let rt_ctx: &RuntimeContext = state.borrow();
+        rt_ctx.main_tokio_runtime.clone()
+    };
+
+    let _rt_guard = rt_handle.enter();
+
+    let mut retry_sleep = Duration::from_secs(1);
+    let max_sleep = Duration::from_secs(60);
+    let mut retry_count = 1;
+
+    let res = loop {
+        let discord_config = {
+            let state = state.borrow();
+            let rt_ctx: &RuntimeContext = state.borrow();
+            rt_ctx.discord_config.clone()
+        };
+
+        let fut = f(discord_config);
+
+        let retry_reason = match fut.await {
+            Ok(v) => break Ok(v),
+            Err(err) => match err.downcast::<twilight_http::Error>() {
+                Ok(discord_err) => match discord_err.kind() {
+                    ErrorType::RequestCanceled => "REQUEST_CANCELED",
+                    ErrorType::RequestError => "REQUEST_ERROR",
+
+                    // I've disabled this for now, from experience this could lead to requests being processed twice.
+                    // ErrorType::RequestTimedOut => "REQUEST_TIMEOUT",
+                    ErrorType::Response { status, .. } if status.get() == 429 => {
+                        if check_bad_request(state, status.get()).is_err() {
+                            break Err(anyhow::anyhow!(
+                                "Hit maximum number of bad requests within a time period"
+                            ));
+                        }
+
+                        "RATELIMIT_429"
+                    }
+                    ErrorType::ServiceUnavailable { .. } => "SERVICE_UNAVAILABLE",
+                    _ => break Err(handle_discord_error(state, discord_err)),
+                },
+                Err(err) => break Err(err),
+            },
+        };
+        tokio::time::sleep(retry_sleep).await;
+        retry_sleep = retry_sleep * 2;
+        if retry_sleep > max_sleep {
+            retry_sleep = max_sleep;
+        }
+        retry_count += 1;
+
+        warn!("Retrying request, reason: {retry_reason}, count: {retry_count}");
+    };
+
+    drop(_rt_guard);
+
+    res
+}
+
 pub async fn discord_request_any<T: Send + Sync + 'static>(
     state: &Rc<RefCell<OpState>>,
     f: impl Future<Output = Result<T, AnyError>> + Send + 'static,
@@ -221,6 +290,32 @@ pub async fn discord_request_with_extra_error<T: Send + Sync + 'static>(
         .map_err(|err| handle_discord_error(state, err))
 }
 
+fn check_bad_request(state: &Rc<RefCell<OpState>>, code: u16) -> Result<(), ()> {
+    if code == 401 || code == 403 || code == 429 {
+        let mut rc = state.borrow_mut();
+        let dstate = rc.borrow_mut::<DiscordOpsState>();
+        dstate.add_failed_req();
+        if dstate.should_suspend_guild() {
+            let handle = rc.borrow::<vm::vm::VmShutdownHandle>().clone();
+            let rt_ctx = rc.borrow::<RuntimeContext>().clone();
+            drop(rc);
+
+            warn!(
+                guild_id = rt_ctx.guild_id.get(),
+                "guild hit >30 invalid requests within 60s, suspending it"
+            );
+            handle.shutdown_vm(
+                vm::vm::ShutdownReason::DiscordInvalidRequestsRatelimit,
+                false,
+            );
+
+            return Err(());
+        }
+    }
+
+    Ok(())
+}
+
 pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Error) -> AnyError {
     let kind = err.kind();
     if let ErrorType::Response { status, .. } = kind {
@@ -228,25 +323,7 @@ pub fn handle_discord_error(state: &Rc<RefCell<OpState>>, err: twilight_http::Er
         //
         // this is needed because discord will ban our IP if we exceed 10_000 invalid req/10min as of writing
         let raw = status.get();
-        if raw == 401 || raw == 403 || raw == 429 {
-            let mut rc = state.borrow_mut();
-            let dstate = rc.borrow_mut::<DiscordOpsState>();
-            dstate.add_failed_req();
-            if dstate.should_suspend_guild() {
-                let handle = rc.borrow::<vm::vm::VmShutdownHandle>().clone();
-                let rt_ctx = rc.borrow::<RuntimeContext>().clone();
-                drop(rc);
-
-                warn!(
-                    guild_id = rt_ctx.guild_id.get(),
-                    "guild hit >30 invalid requests within 60s, suspending it"
-                );
-                handle.shutdown_vm(
-                    vm::vm::ShutdownReason::DiscordInvalidRequestsRatelimit,
-                    false,
-                );
-            }
-        }
+        let _ = check_bad_request(state, raw);
     }
 
     match kind {
@@ -420,25 +497,28 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
 
-        discord_request_with_extra_error(&self.state, async move {
-            let maybe_embeds = args
-                .fields
-                .embeds
-                .unwrap_or_default()
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>();
+        let maybe_embeds = args
+            .fields
+            .embeds
+            .unwrap_or_default()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
 
-            let components = args
-                .fields
-                .components
-                .unwrap_or_default()
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>();
+        let components = args
+            .fields
+            .components
+            .unwrap_or_default()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
 
-            let mut mc = rt_ctx
-                .discord_config
+        let mentions: Option<twilight_model::channel::message::AllowedMentions> =
+            args.fields.allowed_mentions.map(Into::into);
+
+        discord_request_retry(&self.state, |discord_config| async {
+            let conf = discord_config;
+            let mut mc = conf
                 .client
                 .create_message(channel.id)
                 .embeds(&maybe_embeds)?
@@ -448,7 +528,6 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 mc = mc.content(content)?
             }
 
-            let mentions = args.fields.allowed_mentions.map(Into::into);
             if mentions.is_some() {
                 mc = mc.allowed_mentions(mentions.as_ref());
             }
@@ -461,7 +540,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 mc = mc.attachments(&attachments)?;
             }
 
-            Ok(mc.await)
+            Ok(mc.await?)
         })
         .await?
         .model()
@@ -2637,12 +2716,9 @@ pub async fn op_discord_get_member_permissions(
     let member_roles = if let Some(roles) = roles {
         roles
     } else {
-        let cloned_discord = rt_ctx.discord_config.clone();
-        let member = discord_request(&state, async move {
-            cloned_discord
-                .client
-                .guild_member(rt_ctx.guild_id, user_id)
-                .await
+        let member = discord_request_retry(&state, |config| async {
+            let config = config;
+            Ok(config.client.guild_member(rt_ctx.guild_id, user_id).await?)
         })
         .await?
         .model()
