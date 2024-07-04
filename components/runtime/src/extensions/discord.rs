@@ -6,6 +6,7 @@ use deno_core::{
     op2, OpState,
 };
 use futures::TryFutureExt;
+use pin_project::pin_project;
 use runtime_models::{
     discord::{
         channel::{PermissionOverwrite, PermissionOverwriteType},
@@ -46,10 +47,13 @@ use std::{
     collections::VecDeque,
     fmt::{Display, Formatter},
     future::Future,
+    pin::Pin,
     sync::Arc,
+    task::{Context, Poll},
     time::{Duration, Instant},
 };
 use std::{cell::RefCell, rc::Rc};
+use tokio::runtime::Handle;
 use tracing::{info, warn};
 use twilight_http::error::ErrorType;
 use twilight_http::request::AuditLogReason;
@@ -169,7 +173,33 @@ impl DiscordOpsState {
     }
 }
 
-pub async fn discord_request_retry<T, Fut>(
+#[pin_project]
+pub struct WrappedFuture<Fut>
+where
+    Fut: Future,
+{
+    #[pin]
+    inner: Fut,
+    rt: Handle,
+}
+
+impl<Fut> Future for WrappedFuture<Fut>
+where
+    Fut: Future,
+{
+    type Output = Fut::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        let this = self.project();
+
+        let _guard = this.rt.enter();
+        let res = this.inner.poll(cx);
+        drop(_guard);
+        res
+    }
+}
+
+pub async fn discord_request_retry<T: Send, Fut>(
     state: &Rc<RefCell<OpState>>,
     f: impl Fn(Arc<DiscordConfig>) -> Fut,
 ) -> Result<T, AnyError>
@@ -182,8 +212,6 @@ where
         rt_ctx.main_tokio_runtime.clone()
     };
 
-    let _rt_guard = rt_handle.enter();
-
     let mut retry_sleep = Duration::from_secs(1);
     let max_sleep = Duration::from_secs(60);
     let mut retry_count = 1;
@@ -195,7 +223,13 @@ where
             rt_ctx.discord_config.clone()
         };
 
-        let fut = f(discord_config);
+        // We run the request on the main botloader tokio runtime, the vm runtime is disposed of on shutdown
+        // and any futures cancelled, which twilights ratelimit handling does not like
+        let inner_fut = f(discord_config);
+        let fut = WrappedFuture {
+            inner: inner_fut,
+            rt: rt_handle.clone(),
+        };
 
         let retry_reason = match fut.await {
             Ok(v) => break Ok(v),
@@ -230,8 +264,6 @@ where
 
         warn!("Retrying request, reason: {retry_reason}, count: {retry_count}");
     };
-
-    drop(_rt_guard);
 
     res
 }

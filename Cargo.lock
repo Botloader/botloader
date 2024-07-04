@@ -4170,6 +4170,7 @@ dependencies = [
  "guild-logger",
  "image",
  "lazy_static",
+ "pin-project",
  "reqwest 0.12.4",
  "runtime-models",
  "serde",
