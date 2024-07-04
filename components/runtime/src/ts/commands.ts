@@ -8,7 +8,9 @@ import {
     MessageFlags,
     AutocompleteInteraction,
     Attachment,
-    ThreadMetadata
+    InteractionChannel,
+    InteractionUser,
+    InteractionMentionable
 } from "./discord/index";
 import { User } from "./discord/user";
 import { Member } from "./discord/member";
@@ -209,7 +211,7 @@ export namespace Commands {
             return optionsOutput
         }
 
-        private resolveOption(map: Internal.CommandInteractionDataMap, opt: Internal.CommandInteractionOptionValue): unknown {
+        private resolveOption(map: Internal.InteractionDataMap, opt: Internal.CommandInteractionOptionValue): unknown {
             switch (opt.kind) {
                 case "user":
                     const user = map.users[opt.value];
@@ -355,36 +357,6 @@ export namespace Commands {
             })
         }
     }
-
-    export interface InteractionMember {
-        joinedAt: number;
-        nick: string | null;
-        premiumSince?: number;
-        roles: Array<string>;
-    }
-
-    export interface InteractionUser {
-        user: User,
-        member?: InteractionMember,
-    }
-
-    export type InteractionMentionable = {
-        kind: "Role",
-        value: Role
-    } | {
-        kind: "User",
-        value: InteractionUser
-    }
-
-    export interface InteractionChannel {
-        id: string;
-        kind: ChannelType;
-        name: string;
-        parentId?: string;
-        permissionsRaw: string;
-        threadMetadata?: ThreadMetadata;
-    }
-
 
     /**
      * Raw form of a command handled by botloader

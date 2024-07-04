@@ -2,6 +2,7 @@
 import type { ComponentType } from "../discord/ComponentType";
 import type { IMember } from "./Member";
 import type { IMessage } from "./IMessage";
+import type { InteractionDataMap } from "./InteractionDataMaps";
 
 export interface MessageComponentInteraction {
   channelId: string;
@@ -11,6 +12,7 @@ export interface MessageComponentInteraction {
   member: IMember;
   message: IMessage;
   token: string;
+  resolved: InteractionDataMap | null;
   customId: string;
   componentType: ComponentType;
   values: Array<string>;

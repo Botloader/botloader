@@ -134,6 +134,10 @@ pub enum MessageType {
     StageSpeaker,
     StageStart,
     StageTopic,
+    GuildIncidentAlertModeEnabled,
+    GuildIncidentAlertModeDisabled,
+    GuildIncidentReportRaid,
+    GuildIncidentReportRaidFalseAlarm,
 }
 
 impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
@@ -180,6 +184,17 @@ impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::StageSpeaker => Self::StageSpeaker,
             TwilightMessageType::StageStart => Self::StageStart,
             TwilightMessageType::StageTopic => Self::StageTopic,
+            TwilightMessageType::GuildIncidentAlertModeEnabled => {
+                Self::GuildIncidentAlertModeEnabled
+            }
+            TwilightMessageType::GuildIncidentAlertModeDisabled => {
+                Self::GuildIncidentAlertModeDisabled
+            }
+            TwilightMessageType::GuildIncidentReportRaid => Self::GuildIncidentReportRaid,
+            TwilightMessageType::GuildIncidentReportRaidFalseAlarm => {
+                Self::GuildIncidentReportRaidFalseAlarm
+            }
+            // TwilightMessageType::Unknown(_) => todo!(),
             _ => {
                 return Err(anyhow::anyhow!("unknown message type: {}", u8::from(v)));
             }

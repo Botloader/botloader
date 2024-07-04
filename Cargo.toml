@@ -37,9 +37,11 @@ oauth2 = "4.4.2"
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"
 
-twilight-model = { version = "0.15.4" }
-twilight-http = { version = "0.15.4" }
-twilight-gateway = { version = "0.15.4" }
-twilight-cache-inmemory = { version = "0.15.4" }
-twilight-util = { version = "0.15.4", features = ["permission-calculator"] }
-twilight-validate = { version = "0.15.3" }
+twilight-model = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
+twilight-http = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
+twilight-gateway = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
+twilight-cache-inmemory = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
+twilight-util = { version = "0.16.0-rc.1", features = [
+    "permission-calculator",
+], git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
+twilight-validate = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }

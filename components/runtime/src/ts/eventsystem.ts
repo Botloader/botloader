@@ -27,7 +27,11 @@ import {
     Thread,
     Role,
     EventRoleDelete,
-    EventWebhooksUpdate
+    EventWebhooksUpdate,
+    UserSelectMenuInteraction,
+    ChannelSelectMenuInteraction,
+    RoleSelectMenuInteraction,
+    MentionableSelectMenuInteraction
 } from './discord/index';
 import * as Internal from './generated/internal/index';
 
@@ -35,6 +39,11 @@ export namespace EventSystem {
 
     const buttonComponentListeners: { name: string, cb: (data: ComponentInteraction, extra: any) => any }[] = [];
     const selectMenuListeners: { name: string, cb: (data: SelectMenuInteraction, extra: any) => any }[] = [];
+    const userSelectMenuListeners: { name: string, cb: (data: UserSelectMenuInteraction, extra: any) => any }[] = [];
+    const channelSelectMenuListeners: { name: string, cb: (data: ChannelSelectMenuInteraction, extra: any) => any }[] = [];
+    const roleSelectMenuListeners: { name: string, cb: (data: RoleSelectMenuInteraction, extra: any) => any }[] = [];
+    const mentionableSelectMenuListeners: { name: string, cb: (data: MentionableSelectMenuInteraction, extra: any) => any }[] = [];
+
     const modalSubmitListeners: { name: string, cb: (data: ModalSubmitInteraction, extra: any) => any }[] = [];
 
     /**
@@ -192,11 +201,40 @@ export namespace EventSystem {
     export function onInteractionButton<T>(name: string, cb: (interaction: ComponentInteraction, extraData: T) => any) {
         buttonComponentListeners.push({ name: name, cb: cb })
     }
+
     /**
      * @internal
      */
     export function onInteractionSelectMenu<T>(name: string, cb: (interaction: SelectMenuInteraction, extraData: T) => any) {
         selectMenuListeners.push({ name: name, cb: cb })
+    }
+
+    /**
+     * @internal
+     */
+    export function onInteractionUserSelectMenu<T>(name: string, cb: (interaction: UserSelectMenuInteraction, extraData: T) => any) {
+        userSelectMenuListeners.push({ name: name, cb: cb })
+    }
+
+    /**
+     * @internal
+     */
+    export function onInteractionRoleSelectMenu<T>(name: string, cb: (interaction: RoleSelectMenuInteraction, extraData: T) => any) {
+        roleSelectMenuListeners.push({ name: name, cb: cb })
+    }
+
+    /**
+     * @internal
+     */
+    export function onInteractionChannelSelectMenu<T>(name: string, cb: (interaction: ChannelSelectMenuInteraction, extraData: T) => any) {
+        channelSelectMenuListeners.push({ name: name, cb: cb })
+    }
+
+    /**
+     * @internal
+     */
+    export function onInteractionMentionableSelectMenu<T>(name: string, cb: (interaction: MentionableSelectMenuInteraction, extraData: T) => any) {
+        mentionableSelectMenuListeners.push({ name: name, cb: cb })
     }
 
     /**
@@ -225,6 +263,38 @@ export namespace EventSystem {
             let listener = selectMenuListeners.find((elem) => elem.name === name);
             if (listener) {
                 let convInteraction = new SelectMenuInteraction(interaction);
+                handleInteractionCallback(convInteraction, async () => {
+                    await listener!.cb(convInteraction, extras);
+                })
+            }
+        } else if (interaction.componentType === "MentionableSelectMenu") {
+            let listener = mentionableSelectMenuListeners.find((elem) => elem.name === name);
+            if (listener) {
+                let convInteraction = new MentionableSelectMenuInteraction(interaction);
+                handleInteractionCallback(convInteraction, async () => {
+                    await listener!.cb(convInteraction, extras);
+                })
+            }
+        } else if (interaction.componentType === "UserSelectMenu") {
+            let listener = userSelectMenuListeners.find((elem) => elem.name === name);
+            if (listener) {
+                let convInteraction = new UserSelectMenuInteraction(interaction);
+                handleInteractionCallback(convInteraction, async () => {
+                    await listener!.cb(convInteraction, extras);
+                })
+            }
+        } else if (interaction.componentType === "ChannelSelectMenu") {
+            let listener = channelSelectMenuListeners.find((elem) => elem.name === name);
+            if (listener) {
+                let convInteraction = new ChannelSelectMenuInteraction(interaction);
+                handleInteractionCallback(convInteraction, async () => {
+                    await listener!.cb(convInteraction, extras);
+                })
+            }
+        } else if (interaction.componentType === "RoleSelectMenu") {
+            let listener = roleSelectMenuListeners.find((elem) => elem.name === name);
+            if (listener) {
+                let convInteraction = new RoleSelectMenuInteraction(interaction);
                 handleInteractionCallback(convInteraction, async () => {
                     await listener!.cb(convInteraction, extras);
                 })
@@ -258,7 +328,7 @@ export namespace EventSystem {
                     flags: { ephemeral: true },
                 })
             } else {
-                await interaction.sendFollowup({ content: "An error occured handling the interaction: " + e, flags: { ephemeral: true } })
+                await interaction.createFollowup({ content: "An error occured handling the interaction: " + e, flags: { ephemeral: true } })
             }
         } finally {
             // send no response message if needed

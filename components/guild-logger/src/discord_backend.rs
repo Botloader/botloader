@@ -34,14 +34,12 @@ impl crate::GuildLoggerBackend for DiscordLogger {
         };
 
         if let Some(channel_id) = conf.error_channel_id {
-            if let Ok(next) = self
-                .discord_config
+            self.discord_config
                 .client
                 .create_message(channel_id)
                 .content(&message)
-            {
-                next.await.ok();
-            }
+                .await
+                .ok();
         }
     }
 }

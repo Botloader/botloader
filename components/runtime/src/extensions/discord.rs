@@ -467,7 +467,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 .discord_config
                 .client
                 .channel_messages(channel.id)
-                .limit(limit as u16)?;
+                .limit(limit as u16);
 
             if let Some(before) = before_id {
                 Ok(req.before(before).await)
@@ -510,8 +510,8 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             .components
             .unwrap_or_default()
             .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>();
+            .map(TryInto::try_into)
+            .collect::<Result<Vec<_>, _>>()?;
 
         let mentions: Option<twilight_model::channel::message::AllowedMentions> =
             args.fields.allowed_mentions.map(Into::into);
@@ -521,11 +521,11 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             let mut mc = conf
                 .client
                 .create_message(channel.id)
-                .embeds(&maybe_embeds)?
-                .components(&components)?;
+                .embeds(&maybe_embeds)
+                .components(&components);
 
             if let Some(content) = &args.fields.content {
-                mc = mc.content(content)?
+                mc = mc.content(content)
             }
 
             if mentions.is_some() {
@@ -537,7 +537,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if attachments.len() > 0 {
-                mc = mc.attachments(&attachments)?;
+                mc = mc.attachments(&attachments);
             }
 
             Ok(mc.await?)
@@ -567,17 +567,23 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             let components = args
                 .fields
                 .components
-                .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+                .map(|inner| {
+                    inner
+                        .into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<Vec<_>, _>>()
+                })
+                .transpose()?;
 
             let mut mc = rt_ctx
                 .discord_config
                 .client
                 .update_message(channel.id, message_id.cast())
-                .content(args.fields.content.as_deref())?
-                .components(components.as_deref())?;
+                .content(args.fields.content.as_deref())
+                .components(components.as_deref());
 
             if let Some(embeds) = &maybe_embeds {
-                mc = mc.embeds(Some(embeds))?;
+                mc = mc.embeds(Some(embeds));
             }
 
             let mentions = args.fields.allowed_mentions.map(Into::into);
@@ -586,7 +592,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if !attachments.is_empty() {
-                mc = mc.attachments(&attachments)?;
+                mc = mc.attachments(&attachments);
             }
 
             Ok(mc.await)
@@ -650,7 +656,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             Ok(rt_ctx
                 .discord_config
                 .client
-                .delete_messages(channel.id, &message_ids)?
+                .delete_messages(channel.id, &message_ids)
                 .await)
         })
         .await?;
@@ -671,7 +677,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             let mut req = rt_ctx
                 .discord_config
                 .client
-                .create_thread_from_message(channel.id, message_id, &arg.name)?;
+                .create_thread_from_message(channel.id, message_id, &arg.name);
 
             if let Some(auto_archive) = arg.auto_archive_duration_minutes {
                 req = req.auto_archive_duration(
@@ -695,11 +701,11 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
 
         Ok(discord_request_with_extra_error(&self.state, async move {
-            let mut req = rt_ctx.discord_config.client.create_thread(
-                channel.id,
-                &arg.name,
-                arg.kind.into(),
-            )?;
+            let mut req =
+                rt_ctx
+                    .discord_config
+                    .client
+                    .create_thread(channel.id, &arg.name, arg.kind.into());
 
             if let Some(auto_archive) = arg.auto_archive_duration_minutes {
                 req = req.auto_archive_duration(
@@ -764,7 +770,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 .collect::<Vec<_>>();
 
             if !embeds.is_empty() {
-                req = req.embeds(&embeds)?;
+                req = req.embeds(&embeds);
             }
 
             let components = arg
@@ -772,15 +778,15 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 .components
                 .unwrap_or_default()
                 .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>();
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?;
 
             if !components.is_empty() {
-                req = req.components(&components)?;
+                req = req.components(&components);
             }
 
             if let Some(content) = &arg.message.content {
-                req = req.content(content)?;
+                req = req.content(content);
             }
 
             let mentions = arg.message.allowed_mentions.map(Into::into);
@@ -852,7 +858,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         Ok(discord_request_with_extra_error(&self.state, async move {
             let mut req = rt_ctx.discord_config.client.thread_members(channel.id);
             if let Some(limit) = args.limit {
-                req = req.limit(limit)?;
+                req = req.limit(limit);
             }
             if let Some(after) = args.after_user_id {
                 req = req.after(parse_discord_id(&after)?);
@@ -993,11 +999,11 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if let Some(name) = &arg.name {
-                req = req.name(name)?;
+                req = req.name(name);
             }
 
             if let Some(rate_limit_per_user) = &arg.rate_limit_per_user {
-                req = req.rate_limit_per_user(*rate_limit_per_user)?;
+                req = req.rate_limit_per_user(*rate_limit_per_user);
             }
 
             Ok(req.await)
@@ -1312,7 +1318,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             let mut req = rt_ctx
                 .discord_config
                 .client
-                .create_webhook(channel.id, &arg.name)?;
+                .create_webhook(channel.id, &arg.name);
 
             if let Some(icon) = &arg.icon {
                 req = req.avatar(icon)
@@ -1355,7 +1361,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if let Some(name) = &arg.name {
-                req = req.name(&name)?
+                req = req.name(&name)
             }
 
             if let Some(channel_id) = &arg.channel_id {
@@ -1392,7 +1398,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if let Some(name) = &arg.name {
-                req = req.name(&name)?
+                req = req.name(&name)
             }
 
             Ok(req.await?)
@@ -1466,18 +1472,18 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 .components
                 .unwrap_or_default()
                 .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>();
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?;
 
             let mut mc = rt_ctx
                 .discord_config
                 .client
                 .execute_webhook(parsed_id, &arg.token)
-                .embeds(&maybe_embeds)?
-                .components(&components)?;
+                .embeds(&maybe_embeds)
+                .components(&components);
 
             if let Some(content) = &arg.fields.content {
-                mc = mc.content(content)?
+                mc = mc.content(content)
             }
 
             let mentions = arg.fields.allowed_mentions.map(Into::into);
@@ -1486,7 +1492,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if attachments.len() > 0 {
-                mc = mc.attachments(&attachments)?;
+                mc = mc.attachments(&attachments);
             }
 
             Ok(mc.wait().await?.model().await?)
@@ -1563,17 +1569,23 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             let components = arg
                 .fields
                 .components
-                .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+                .map(|inner| {
+                    inner
+                        .into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<Vec<_>, _>>()
+                })
+                .transpose()?;
 
             let mut mc = rt_ctx
                 .discord_config
                 .client
                 .update_webhook_message(parsed_id, &arg.token, parsed_message_id)
-                .embeds(maybe_embeds.as_deref())?
-                .components(components.as_deref())?;
+                .embeds(maybe_embeds.as_deref())
+                .components(components.as_deref());
 
             if let Some(content) = &arg.fields.content {
-                mc = mc.content(Some(content))?
+                mc = mc.content(Some(content))
             }
 
             let mentions = arg.fields.allowed_mentions.map(Into::into);
@@ -1582,7 +1594,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if attachments.len() > 0 {
-                mc = mc.attachments(&attachments)?;
+                mc = mc.attachments(&attachments);
             }
 
             Ok(mc.await?.model().await?)
@@ -1758,7 +1770,13 @@ pub async fn op_discord_interaction_edit_original_response(
     let components = args
         .fields
         .components
-        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+        .map(|inner| {
+            inner
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
 
     let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
 
@@ -1767,11 +1785,11 @@ pub async fn op_discord_interaction_edit_original_response(
 
         let mut mc = interaction_client
             .update_response(&args.interaction_token)
-            .content(args.fields.content.as_deref())?
-            .embeds(maybe_embeds.as_deref())?
-            .components(components.as_deref())?
-            .content(args.fields.content.as_deref())?
-            .attachments(&attachments)?;
+            .content(args.fields.content.as_deref())
+            .embeds(maybe_embeds.as_deref())
+            .components(components.as_deref())
+            .content(args.fields.content.as_deref())
+            .attachments(&attachments);
 
         let mentions = args.fields.allowed_mentions.map(Into::into);
         if mentions.is_some() {
@@ -1842,8 +1860,8 @@ pub async fn op_discord_interaction_followup_message(
         .components
         .unwrap_or_default()
         .into_iter()
-        .map(Into::into)
-        .collect::<Vec<_>>();
+        .map(TryInto::try_into)
+        .collect::<Result<Vec<_>, _>>()?;
 
     let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
 
@@ -1852,16 +1870,16 @@ pub async fn op_discord_interaction_followup_message(
 
         let mut mc = interaction_client
             .create_followup(&args.interaction_token)
-            .embeds(&maybe_embeds)?
-            .components(&components)?
-            .attachments(&attachments)?;
+            .embeds(&maybe_embeds)
+            .components(&components)
+            .attachments(&attachments);
 
         if let Some(flags) = args.flags {
             mc = mc.flags(flags.into());
         }
 
         if let Some(content) = &args.fields.content {
-            mc = mc.content(content)?
+            mc = mc.content(content)
         }
 
         let mentions = args.fields.allowed_mentions.map(Into::into);
@@ -1894,7 +1912,13 @@ pub async fn op_discord_interaction_edit_followup_message(
     let components = args
         .fields
         .components
-        .map(|inner| inner.into_iter().map(Into::into).collect::<Vec<_>>());
+        .map(|inner| {
+            inner
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
 
     let attachments = convert_attachments(args.fields.attachments.unwrap_or_default())?;
 
@@ -1903,11 +1927,11 @@ pub async fn op_discord_interaction_edit_followup_message(
 
         let mut mc = interaction_client
             .update_followup(&args.interaction_token, message_id)
-            .content(args.fields.content.as_deref())?
-            .embeds(maybe_embeds.as_deref())?
-            .components(components.as_deref())?
-            .content(args.fields.content.as_deref())?
-            .attachments(&attachments)?;
+            .content(args.fields.content.as_deref())
+            .embeds(maybe_embeds.as_deref())
+            .components(components.as_deref())
+            .content(args.fields.content.as_deref())
+            .attachments(&attachments);
 
         let mentions = args.fields.allowed_mentions.map(Into::into);
         if mentions.is_some() {
@@ -2061,7 +2085,7 @@ pub async fn op_discord_get_reactions(
             req = req.after(parse_str_snowflake_id(after_str)?.cast())
         }
         if let Some(limit) = fields.limit {
-            req = req.limit(limit as u16)?;
+            req = req.limit(limit as u16);
         }
 
         Ok(req.await)
@@ -2178,7 +2202,7 @@ pub async fn op_discord_create_channel(
         let edit = rt_ctx
             .discord_config
             .client
-            .create_guild_channel(rt_ctx.guild_id, &params.name)?;
+            .create_guild_channel(rt_ctx.guild_id, &params.name);
 
         Ok(params.apply(&mut overwrites, edit)?.await)
     })
@@ -2305,10 +2329,10 @@ pub async fn op_discord_create_channel_invite(
         let mut req = rt_ctx.discord_config.client.create_invite(channel.id);
 
         if let Some(max_age) = fields.max_age {
-            req = req.max_age(max_age)?;
+            req = req.max_age(max_age);
         }
         if let Some(max_uses) = fields.max_uses {
-            req = req.max_uses(max_uses)?;
+            req = req.max_uses(max_uses);
         }
         if let Some(temporary) = fields.temporary {
             req = req.temporary(temporary);
@@ -2565,7 +2589,7 @@ pub async fn op_discord_update_member(
         }
 
         if let Some(maybe_nick) = &fields.nick {
-            builder = builder.nick(maybe_nick.as_deref())?
+            builder = builder.nick(maybe_nick.as_deref())
         }
 
         if let Some(roles) = &fields.roles {
@@ -2576,7 +2600,7 @@ pub async fn op_discord_update_member(
             builder = builder.communication_disabled_until(
                 ts.map(|v| twilight_model::util::Timestamp::from_micros(v.0 as i64 * 1000))
                     .transpose()?,
-            )?;
+            );
         }
 
         Ok(builder.await)
@@ -2603,11 +2627,11 @@ pub async fn op_discord_create_ban(
             .create_ban(rt_ctx.guild_id, user_id);
 
         if let Some(days) = extras.delete_message_days {
-            req = req.delete_message_seconds(days * 24 * 60 * 60)?;
+            req = req.delete_message_seconds(days * 24 * 60 * 60);
         }
 
         if let Some(reason) = &extras.audit_log_reason {
-            req = req.reason(reason)?;
+            req = req.reason(reason);
         }
 
         Ok(req.await)
@@ -2668,7 +2692,7 @@ pub async fn op_discord_delete_ban(
             .delete_ban(rt_ctx.guild_id, user_id);
 
         if let Some(reason) = &extras.audit_log_reason {
-            req = req.reason(reason)?;
+            req = req.reason(reason);
         }
 
         Ok(req.await)
@@ -2694,7 +2718,7 @@ pub async fn op_discord_remove_member(
             .remove_guild_member(rt_ctx.guild_id, user_id);
 
         if let Some(reason) = &extras.audit_log_reason {
-            req = req.reason(reason)?;
+            req = req.reason(reason);
         }
 
         Ok(req.await)

@@ -8,7 +8,7 @@ import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";
 import { Tasks } from "./scheduled_tasks";
-import { ComponentInteraction, SelectMenuInteraction, ModalSubmitInteraction } from "./discord/index";
+import { ComponentInteraction, SelectMenuInteraction, ModalSubmitInteraction, UserSelectMenu, RoleSelectMenuInteraction, UserSelectMenuInteraction, ChannelSelectMenuInteraction, MentionableSelectMenuInteraction } from "./discord/index";
 import { SettingsManager } from "./settings";
 
 /**
@@ -249,16 +249,54 @@ export class Script {
         })
     }
 
+    /**
+     * Register a handler for button interactions
+     */
     onInteractionButton<T>(name: string, cb: (interaction: ComponentInteraction, extraData: T) => any) {
         EventSystem.onInteractionButton(name, cb);
     }
+
+    /**
+     * Register a handler for text select menu interactions
+     */
     onInteractionSelectMenu<T>(name: string, cb: (interaction: SelectMenuInteraction, extraData: T) => any) {
         EventSystem.onInteractionSelectMenu(name, cb);
     }
+
+    /**
+     * Register a handler for user select menu interactions
+     */
+    onInteractionUserSelectMenu<T>(name: string, cb: (interaction: UserSelectMenuInteraction, extraData: T) => any) {
+        EventSystem.onInteractionUserSelectMenu(name, cb);
+    }
+
+    /**
+     * Register a handler for role select menu interactions
+     */
+    onInteractionRoleSelectMenu<T>(name: string, cb: (interaction: RoleSelectMenuInteraction, extraData: T) => any) {
+        EventSystem.onInteractionRoleSelectMenu(name, cb);
+    }
+
+    /**
+     * Register a handler for channel select menu interactions
+     */
+    onInteractionChannelSelectMenu<T>(name: string, cb: (interaction: ChannelSelectMenuInteraction, extraData: T) => any) {
+        EventSystem.onInteractionChannelSelectMenu(name, cb);
+    }
+
+    /**
+     * Register a handler for mentionable select menu interactions
+     */
+    onInteractionMentionableSelectMenu<T>(name: string, cb: (interaction: MentionableSelectMenuInteraction, extraData: T) => any) {
+        EventSystem.onInteractionMentionableSelectMenu(name, cb);
+    }
+
+    /**
+     * Register a handler for when people submit modals
+     */
     onInteractionModalSubmit<T>(name: string, cb: (interaction: ModalSubmitInteraction, customData: T) => any) {
         EventSystem.onInteractionModalSubmit(name, cb);
     }
-    // onInteractionModalSubmit<T>(name: string, cb: (ctx: InteractionContext, submittedValues: SubmittedComponentValue[], data: T) => any) { }
 
     /**
      * Creates or resumes a interval timer.

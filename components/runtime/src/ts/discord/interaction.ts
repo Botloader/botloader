@@ -1,9 +1,23 @@
-import { ComponentType, IComponent } from '../generated/discord/index';
+import { ChannelType, ComponentType, IComponent, Role, ThreadMetadata } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
-import { CreateMessageFields, InteractionMessageFlags, InteractionCreateMessageFields, createInteractionFollowupMessage, getInteractionFollowupMessage, deleteInteractionOriginalResponse, editInteractionOriginalResponse, getInteractionOriginalResponse, editInteractionFollowupMessage, deleteInteractionFollowupMessage, toOpMessageFields } from './dapi';
+import {
+    CreateMessageFields,
+    InteractionMessageFlags,
+    InteractionCreateMessageFields,
+    createInteractionFollowupMessage,
+    getInteractionFollowupMessage,
+    deleteInteractionOriginalResponse,
+    editInteractionOriginalResponse,
+    getInteractionOriginalResponse,
+    editInteractionFollowupMessage,
+    deleteInteractionFollowupMessage,
+    toOpMessageFields
+} from './dapi';
 import { OpWrappers } from '../op_wrappers';
 import { Member } from './member';
 import { Message } from './message';
+import { GuildChannel } from './channel';
+import { User } from './user';
 
 /**
  * Base interaction class, this class should be considered UNSTABLE and may change a lot in the future.
@@ -357,6 +371,135 @@ export class SelectMenuInteraction extends ComponentInteraction {
         super(interaction);
 
         this.values = interaction.values;
+    }
+}
+
+export interface InteractionChannel {
+    id: string;
+    kind: ChannelType;
+    name: string;
+    parentId?: string;
+    permissionsRaw: string;
+    threadMetadata?: ThreadMetadata;
+}
+
+export class ChannelSelectMenuInteraction extends ComponentInteraction {
+    values: InteractionChannel[] = [];
+
+    constructor(interaction: Internal.MessageComponentInteraction) {
+        super(interaction);
+
+        if (!interaction.resolved) {
+            throw new Error("No resolved data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of interaction.values) {
+            const channel = interaction.resolved.channels[id]
+            if (!channel) {
+                throw new Error("Failed to resolve channel: " + id)
+            }
+            this.values.push(channel)
+        }
+    }
+}
+
+export class RoleSelectMenuInteraction extends ComponentInteraction {
+    values: Role[] = [];
+
+    constructor(interaction: Internal.MessageComponentInteraction) {
+        super(interaction);
+
+        if (!interaction.resolved) {
+            throw new Error("No roles resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const role of interaction.values) {
+            this.values.push(interaction.resolved.roles[role])
+            if (!this.values[this.values.length - 1]) {
+                throw new Error("Failed to resolve role: " + role)
+            }
+        }
+    }
+}
+
+export interface InteractionMember {
+    joinedAt: number;
+    nick: string | null;
+    premiumSince?: number;
+    roles: Array<string>;
+}
+
+export interface InteractionUser {
+    user: User,
+    member?: InteractionMember,
+}
+
+export type InteractionMentionable = {
+    kind: "Role",
+    value: Role
+} | {
+    kind: "User",
+    value: InteractionUser
+}
+
+export class UserSelectMenuInteraction extends ComponentInteraction {
+    values: InteractionUser[] = [];
+
+    constructor(interaction: Internal.MessageComponentInteraction) {
+        super(interaction);
+
+        if (!interaction.resolved) {
+            throw new Error("No roles resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of interaction.values) {
+            const user = interaction.resolved.users[id]
+            if (!user) {
+                throw new Error("Failed to resolve user: " + id)
+            }
+
+            this.values.push({
+                user: new User(user),
+                member: interaction.resolved.members[id],
+            })
+        }
+    }
+}
+
+export class MentionableSelectMenuInteraction extends ComponentInteraction {
+    values: InteractionMentionable[] = [];
+
+    constructor(interaction: Internal.MessageComponentInteraction) {
+        super(interaction);
+
+        if (!interaction.resolved) {
+            throw new Error("No roles resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of interaction.values) {
+            const role = interaction.resolved.roles[id]
+            if (role) {
+                this.values.push({
+                    kind: "Role",
+                    value: role
+                })
+
+                return
+            }
+
+            const user = interaction.resolved.users[id]
+            if (!user) {
+                throw new Error("Failed to resolve mentionable: " + id)
+            }
+
+            this.values.push({
+                kind: "User",
+                value: {
+                    user: new User(user),
+                    member: interaction.resolved.members[id],
+                }
+            })
+        }
     }
 }
 

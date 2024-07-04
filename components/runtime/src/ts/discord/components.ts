@@ -3,8 +3,10 @@ import type { TextInputStyle } from '../generated/discord/TextInputStyle';
 import type { ComponentType } from '../generated/discord/ComponentType';
 import type { ISelectMenuOption } from '../generated/discord/ISelectMenuOption';
 import { ReactionType } from '../generated/discord/ReactionType';
-import { IActionRow, IButton, ISelectMenu, ITextInput, SendEmoji } from './index';
+import { ChannelType, IActionRow, IButton, ISelectMenu, ITextInput, SendEmoji } from './index';
 import { encodeInteractionCustomId } from './interaction';
+import { type SelectMenuType } from '../generated/discord/SelectMenuType';
+import { SelectDefaultValue } from '../generated/discord/SelectDefaultValue';
 
 export type AnyComponent = ActionRow | Button | SelectMenu | ShortTextInput | ParagraphTextInput;
 
@@ -87,21 +89,22 @@ export class CustomButton extends Button implements IButton {
     }
 }
 
-export class SelectMenu extends BaseComponent implements ISelectMenu {
+export abstract class BaseSelectMenu extends BaseComponent implements ISelectMenu {
     kind: "SelectMenu" = "SelectMenu";
 
     customId: string;
     disabled: boolean;
     minValues?: number | undefined;
     maxValues?: number | undefined;
-    options: ISelectMenuOption[];
+    options: ISelectMenuOption[] = [];
     placeholder?: string | undefined;
+    selectType: SelectMenuType;
 
-    constructor(name: string, options: SelectMenuOption[], data?: any) {
+    constructor(kind: SelectMenuType, name: string, data?: any) {
         super("SelectMenu");
 
         this.customId = encodeInteractionCustomId(name, data ?? null)
-        this.options = options;
+        this.selectType = kind;
         this.disabled = false;
     }
 
@@ -125,6 +128,91 @@ export class SelectMenu extends BaseComponent implements ISelectMenu {
         return this;
     }
 }
+
+
+export class SelectMenu extends BaseSelectMenu {
+    constructor(name: string, options: SelectMenuOption[], data?: any) {
+        super("Text", name, data);
+        this.options = options;
+    }
+}
+
+export class RoleSelectMenu extends BaseSelectMenu {
+    defaultValues?: SelectDefaultValue[];
+
+    constructor(name: string, data?: any) {
+        super("Role", name, data);
+    }
+
+    setDefaultValues(values: string[]) {
+        this.defaultValues = values.map(v => ({ kind: "Role", value: v }))
+        return this
+    }
+}
+
+export class UserSelectMenu extends BaseSelectMenu {
+    defaultValues?: SelectDefaultValue[];
+
+    constructor(name: string, data?: any) {
+        super("User", name, data);
+    }
+
+    setDefaultValues(values: string[]) {
+        this.defaultValues = values.map(v => ({ kind: "User", value: v }))
+        return this
+    }
+}
+
+export class ChannelSelectMenu extends BaseSelectMenu {
+    defaultValues?: SelectDefaultValue[];
+    channelTypes?: ChannelType[];
+
+    constructor(name: string, data?: any) {
+        super("Channel", name, data);
+    }
+
+    setDefaultValues(values: string[]) {
+        this.defaultValues = values.map(v => ({ kind: "Channel", value: v }))
+        return this
+    }
+
+    setChannelTypes(types: ChannelType[]) {
+        this.channelTypes = types
+        return this
+    }
+
+}
+
+export type MentionableSelectDefaultOption = {
+    kind: "User" | "Role",
+    value: string,
+}
+
+export class MentionableSelectMenu extends BaseSelectMenu {
+    defaultValues?: MentionableSelectDefaultOption[];
+
+    constructor(name: string, data?: any) {
+        super("Mentionable", name, data);
+    }
+
+    /**
+     * @example
+     * ```ts
+     * new MentionableSelectMenu("hello").setDefaultValues([{
+     *   kind: "User",
+     *   value: "123123213"
+     * },{
+     *   kind: "Role",
+     *   value: "123213132"
+     * }])
+     * ```
+     */
+    setDefaultValues(values: MentionableSelectDefaultOption[]) {
+        this.defaultValues = values
+        return this
+    }
+}
+
 
 export class SelectMenuOption implements ISelectMenuOption {
     default: boolean;

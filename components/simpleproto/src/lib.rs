@@ -12,6 +12,10 @@ pub async fn read_message<T: DeserializeOwned>(
     let mut payload_buf = vec![0; len as usize];
     src.read_exact(&mut payload_buf).await?;
 
+    // Uncomment the below to debug the output
+    // let s = String::from_utf8_lossy(&payload_buf);
+    // dbg!(s);
+
     let decoded = serde_json::from_slice(&payload_buf)?;
     Ok(decoded)
 }

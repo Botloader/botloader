@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use twilight_model::id::Id;
 
+use super::channel::ChannelType;
 use super::message::ReactionType;
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
@@ -10,6 +12,10 @@ pub enum ComponentType {
     Button,
     SelectMenu,
     TextInput,
+    UserSelectMenu,
+    RoleSelectMenu,
+    MentionableSelectMenu,
+    ChannelSelectMenu,
 }
 
 use twilight_model::channel::message::component::ComponentType as TwilightComponentType;
@@ -18,7 +24,11 @@ impl From<TwilightComponentType> for ComponentType {
         match v {
             TwilightComponentType::ActionRow => Self::ActionRow,
             TwilightComponentType::Button => Self::Button,
-            TwilightComponentType::SelectMenu => Self::SelectMenu,
+            TwilightComponentType::TextSelectMenu => Self::SelectMenu,
+            TwilightComponentType::UserSelectMenu => Self::UserSelectMenu,
+            TwilightComponentType::RoleSelectMenu => Self::RoleSelectMenu,
+            TwilightComponentType::MentionableSelectMenu => Self::MentionableSelectMenu,
+            TwilightComponentType::ChannelSelectMenu => Self::ChannelSelectMenu,
             TwilightComponentType::TextInput => Self::TextInput,
             _ => todo!(),
         }
@@ -38,6 +48,11 @@ pub enum Component {
     Button(Button),
     SelectMenu(SelectMenu),
     TextInput(TextInput),
+    UserSelectMenu(SelectMenu),
+    RoleSelectMenu(SelectMenu),
+    MentionableSelectMenu(SelectMenu),
+    ChannelSelectMenu(SelectMenu),
+
     Unknown(UnknownComponent),
 }
 
@@ -47,21 +62,34 @@ impl From<TwilightComponent> for Component {
         match v {
             TwilightComponent::ActionRow(inner) => Self::ActionRow(inner.into()),
             TwilightComponent::Button(inner) => Self::Button(inner.into()),
-            TwilightComponent::SelectMenu(inner) => Self::SelectMenu(inner.into()),
+            TwilightComponent::SelectMenu(inner) => match inner.kind {
+                TwilightSelectMenuType::Text => Self::SelectMenu(inner.into()),
+                TwilightSelectMenuType::User => Self::UserSelectMenu(inner.into()),
+                TwilightSelectMenuType::Role => Self::RoleSelectMenu(inner.into()),
+                TwilightSelectMenuType::Mentionable => Self::MentionableSelectMenu(inner.into()),
+                TwilightSelectMenuType::Channel => Self::ChannelSelectMenu(inner.into()),
+                _ => todo!(),
+            },
             TwilightComponent::TextInput(inner) => Self::TextInput(inner.into()),
             TwilightComponent::Unknown(t) => Self::Unknown(UnknownComponent { component_kind: t }),
         }
     }
 }
-impl From<Component> for TwilightComponent {
-    fn from(v: Component) -> Self {
-        match v {
-            Component::ActionRow(inner) => Self::ActionRow(inner.into()),
+impl TryFrom<Component> for TwilightComponent {
+    type Error = anyhow::Error;
+
+    fn try_from(v: Component) -> Result<Self, Self::Error> {
+        Ok(match v {
+            Component::ActionRow(inner) => Self::ActionRow(inner.try_into()?),
             Component::Button(inner) => Self::Button(inner.into()),
-            Component::SelectMenu(inner) => Self::SelectMenu(inner.into()),
+            Component::SelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
             Component::TextInput(inner) => Self::TextInput(inner.into()),
             Component::Unknown(c) => Self::Unknown(c.component_kind),
-        }
+            Component::UserSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
+            Component::RoleSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
+            Component::MentionableSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
+            Component::ChannelSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
+        })
     }
 }
 
@@ -95,11 +123,17 @@ impl From<TwilightActionRow> for ActionRow {
         }
     }
 }
-impl From<ActionRow> for TwilightActionRow {
-    fn from(v: ActionRow) -> Self {
-        Self {
-            components: v.components.into_iter().map(Into::into).collect(),
-        }
+impl TryFrom<ActionRow> for TwilightActionRow {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ActionRow) -> Result<Self, Self::Error> {
+        Ok(Self {
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 
@@ -158,16 +192,31 @@ impl From<Button> for TwilightButton {
 pub struct SelectMenu {
     pub custom_id: String,
     pub disabled: bool,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min_values: Option<u8>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_values: Option<u8>,
+
     pub options: Vec<SelectMenuOption>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,
+
+    pub select_type: SelectMenuType,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub channel_types: Option<Vec<ChannelType>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_values: Option<Vec<SelectDefaultValue>>,
 }
 
+use twilight_model::channel::message::component::SelectDefaultValue as TwilightSelectDefaultValue;
 use twilight_model::channel::message::component::SelectMenu as TwilightSelectMenu;
+use twilight_model::channel::message::component::SelectMenuType as TwilightSelectMenuType;
+
 impl From<TwilightSelectMenu> for SelectMenu {
     fn from(v: TwilightSelectMenu) -> Self {
         Self {
@@ -175,20 +224,127 @@ impl From<TwilightSelectMenu> for SelectMenu {
             disabled: v.disabled,
             min_values: v.min_values,
             max_values: v.max_values,
-            options: v.options.into_iter().map(Into::into).collect(),
+            options: v
+                .options
+                .map(|v| v.into_iter().map(Into::into).collect())
+                .unwrap_or_default(),
             placeholder: v.placeholder,
+            channel_types: v
+                .channel_types
+                .map(|v| v.into_iter().map(Into::into).collect()),
+            default_values: v
+                .default_values
+                .map(|v| v.into_iter().map(Into::into).collect()),
+            select_type: v.kind.into(),
         }
     }
 }
-impl From<SelectMenu> for TwilightSelectMenu {
-    fn from(v: SelectMenu) -> Self {
-        Self {
+impl TryFrom<SelectMenu> for TwilightSelectMenu {
+    type Error = anyhow::Error;
+
+    fn try_from(v: SelectMenu) -> Result<Self, Self::Error> {
+        Ok(Self {
             custom_id: v.custom_id,
             disabled: v.disabled,
             min_values: v.min_values,
             max_values: v.max_values,
-            options: v.options.into_iter().map(Into::into).collect(),
+            options: if !v.options.is_empty() {
+                Some(v.options.into_iter().map(Into::into).collect())
+            } else {
+                None
+            },
             placeholder: v.placeholder,
+            channel_types: v
+                .channel_types
+                .map(|v| v.into_iter().map(Into::into).collect()),
+            default_values: v
+                .default_values
+                .map(|v| {
+                    v.into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<_, _>>()
+                })
+                .transpose()?,
+            kind: v.select_type.into(),
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "SelectDefaultValue",
+    export_to = "bindings/discord/SelectDefaultValue.ts"
+)]
+#[serde(tag = "kind", content = "value")]
+pub enum SelectDefaultValue {
+    User(String),
+    Role(String),
+    Channel(String),
+}
+
+impl From<TwilightSelectDefaultValue> for SelectDefaultValue {
+    fn from(value: TwilightSelectDefaultValue) -> Self {
+        match value {
+            TwilightSelectDefaultValue::User(id) => Self::User(id.to_string()),
+            TwilightSelectDefaultValue::Role(id) => Self::Role(id.to_string()),
+            TwilightSelectDefaultValue::Channel(id) => Self::Channel(id.to_string()),
+        }
+    }
+}
+
+impl TryFrom<SelectDefaultValue> for TwilightSelectDefaultValue {
+    type Error = anyhow::Error;
+    fn try_from(value: SelectDefaultValue) -> Result<Self, Self::Error> {
+        match value {
+            SelectDefaultValue::User(id) => Ok(Self::User(
+                Id::new_checked(id.parse()?).ok_or_else(|| anyhow::anyhow!("Bad snowflake"))?,
+            )),
+            SelectDefaultValue::Role(id) => Ok(Self::Role(
+                Id::new_checked(id.parse()?).ok_or_else(|| anyhow::anyhow!("Bad snowflake"))?,
+            )),
+            SelectDefaultValue::Channel(id) => Ok(Self::Channel(
+                Id::new_checked(id.parse()?).ok_or_else(|| anyhow::anyhow!("Bad snowflake"))?,
+            )),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "SelectMenuType",
+    export_to = "bindings/discord/SelectMenuType.ts"
+)]
+pub enum SelectMenuType {
+    Text,
+    User,
+    Role,
+    Mentionable,
+    Channel,
+}
+
+impl From<TwilightSelectMenuType> for SelectMenuType {
+    fn from(value: TwilightSelectMenuType) -> Self {
+        match value {
+            TwilightSelectMenuType::Text => SelectMenuType::Text,
+            TwilightSelectMenuType::User => SelectMenuType::User,
+            TwilightSelectMenuType::Role => SelectMenuType::Role,
+            TwilightSelectMenuType::Mentionable => SelectMenuType::Mentionable,
+            TwilightSelectMenuType::Channel => SelectMenuType::Channel,
+            _ => todo!(),
+        }
+    }
+}
+
+impl From<SelectMenuType> for TwilightSelectMenuType {
+    fn from(value: SelectMenuType) -> Self {
+        match value {
+            SelectMenuType::Text => Self::Text,
+            SelectMenuType::User => Self::User,
+            SelectMenuType::Role => Self::Role,
+            SelectMenuType::Mentionable => Self::Mentionable,
+            SelectMenuType::Channel => Self::Channel,
         }
     }
 }

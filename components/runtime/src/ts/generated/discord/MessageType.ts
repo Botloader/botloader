@@ -31,4 +31,8 @@ export type MessageType =
   | "StageEnd"
   | "StageSpeaker"
   | "StageStart"
-  | "StageTopic";
+  | "StageTopic"
+  | "GuildIncidentAlertModeEnabled"
+  | "GuildIncidentAlertModeDisabled"
+  | "GuildIncidentReportRaid"
+  | "GuildIncidentReportRaidFalseAlarm";

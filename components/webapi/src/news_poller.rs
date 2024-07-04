@@ -78,7 +78,6 @@ impl NewsPoller {
                 .client
                 .channel_messages(*channel)
                 .limit(100)
-                .unwrap()
                 .await?
                 .models()
                 .await?;

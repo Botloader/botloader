@@ -9,7 +9,6 @@ use crate::{
     },
     util::NotBigU64,
 };
-use twilight_model::application::interaction::application_command;
 
 use super::{
     messages::{convert_attachments, OpCreateMessageFields},
@@ -31,8 +30,10 @@ pub struct InteractionPartialChannel {
     pub thread_metadata: Option<ThreadMetadata>,
 }
 
-impl From<application_command::InteractionChannel> for InteractionPartialChannel {
-    fn from(v: application_command::InteractionChannel) -> Self {
+impl From<twilight_model::application::interaction::InteractionChannel>
+    for InteractionPartialChannel
+{
+    fn from(v: twilight_model::application::interaction::InteractionChannel) -> Self {
         Self {
             id: v.id.to_string(),
             kind: v.kind.into(),
@@ -57,10 +58,17 @@ pub struct InteractionPartialMember {
     pub roles: Vec<String>,
 }
 
-impl From<application_command::InteractionMember> for InteractionPartialMember {
-    fn from(v: application_command::InteractionMember) -> Self {
+impl From<twilight_model::application::interaction::InteractionMember>
+    for InteractionPartialMember
+{
+    fn from(v: twilight_model::application::interaction::InteractionMember) -> Self {
         Self {
-            joined_at: NotBigU64(v.joined_at.as_micros() as u64 / 1000),
+            joined_at: NotBigU64(
+                v.joined_at
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros() as u64
+                    / 1000,
+            ),
             nick: v.nick,
             premium_since: v
                 .premium_since
@@ -122,7 +130,7 @@ impl TryFrom<InteractionResponse> for twilight_model::http::interaction::Interac
             },
             InteractionResponse::Modal(src) => Self {
                 kind: TwilightInteractionResponseType::Modal,
-                data: Some(src.into()),
+                data: Some(src.try_into()?),
             },
             InteractionResponse::Autocomplete(data) => Self {
                 kind: TwilightInteractionResponseType::ApplicationCommandAutocompleteResult,
@@ -141,7 +149,9 @@ pub struct InteractionCallbackData {
     pub flags: Option<MessageFlags>,
 }
 
-use twilight_model::http::interaction::InteractionResponseData as TwilightCallbackData;
+use twilight_model::{
+    http::interaction::InteractionResponseData as TwilightCallbackData, util::Timestamp,
+};
 impl TryFrom<InteractionCallbackData> for TwilightCallbackData {
     type Error = anyhow::Error;
 
@@ -151,7 +161,12 @@ impl TryFrom<InteractionCallbackData> for TwilightCallbackData {
             components: v
                 .fields
                 .components
-                .map(|v| v.into_iter().map(Into::into).collect()),
+                .map(|v| {
+                    v.into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<_, _>>()
+                })
+                .transpose()?,
             content: v.fields.content,
             embeds: v
                 .fields
@@ -181,14 +196,21 @@ pub struct ModalCallbackData {
     components: Vec<Component>,
 }
 
-impl From<ModalCallbackData> for TwilightCallbackData {
-    fn from(v: ModalCallbackData) -> Self {
-        Self {
+impl TryFrom<ModalCallbackData> for TwilightCallbackData {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ModalCallbackData) -> Result<Self, Self::Error> {
+        Ok(Self {
             title: Some(v.title),
             custom_id: Some(v.custom_id),
-            components: Some(v.components.into_iter().map(Into::into).collect()),
+            components: Some(
+                v.components
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+            ),
             ..Default::default()
-        }
+        })
     }
 }
 

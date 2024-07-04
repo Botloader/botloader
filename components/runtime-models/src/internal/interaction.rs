@@ -97,6 +97,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                 custom_id: data.custom_id,
                 component_type: data.component_type.into(),
                 values: data.values,
+                resolved: data.resolved.map(|rv| rv.try_into()).transpose()?,
             })),
             Some(twilight_model::application::interaction::InteractionData::ModalSubmit(data)) => {
                 Ok(Self::ModalSubmit(ModalInteraction {
@@ -143,6 +144,7 @@ pub struct MessageComponentInteraction {
     pub member: Member,
     pub message: Message,
     pub token: String,
+    pub resolved: Option<InteractionDataMap>,
 
     pub custom_id: String,
     pub component_type: ComponentType,
@@ -153,8 +155,9 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 use twilight_model::application::interaction::application_command::{
-    CommandDataOption, CommandInteractionDataResolved, CommandOptionValue,
+    CommandDataOption, CommandOptionValue,
 };
+use twilight_model::application::interaction::InteractionDataResolved;
 
 use crate::{
     discord::role::Role,
@@ -182,7 +185,7 @@ pub struct CommandInteraction {
     pub parent_parent_name: Option<String>,
 
     pub options: Vec<CommandInteractionOption>,
-    pub data_map: CommandInteractionDataMap,
+    pub data_map: InteractionDataMap,
 
     pub kind: CommandType,
     pub target_id: Option<String>,
@@ -192,9 +195,9 @@ pub struct CommandInteraction {
 
 #[derive(Clone, Debug, Serialize, TS, Default)]
 #[ts(export)]
-#[ts(export_to = "bindings/internal/CommandInteractionDataMaps.ts")]
+#[ts(export_to = "bindings/internal/InteractionDataMaps.ts")]
 #[serde(rename_all = "camelCase")]
-pub struct CommandInteractionDataMap {
+pub struct InteractionDataMap {
     pub channels: HashMap<String, InteractionPartialChannel>,
     pub members: HashMap<String, InteractionPartialMember>,
     pub messages: HashMap<String, Message>,
@@ -203,10 +206,10 @@ pub struct CommandInteractionDataMap {
     pub attachments: HashMap<String, Attachment>,
 }
 
-impl TryFrom<CommandInteractionDataResolved> for CommandInteractionDataMap {
+impl TryFrom<InteractionDataResolved> for InteractionDataMap {
     type Error = anyhow::Error;
 
-    fn try_from(v: CommandInteractionDataResolved) -> Result<Self, Self::Error> {
+    fn try_from(v: InteractionDataResolved) -> Result<Self, Self::Error> {
         Ok(Self {
             channels: v
                 .channels

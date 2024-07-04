@@ -1,6 +1,7 @@
 use crate::util::NotBigU64;
 use serde::Serialize;
 use ts_rs::TS;
+use twilight_model::util::Timestamp;
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
@@ -20,14 +21,20 @@ impl From<twilight_model::guild::PartialMember> for PartialMember {
     fn from(v: twilight_model::guild::PartialMember) -> Self {
         Self {
             deaf: v.deaf,
-            joined_at: NotBigU64(v.joined_at.as_micros() as u64 / 1000),
+            joined_at: NotBigU64(
+                v.joined_at
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros() as u64
+                    / 1000,
+            ),
             mute: v.mute,
             nick: v.nick,
             premium_since: v
                 .premium_since
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
             roles: v.roles.iter().map(ToString::to_string).collect(),
-            communication_disabled_until: v.communication_disabled_until
+            communication_disabled_until: v
+                .communication_disabled_until
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
         }
     }

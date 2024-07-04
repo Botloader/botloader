@@ -1,9 +1,12 @@
 use crate::{internal::user::User, util::NotBigU64};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use twilight_model::id::{
-    marker::{ChannelMarker, RoleMarker},
-    Id,
+use twilight_model::{
+    id::{
+        marker::{ChannelMarker, RoleMarker},
+        Id,
+    },
+    util::Timestamp,
 };
 
 #[derive(Clone, Debug, Deserialize, TS)]
@@ -65,7 +68,12 @@ impl From<twilight_model::guild::Member> for Member {
     fn from(v: twilight_model::guild::Member) -> Self {
         Self {
             deaf: v.deaf,
-            joined_at: NotBigU64(v.joined_at.as_micros() as u64 / 1000),
+            joined_at: NotBigU64(
+                v.joined_at
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros() as u64
+                    / 1000,
+            ),
             mute: v.mute,
             nick: v.nick,
             pending: v.pending,
@@ -86,7 +94,13 @@ impl Member {
         Self {
             user,
             deaf: member.deaf().unwrap_or_default(),
-            joined_at: NotBigU64(member.joined_at().as_micros() as u64 / 1000),
+            joined_at: NotBigU64(
+                member
+                    .joined_at()
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros() as u64
+                    / 1000,
+            ),
             mute: member.mute().unwrap_or_default(),
             nick: member.nick().map(ToString::to_string),
             premium_since: member
@@ -102,7 +116,13 @@ impl Member {
 
     pub fn from_partial(partial: twilight_model::guild::PartialMember) -> Self {
         Self {
-            joined_at: NotBigU64(partial.joined_at.as_micros() as u64 / 1000),
+            joined_at: NotBigU64(
+                partial
+                    .joined_at
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros() as u64
+                    / 1000,
+            ),
             nick: partial.nick,
             premium_since: partial
                 .premium_since
@@ -126,7 +146,12 @@ impl From<twilight_model::gateway::payload::incoming::MemberUpdate> for Member {
     fn from(v: twilight_model::gateway::payload::incoming::MemberUpdate) -> Self {
         Self {
             deaf: v.deaf.unwrap_or_default(),
-            joined_at: NotBigU64(v.joined_at.as_micros() as u64 / 1000),
+            joined_at: NotBigU64(
+                v.joined_at
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros() as u64
+                    / 1000,
+            ),
             mute: v.mute.unwrap_or_default(),
             nick: v.nick,
             pending: v.pending,

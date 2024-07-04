@@ -5,7 +5,6 @@ use std::{
 };
 
 use dbrokerapi::broker_scheduler_rpc::{self, BrokerEvent, DiscordEventData, HelloData};
-use futures_util::StreamExt;
 
 use stores::Db;
 use tokio::{
@@ -14,12 +13,7 @@ use tokio::{
 };
 use tracing::{error, info, instrument, warn};
 use twilight_cache_inmemory::InMemoryCache;
-use twilight_gateway::{
-    stream::{self, ShardEventStream},
-    Config, Event, Intents, MessageSender, Shard,
-};
-use twilight_http::Client;
-// use twilight_gateway::{cluster::Events, Cluster, stream, Event, Intents};
+use twilight_gateway::{Event, EventTypeFlags, Intents, Shard, ShardId, StreamExt};
 use twilight_model::{
     gateway::{event::DispatchEvent, payload::outgoing::RequestGuildMembers},
     guild::Member,
@@ -45,14 +39,15 @@ pub async fn run_broker(
         | Intents::GUILD_VOICE_STATES
         | Intents::GUILD_MESSAGES
         | Intents::GUILD_MESSAGE_REACTIONS;
-    let config = Config::new(token.clone(), intents);
+    // let config = Config::new(token.clone(), intents);
 
     // let (cluster, events) = Cluster::new(token, intents).await?;
 
-    let client = Client::new(token.clone());
-    let shards = stream::create_recommended(&client, config, |_, builder| builder.build())
-        .await?
-        .collect::<Vec<_>>();
+    // let client = Client::new(token.clone());
+    // let shards = stream::create_recommended(&client, config, |_, builder| builder.build())
+    //     .await?
+    //     .collect::<Vec<_>>();
+    let shard = Shard::new(ShardId::new(0, 1), token.clone(), intents);
 
     let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
@@ -64,12 +59,13 @@ pub async fn run_broker(
         connected_scheduler: None,
         queued_events: Vec::new(),
         scheduler_disconnected_at: Instant::now(),
-        gateway_message_senders: shards.iter().map(|v| v.sender()).collect(),
+        // gateway_message_senders: shards.iter().map(|v| v.sender()).collect(),
         nonce_counter: 0,
         pending_guild_member_requests: Default::default(),
+        shard,
     };
 
-    tokio::spawn(async move { discord_manager.run(shards).await });
+    tokio::spawn(async move { discord_manager.run().await });
 
     Ok(cmd_tx)
 }
@@ -85,7 +81,8 @@ struct Broker {
     scheduler_disconnected_at: Instant,
     db: Db,
     ready: Arc<AtomicBool>,
-    gateway_message_senders: Vec<MessageSender>,
+    // gateway_message_senders: Vec<MessageSender>,
+    shard: Shard,
 
     nonce_counter: u64,
 
@@ -94,20 +91,23 @@ struct Broker {
 }
 
 impl Broker {
-    pub async fn run(&mut self, mut shards: Vec<Shard>) {
-        let mut stream = ShardEventStream::new(shards.iter_mut());
+    // pub async fn run(&mut self, mut shards: Vec<Shard>) {
+    pub async fn run(&mut self) {
+        // let mut stream = ShardEventStream::new(shards.iter_mut());
 
         loop {
             tokio::select! {
-                evt = stream.next() => match evt {
-                    Some((_shard_id, evt)) => match evt{
-                        Ok(evt) => self.handle_event(evt).await,
+                evt = self.shard.next_event(EventTypeFlags::all()) => match evt {
+                    Some(evt) => match evt{
+                        Ok(evt) => {
+                            self.handle_event(evt).await;
+                        },
                         Err(err) => {
-                            error!(?err, "failed handling event");
-                            if err.is_fatal(){
-                                error!(?err, "fatal error occurred");
-                                break;
-                            }
+                            error!(?err, "failed receiving gateway message");
+                            // if err.is_fatal(){
+                            //     error!(?err, "fatal error occurred");
+                            //     break;
+                            // }
                         }
                     },
                     None => todo!(),
@@ -152,20 +152,25 @@ impl Broker {
                 }
             }
             Event::GuildCreate(gc) => {
-                let _ = self
-                    .db
-                    .add_update_joined_guild(stores::config::JoinedGuild {
-                        id: gc.id,
-                        name: gc.name.clone(),
-                        icon: gc
-                            .icon
-                            .as_ref()
-                            .map(ToString::to_string)
-                            .unwrap_or_default(),
-                        owner_id: gc.owner_id,
-                        left_at: None,
-                    })
-                    .await;
+                match &**gc {
+                    twilight_model::gateway::payload::incoming::GuildCreate::Available(gc) => {
+                        let _ = self
+                            .db
+                            .add_update_joined_guild(stores::config::JoinedGuild {
+                                id: gc.id,
+                                name: gc.name.clone(),
+                                icon: gc
+                                    .icon
+                                    .as_ref()
+                                    .map(ToString::to_string)
+                                    .unwrap_or_default(),
+                                owner_id: gc.owner_id,
+                                left_at: None,
+                            })
+                            .await;
+                    }
+                    twilight_model::gateway::payload::incoming::GuildCreate::Unavailable(_) => {}
+                }
 
                 metrics::gauge!("bl.broker.connected_guilds_total").increment(1.0);
             }
@@ -241,24 +246,22 @@ impl Broker {
     }
 
     async fn handle_request_guild_members(&mut self, req: GuildMembersRequest) {
-        let destination_shard =
-            (req.guild_id.get() >> 22) % self.gateway_message_senders.len() as u64;
+        // let destination_shard =
+        //     (req.guild_id.get() >> 22) % self.gateway_message_senders.len() as u64;
 
         let nonce = self.next_nonce();
 
-        let sender = self
-            .gateway_message_senders
-            .get(destination_shard as usize)
-            .unwrap();
+        // let sender = self
+        //     .gateway_message_senders
+        //     .get(destination_shard as usize)
+        //     .unwrap();
 
-        sender
-            .command(
-                &RequestGuildMembers::builder(req.guild_id)
-                    .nonce(nonce.to_string())
-                    .user_ids(req.user_ids)
-                    .unwrap(),
-            )
-            .unwrap();
+        self.shard.command(
+            &RequestGuildMembers::builder(req.guild_id)
+                .nonce(nonce.to_string())
+                .user_ids(req.user_ids)
+                .unwrap(),
+        );
 
         self.pending_guild_member_requests.insert(
             nonce.to_string(),
@@ -299,7 +302,7 @@ impl Broker {
 
         let (guild_id, data) = match evt {
             DispatchEvent::GuildDelete(g) => (g.id, DiscordEventData::GuildDelete(g)),
-            DispatchEvent::GuildCreate(gc) => (gc.id, DiscordEventData::GuildCreate(gc)),
+            DispatchEvent::GuildCreate(gc) => (gc.id(), DiscordEventData::GuildCreate(gc)),
 
             DispatchEvent::MemberAdd(m) => (m.guild_id, DiscordEventData::MemberAdd(m)),
             DispatchEvent::MemberRemove(m) => (m.guild_id, DiscordEventData::MemberRemove(m)),

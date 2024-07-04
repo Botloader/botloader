@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use twilight_http::request::guild::update_guild_channel_positions::Position;
+use twilight_model::http::channel_position::Position;
 use twilight_model::id::{marker::ChannelMarker, Id};
 use twilight_validate::channel::ChannelValidationError;
 
@@ -438,11 +438,11 @@ impl EditChannel {
         'b: 'c,
     {
         if let Some(bitrate) = &self.bitrate {
-            req = req.bitrate(*bitrate)?;
+            req = req.bitrate(*bitrate);
         }
 
         if let Some(name) = &self.name {
-            req = req.name(name)?;
+            req = req.name(name);
         }
 
         if let Some(nsfw) = &self.nsfw {
@@ -464,7 +464,7 @@ impl EditChannel {
                 permission_overwrites
                     .clone()
                     .into_iter()
-                    .filter_map(|v| v.try_into().ok()),
+                    .filter_map(|v| TryInto::<twilight_model::channel::permission_overwrite::PermissionOverwrite>::try_into(v).ok()),
             );
 
             req = req.permission_overwrites(perms_buf);
@@ -475,15 +475,15 @@ impl EditChannel {
         }
 
         if let Some(rate_limit_per_user) = &self.rate_limit_per_user {
-            req = req.rate_limit_per_user(*rate_limit_per_user)?;
+            req = req.rate_limit_per_user(*rate_limit_per_user);
         }
 
         if let Some(topic) = &self.topic {
-            req = req.topic(topic)?;
+            req = req.topic(topic);
         }
 
         if let Some(user_limit) = &self.user_limit {
-            req = req.user_limit(*user_limit)?;
+            req = req.user_limit(*user_limit);
         }
 
         if let Some(video_quality_mode) = &self.video_quality_mode {
@@ -584,7 +584,7 @@ impl CreateChannel {
         'b: 'c,
     {
         if let Some(bitrate) = &self.bitrate {
-            req = req.bitrate(*bitrate)?;
+            req = req.bitrate(*bitrate);
         }
 
         if let Some(nsfw) = &self.nsfw {
@@ -606,7 +606,7 @@ impl CreateChannel {
                 permission_overwrites
                     .clone()
                     .into_iter()
-                    .filter_map(|v| v.try_into().ok()),
+                    .filter_map(|v| TryInto::<twilight_model::channel::permission_overwrite::PermissionOverwrite>::try_into(v).ok()),
             );
 
             req = req.permission_overwrites(perms_buf);
@@ -617,11 +617,11 @@ impl CreateChannel {
         }
 
         if let Some(rate_limit_per_user) = &self.rate_limit_per_user {
-            req = req.rate_limit_per_user(*rate_limit_per_user)?;
+            req = req.rate_limit_per_user(*rate_limit_per_user);
         }
 
         if let Some(topic) = &self.topic {
-            req = req.topic(topic)?;
+            req = req.topic(topic);
         }
 
         if let Some(user_limit) = &self.user_limit {

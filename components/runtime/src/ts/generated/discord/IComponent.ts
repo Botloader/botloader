@@ -10,4 +10,8 @@ export type IComponent =
   | { "kind": "Button" } & IButton
   | { "kind": "SelectMenu" } & ISelectMenu
   | { "kind": "TextInput" } & ITextInput
+  | { "kind": "UserSelectMenu" } & ISelectMenu
+  | { "kind": "RoleSelectMenu" } & ISelectMenu
+  | { "kind": "MentionableSelectMenu" } & ISelectMenu
+  | { "kind": "ChannelSelectMenu" } & ISelectMenu
   | { "kind": "Unknown" } & IUnknownComponent;
