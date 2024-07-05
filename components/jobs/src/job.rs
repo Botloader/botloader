@@ -157,9 +157,9 @@ impl JobSlot {
         self.spawner.name()
     }
 
-    pub fn running_status(&self) -> Option<String> {
-        self.job.as_ref().map(|v| v.status().to_string())
-    }
+    // pub fn running_status(&self) -> Option<String> {
+    //     self.job.as_ref().map(|v| v.status().to_string())
+    // }
 
     pub fn complete(&mut self, result: Result<(), anyhow::Error>) {
         self.job = None;
@@ -212,7 +212,7 @@ impl JobSlot {
     }
 }
 
-pub enum JobStatus {
-    Inactive,
-    Running(String),
-}
+// pub enum JobStatus {
+//     Inactive,
+//     Running(String),
+// }

@@ -10,7 +10,7 @@ use common::{
     plugin::{Plugin, PluginImageKind},
     DiscordConfig,
 };
-use image::{codecs::webp::WebPEncoder, io::Limits, GenericImageView, ImageError};
+use image::{codecs::webp::WebPEncoder, GenericImageView, ImageError, Limits};
 use serde::{Deserialize, Serialize};
 use stores::config::{
     ConfigStoreError, CreateImage, CreatePlugin, CreateUpdatePluginImage, UpdatePluginMeta,
@@ -522,7 +522,7 @@ pub async fn add_plugin_image(
     // Transcode image to webp
     // TODO: skip if the image is already webp
     let buf = Cursor::new(&data);
-    let mut reader = image::io::Reader::new(buf);
+    let mut reader = image::ImageReader::new(buf);
     let mut limits = Limits::default();
     limits.max_image_width = Some(1920);
     limits.max_image_height = Some(1080);

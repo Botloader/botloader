@@ -24,7 +24,7 @@ deno_core::extension!(
 #[serde]
 fn op_bl_image_properties(#[arraybuffer] input: &[u8]) -> Result<ImageProperties, AnyError> {
     let buf = Cursor::new(&input);
-    let reader = image::io::Reader::new(buf).with_guessed_format()?;
+    let reader = image::ImageReader::new(buf).with_guessed_format()?;
 
     let Some(format) = reader.format() else {
         // Don't think this is reachable as the above will return an error if it fails
@@ -103,8 +103,8 @@ fn op_bl_image_transcode(
     Ok(new_image_data)
 }
 
-fn limits() -> image::io::Limits {
-    let mut limits = image::io::Limits::default();
+fn limits() -> image::Limits {
+    let mut limits = image::Limits::default();
     limits.max_image_width = Some(5000);
     limits.max_image_height = Some(5000);
     limits.max_alloc = Some(MAX_IMAGE_BYTES);
@@ -123,7 +123,7 @@ fn transcode_image(
     resize: Option<Dimensions>,
 ) -> Result<Vec<u8>, AnyError> {
     let buf = Cursor::new(&input);
-    let mut reader = image::io::Reader::new(buf).with_guessed_format()?;
+    let mut reader = image::ImageReader::new(buf).with_guessed_format()?;
     reader.limits(limits());
     let mut loaded = reader.decode()?;
 
