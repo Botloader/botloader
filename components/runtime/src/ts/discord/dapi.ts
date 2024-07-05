@@ -206,7 +206,10 @@ export function toOpMessageFields(fields: CreateMessageFields): Internal.OpCreat
     }
 
     const attachments: Internal.OpCreateMessageFields["attachments"] = (fields.attachments ?? []).map(a => ({
-        dataB64: typeof a.data === "string" ? base64Encode(encodeText(a.data)) : base64Encode(a.data),
+        dataB64: typeof a.data === "string"
+            ? base64Encode(encodeText(a.data))
+            : base64Encode(new Uint8Array(a.data)),
+
         description: a.description ?? null,
         filename: a.filename,
         id: a.id ?? nextAutoId(),

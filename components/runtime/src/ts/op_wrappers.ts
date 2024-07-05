@@ -158,11 +158,11 @@ export namespace OpWrappers {
         return await op_easyops_async(call)
     }
 
-    export function forgivingBase64Encode(data: ArrayBuffer): string {
+    export function forgivingBase64Encode(data: Uint8Array): string {
         return op_base64_encode(data);
     }
 
-    export function forgivingBase64Decode(data: string): ArrayBuffer {
+    export function forgivingBase64Decode(data: string): Uint8Array {
         return op_base64_decode(data);
     }
 

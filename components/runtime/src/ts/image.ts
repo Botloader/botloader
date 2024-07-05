@@ -89,7 +89,7 @@ export class Image {
     }
 
     dataUri(): string {
-        const imageDataEncoded = base64Encode(this.data)
+        const imageDataEncoded = base64Encode(new Uint8Array(this.data))
         const mimeType = formatMimeType(this.properties.formatName)
 
         return "data:" + mimeType + ";base64," + imageDataEncoded
