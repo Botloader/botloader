@@ -19,12 +19,14 @@
 - [Settings](./settings.md)
     - [List Option](./settings_list.md)
     - [Schema Changes](./settings_changes.md)
+- [Interactions](./interactions.md)
+    - [Message components](./interactions_components.md)
+    - [Modals](./interactions_modals.md)
+    - [Handling interactions](./interactions_handling.md)
+    - [Component State](./interactions_state.md)
 - [Commands TODO](./commands.md)
     - [Slash commands](./slash_commands.md)
     - [User & Message commands](./message_user_commands.md)
-- [Interactions TODO](./interactions.md)
-    - [Message components](./message_components.md)
-    - [Handling interactions](./handling_interactions.md)
 
 # Advanced
 - [Script lifecycle](./script_lifecycle.md)
