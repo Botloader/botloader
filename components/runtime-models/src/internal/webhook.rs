@@ -140,6 +140,8 @@ pub struct OpEditWebhookWithToken {
 pub struct OpExecuteWebhook {
     pub webhook_id: String,
     pub token: String,
+    pub avatar_url: Option<String>,
+    pub username: Option<String>,
 
     pub fields: OpCreateMessageFields,
 }

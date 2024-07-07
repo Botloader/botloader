@@ -1527,6 +1527,14 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 mc = mc.attachments(&attachments);
             }
 
+            if let Some(avatar_url) = &arg.avatar_url {
+                mc = mc.avatar_url(avatar_url)
+            }
+
+            if let Some(username) = &arg.username {
+                mc = mc.username(username)
+            }
+
             Ok(mc.wait().await?.model().await?)
         })
         .await?;

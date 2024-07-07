@@ -4,5 +4,7 @@ import type { OpCreateMessageFields } from "./CreateMessageFields";
 export interface OpExecuteWebhook {
   webhook_id: string;
   token: string;
+  avatar_url: string | null;
+  username: string | null;
   fields: OpCreateMessageFields;
 }

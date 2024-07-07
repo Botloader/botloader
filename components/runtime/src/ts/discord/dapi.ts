@@ -133,6 +133,18 @@ export interface CreateMessageFields extends BaseCreateMessageFields {
     replyToMessageId?: string;
 }
 
+export interface CreateWebhookMessageFields extends CreateMessageFields {
+    /**
+     * Override the default username of the webhook
+     */
+    username?: string,
+
+    /**
+     * Override the default avatar of the webhook
+     */
+    avatar_url?: string,
+}
+
 export interface InteractionCreateMessageFields extends BaseCreateMessageFields {
     flags?: InteractionMessageFlags,
 }
@@ -1269,12 +1281,14 @@ export async function deleteWebhook(id: string, token?: string) {
     })
 }
 
-export async function executeWebhook(id: string, token: string, fields: CreateMessageFields) {
+export async function executeWebhook(id: string, token: string, fields: CreateWebhookMessageFields) {
     const message = await OpWrappers.callAsyncOp({
         kind: "discord_webhook_execute",
         arg: {
             webhook_id: id,
             token: token,
+            avatar_url: fields.avatar_url ?? null,
+            username: fields.username ?? null,
             fields: toOpMessageFields(fields),
         }
     })
