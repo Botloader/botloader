@@ -245,7 +245,11 @@ impl TryFrom<twilight_model::channel::Message> for Message {
             author: v.author.into(),
             channel_id: v.channel_id.to_string(),
             content: v.content,
-            components: v.components.into_iter().map(Into::into).collect(),
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
             edited_timestamp: v
                 .edited_timestamp
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
@@ -255,7 +259,11 @@ impl TryFrom<twilight_model::channel::Message> for Message {
             id: v.id.to_string(),
             kind: v.kind.try_into()?,
             member: v.member.map(From::from),
-            mention_channels: v.mention_channels.into_iter().map(From::from).collect(),
+            mention_channels: v
+                .mention_channels
+                .into_iter()
+                .map(TryFrom::try_from)
+                .collect::<Result<_, _>>()?,
             mention_everyone: v.mention_everyone,
             mention_roles: v.mention_roles.iter().map(ToString::to_string).collect(),
             mentions: v.mentions.into_iter().map(From::from).collect(),

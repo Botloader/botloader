@@ -52,7 +52,7 @@ impl TryFrom<twilight_model::guild::invite::Invite> for Invite {
         Ok(Self {
             approximate_member_count: value.approximate_member_count.map(Into::into),
             approximate_presence_count: value.approximate_presence_count.map(Into::into),
-            channel: value.channel.map(Into::into),
+            channel: value.channel.map(TryInto::try_into).transpose()?,
             code: value.code,
             created_at: value
                 .created_at

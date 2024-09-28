@@ -214,8 +214,8 @@ impl TryFrom<InteractionDataResolved> for InteractionDataMap {
             channels: v
                 .channels
                 .into_iter()
-                .map(|(k, v)| (k.to_string(), v.into()))
-                .collect(),
+                .map(|(k, v)| Ok((k.to_string(), v.try_into()?)))
+                .collect::<Result<_, anyhow::Error>>()?,
             members: v
                 .members
                 .into_iter()

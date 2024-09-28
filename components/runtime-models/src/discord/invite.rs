@@ -19,13 +19,17 @@ pub struct InviteChannel {
     pub kind: ChannelType,
 }
 
-impl From<twilight_model::guild::invite::InviteChannel> for InviteChannel {
-    fn from(value: twilight_model::guild::invite::InviteChannel) -> Self {
-        Self {
+impl TryFrom<twilight_model::guild::invite::InviteChannel> for InviteChannel {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        value: twilight_model::guild::invite::InviteChannel,
+    ) -> Result<Self, anyhow::Error> {
+        Ok(Self {
             id: value.id.to_string(),
             name: value.name,
-            kind: value.kind.into(),
-        }
+            kind: value.kind.try_into()?,
+        })
     }
 }
 

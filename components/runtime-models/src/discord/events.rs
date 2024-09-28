@@ -103,14 +103,18 @@ pub struct EventThreadDelete {
     pub parent_id: String,
 }
 
-impl From<twilight_model::gateway::payload::incoming::ThreadDelete> for EventThreadDelete {
-    fn from(td: twilight_model::gateway::payload::incoming::ThreadDelete) -> Self {
-        Self {
+impl TryFrom<twilight_model::gateway::payload::incoming::ThreadDelete> for EventThreadDelete {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        td: twilight_model::gateway::payload::incoming::ThreadDelete,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: td.id.to_string(),
             guild_id: td.guild_id.to_string(),
-            kind: Into::into(td.kind),
+            kind: TryInto::try_into(td.kind)?,
             parent_id: td.parent_id.to_string(),
-        }
+        })
     }
 }
 

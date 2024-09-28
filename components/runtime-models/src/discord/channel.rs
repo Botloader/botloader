@@ -72,28 +72,33 @@ pub enum ChannelType {
     PrivateThread,
     GuildDirectory,
     Forum,
-    Unknown(u8),
+    Media,
 }
 
-impl From<twilight_model::channel::ChannelType> for ChannelType {
-    fn from(v: twilight_model::channel::ChannelType) -> Self {
+impl TryFrom<twilight_model::channel::ChannelType> for ChannelType {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::ChannelType) -> Result<ChannelType, anyhow::Error> {
         match v {
-            twilight_model::channel::ChannelType::GuildText => Self::Text,
-            twilight_model::channel::ChannelType::GuildVoice => Self::Voice,
-            twilight_model::channel::ChannelType::GuildCategory => Self::Category,
-            twilight_model::channel::ChannelType::GuildAnnouncement => Self::News,
-            twilight_model::channel::ChannelType::GuildStageVoice => Self::StageVoice,
-            twilight_model::channel::ChannelType::AnnouncementThread => Self::NewsThread,
-            twilight_model::channel::ChannelType::PublicThread => Self::PublicThread,
-            twilight_model::channel::ChannelType::PrivateThread => Self::PrivateThread,
+            twilight_model::channel::ChannelType::GuildText => Ok(Self::Text),
+            twilight_model::channel::ChannelType::GuildVoice => Ok(Self::Voice),
+            twilight_model::channel::ChannelType::GuildCategory => Ok(Self::Category),
+            twilight_model::channel::ChannelType::GuildAnnouncement => Ok(Self::News),
+            twilight_model::channel::ChannelType::GuildStageVoice => Ok(Self::StageVoice),
+            twilight_model::channel::ChannelType::AnnouncementThread => Ok(Self::NewsThread),
+            twilight_model::channel::ChannelType::PublicThread => Ok(Self::PublicThread),
+            twilight_model::channel::ChannelType::PrivateThread => Ok(Self::PrivateThread),
             twilight_model::channel::ChannelType::Group => panic!("unspported channel type: group"),
             twilight_model::channel::ChannelType::Private => {
                 panic!("unspported channel type: private")
             }
-            twilight_model::channel::ChannelType::GuildDirectory => Self::GuildDirectory,
-            twilight_model::channel::ChannelType::GuildForum => Self::Forum,
-            twilight_model::channel::ChannelType::Unknown(k) => Self::Unknown(k),
-            _ => todo!(),
+            twilight_model::channel::ChannelType::GuildDirectory => Ok(Self::GuildDirectory),
+            twilight_model::channel::ChannelType::GuildForum => Ok(Self::Forum),
+            twilight_model::channel::ChannelType::GuildMedia => Ok(Self::Media),
+            other => Err(anyhow::anyhow!(
+                "Unimplemented channel type {}",
+                u8::from(other)
+            )),
         }
     }
 }
@@ -112,7 +117,7 @@ impl From<ChannelType> for twilight_model::channel::ChannelType {
             ChannelType::GuildDirectory => Self::GuildDirectory,
             ChannelType::Forum => Self::GuildForum,
             ChannelType::Store => Self::GuildText,
-            ChannelType::Unknown(k) => Self::Unknown(k),
+            ChannelType::Media => Self::GuildMedia,
         }
     }
 }

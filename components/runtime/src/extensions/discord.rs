@@ -722,7 +722,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()?)
     }
 
     async fn discord_start_thread_without_message(
@@ -754,7 +754,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()?)
     }
 
     async fn discord_start_forum_thread(
@@ -834,7 +834,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
         Ok(ForumThreadResponse {
             message: result.message.try_into()?,
-            channel: result.channel.into(),
+            channel: result.channel.try_into()?,
         })
     }
 
@@ -922,7 +922,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()?)
     }
 
     async fn discord_list_public_archived_threads(
@@ -958,7 +958,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()?)
     }
 
     async fn discord_list_private_archived_threads(
@@ -994,7 +994,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()?)
     }
 
     async fn discord_edit_thread(&self, arg: UpdateThread) -> Result<GuildChannel, anyhow::Error> {
@@ -1043,7 +1043,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         .await?
         .model()
         .await?
-        .into())
+        .try_into()?)
     }
 
     async fn discord_bulk_edit_channels(
@@ -2191,7 +2191,7 @@ pub async fn op_discord_get_channel(
     let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&state, &rt_ctx, &channel_id_str).await?;
-    Ok(channel.into())
+    Ok(channel.try_into()?)
 }
 
 #[op2(async)]
@@ -2202,7 +2202,10 @@ pub async fn op_discord_get_channels(
     let rt_ctx = get_rt_ctx(&state);
 
     let channels = rt_ctx.bot_state.get_channels(rt_ctx.guild_id).await?;
-    Ok(channels.into_iter().map(Into::into).collect())
+    Ok(channels
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, _>>()?)
 }
 
 #[op2(async)]
@@ -2226,7 +2229,7 @@ pub async fn op_discord_edit_channel(
     .await?
     .model()
     .await?
-    .into())
+    .try_into()?)
 }
 
 #[op2(async)]
@@ -2249,7 +2252,7 @@ pub async fn op_discord_create_channel(
     .await?
     .model()
     .await?
-    .into())
+    .try_into()?)
 }
 
 #[op2(async)]
@@ -2273,7 +2276,7 @@ pub async fn op_discord_delete_channel(
     .await?
     .model()
     .await?
-    .into())
+    .try_into()?)
 }
 
 #[op2(async)]

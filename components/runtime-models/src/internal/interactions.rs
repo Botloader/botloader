@@ -30,18 +30,22 @@ pub struct InteractionPartialChannel {
     pub thread_metadata: Option<ThreadMetadata>,
 }
 
-impl From<twilight_model::application::interaction::InteractionChannel>
+impl TryFrom<twilight_model::application::interaction::InteractionChannel>
     for InteractionPartialChannel
 {
-    fn from(v: twilight_model::application::interaction::InteractionChannel) -> Self {
-        Self {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        v: twilight_model::application::interaction::InteractionChannel,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             name: v.name,
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             permissions_raw: v.permissions.bits().to_string(),
             thread_metadata: v.thread_metadata.map(Into::into),
-        }
+        })
     }
 }
 

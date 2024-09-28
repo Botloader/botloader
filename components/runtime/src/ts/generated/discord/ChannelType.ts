@@ -11,4 +11,4 @@ export type ChannelType =
   | "PrivateThread"
   | "GuildDirectory"
   | "Forum"
-  | { "Unknown": number };
+  | "Media";

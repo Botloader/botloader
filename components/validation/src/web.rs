@@ -213,8 +213,13 @@ pub(crate) fn validate_settings_option_value_option(
                 };
 
                 if let Some(types) = types {
-                    let rt_type = runtime_models::discord::channel::ChannelType::from(channel.kind);
-                    if !types.contains(&rt_type) {
+                    let rt_type =
+                        runtime_models::discord::channel::ChannelType::try_from(channel.kind);
+                    if let Ok(rt_type) = rt_type {
+                        if !types.contains(&rt_type) {
+                            ctx.push_error(format!("channel type not allowed: {:?}", channel.kind));
+                        }
+                    } else {
                         ctx.push_error(format!("channel type not allowed: {:?}", channel.kind));
                     }
                 }
@@ -272,12 +277,16 @@ pub(crate) fn validate_settings_option_value_option(
 
                     if let Some(types) = types {
                         let rt_type =
-                            runtime_models::discord::channel::ChannelType::from(channel.kind);
-                        if !types.contains(&rt_type) {
-                            ctx.push_field_error(
-                                &i.to_string(),
-                                format!("channel type not allowed: {:?}", channel.kind),
-                            );
+                            runtime_models::discord::channel::ChannelType::try_from(channel.kind);
+                        if let Ok(rt_type) = rt_type {
+                            if !types.contains(&rt_type) {
+                                ctx.push_error(format!(
+                                    "channel type not allowed: {:?}",
+                                    channel.kind
+                                ));
+                            }
+                        } else {
+                            ctx.push_error(format!("channel type not allowed: {:?}", channel.kind));
                         }
                     }
                 }

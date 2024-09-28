@@ -4,7 +4,6 @@ import type { INewsThread } from "./NewsThread";
 import type { IPrivateThread } from "./PrivateThread";
 import type { IPublicThread } from "./PublicThread";
 import type { ITextChannel } from "./TextChannel";
-import type { IUnknownChannel } from "./UnknownChannel";
 import type { IVoiceChannel } from "./VoiceChannel";
 
 export type InternalGuildChannel =
@@ -16,5 +15,4 @@ export type InternalGuildChannel =
   | IVoiceChannel
   | IVoiceChannel
   | ITextChannel
-  | ITextChannel
-  | IUnknownChannel;
+  | ITextChannel;

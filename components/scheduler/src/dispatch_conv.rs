@@ -91,25 +91,25 @@ pub fn discord_event_to_dispatch(
         DiscordEventData::ChannelCreate(cc) => Some(DiscordDispatchEvent {
             name: "CHANNEL_CREATE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::try_from(
                 cc.0,
-            ))
+            )?)
             .unwrap(),
         }),
         DiscordEventData::ChannelUpdate(cu) => Some(DiscordDispatchEvent {
             name: "CHANNEL_UPDATE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::try_from(
                 cu.0,
-            ))
+            )?)
             .unwrap(),
         }),
         DiscordEventData::ChannelDelete(cd) => Some(DiscordDispatchEvent {
             name: "CHANNEL_DELETE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::try_from(
                 cd.0,
-            ))
+            )?)
             .unwrap(),
         }),
 
@@ -117,26 +117,32 @@ pub fn discord_event_to_dispatch(
         DiscordEventData::ThreadCreate(r) => Some(DiscordDispatchEvent {
             name: "THREAD_CREATE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(r.0))
-                .unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::try_from(
+                r.0,
+            )?)
+            .unwrap(),
         }),
         DiscordEventData::ThreadUpdate(r) => Some(DiscordDispatchEvent {
             name: "THREAD_UPDATE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::from(r.0))
-                .unwrap(),
+            data: serde_json::to_value(&runtime_models::internal::channel::GuildChannel::try_from(
+                r.0,
+            )?)
+            .unwrap(),
         }),
         DiscordEventData::ThreadDelete(r) => Some(DiscordDispatchEvent {
             name: "THREAD_DELETE",
             guild_id: evt.guild_id,
-            data: serde_json::to_value(runtime_models::discord::events::EventThreadDelete::from(r))
-                .unwrap(),
+            data: serde_json::to_value(
+                runtime_models::discord::events::EventThreadDelete::try_from(r)?,
+            )
+            .unwrap(),
         }),
         DiscordEventData::ThreadListSync(r) => Some(DiscordDispatchEvent {
             name: "THREAD_LIST_SYNC",
             guild_id: evt.guild_id,
             data: serde_json::to_value(
-                runtime_models::internal::events::EventThreadListSync::from(r),
+                runtime_models::internal::events::EventThreadListSync::try_from(r)?,
             )
             .unwrap(),
         }),

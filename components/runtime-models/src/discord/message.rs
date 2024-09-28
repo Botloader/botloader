@@ -213,14 +213,16 @@ pub struct ChannelMention {
     pub name: String,
 }
 
-impl From<twilight_model::channel::ChannelMention> for ChannelMention {
-    fn from(v: twilight_model::channel::ChannelMention) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::ChannelMention> for ChannelMention {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::ChannelMention) -> Result<Self, Self::Error> {
+        Ok(Self {
             guild_id: v.guild_id.to_string(),
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             name: v.name,
-        }
+        })
     }
 }
 

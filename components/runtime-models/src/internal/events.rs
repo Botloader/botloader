@@ -258,17 +258,25 @@ pub struct EventThreadListSync {
     pub threads: Vec<GuildChannel>,
 }
 
-impl From<twilight_model::gateway::payload::incoming::ThreadListSync> for EventThreadListSync {
-    fn from(value: twilight_model::gateway::payload::incoming::ThreadListSync) -> Self {
-        Self {
+impl TryFrom<twilight_model::gateway::payload::incoming::ThreadListSync> for EventThreadListSync {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        value: twilight_model::gateway::payload::incoming::ThreadListSync,
+    ) -> Result<Self, anyhow::Error> {
+        Ok(Self {
             channel_ids: value
                 .channel_ids
                 .into_iter()
                 .map(|v| v.to_string())
                 .collect(),
             members: value.members.into_iter().map(Into::into).collect(),
-            threads: value.threads.into_iter().map(Into::into).collect(),
-        }
+            threads: value
+                .threads
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 

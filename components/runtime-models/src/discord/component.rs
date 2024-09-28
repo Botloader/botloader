@@ -57,21 +57,27 @@ pub enum Component {
 }
 
 use twilight_model::channel::message::component::Component as TwilightComponent;
-impl From<TwilightComponent> for Component {
-    fn from(v: TwilightComponent) -> Self {
+impl TryFrom<TwilightComponent> for Component {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightComponent) -> Result<Self, Self::Error> {
         match v {
-            TwilightComponent::ActionRow(inner) => Self::ActionRow(inner.into()),
-            TwilightComponent::Button(inner) => Self::Button(inner.into()),
+            TwilightComponent::ActionRow(inner) => Ok(Self::ActionRow(inner.try_into()?)),
+            TwilightComponent::Button(inner) => Ok(Self::Button(inner.into())),
             TwilightComponent::SelectMenu(inner) => match inner.kind {
-                TwilightSelectMenuType::Text => Self::SelectMenu(inner.into()),
-                TwilightSelectMenuType::User => Self::UserSelectMenu(inner.into()),
-                TwilightSelectMenuType::Role => Self::RoleSelectMenu(inner.into()),
-                TwilightSelectMenuType::Mentionable => Self::MentionableSelectMenu(inner.into()),
-                TwilightSelectMenuType::Channel => Self::ChannelSelectMenu(inner.into()),
+                TwilightSelectMenuType::Text => Ok(Self::SelectMenu(inner.try_into()?)),
+                TwilightSelectMenuType::User => Ok(Self::UserSelectMenu(inner.try_into()?)),
+                TwilightSelectMenuType::Role => Ok(Self::RoleSelectMenu(inner.try_into()?)),
+                TwilightSelectMenuType::Mentionable => {
+                    Ok(Self::MentionableSelectMenu(inner.try_into()?))
+                }
+                TwilightSelectMenuType::Channel => Ok(Self::ChannelSelectMenu(inner.try_into()?)),
                 _ => todo!(),
             },
-            TwilightComponent::TextInput(inner) => Self::TextInput(inner.into()),
-            TwilightComponent::Unknown(t) => Self::Unknown(UnknownComponent { component_kind: t }),
+            TwilightComponent::TextInput(inner) => Ok(Self::TextInput(inner.into())),
+            TwilightComponent::Unknown(t) => {
+                Ok(Self::Unknown(UnknownComponent { component_kind: t }))
+            }
         }
     }
 }
@@ -116,11 +122,17 @@ pub struct ActionRow {
 }
 
 use twilight_model::channel::message::component::ActionRow as TwilightActionRow;
-impl From<TwilightActionRow> for ActionRow {
-    fn from(v: TwilightActionRow) -> Self {
-        Self {
-            components: v.components.into_iter().map(Into::into).collect(),
-        }
+impl TryFrom<TwilightActionRow> for ActionRow {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightActionRow) -> Result<Self, Self::Error> {
+        Ok(Self {
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 impl TryFrom<ActionRow> for TwilightActionRow {
@@ -217,9 +229,11 @@ use twilight_model::channel::message::component::SelectDefaultValue as TwilightS
 use twilight_model::channel::message::component::SelectMenu as TwilightSelectMenu;
 use twilight_model::channel::message::component::SelectMenuType as TwilightSelectMenuType;
 
-impl From<TwilightSelectMenu> for SelectMenu {
-    fn from(v: TwilightSelectMenu) -> Self {
-        Self {
+impl TryFrom<TwilightSelectMenu> for SelectMenu {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightSelectMenu) -> Result<Self, Self::Error> {
+        Ok(Self {
             custom_id: v.custom_id,
             disabled: v.disabled,
             min_values: v.min_values,
@@ -231,12 +245,17 @@ impl From<TwilightSelectMenu> for SelectMenu {
             placeholder: v.placeholder,
             channel_types: v
                 .channel_types
-                .map(|v| v.into_iter().map(Into::into).collect()),
+                .map(|v| {
+                    v.into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<Vec<_>, _>>()
+                })
+                .transpose()?,
             default_values: v
                 .default_values
                 .map(|v| v.into_iter().map(Into::into).collect()),
             select_type: v.kind.into(),
-        }
+        })
     }
 }
 impl TryFrom<SelectMenu> for TwilightSelectMenu {

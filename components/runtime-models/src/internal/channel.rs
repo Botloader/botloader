@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use twilight_model::channel::ChannelType as TwilightChannelType;
 use twilight_model::http::channel_position::Position;
 use twilight_model::id::{marker::ChannelMarker, Id};
 use twilight_validate::channel::ChannelValidationError;
@@ -26,42 +27,41 @@ pub enum GuildChannel {
     Stage(VoiceChannel),
     GuildDirectory(TextChannel),
     Forum(TextChannel),
-    Unknown(UnknownChannel),
 }
 
-impl From<twilight_model::channel::Channel> for GuildChannel {
-    fn from(v: twilight_model::channel::Channel) -> Self {
+impl TryFrom<twilight_model::channel::Channel> for GuildChannel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
         match v.kind {
-            twilight_model::channel::ChannelType::GuildCategory => Self::Category(v.into()),
-            twilight_model::channel::ChannelType::AnnouncementThread => {
-                Self::NewsThread(Box::new(v.into()))
+            TwilightChannelType::GuildCategory => Ok(Self::Category(v.try_into()?)),
+            TwilightChannelType::AnnouncementThread => {
+                Ok(Self::NewsThread(Box::new(v.try_into()?)))
             }
-            twilight_model::channel::ChannelType::PrivateThread => {
-                Self::PrivateThread(Box::new(v.into()))
-            }
-            twilight_model::channel::ChannelType::PublicThread => {
-                Self::PublicThread(Box::new(v.into()))
+            TwilightChannelType::PrivateThread => Ok(Self::PrivateThread(Box::new(v.try_into()?))),
+            TwilightChannelType::PublicThread => Ok(Self::PublicThread(Box::new(v.try_into()?))),
+
+            TwilightChannelType::GuildText | TwilightChannelType::GuildAnnouncement => {
+                Ok(Self::Text(v.try_into()?))
             }
 
-            twilight_model::channel::ChannelType::GuildText
-            | twilight_model::channel::ChannelType::GuildAnnouncement => Self::Text(v.into()),
+            TwilightChannelType::GuildVoice => Ok(Self::Voice(v.try_into()?)),
+            TwilightChannelType::GuildStageVoice => Ok(Self::Stage(v.try_into()?)),
 
-            twilight_model::channel::ChannelType::GuildVoice => Self::Voice(v.into()),
-            twilight_model::channel::ChannelType::GuildStageVoice => Self::Stage(v.into()),
-
-            twilight_model::channel::ChannelType::Private => {
+            TwilightChannelType::Private => {
                 panic!("Bot does not support private channels, we should never reach this path")
             }
-            twilight_model::channel::ChannelType::Group => {
+            TwilightChannelType::Group => {
                 panic!("Bot does not support private channels, we should never reach this path")
             }
-            twilight_model::channel::ChannelType::GuildDirectory => Self::GuildDirectory(v.into()),
-            twilight_model::channel::ChannelType::GuildForum => Self::Forum(v.into()),
-            _ => Self::Unknown(UnknownChannel {
-                id: v.id.to_string(),
-                kind: v.kind.into(),
-                unknown_kind_id: u8::from(v.kind),
-            }),
+            TwilightChannelType::GuildDirectory => Ok(Self::GuildDirectory(v.try_into()?)),
+            TwilightChannelType::GuildMedia | TwilightChannelType::GuildForum => {
+                Ok(Self::Forum(v.try_into()?))
+            }
+            other => Err(anyhow::anyhow!(
+                "Unimplemented channel type {}",
+                u8::from(other)
+            )),
         }
     }
 }
@@ -95,12 +95,14 @@ pub struct VoiceChannel {
     pub video_quality_mode: Option<VideoQualityMode>,
 }
 
-impl From<twilight_model::channel::Channel> for VoiceChannel {
-    fn from(v: twilight_model::channel::Channel) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::Channel> for VoiceChannel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Channel) -> Result<Self, Self::Error> {
+        Ok(Self {
             bitrate: v.bitrate.unwrap_or_default(),
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             name: v.name.unwrap_or_default(),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             permission_overwrites: v
@@ -113,7 +115,7 @@ impl From<twilight_model::channel::Channel> for VoiceChannel {
             rtc_region: v.rtc_region,
             user_limit: v.user_limit,
             video_quality_mode: v.video_quality_mode.map(Into::into),
-        }
+        })
     }
 }
 
@@ -135,11 +137,13 @@ pub struct TextChannel {
     pub topic: Option<String>,
 }
 
-impl From<twilight_model::channel::Channel> for TextChannel {
-    fn from(v: twilight_model::channel::Channel) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::Channel> for TextChannel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
+        Ok(Self {
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             last_pin_timestamp: v
                 .last_pin_timestamp
                 .map(|e| NotBigU64(e.as_micros() as u64 / 1000)),
@@ -155,7 +159,7 @@ impl From<twilight_model::channel::Channel> for TextChannel {
             position: v.position.unwrap_or_default(),
             rate_limit_per_user: v.rate_limit_per_user,
             topic: v.topic,
-        }
+        })
     }
 }
 
@@ -178,14 +182,16 @@ pub struct PublicThread {
     pub thread_metadata: ThreadMetadata,
 }
 
-impl From<twilight_model::channel::Channel> for PublicThread {
-    fn from(v: twilight_model::channel::Channel) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::Channel> for PublicThread {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
+        Ok(Self {
             default_auto_archive_duration_minutes: v
                 .default_auto_archive_duration
                 .map(|v| v.number() as u32),
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -194,7 +200,7 @@ impl From<twilight_model::channel::Channel> for PublicThread {
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             rate_limit_per_user: v.rate_limit_per_user,
             thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
-        }
+        })
     }
 }
 
@@ -219,14 +225,16 @@ pub struct PrivateThread {
     pub thread_metadata: ThreadMetadata,
 }
 
-impl From<twilight_model::channel::Channel> for PrivateThread {
-    fn from(v: twilight_model::channel::Channel) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::Channel> for PrivateThread {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
+        Ok(Self {
             default_auto_archive_duration_minutes: v
                 .default_auto_archive_duration
                 .map(|v| v.number() as u32),
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -242,7 +250,7 @@ impl From<twilight_model::channel::Channel> for PrivateThread {
                 .map(Into::into)
                 .collect(),
             invitable: v.invitable,
-        }
+        })
     }
 }
 
@@ -265,14 +273,16 @@ pub struct NewsThread {
     pub thread_metadata: ThreadMetadata,
 }
 
-impl From<twilight_model::channel::Channel> for NewsThread {
-    fn from(v: twilight_model::channel::Channel) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::Channel> for NewsThread {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
+        Ok(Self {
             default_auto_archive_duration_minutes: v
                 .default_auto_archive_duration
                 .map(|v| v.number() as u32),
             id: v.id.to_string(),
-            kind: v.kind.into(),
+            kind: v.kind.try_into()?,
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -281,7 +291,7 @@ impl From<twilight_model::channel::Channel> for NewsThread {
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             rate_limit_per_user: v.rate_limit_per_user,
             thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
-        }
+        })
     }
 }
 
@@ -347,10 +357,12 @@ pub struct CategoryChannel {
     pub position: i32,
 }
 
-impl From<twilight_model::channel::Channel> for CategoryChannel {
-    fn from(v: twilight_model::channel::Channel) -> Self {
-        Self {
-            kind: v.kind.into(),
+impl TryFrom<twilight_model::channel::Channel> for CategoryChannel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: twilight_model::channel::Channel) -> Result<CategoryChannel, anyhow::Error> {
+        Ok(Self {
+            kind: v.kind.try_into()?,
             id: v.id.to_string(),
             name: v.name.unwrap_or_default(),
             position: v.position.unwrap_or_default(),
@@ -360,7 +372,7 @@ impl From<twilight_model::channel::Channel> for CategoryChannel {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-        }
+        })
     }
 }
 
@@ -707,13 +719,21 @@ pub struct ThreadsListing {
     pub threads: Vec<GuildChannel>,
 }
 
-impl From<twilight_model::channel::thread::ThreadsListing> for ThreadsListing {
-    fn from(value: twilight_model::channel::thread::ThreadsListing) -> Self {
-        Self {
+impl TryFrom<twilight_model::channel::thread::ThreadsListing> for ThreadsListing {
+    type Error = anyhow::Error;
+
+    fn try_from(
+        value: twilight_model::channel::thread::ThreadsListing,
+    ) -> Result<Self, anyhow::Error> {
+        Ok(Self {
             has_more: value.has_more,
             members: value.members.into_iter().map(Into::into).collect(),
-            threads: value.threads.into_iter().map(Into::into).collect(),
-        }
+            threads: value
+                .threads
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 
