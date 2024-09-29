@@ -29,34 +29,6 @@ jobs:
           name: Build backend
           command: |
             docker build -t botloader/backend -f cmd/backend/Dockerfile .
-      # - run:
-      #     name: Build scheduler and worker
-      #     command: |
-      #       docker build -t botloader/bl-schedulerwithworker -f cmd/schedulerwithworker/Dockerfile .
-      # - run:
-      #     name: Build webapi
-      #     command: |
-      #       docker build -t botloader/bl-webapi -f cmd/webapi/Dockerfile .
-      # - run:
-      #     name: Build jobs
-      #     command: |
-      #       docker build -t botloader/bl-jobs -f cmd/jobs/Dockerfile .
-      # - run:
-      #     name: Build dbserver
-      #     command: |
-      #       docker build -t botloader/bl-dbserver -f cmd/dbserver/Dockerfile .
-      # - run:
-      #     name: Archive images
-      #     command: |
-      #       docker save -o image-broker.tar botloader/bl-discordbroker
-      #       docker save -o image-scheduler.tar botloader/bl-schedulerwithworker
-      #       docker save -o image-webapi.tar botloader/bl-webapi
-      # - persist_to_workspace:
-      #     root: .
-      #     paths:
-      #       - ./image-webapi.tar
-      #       - ./image-broker.tar
-      #       - ./image-scheduler.tar
       - run:
           name: Docker login
           command: |
@@ -82,7 +54,6 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker:
-          version: 20.10.14
           docker_layer_caching: true
       - run:
           name: Build image
@@ -99,32 +70,6 @@ jobs:
             docker tag botloader/bl-dbmigrations:latest "botloader/bl-dbmigrations:$CIRCLE_BUILD_NUM"
             # push
             docker push "botloader/bl-dbmigrations:$CIRCLE_BUILD_NUM"
-  # publish-backend-images:
-  #   resource_class: medium
-  #   docker:
-  #     - image: cimg/base:2021.04
-  #   steps:
-  #     - attach_workspace:
-  #         at: /tmp/workspace
-  #     - setup_remote_docker
-  #     - run:
-  #         name: Load archived images
-  #         command: |
-  #           docker load -i /tmp/workspace/image-webapi.tar
-  #           docker load -i /tmp/workspace/image-bot.tar
-  #     - run:
-  #         name: Docker login
-  #         command: |
-  #           echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  #     - run:
-  #         name: Publish Docker Image to Docker Hub
-  #         command: |
-  #           docker push "botloader/bl-webapi:latest"
-  #           docker push "botloader/botloader-bot:latest"
-  #           docker tag botloader/bl-webapi:latest "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
-  #           docker tag botloader/botloader-bot:latest "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
-  #           docker push "botloader/bl-webapi:$CIRCLE_BUILD_NUM"
-  #           docker push "botloader/botloader-bot:$CIRCLE_BUILD_NUM"
   build-frontend-image:
     resource_class: medium
     docker:
@@ -133,7 +78,6 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: 20.10.14
       - run:
           name: Build docker image
           command: |
@@ -153,8 +97,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      - setup_remote_docker:
-          version: 20.10.7
+      - setup_remote_docker
       - run:
           name: Load archived images
           command: |
