@@ -30,3 +30,5 @@ tracing-opentelemetry = "0.24.0"
 opentelemetry_sdk = "0.23.0"
 sentry = "0.33.0"
 sentry-tracing = "0.33.0"
+
+rustls = { version = "0.23" }

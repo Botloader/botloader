@@ -18,6 +18,11 @@ pub struct DiscordConfig {
 pub async fn fetch_discord_config(
     token: String,
 ) -> Result<Arc<DiscordConfig>, twilight_http::Error> {
+    // Needed because twilight does not do this and that causes a panic down the line when issuing requests to discord
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("failed installing tls provider");
+
     let client = twilight_http::Client::new(token);
 
     // println!("fetching bot and application details from discord...");

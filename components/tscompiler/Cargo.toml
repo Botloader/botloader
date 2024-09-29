@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-swc_common = { version = "0.33.21", features = ["sourcemap"] }
-sourcemap = "6.2"
-swc = "0.273.23"
-swc_ecmascript = { version = "0.239.21", features = ["parser"] }
+swc_common = { version = "0.40.0", features = ["sourcemap"] }
+sourcemap = "9.0"
+swc = "0.289.0"
+swc_ecmascript = { version = "0.256.0", features = ["parser"] }

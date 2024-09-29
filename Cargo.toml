@@ -34,14 +34,26 @@ uuid = { version = "1.7.0", features = ["v4", "serde"] }
 regex = "1.10"
 oauth2 = "4.4.2"
 
+
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"
 
 twilight-model = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
-twilight-http = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
+twilight-http = { version = "0.16.0-rc.1", features = [
+    "rustls-platform-verifier",
+], git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
 twilight-gateway = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
 twilight-cache-inmemory = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
 twilight-util = { version = "0.16.0-rc.1", features = [
     "permission-calculator",
 ], git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
 twilight-validate = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
+
+# twilight-model = { version = "0.16.0-rc.1", path = "../forklight" }
+# twilight-http = { version = "0.16.0-rc.1", path = "../forklight" }
+# twilight-gateway = { version = "0.16.0-rc.1", path = "../forklight" }
+# twilight-cache-inmemory = { version = "0.16.0-rc.1", path = "../forklight" }
+# twilight-util = { version = "0.16.0-rc.1", features = [
+#     "permission-calculator",
+# ], path = "../forklight" }
+# twilight-validate = { version = "0.16.0-rc.1", path = "../forklight" }

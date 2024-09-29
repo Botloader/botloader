@@ -7,7 +7,7 @@ use swc::{
 
 use swc_common::{self, FileName, SourceMap};
 use swc_ecmascript::ast::EsVersion;
-use swc_ecmascript::parser::{Syntax, TsConfig};
+use swc_ecmascript::parser::{Syntax, TsSyntax};
 
 pub fn compile_typescript(input: &str, filename: String) -> Result<CompiledItem, String> {
     compile_typescript_inner(input, filename)
@@ -15,10 +15,13 @@ pub fn compile_typescript(input: &str, filename: String) -> Result<CompiledItem,
 
 fn compile_typescript_inner(input: &str, filename: String) -> Result<CompiledItem, String> {
     swc_common::GLOBALS.set(&Default::default(), || {
-        let cm: Arc<SourceMap> = Arc::new(SourceMap::default());
+        let cm = Arc::<SourceMap>::default();
 
         let c = Compiler::new(cm.clone());
-        let fm = cm.new_source_file(FileName::Custom("file:///script.ts".into()), input.into());
+        let fm = cm.new_source_file(
+            Arc::new(FileName::Custom("file:///script.ts".into())),
+            input.into(),
+        );
 
         match swc::try_with_handler(
             cm,
@@ -33,7 +36,7 @@ fn compile_typescript_inner(input: &str, filename: String) -> Result<CompiledIte
                     &swc::config::Options {
                         config: swc::config::Config {
                             jsc: JscConfig {
-                                syntax: Some(Syntax::Typescript(TsConfig {
+                                syntax: Some(Syntax::Typescript(TsSyntax {
                                     ..Default::default()
                                 })),
                                 target: Some(EsVersion::Es2022),

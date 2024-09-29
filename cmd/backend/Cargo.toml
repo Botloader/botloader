@@ -16,3 +16,5 @@ common = { path = "../../components/common" }
 
 clap = { workspace = true }
 tokio = { workspace = true }
+
+rustls = { version = "0.23" }
