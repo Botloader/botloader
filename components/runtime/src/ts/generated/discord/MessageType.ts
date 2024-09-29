@@ -35,4 +35,6 @@ export type MessageType =
   | "GuildIncidentAlertModeEnabled"
   | "GuildIncidentAlertModeDisabled"
   | "GuildIncidentReportRaid"
-  | "GuildIncidentReportRaidFalseAlarm";
+  | "GuildIncidentReportRaidFalseAlarm"
+  | "PurchaseNotification"
+  | "PollResult";

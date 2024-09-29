@@ -7149,7 +7149,7 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "bitflags 2.5.0",
  "dashmap",
@@ -7160,7 +7160,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "bitflags 2.5.0",
  "fastrand 2.1.0",
@@ -7180,7 +7180,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "tokio",
  "tracing",
@@ -7189,7 +7189,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "brotli-decompressor",
  "fastrand 2.1.0",
@@ -7212,7 +7212,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "tokio",
  "tracing",
@@ -7221,7 +7221,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "bitflags 2.5.0",
  "serde",
@@ -7233,7 +7233,7 @@ dependencies = [
 [[package]]
 name = "twilight-util"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "twilight-model",
 ]
@@ -7241,7 +7241,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.16.0-rc.1"
-source = "git+https://github.com/jonastar/twilight.git?rev=ba863b40525d1f3c427f48ef54a7402369e9f8ea#ba863b40525d1f3c427f48ef54a7402369e9f8ea"
+source = "git+https://github.com/jonastar/twilight.git?rev=ca9d121ff0b0c386d738d54b3b066398eb49063a#ca9d121ff0b0c386d738d54b3b066398eb49063a"
 dependencies = [
  "twilight-model",
 ]

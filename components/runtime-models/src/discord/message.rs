@@ -138,6 +138,8 @@ pub enum MessageType {
     GuildIncidentAlertModeDisabled,
     GuildIncidentReportRaid,
     GuildIncidentReportRaidFalseAlarm,
+    PurchaseNotification,
+    PollResult,
 }
 
 impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
@@ -194,7 +196,8 @@ impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::GuildIncidentReportRaidFalseAlarm => {
                 Self::GuildIncidentReportRaidFalseAlarm
             }
-            // TwilightMessageType::Unknown(_) => todo!(),
+            TwilightMessageType::PurchaseNotification => Self::PurchaseNotification,
+            TwilightMessageType::PollResult => Self::PollResult,
             _ => {
                 return Err(anyhow::anyhow!("unknown message type: {}", u8::from(v)));
             }
