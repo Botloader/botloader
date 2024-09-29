@@ -61,13 +61,16 @@ use twilight_http::{
     api_error::{ApiError, GeneralApiError},
     response::StatusCode,
 };
-use twilight_model::id::marker::{
-    GenericMarker, InteractionMarker, MessageMarker, RoleMarker, TagMarker, WebhookMarker,
-};
 use twilight_model::id::Id;
 use twilight_model::{
     guild::Permissions,
     id::marker::{ChannelMarker, UserMarker},
+};
+use twilight_model::{
+    guild::RolePosition,
+    id::marker::{
+        GenericMarker, InteractionMarker, MessageMarker, RoleMarker, TagMarker, WebhookMarker,
+    },
 };
 use vm::AnyError;
 
@@ -1157,14 +1160,12 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
         let positions = arg
             .into_iter()
             .map(|v| {
-                Ok((
-                    parse_discord_id::<RoleMarker>(&v.role_id)?,
-                    v.position as u64,
-                ))
+                Ok(RolePosition {
+                    id: parse_discord_id::<RoleMarker>(&v.role_id)?,
+                    position: v.position as u64,
+                })
             })
             .collect::<Result<Vec<_>, AnyError>>()?;
-
-        dbg!(&positions);
 
         let out = discord_request(&self.state, async move {
             rt_ctx

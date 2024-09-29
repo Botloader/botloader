@@ -24,7 +24,7 @@ thiserror = "1.0"
 clap = { version = "4.1.4", features = ["derive", "env"] }
 anyhow = "1.0"
 deno_core = "0.283"
-axum = { version = "0.7.4", features = ["ws", "multipart", "macros"] }
+axum = { version = "0.7.7", features = ["ws", "multipart", "macros"] }
 tonic = "0.10.2"
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
@@ -37,11 +37,11 @@ oauth2 = "4.4.2"
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"
 
-twilight-model = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
-twilight-http = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
-twilight-gateway = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
-twilight-cache-inmemory = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
+twilight-model = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ba863b40525d1f3c427f48ef54a7402369e9f8ea" }
+twilight-http = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ba863b40525d1f3c427f48ef54a7402369e9f8ea" }
+twilight-gateway = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ba863b40525d1f3c427f48ef54a7402369e9f8ea" }
+twilight-cache-inmemory = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ba863b40525d1f3c427f48ef54a7402369e9f8ea" }
 twilight-util = { version = "0.16.0-rc.1", features = [
     "permission-calculator",
-], git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
-twilight-validate = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "308bc4d5a9d2c14184255735975aff7bd5909dee" }
+], git = "https://github.com/jonastar/twilight.git", rev = "ba863b40525d1f3c427f48ef54a7402369e9f8ea" }
+twilight-validate = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ba863b40525d1f3c427f48ef54a7402369e9f8ea" }

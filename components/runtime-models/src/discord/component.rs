@@ -190,6 +190,7 @@ impl From<Button> for TwilightButton {
             url: v.url,
             label: v.label,
             emoji: v.emoji.map(Into::into),
+            sku_id: None,
         }
     }
 }

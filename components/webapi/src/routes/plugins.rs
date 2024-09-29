@@ -630,8 +630,6 @@ pub async fn get_plugin_image(
         image_id_specifier_with_extension,
     }): Path<PluginImagesParam>,
 ) -> ApiResult<(StatusCode, HeaderMap, Vec<u8>)> {
-    dbg!(&image_id_specifier_with_extension);
-
     let Some(image_id_raw) = image_id_specifier_with_extension.strip_suffix(".webp") else {
         return Err(ApiErrorResponse::ImageNotFound);
     };

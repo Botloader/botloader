@@ -269,24 +269,24 @@ pub enum ReactionType {
     },
 }
 
-impl From<twilight_model::channel::message::ReactionType> for ReactionType {
-    fn from(v: twilight_model::channel::message::ReactionType) -> Self {
+impl From<twilight_model::channel::message::EmojiReactionType> for ReactionType {
+    fn from(v: twilight_model::channel::message::EmojiReactionType) -> Self {
         match v {
-            twilight_model::channel::message::ReactionType::Custom { animated, name, id } => {
+            twilight_model::channel::message::EmojiReactionType::Custom { animated, name, id } => {
                 Self::Custom {
                     animated,
                     name,
                     id: id.to_string(),
                 }
             }
-            twilight_model::channel::message::ReactionType::Unicode { name } => {
+            twilight_model::channel::message::EmojiReactionType::Unicode { name } => {
                 Self::Unicode { unicode: name }
             }
         }
     }
 }
 
-impl From<ReactionType> for twilight_model::channel::message::ReactionType {
+impl From<ReactionType> for twilight_model::channel::message::EmojiReactionType {
     fn from(v: ReactionType) -> Self {
         match v {
             ReactionType::Custom { animated, name, id } => Self::Custom {
