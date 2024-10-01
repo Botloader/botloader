@@ -19,9 +19,10 @@ pub async fn fetch_discord_config(
     token: String,
 ) -> Result<Arc<DiscordConfig>, twilight_http::Error> {
     // Needed because twilight does not do this and that causes a panic down the line when issuing requests to discord
+    // The error can be ignored because this function is called multiple types in full mode
     rustls::crypto::ring::default_provider()
         .install_default()
-        .expect("failed installing tls provider");
+        .ok();
 
     let client = twilight_http::Client::new(token);
 
