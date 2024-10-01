@@ -108,6 +108,7 @@ interface OptionTypes<TRequired, TDefault> {
     float: FloatOptions<TRequired, TDefault>,
     integer: IntegerOptions<TRequired, TDefault>,
     integer64: Integer64Options<TRequired, TDefault>,
+    boolean: BaseOptions<TRequired, TDefault>,
     channel: ChannelOptions<TRequired, TDefault>,
     channels: ChannelsOptions<TRequired, TDefault>,
     role: RoleOptions<TRequired, TDefault>,
@@ -125,6 +126,7 @@ export interface ConfigOptionSetValueTypesMapping {
     integer: number,
     integer64: string,
     float: number,
+    boolean: boolean,
     channel: string,
     channels: string[],
     role: string,
@@ -155,6 +157,7 @@ export const SysDefaultValues = {
     float: null,
     integer: null,
     integer64: null,
+    boolean: false,
     channel: null,
     channels: [] as string[],
     role: null,
@@ -306,6 +309,13 @@ export class SettingsManager {
         TRequired extends boolean = false,
     >(name: string, options: Integer64Options<false, TDefault>) {
         return this.addOption<"integer64", false, TDefault>(name, "integer64", options)
+    }
+
+    addOptionBoolean<
+        TDefault extends TDefaultValueTopLevel<TRequired, "boolean">,
+        TRequired extends boolean = false,
+    >(name: string, options: BaseOptions<false, TDefault>) {
+        return this.addOption<"boolean", false, TDefault>(name, "boolean", options)
     }
 
     addOptionRole<
@@ -506,6 +516,13 @@ export class ListBuilder<TOpts extends OptionsMap> {
         return this.addOption<TName, "integer64", TRequired, TDefault>(name, "integer64", options)
     }
 
+    addOptionBoolean<
+        TName extends string,
+        TDefault extends boolean | undefined = undefined,
+    >(name: TName, options: BaseOptions<false, TDefault>) {
+        return this.addOption<TName, "boolean", false, TDefault>(name, "boolean", options)
+    }
+
     addOptionRole<
         TName extends string,
         TRequired extends boolean = false,
@@ -630,6 +647,10 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
                 max: def.max ?? null,
                 min: def.min ?? null,
             }
+        case "boolean":
+            return {
+                kind: "boolean"
+            }
         case "channel":
             return {
                 kind: "channel",
@@ -675,6 +696,30 @@ function loadOptionValue(value: any, definition: OptionTypesUnion): any {
         }
         case "integer64": {
             return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
+        }
+        case "boolean": {
+            if (typeof value === "string") {
+                const lower = value.toLowerCase()
+                if (lower === "yes" || lower === "true" || lower === "1") {
+                    return true
+                }
+
+                return false
+            }
+
+            if (typeof value === "number") {
+                if (value === 0) {
+                    return false
+                }
+
+                return true
+            }
+
+            if (typeof value === "boolean") {
+                return value
+            }
+
+            return getSysDefaultValue(definition.kind)
         }
         case "channel": {
             return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))

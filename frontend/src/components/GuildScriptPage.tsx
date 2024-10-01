@@ -7,8 +7,10 @@ import {
     Alert,
     Box,
     Button,
+    Checkbox,
     Divider,
     FormControl,
+    FormControlLabel,
     FormHelperText,
     IconButton,
     InputLabel,
@@ -422,6 +424,8 @@ function EditSettingsOption({ option }: { option: SettingsOption, value?: string
         || option.kind.kind === "roles") {
         return <EditOptionSelect option={option} />
 
+    } else if (option.kind.kind === "boolean") {
+        return <EditOptionBooleanField option={option} />
     }
 }
 
@@ -432,6 +436,35 @@ function textFieldValue(rawValue: any, option: SettingsOption) {
     }
 
     return rawValue
+}
+
+function booleanValue(rawValue: any, option: SettingsOption) {
+    const defaultValue = option.defaultValue ?? false
+    if (rawValue === undefined || rawValue === null) {
+        return booleanRawValue(defaultValue)
+    }
+
+    return booleanRawValue(rawValue)
+}
+
+const trueBooleanValues = ["true", "yes", "1"]
+function booleanRawValue(rawValue: any) {
+    if (typeof rawValue === "string") {
+        if (trueBooleanValues.includes(rawValue.toLowerCase())) {
+            return true
+        }
+        return false
+    }
+
+    if (typeof rawValue === "number") {
+        return rawValue !== 0
+    }
+
+    if (typeof rawValue === "boolean") {
+        return rawValue
+    }
+
+    return false
 }
 
 function EditOptionNumberField({ option }: { option: SettingsOption }) {
@@ -494,6 +527,39 @@ function EditOptionNumberField({ option }: { option: SettingsOption }) {
             }}
             error={Boolean(error)}
         />
+        {(Boolean(rawValue) && (option.defaultValue || !option.required)) &&
+            <IconButton
+                color='warning'
+                onClick={() => {
+                    setValue(null)
+                }}
+            >
+                <ReplayIcon />
+            </IconButton>}
+    </Box>
+}
+
+
+function EditOptionBooleanField({ option }: { option: SettingsOption }) {
+    const { value: rawValue, setValue, error } = useSettingsField(option.name)
+    const value = booleanValue(rawValue?.value, option)
+
+    if (option.kind.kind !== "boolean") {
+        throw new Error("not a number field")
+    }
+
+    return <Box mt={3}>
+        <FormControlLabel control={<Checkbox checked={value}
+            onChange={(evt) => {
+                setValue(evt.target.checked)
+            }}
+        />} label={option.label} />
+
+        <FormHelperText error={Boolean(error)}>
+            <FieldHelpText description={option.description} error={error} />
+        </FormHelperText>
+
+
         {(Boolean(rawValue) && (option.defaultValue || !option.required)) &&
             <IconButton
                 color='warning'

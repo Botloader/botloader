@@ -339,6 +339,33 @@ pub(crate) fn validate_settings_option_value_option(
                 }
             }
         }
+        SettingsOptionType::Boolean => {
+            if let Some(value_str) = value.as_str() {
+                let lower = value_str.to_lowercase();
+                if lower != "true"
+                    && lower != "false"
+                    && lower != "0"
+                    && lower != "1"
+                    && lower != "yes"
+                    && lower != "no"
+                {
+                    ctx.push_error(format!(
+                        "Unexpected boolean value, got {} expected one of true,false,yes,no,0,1",
+                        value
+                    ));
+                }
+            }
+
+            if let Some(_) = value.as_bool() {
+                return;
+            }
+
+            if let Some(_) = value.as_i64() {
+                return;
+            }
+
+            ctx.push_error(format!("value is not a valid boolean"));
+        }
     }
 }
 

@@ -423,6 +423,7 @@ pub enum SettingsOptionType {
         min: Option<String>,
         max: Option<String>,
     },
+    Boolean,
     Channel {
         types: Option<Vec<ChannelType>>,
     },

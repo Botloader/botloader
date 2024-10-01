@@ -6,6 +6,7 @@ export type SettingsOptionType =
   | { "kind": "float"; min: number | null; max: number | null }
   | { "kind": "integer"; min: number | null; max: number | null }
   | { "kind": "integer64"; min: string | null; max: string | null }
+  | { "kind": "boolean" }
   | { "kind": "channel"; types: Array<ChannelType> | null }
   | {
     "kind": "channels";
