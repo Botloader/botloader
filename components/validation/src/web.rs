@@ -366,6 +366,142 @@ pub(crate) fn validate_settings_option_value_option(
 
             ctx.push_error(format!("value is not a valid boolean"));
         }
+        SettingsOptionType::CustomStringSelect { options } => {
+            let Some(value) = value.as_str() else {
+                ctx.push_error(format!("expected string, got {}", value));
+                return;
+            };
+
+            if !options.iter().any(|v| v.value == value) {
+                ctx.push_error(format!("provided string '{}' is not a choice", value));
+                return;
+            }
+        }
+        SettingsOptionType::CustomStringMultiSelect {
+            options,
+            max_selected,
+            min_selected,
+        } => {
+            let Some(values) = value.as_array() else {
+                ctx.push_error(format!("expected string, got {}", value));
+                return;
+            };
+
+            for (i, value) in values.iter().enumerate() {
+                let Some(value) = value.as_str() else {
+                    ctx.push_field_error(
+                        &i.to_string(),
+                        format!("expected string[], got {}", value),
+                    );
+                    return;
+                };
+
+                if !options.iter().any(|v| v.value == value) {
+                    ctx.push_field_error(
+                        &i.to_string(),
+                        format!("provided string '{}' is not a choice", value),
+                    );
+                    return;
+                }
+
+                // check for duplicates
+                for j in 0..i {
+                    if values[i] == values[j] {
+                        ctx.push_field_error(
+                            &i.to_string(),
+                            format!("duplicated value with index {}", j),
+                        );
+                    }
+                }
+            }
+
+            if let Some(max_selected) = max_selected {
+                if values.len() > *max_selected as usize {
+                    ctx.push_error(format!(
+                        "A maximum {} values can be provided, you provided {}.",
+                        max_selected,
+                        values.len()
+                    ));
+                }
+            }
+
+            if let Some(min_selected) = min_selected {
+                if values.len() < *min_selected as usize {
+                    ctx.push_error(format!(
+                        "A minimum of {} values need to be provided, you provided {}.",
+                        min_selected,
+                        values.len()
+                    ));
+                }
+            }
+        }
+        SettingsOptionType::CustomNumberSelect { options } => {
+            let Some(value) = value.as_f64() else {
+                ctx.push_error(format!("expected number, got {}", value));
+                return;
+            };
+
+            if !options.iter().any(|v| v.value == value) {
+                ctx.push_error(format!("provided number '{}' is not a choice", value));
+                return;
+            }
+        }
+        SettingsOptionType::CustomNumberMultiSelect {
+            options,
+            max_selected,
+            min_selected,
+        } => {
+            let Some(values) = value.as_array() else {
+                ctx.push_error(format!("expected number[], got {}", value));
+                return;
+            };
+
+            for (i, value) in values.iter().enumerate() {
+                let Some(value) = value.as_f64() else {
+                    ctx.push_field_error(&i.to_string(), format!("expected number, got {}", value));
+                    return;
+                };
+
+                if !options.iter().any(|v| v.value == value) {
+                    ctx.push_field_error(
+                        &i.to_string(),
+                        format!("provided number '{}' is not a choice", value),
+                    );
+
+                    return;
+                }
+
+                // check for duplicates
+                for j in 0..i {
+                    if values[i] == values[j] {
+                        ctx.push_field_error(
+                            &i.to_string(),
+                            format!("duplicated value with index {}", j),
+                        );
+                    }
+                }
+            }
+
+            if let Some(max_selected) = max_selected {
+                if values.len() > *max_selected as usize {
+                    ctx.push_error(format!(
+                        "A maximum {} values can be provided, you provided {}.",
+                        max_selected,
+                        values.len()
+                    ));
+                }
+            }
+
+            if let Some(min_selected) = min_selected {
+                if values.len() < *min_selected as usize {
+                    ctx.push_error(format!(
+                        "A minimum of {} values need to be provided, you provided {}.",
+                        min_selected,
+                        values.len()
+                    ));
+                }
+            }
+        }
     }
 }
 

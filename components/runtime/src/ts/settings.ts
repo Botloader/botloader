@@ -103,6 +103,36 @@ export type RolesOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault>
     max?: number,
 }
 
+export type CustomStringSelectOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    options: StringSelectOptionItem[],
+}
+
+export type CustomStringMultiSelectOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    options: StringSelectOptionItem[],
+    max_selected?: number,
+    min_selected?: number,
+}
+
+export type StringSelectOptionItem = {
+    label: string,
+    value: string,
+}
+
+export type CustomNumberSelectOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    options: NumberSelectOptionItem[],
+}
+
+export type CustomNumberMultiSelectOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
+    options: NumberSelectOptionItem[],
+    max_selected?: number,
+    min_selected?: number,
+}
+
+export type NumberSelectOptionItem = {
+    label: string,
+    value: number,
+}
+
 interface OptionTypes<TRequired, TDefault> {
     string: StringOptions<TRequired, TDefault>,
     float: FloatOptions<TRequired, TDefault>,
@@ -113,6 +143,10 @@ interface OptionTypes<TRequired, TDefault> {
     channels: ChannelsOptions<TRequired, TDefault>,
     role: RoleOptions<TRequired, TDefault>,
     roles: RolesOptions<TRequired, TDefault>,
+    customStringSelect: CustomStringSelectOptions<TRequired, TDefault>,
+    customStringMultiSelect: CustomStringMultiSelectOptions<TRequired, TDefault>,
+    customNumberSelect: CustomNumberSelectOptions<TRequired, TDefault>,
+    customNumberMultiSelect: CustomNumberMultiSelectOptions<TRequired, TDefault>,
 }
 
 type OptionTypesKeys = keyof OptionTypes<boolean, any>
@@ -131,6 +165,10 @@ export interface ConfigOptionSetValueTypesMapping {
     channels: string[],
     role: string,
     roles: string[],
+    customStringSelect: string,
+    customStringMultiSelect: string[],
+    customNumberSelect: number,
+    customNumberMultiSelect: number[],
 }
 
 type InnerToConfigSetValueType<TKind extends OptionTypesKeys> =
@@ -162,6 +200,10 @@ export const SysDefaultValues = {
     channels: [] as string[],
     role: null,
     roles: [] as string[],
+    customStringSelect: null,
+    customStringMultiSelect: [] as string[],
+    customNumberSelect: null,
+    customNumberMultiSelect: [] as number[],
 }
 
 type SysDefaultValueType<TKind extends keyof typeof SysDefaultValues> =
@@ -340,6 +382,30 @@ export class SettingsManager {
         TDefault extends string[] | undefined = undefined,
     >(name: string, options: ChannelsOptions<false, TDefault>) {
         return this.addOption<"channels", false, TDefault>(name, "channels", options)
+    }
+
+    addOptionCustomStringSelect<
+        TDefault extends string | undefined = undefined,
+    >(name: string, options: CustomStringSelectOptions<false, TDefault>) {
+        return this.addOption<"customStringSelect", false, TDefault>(name, "customStringSelect", options)
+    }
+
+    addOptionCustomStringMultiSelect<
+        TDefault extends string[] | undefined = undefined,
+    >(name: string, options: CustomStringMultiSelectOptions<false, TDefault>) {
+        return this.addOption<"customStringMultiSelect", false, TDefault>(name, "customStringMultiSelect", options)
+    }
+
+    addOptionCustomNumberSelect<
+        TDefault extends number | undefined = undefined,
+    >(name: string, options: CustomNumberSelectOptions<false, TDefault>) {
+        return this.addOption<"customNumberSelect", false, TDefault>(name, "customNumberSelect", options)
+    }
+
+    addOptionCustomNumberMultiSelect<
+        TDefault extends number[] | undefined = undefined,
+    >(name: string, options: CustomNumberMultiSelectOptions<false, TDefault>) {
+        return this.addOption<"customNumberMultiSelect", false, TDefault>(name, "customNumberMultiSelect", options)
     }
 
     private addOption<
@@ -555,6 +621,38 @@ export class ListBuilder<TOpts extends OptionsMap> {
         return this.addOption<TName, "channels", TRequired, TDefault>(name, "channels", options)
     }
 
+    addOptionCustomStringSelect<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string | undefined = undefined,
+    >(name: TName, options: CustomStringSelectOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "customStringSelect", TRequired, TDefault>(name, "customStringSelect", options)
+    }
+
+    addOptionCustomStringMultiSelect<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends string[] | undefined = undefined,
+    >(name: TName, options: CustomStringMultiSelectOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "customStringMultiSelect", TRequired, TDefault>(name, "customStringMultiSelect", options)
+    }
+
+    addOptionCustomNumberSelect<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends number | undefined = undefined,
+    >(name: TName, options: CustomNumberSelectOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "customNumberSelect", TRequired, TDefault>(name, "customNumberSelect", options)
+    }
+
+    addOptionCustomNumberMultiSelect<
+        TName extends string,
+        TRequired extends boolean = false,
+        TDefault extends number[] | undefined = undefined,
+    >(name: TName, options: CustomNumberMultiSelectOptions<TRequired, TDefault>) {
+        return this.addOption<TName, "customNumberMultiSelect", TRequired, TDefault>(name, "customNumberMultiSelect", options)
+    }
+
     private addOption<
         const TName extends string,
         const TKind extends OptionTypesKeys,
@@ -675,6 +773,31 @@ function optionTypesUnionToInternal(def: OptionTypesUnion): Internal.SettingsOpt
                 max_length: def.max ?? null,
                 min_length: 0
             }
+        case "customStringSelect":
+            return {
+                kind: "customStringSelect",
+                options: def.options,
+            }
+        case "customStringMultiSelect":
+            return {
+                kind: "customStringMultiSelect",
+                options: def.options,
+                max_selected: def.max_selected ?? null,
+                min_selected: def.min_selected ?? null,
+            }
+        case "customNumberSelect":
+            return {
+                kind: "customNumberSelect",
+                options: def.options,
+            }
+        case "customNumberMultiSelect":
+            return {
+                kind: "customNumberMultiSelect",
+                options: def.options,
+                max_selected: def.max_selected ?? null,
+                min_selected: def.min_selected ?? null,
+            }
+
     }
 }
 

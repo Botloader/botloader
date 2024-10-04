@@ -402,7 +402,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(export)]
+#[ts(export, rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/SettingsOptionType.ts")]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "kind")]
@@ -424,6 +424,26 @@ pub enum SettingsOptionType {
         max: Option<String>,
     },
     Boolean,
+    #[ts(rename = "customStringSelect")]
+    CustomStringSelect {
+        options: Vec<SettingsStringSelectOption>,
+    },
+    #[ts(rename = "customStringMultiSelect")]
+    CustomStringMultiSelect {
+        options: Vec<SettingsStringSelectOption>,
+        max_selected: Option<u32>,
+        min_selected: Option<u32>,
+    },
+    #[ts(rename = "customNumberSelect")]
+    CustomNumberSelect {
+        options: Vec<SettingsNumberSelectOption>,
+    },
+    #[ts(rename = "customNumberMultiSelect")]
+    CustomNumberMultiSelect {
+        options: Vec<SettingsNumberSelectOption>,
+        max_selected: Option<u32>,
+        min_selected: Option<u32>,
+    },
     Channel {
         types: Option<Vec<ChannelType>>,
     },
@@ -440,6 +460,24 @@ pub enum SettingsOptionType {
         max_length: Option<u32>,
         min_length: Option<u32>,
     },
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/SettingsStringSelectOption.ts")]
+pub struct SettingsStringSelectOption {
+    pub label: String,
+    pub value: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/SettingsNumberSelectOption.ts")]
+pub struct SettingsNumberSelectOption {
+    pub label: String,
+    pub value: f64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
