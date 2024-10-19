@@ -848,13 +848,40 @@ function loadOptionValue(value: any, definition: OptionTypesUnion): any {
             return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "channels": {
-            return Array.isArray(value) ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
+            return Array.isArray(value) ? toStringArray(value) : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "role": {
             return typeof value === "string" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
         case "roles": {
-            return Array.isArray(value) ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
+            return Array.isArray(value) ? toStringArray(value) : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
         }
+        case "customStringSelect":
+            if (typeof value === "string") {
+                return value
+            }
+
+            if (typeof value === "number") {
+                return value.toString()
+            }
+
+            return definition.defaultValue ?? getSysDefaultValue(definition.kind)
+        case "customStringMultiSelect":
+            return Array.isArray(value) ? toStringArray(value) : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
+        case "customNumberSelect":
+            return typeof value === "number" ? value : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
+        case "customNumberMultiSelect":
+            return Array.isArray(value) ? toNumberArray(value) : (definition.defaultValue ?? getSysDefaultValue(definition.kind))
     }
+}
+
+function toStringArray(value: any[]) {
+    return value
+        .filter(v => typeof v === "string" || typeof v === "number")
+        .map(v => typeof v === "string" ? v : v.toString())
+}
+
+function toNumberArray(value: any[]) {
+    return value
+        .filter(v => typeof v === "number")
 }

@@ -82,25 +82,49 @@ export interface SettingsOptionList {
     template: Array<SettingsOption>;
 }
 
+export type StringSelectOptionItem = {
+    label: string,
+    value: string,
+}
+
+export type NumberSelectOptionItem = {
+    label: string,
+    value: number,
+}
+
 export type SettingsOptionType =
-    | { "kind": "string"; max_length: number | null; min_length: number | null }
-    | { "kind": "float"; min: number | null; max: number | null }
-    | { "kind": "integer"; min: bigint | null; max: bigint | null }
-    | { "kind": "integer64"; min: string | null; max: string | null }
-    | { "kind": "boolean" }
-    | { "kind": "channel"; types: Array<ChannelType> | null }
+    | { kind: "string"; max_length: number | null; min_length: number | null }
+    | { kind: "float"; min: number | null; max: number | null }
+    | { kind: "integer"; min: bigint | null; max: bigint | null }
+    | { kind: "integer64"; min: string | null; max: string | null }
+    | { kind: "boolean" }
+    | { kind: "channel"; types: Array<ChannelType> | null }
     | {
-        "kind": "channels";
+        kind: "channels";
         types: Array<ChannelType> | null;
         max_length: number | null;
         min_length: number | null;
     }
-    | { "kind": "role"; assignable: boolean | null }
+    | { kind: "role"; assignable: boolean | null }
     | {
-        "kind": "roles";
+        kind: "roles";
         assignable: boolean | null;
         max_length: number | null;
         min_length: number | null;
+    }
+    | { kind: "customStringSelect", options: StringSelectOptionItem[] }
+    | {
+        kind: "customStringMultiSelect",
+        options: StringSelectOptionItem[],
+        max_selected?: number,
+        min_selected?: number
+    }
+    | { kind: "customNumberSelect", options: NumberSelectOptionItem[] }
+    | {
+        kind: "customNumberMultiSelect",
+        options: NumberSelectOptionItem[],
+        max_selected?: number,
+        min_selected?: number
     };
 
 export type ChannelType =

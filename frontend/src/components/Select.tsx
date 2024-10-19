@@ -104,7 +104,6 @@ function RoleColorDot({ size, role }: { size: number, role: DiscordRole }) {
         }} />
 }
 
-
 export function SelectChannel<
     TMultiple extends boolean,
 >({ value, multiple, onChange, label, error, allowEmpty, types }: {
@@ -288,4 +287,68 @@ function ChannelTypeToNumber(inputKind: ChannelType): DiscordNumberedChannelType
     }
 
     throw new Error("unsupported channel type: " + inputKind)
+}
+
+type CustomSelectOption<TValue> = { label: string, value: TValue }
+type OptionsValueCustom<TMultiple extends boolean, TValue> = TMultiple extends true ? TValue[] : TValue
+
+export function SelectCustom<
+    TMultiple extends boolean,
+    TValue extends string | number,
+>({ value, multiple, onChange, label, error, allowEmpty, options }: {
+    value: OptionsValueCustom<TMultiple, TValue>,
+    multiple: TMultiple,
+    label: string
+    error?: string | null
+    allowEmpty?: boolean
+    options: CustomSelectOption<TValue>[]
+    onChange: (value: OptionsValueCustom<TMultiple, TValue>) => any,
+}) {
+
+    return <Select
+        multiple={multiple}
+        value={value}
+        onChange={(evt) => {
+            onChange(evt.target.value as any)
+        }}
+        input={<OutlinedInput label={label} />}
+        SelectDisplayProps={{
+            // style: {
+            //     padding:  12,
+            // }
+        }}
+        error={Boolean(error)}
+        renderValue={(selected) => (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, marginRight: 2 }}>
+                {Array.isArray(selected)
+                    ? selected.map((value) => (
+                        <SelectedCustom key={value} allOptions={options} selected={value} />
+                    ))
+                    : <SelectedCustom allOptions={options} selected={selected} />
+                }
+            </Box>
+        )}
+        autoWidth={true}
+    >
+        {!multiple && allowEmpty && <MenuItem value={""}>
+            <ListItemText primary={"None"} />
+        </MenuItem>}
+
+        {options.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+                {multiple && <Checkbox checked={(value as any[]).includes(option.value)} />}
+                <ListItemText primary={option.label} />
+                {/* <RoleColorDot role={role} size={12} /> */}
+            </MenuItem>
+        ))}
+    </Select>
+}
+
+function SelectedCustom({ allOptions, selected }: { allOptions: CustomSelectOption<string | number>[], selected: string | number }) {
+    const option = allOptions.find(v => v.value === selected)
+
+    return <Chip
+        size="small"
+        label={option?.label ?? selected}
+    />
 }

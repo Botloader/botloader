@@ -41,7 +41,7 @@ import { FullGuildProvider } from "../modules/guilds/FullGuildProvider";
 import { useCurrentGuildScripts } from "../modules/guilds/GuildScriptsProvider";
 import { Loading } from "./Loading";
 import { PluginIcon } from "./PluginIcon";
-import { SelectChannel, SelectRole } from "./Select";
+import { SelectChannel, SelectCustom, SelectRole } from "./Select";
 import ReplayIcon from '@mui/icons-material/Replay';
 import { CodeBlock } from './CodeBlock';
 import { useSession } from '../modules/session/useSession';
@@ -421,7 +421,11 @@ function EditSettingsOption({ option }: { option: SettingsOption, value?: string
     } else if (option.kind.kind === "channel"
         || option.kind.kind === "role"
         || option.kind.kind === "channels"
-        || option.kind.kind === "roles") {
+        || option.kind.kind === "roles"
+        || option.kind.kind === "customStringSelect"
+        || option.kind.kind === "customStringMultiSelect"
+        || option.kind.kind === "customNumberSelect"
+        || option.kind.kind === "customNumberMultiSelect") {
         return <EditOptionSelect option={option} />
 
     } else if (option.kind.kind === "boolean") {
@@ -549,26 +553,31 @@ function EditOptionBooleanField({ option }: { option: SettingsOption }) {
     }
 
     return <Box mt={3}>
-        <FormControlLabel control={<Checkbox checked={value}
-            onChange={(evt) => {
-                setValue(evt.target.checked)
-            }}
-        />} label={option.label} />
+        <Box>
+            <FormControlLabel
+                sx={{ marginRight: 0 }}
+                label={option.label}
+                control={<Checkbox checked={value}
+                    onChange={(evt) => {
+                        setValue(evt.target.checked)
+                    }}
+                />}
+            />
+
+            {(Boolean(rawValue) && (option.defaultValue || !option.required)) &&
+                <IconButton
+                    color='warning'
+                    onClick={() => {
+                        setValue(null)
+                    }}
+                >
+                    <ReplayIcon />
+                </IconButton>}
+        </Box>
 
         <FormHelperText error={Boolean(error)}>
             <FieldHelpText description={option.description} error={error} />
         </FormHelperText>
-
-
-        {(Boolean(rawValue) && (option.defaultValue || !option.required)) &&
-            <IconButton
-                color='warning'
-                onClick={() => {
-                    setValue(null)
-                }}
-            >
-                <ReplayIcon />
-            </IconButton>}
     </Box>
 }
 
@@ -612,11 +621,18 @@ function EditOptionSelect({ option }: { option: SettingsOption }) {
     console.assert(option.kind.kind === "channel"
         || option.kind.kind === "role"
         || option.kind.kind === "roles"
-        || option.kind.kind === "channels")
+        || option.kind.kind === "channels"
+        || option.kind.kind === "customStringSelect"
+        || option.kind.kind === "customStringMultiSelect"
+        || option.kind.kind === "customNumberSelect"
+        || option.kind.kind === "customNumberMultiSelect")
 
     const { value: rawValue, setValue, error } = useSettingsField(option.name)
 
-    const isMultiple = option.kind.kind === "channels" || option.kind.kind === "roles"
+    const isMultiple = option.kind.kind === "channels"
+        || option.kind.kind === "roles"
+        || option.kind.kind === "customStringMultiSelect"
+        || option.kind.kind === "customNumberMultiSelect"
 
     return <Box mt={3} minWidth={"150px"} display={"flex"}>
         <FormControl>
@@ -644,13 +660,7 @@ function EditOptionSelect({ option }: { option: SettingsOption }) {
 function EditOptionSelectSingle({ option }: { option: SettingsOption }) {
     const { value: rawValue, setValue, error } = useSettingsField(option.name)
 
-    console.assert(option.kind.kind === "channel" || option.kind.kind === "role")
-
-    const value = rawValue?.value
-        ? typeof rawValue.value === "string"
-            ? rawValue.value
-            : ""
-        : ""
+    const value = textFieldValue(rawValue?.value, option)
 
     if (option.kind.kind === "channel") {
         return <SelectChannel
@@ -664,30 +674,55 @@ function EditOptionSelectSingle({ option }: { option: SettingsOption }) {
             allowEmpty={!option.required}
             types={option.kind.types ?? undefined}
         />
+    } else if (option.kind.kind === "role") {
+        return <SelectRole
+            multiple={false}
+            value={value}
+            label={option.label}
+            error={error}
+            onChange={(newValue) => {
+                setValue(newValue ?? null)
+            }}
+            allowEmpty={!option.required}
+        />
+    } else if (option.kind.kind === "customStringSelect") {
+        return <SelectCustom
+            multiple={false}
+            value={value}
+            label={option.label}
+            error={error}
+            onChange={(newValue) => {
+                setValue(newValue ?? null)
+            }}
+            allowEmpty={false}
+            options={option.kind.options}
+        />
+    } else if (option.kind.kind === "customNumberSelect") {
+        return <SelectCustom
+            multiple={false}
+            value={value}
+            label={option.label}
+            error={error}
+            onChange={(newValue) => {
+                setValue(newValue ?? null)
+            }}
+            allowEmpty={false}
+            options={option.kind.options}
+        />
+    } else {
+        return <>TODO unsupported kind {option.kind.kind}</>
     }
-
-    return <SelectRole
-        multiple={false}
-        value={value}
-        label={option.label}
-        error={error}
-        onChange={(newValue) => {
-            setValue(newValue ?? null)
-        }}
-        allowEmpty={!option.required}
-    />
 }
 
 function EditOptionSelectMultiple({ option }: { option: SettingsOption }) {
     const { value: rawValue, setValue, error } = useSettingsField(option.name)
 
-    console.assert(option.kind.kind === "channels" || option.kind.kind === "roles")
-
+    const defaultValue = option.defaultValue ?? []
     const value = rawValue?.value
-        ? Array.isArray(rawValue.value)
-            ? rawValue.value as string[]
-            : []
-        : []
+        ? Array.isArray(rawValue?.value)
+            ? rawValue.value
+            : defaultValue
+        : defaultValue
 
     if (option.kind.kind === "channels") {
         return <SelectChannel
@@ -699,17 +734,41 @@ function EditOptionSelectMultiple({ option }: { option: SettingsOption }) {
                 setValue(newValue)
             }}
         />
+    } else if (option.kind.kind === "roles") {
+        return <SelectRole
+            multiple={true}
+            value={value}
+            label={option.name}
+            error={error}
+            onChange={(newValue) => {
+                setValue(newValue)
+            }}
+        />
+    } else if (option.kind.kind === "customStringMultiSelect") {
+        return <SelectCustom
+            multiple={true}
+            value={value}
+            label={option.label}
+            error={error}
+            onChange={(newValue) => {
+                setValue(newValue ?? null)
+            }}
+            options={option.kind.options}
+        />
+    } else if (option.kind.kind === "customNumberMultiSelect") {
+        return <SelectCustom
+            multiple={true}
+            value={value}
+            label={option.label}
+            error={error}
+            onChange={(newValue) => {
+                setValue(newValue ?? null)
+            }}
+            options={option.kind.options}
+        />
+    } else {
+        return <>TODO unsupported kind {option.kind.kind}</>
     }
-
-    return <SelectRole
-        multiple={true}
-        value={value}
-        label={option.name}
-        error={error}
-        onChange={(newValue) => {
-            setValue(newValue)
-        }}
-    />
 }
 
 function FieldHelpText({ description, error }: { description: string, error?: string }) {
