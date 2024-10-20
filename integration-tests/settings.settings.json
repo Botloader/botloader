@@ -16,6 +16,50 @@
         "value": 20
     },
     {
+        "name": "string_select_with_default_provided",
+        "value": "fourth value"
+    },
+    {
+        "name": "string_select_no_default_provided",
+        "value": "fourth value"
+    },
+    {
+        "name": "str_multiselect_with_default_provided",
+        "value": [
+            "hello value",
+            "yet another value"
+        ]
+    },
+    {
+        "name": "str_multiselect_no_default_provided",
+        "value": [
+            "hello value",
+            "yet another value"
+        ]
+    },
+    {
+        "name": "number_select_with_default_provided",
+        "value": 365
+    },
+    {
+        "name": "number_select_no_default_provided",
+        "value": 365
+    },
+    {
+        "name": "num_multiselect_with_default_provided",
+        "value": [
+            365,
+            1
+        ]
+    },
+    {
+        "name": "num_multiselect_no_default_provided",
+        "value": [
+            365,
+            1
+        ]
+    },
+    {
         "name": "string_list",
         "value": [
             [
@@ -52,6 +96,64 @@
                 {
                     "name": "string_default_provided",
                     "value": "provided2"
+                }
+            ]
+        ]
+    },
+    {
+        "name": "string_selects_list",
+        "value": [
+            [
+                {
+                    "name": "no_default_provided",
+                    "value": "fourth value"
+                },
+                {
+                    "name": "with_default_provided",
+                    "value": "fourth value"
+                },
+                {
+                    "name": "multi_no_default_provided",
+                    "value": [
+                        "hello value",
+                        "yet another value"
+                    ]
+                },
+                {
+                    "name": "multi_with_default_provided",
+                    "value": [
+                        "hello value",
+                        "yet another value"
+                    ]
+                }
+            ]
+        ]
+    },
+    {
+        "name": "number_selects_list",
+        "value": [
+            [
+                {
+                    "name": "no_default_provided",
+                    "value": 365
+                },
+                {
+                    "name": "with_default_provided",
+                    "value": 365
+                },
+                {
+                    "name": "multi_no_default_provided",
+                    "value": [
+                        365,
+                        1
+                    ]
+                },
+                {
+                    "name": "multi_with_default_provided",
+                    "value": [
+                        365,
+                        1
+                    ]
                 }
             ]
         ]
