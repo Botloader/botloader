@@ -342,6 +342,34 @@ function testNumberSelectLists() {
     testList(expectedValues, testListNumberSelects.value)
 }
 
+// defaultExpected = [}
+
+const testListDefaultSetting = script.settings.startList("list_default")
+    .addOptionString("a", { required: true })
+    .addOptionBoolean("b", {})
+    .complete({
+        defaultValue: [{
+            a: "a_value_1",
+            b: true
+        },
+        {
+            a: "a_value_2",
+            b: false
+        }]
+    })
+
+function testListDefault() {
+    const expectedValues = [{
+        a: "a_value_1",
+        b: true
+    },
+    {
+        a: "a_value_2",
+        b: false
+    }]
+
+    testList(expectedValues, testListDefaultSetting.value)
+}
 
 runOnce(script.name, () => {
     testTopLevelOptions()
@@ -350,6 +378,8 @@ runOnce(script.name, () => {
 
     testStringSelectLists()
     testNumberSelectLists()
+
+    testListDefault()
 
     sendScriptCompletion(script.name)
 

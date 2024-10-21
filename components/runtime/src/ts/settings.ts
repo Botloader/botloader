@@ -225,7 +225,7 @@ type OptionDefinitionList = {
     kind: "List",
     name: string,
     template: Record<string, OptionTypesUnion>,
-    options: ListOptions<any>,
+    options: ListOptions<Record<string, any>[] | undefined>,
 }
 
 type AnyOptionDefinition = OptionDefinitionOption | OptionDefinitionList
@@ -502,13 +502,13 @@ export class LoadedList<TOpts extends OptionsMap> {
         this.definition = definition
 
         if (!rawValue?.value) {
-            this._value = definition.options.defaultValue ?? []
+            this._value = (definition.options.defaultValue as any) ?? []
             return
         }
 
         const arrValue = rawValue?.value
         if (!Array.isArray(arrValue)) {
-            this._value = definition.options.defaultValue ?? []
+            this._value = (definition.options.defaultValue as any) ?? []
             return
         }
 
@@ -703,9 +703,17 @@ function defToInternal(def: AnyOptionDefinition): Internal.SettingsOptionDefinit
                 name: def.name,
                 description: def.options.description || "",
                 label: def.options.label ?? def.name,
-                // asd: 10,
                 required: false,
-                defaultValue: def.options.defaultValue ?? null,
+                defaultValue: def.options.defaultValue ? def.options.defaultValue.map(item => {
+                    const out = []
+                    for (const [k, v] of Object.entries(item)) {
+                        out.push({
+                            name: k,
+                            value: v,
+                        })
+                    }
+                    return out
+                }) : null,
                 template: Object.entries(def.template).map(([k, v]) => ({
                     name: k,
                     label: v.label ?? k,
