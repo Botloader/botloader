@@ -32,6 +32,7 @@ import {
     createContext,
     useContext,
     useEffect,
+    useMemo,
     useRef,
     useState
 } from "react";
@@ -70,8 +71,11 @@ export function GuildScriptPage() {
             <ScriptDetails guildId={currentGuildId} script={script} plugin={plugin} />
         </Paper>
         <FullGuildProvider guildId={currentGuildId}>
-            {script.settings_definitions && script.settings_definitions.length > 0 &&
-                <ScriptSettings key={script.id} script={script} />
+            {(script.settings_definitions && script.settings_definitions.length > 0)
+                ? <ScriptSettings key={script.id} script={script} />
+                : <Paper sx={{ padding: 2, marginTop: 2 }}>
+                    <Typography >This script has no settings registered.</Typography>
+                </Paper>
             }
         </FullGuildProvider>
     </>
@@ -175,9 +179,15 @@ function ScriptSettings({ script }: { script: Script }) {
     const [newValues, setNewValues] = useState<SettingsOptionValue[]>(() => {
         return stripUnknownFields(script)
     })
+
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isValidating, setIsValidating] = useState(false)
     const [apiErrorResponse, setApiErrorResponse] = useState<ApiError | null>(null)
     const notifications = UseNotifications()
+
+    const isDirty = useMemo(() => {
+        return JSON.stringify(newValues) !== JSON.stringify(script.settings_values)
+    }, [newValues, script])
 
     const settingsHook: SettingsValuesHook = {
         getFieldValue(name) {
@@ -242,9 +252,9 @@ function ScriptSettings({ script }: { script: Script }) {
             }
         }
 
-        if (!isSubmitting) {
-            setIsSubmitting(true)
-            validateScript().finally(() => setIsSubmitting(false))
+        if (!isValidating) {
+            setIsValidating(true)
+            validateScript().finally(() => setIsValidating(false))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newValues, currentGuildId, script.id, session.apiClient])
@@ -272,12 +282,22 @@ function ScriptSettings({ script }: { script: Script }) {
             </SettingsValuesContext.Provider>
             <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isDirty || isValidating}
+                size='large'
+                variant='contained'
+                color='success'
+                fullWidth
                 sx={{
                     marginTop: 2,
                     marginBottom: 2
                 }}>
-                Save Changes
+                {!isDirty
+                    ? "No unsaved changes"
+                    : isValidating
+                        ? "Validating changes..."
+                        : isSubmitting
+                            ? "Saving..."
+                            : "Save changes"}
             </Button>
         </form>
         <Accordion elevation={2}>

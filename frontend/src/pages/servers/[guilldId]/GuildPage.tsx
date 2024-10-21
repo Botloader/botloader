@@ -221,15 +221,23 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
     }
 
     return <Box sx={{
-        p: 1, display: "flex", alignItems: "center",
+        display: "flex", alignItems: "center",
         borderLeft: 2,
         borderColor: script.enabled ? "success.dark" : "error.dark",
         '&:hover': { backgroundColor: "action.hover" }
-    }}>
-        <Typography variant="body1" flexGrow={1}>{script.name}.ts</Typography>
-        <Stack direction={"row"} alignItems="center">
-            {plugin ? (
-                <>
+    }}
+        onClick={() => console.log("whooo")}
+    >
+        <BlLink
+            to={`/servers/${guildId}/scripts/${script.id}`}
+            sx={{ flexGrow: 1, textTransform: "none", color: "unset", textAlign: "left", justifyContent: "start", p: 2 }}
+        >
+            {script.name}.ts
+            {/* <Typography variant="body1" flexGrow={1} color={"white"} textTransform={"unset"}>{script.name}.ts</Typography> */}
+        </BlLink>
+        <Stack direction={"row"} alignItems="center" onClick={(evt) => evt.stopPropagation()}>
+            {plugin
+                ? (<>
                     <Typography variant="body1">{plugin.current_version === script.plugin_version_number ?
                         "Using latest version"
                         : script.plugin_version_number === null
@@ -238,8 +246,9 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
                     <AsyncOpButton disabled={plugin.current_version === script.plugin_version_number} onClick={updatePluginVersion} label="Update version"></AsyncOpButton>
                     <BlLink disabled={plugin.current_version === script.plugin_version_number}
                         to={`/servers/${guildId}/scripts/${script.id}/edit?diffMode=pluginPublished`}>View changes</BlLink>
-                </>
-            ) : null}
+                </>)
+                : null
+            }
 
             {plugin
                 ? <BlLink to={`/servers/${guildId}/scripts/${script.id}`}>
@@ -251,9 +260,10 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
                     </BlLink>
                     <ScriptEnableToggle script={script} />
                     <AsyncOpButton label="delete" onClick={() => deleteConfirm()}></AsyncOpButton>
-                </>}
-        </Stack>
-    </Box>
+                </>
+            }
+        </Stack >
+    </Box >
 }
 
 function GetStartedPanel() {
