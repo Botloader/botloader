@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use common::{config::RunConfig, DiscordConfig};
-use stores::Db;
+use discordoauthwrapper::{ClientCache, TwilightApiProvider};
+use stores::{inmemory::web::InMemoryCsrfStore, Db};
 use tracing::{info, warn};
 use twilight_model::id::Id;
 
@@ -20,6 +21,9 @@ pub struct InnerAppState {
     pub discord_config: Arc<DiscordConfig>,
     pub bot_rpc_client: botrpc::Client,
     pub state_client: dbrokerapi::state_client::Client,
+    pub seaorm_db: sea_orm::DatabaseConnection,
+    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
+    pub csrf_store: InMemoryCsrfStore,
 }
 
 pub type AppState = Arc<InnerAppState>;
@@ -42,6 +46,11 @@ pub async fn init_app_state(common_conf: &RunConfig, web_conf: &WebConfig) -> Ap
     let stripe_client = init_stripe_client(postgres_store.clone(), web_conf);
     let state_client = dbrokerapi::state_client::Client::new(web_conf.broker_api_addr.clone());
 
+    let sea_db = common_conf
+        .setup_db_conn_seaorm()
+        .await
+        .expect("failed connecting sea_orm client");
+
     Arc::new(InnerAppState {
         web_config: web_conf.clone(),
         common_config: common_conf.clone(),
@@ -52,6 +61,9 @@ pub async fn init_app_state(common_conf: &RunConfig, web_conf: &WebConfig) -> Ap
         discord_config,
         bot_rpc_client,
         state_client,
+        seaorm_db: sea_db,
+        oauth_api_client_cache: Default::default(),
+        csrf_store: Default::default(),
     })
 }
 

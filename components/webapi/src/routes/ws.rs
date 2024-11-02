@@ -1,45 +1,34 @@
-use std::{borrow::Cow, convert::Infallible, pin::Pin, task::Poll, time::Duration};
+use std::{borrow::Cow, pin::Pin, task::Poll, time::Duration};
 
 use axum::{
     extract::{
         ws::{CloseCode, CloseFrame, Message, WebSocket, WebSocketUpgrade},
-        Extension, State,
+        State,
     },
     response::IntoResponse,
 };
-use discordoauthwrapper::{ClientCache, DiscordOauthApiClient, TwilightApiProvider};
 use futures::{stream::SelectAll, Stream, StreamExt};
 use guild_logger::LogEntry;
 use serde::{Deserialize, Serialize};
 use twilight_model::{
     guild::Permissions,
     id::{marker::GuildMarker, Id},
-    user::CurrentUser,
 };
 
 use crate::{app_state::AppState, middlewares::LoggedInSession};
 
-pub async fn ws_handler(
-    ws: WebSocketUpgrade,
-    Extension(client_cache): Extension<
-        ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-    >,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket_upgrade(socket, client_cache, state))
+use super::plugins::DiscordUser;
+
+pub async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket_upgrade(socket, state))
 }
 
-async fn handle_socket_upgrade(
-    socket: WebSocket,
-    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-    state: AppState,
-) {
-    WsConn::new(socket, client_cache, state).run().await;
+async fn handle_socket_upgrade(socket: WebSocket, state: AppState) {
+    WsConn::new(socket, state).run().await;
 }
 
 struct WsConn {
     socket: WebSocket,
-    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
 
     active_log_streams: SelectAll<GuildLogStream>,
 
@@ -51,17 +40,12 @@ struct WsConn {
 type WsResult = Result<(), WsCloseReason>;
 
 impl WsConn {
-    fn new(
-        socket: WebSocket,
-        client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-        state: AppState,
-    ) -> Self {
+    fn new(socket: WebSocket, state: AppState) -> Self {
         Self {
             socket,
             active_log_streams: SelectAll::new(),
             state: WsState::UnAuth,
             app_state: state,
-            client_cache,
         }
     }
 
@@ -194,38 +178,26 @@ impl WsConn {
     }
 
     async fn do_login(&mut self, token: String) -> WsResult {
-        if let Some(session) = self
-            .app_state
-            .db
-            .get_session(&token)
+        let Some(logged_in_session) = LoggedInSession::load_from_db(&token, &self.app_state)
             .await
-            .map_err(|_| WsCloseReason::InternalError)?
-        {
-            let api_client = self
-                .client_cache
-                .fetch(session.user.id, || {
-                    Result::<_, Infallible>::Ok(DiscordOauthApiClient::new_twilight(
-                        session.user.id,
-                        session.oauth_token.access_token.clone(),
-                        self.app_state.discord_oauth_client.clone(),
-                        self.app_state.db.clone(),
-                    ))
-                })
-                .unwrap();
+            .map_err(|err| {
+                tracing::error!(%err, "failed fetching session from db");
+                WsCloseReason::InternalError
+            })?
+        else {
+            return Err(WsCloseReason::BadToken);
+        };
 
-            let logged_in_session = LoggedInSession::new(session, api_client);
+        self.send_event(WsEvent::AuthSuccess(DiscordUser::from(
+            logged_in_session.clone(),
+        )))
+        .await?;
 
-            self.send_event(WsEvent::AuthSuccess(logged_in_session.session.user.clone()))
-                .await?;
+        self.state = WsState::Authorized(AuthorizedWsState {
+            session: logged_in_session,
+        });
 
-            self.state = WsState::Authorized(AuthorizedWsState {
-                session: logged_in_session,
-            });
-
-            Ok(())
-        } else {
-            Err(WsCloseReason::BadToken)
-        }
+        Ok(())
     }
 
     async fn handle_ws_command_auth(&mut self, cmd: WsCommand) -> WsResult {
@@ -355,7 +327,7 @@ struct AuthorizedWsState {
 #[derive(Serialize)]
 #[serde(tag = "t", content = "d")]
 enum WsEvent {
-    AuthSuccess(CurrentUser),
+    AuthSuccess(DiscordUser),
     SubscriptionsUpdated(Vec<Id<GuildMarker>>),
     ScriptLogMessage(LogEntry),
     // GeneralLogMEssage(String)

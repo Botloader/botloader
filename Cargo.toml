@@ -33,6 +33,13 @@ tracing-log = "0.2"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 regex = "1.10"
 oauth2 = "4.4.2"
+sea-orm = { version = "1.0.0-rc.5", features = [
+    "sqlx-postgres",
+    "runtime-tokio-rustls",
+    "macros",
+    "with-chrono",
+    "with-json",
+] }
 
 
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }

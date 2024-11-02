@@ -16,6 +16,7 @@ common = { path = "../../components/common" }
 axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
 stripe-premium = { path = "../../components/stripe-premium" }
 runtime-models = { path = "../../components/runtime-models" }
+entities = { path = "../../components/entities" }
 
 oauth2 = { workspace = true }
 anyhow = { workspace = true }
@@ -27,8 +28,8 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 tokio = { workspace = true }
-tower-http = { version = "0.5.1", features = ["trace", "set-header"] }
-tower = "0.4"
+tower-http = { version = "0.6.1", features = ["trace", "set-header"] }
+tower = "0.5"
 axum = { workspace = true }
 tonic = { workspace = true }
 uuid = { workspace = true }
@@ -39,3 +40,4 @@ tracing-log = { workspace = true }
 
 twilight-http = { workspace = true }
 twilight-model = { workspace = true }
+sea-orm = { workspace = true }

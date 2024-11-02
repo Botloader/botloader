@@ -348,7 +348,7 @@ pub async fn update_script_plugin(
     //
     // TODO decision on this
     //
-    // if !plugin.is_public && plugin.author_id != session.session.user.id {
+    // if !plugin.is_public && plugin.author_id != session.session.user_id {
     //     return Err(ApiErrorResponse::NoAccessToPlugin);
     // }
 

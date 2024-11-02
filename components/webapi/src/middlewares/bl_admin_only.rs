@@ -17,7 +17,7 @@ pub async fn bl_admin_only_mw(
 ) -> Result<Response, ApiErrorResponse> {
     let user_meta = state
         .db
-        .get_user_meta(session.session.user.id.get())
+        .get_user_meta(session.session.user_id.get())
         .await
         .map_err(|err| {
             error!(%err, "failed fetching user_meta");

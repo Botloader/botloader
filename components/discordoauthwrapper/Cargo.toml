@@ -6,9 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-stores = { path = "../../components/stores" }
+entities = { path = "../../components/entities" }
 
 async-trait = { workspace = true }
+sea-orm = { workspace = true }
 oauth2 = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }

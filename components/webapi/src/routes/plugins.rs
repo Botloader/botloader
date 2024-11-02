@@ -19,7 +19,7 @@ use tracing::error;
 use twilight_http::api_error::{ApiError, GeneralApiError};
 use twilight_model::{
     id::{marker::UserMarker, Id},
-    user::{CurrentUser, CurrentUserGuild},
+    user::CurrentUserGuild,
 };
 use uuid::Uuid;
 use validation::{validate, ValidationContext, Validator};
@@ -38,6 +38,17 @@ pub struct DiscordUser {
     username: String,
     discriminator: String,
     avatar: Option<String>,
+}
+
+impl From<LoggedInSession> for DiscordUser {
+    fn from(session: LoggedInSession) -> Self {
+        Self {
+            id: *session.session.user_id,
+            avatar: (!session.session.avatar.is_empty()).then_some(session.session.avatar.clone()),
+            discriminator: session.session.discriminator.to_string(),
+            username: session.session.username.clone(),
+        }
+    }
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -69,12 +80,8 @@ pub async fn get_published_public_plugins(
             ApiErrorResponse::InternalError
         })?;
 
-    let plugins = fetch_plugin_authors(
-        &state.discord_config,
-        maybe_session.as_ref().map(|v| &v.session.user),
-        &plugins,
-    )
-    .await?;
+    let plugins =
+        fetch_plugin_authors(&state.discord_config, maybe_session.as_ref(), &plugins).await?;
 
     Ok(Json(plugins))
 }
@@ -86,15 +93,14 @@ pub async fn get_user_plugins(
 ) -> ApiResult<impl IntoResponse> {
     let plugins = state
         .db
-        .get_user_plugins(session.session.user.id.get())
+        .get_user_plugins(session.session.user_id.get())
         .await
         .map_err(|err| {
             error!(?err, "failed fetching plugins");
             ApiErrorResponse::InternalError
         })?;
 
-    let plugins =
-        fetch_plugin_authors(&state.discord_config, Some(&session.session.user), &plugins).await?;
+    let plugins = fetch_plugin_authors(&state.discord_config, Some(&session), &plugins).await?;
 
     Ok(Json(plugins))
 }
@@ -105,12 +111,8 @@ pub async fn get_plugin(
     Extension(maybe_session): Extension<OptionalSession>,
     State(state): State<AppState>,
 ) -> ApiResult<impl IntoResponse> {
-    let plugin = fetch_plugin_author(
-        &state.discord_config,
-        maybe_session.as_ref().map(|v| &v.session.user),
-        &plugin,
-    )
-    .await?;
+    let plugin =
+        fetch_plugin_author(&state.discord_config, maybe_session.as_ref(), &plugin).await?;
 
     Ok(Json(plugin))
 }
@@ -129,7 +131,7 @@ pub async fn create_plugin(
     Json(body): Json<CreatePluginBody>,
 ) -> ApiResult<impl IntoResponse> {
     let create = CreatePlugin {
-        author_id: session.session.user.id.get(),
+        author_id: session.session.user_id.get(),
         name: body.name,
         short_description: body.short_description,
         long_description: body.long_description,
@@ -144,7 +146,7 @@ pub async fn create_plugin(
 
     let plugins = state
         .db
-        .get_user_plugins(session.session.user.id.get())
+        .get_user_plugins(session.session.user_id.get())
         .await
         .map_err(|err| {
             error!(?err, "failed fetching plugins");
@@ -199,7 +201,7 @@ pub async fn update_plugin_meta(
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
-    if plugin.author_id != session.session.user.id {
+    if plugin.author_id != *session.session.user_id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
@@ -238,7 +240,7 @@ pub async fn update_plugin_dev_source(
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
-    if plugin.author_id != session.session.user.id {
+    if plugin.author_id != *session.session.user_id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
@@ -278,7 +280,7 @@ pub async fn publish_plugin_version(
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
 
-    if plugin.author_id != session.session.user.id {
+    if plugin.author_id != *session.session.user_id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
@@ -316,7 +318,7 @@ pub async fn guild_add_plugin(
 ) -> ApiResult<impl IntoResponse> {
     let plugin = fetch_plugin(&state.db, body.plugin_id).await?;
 
-    if !plugin.is_public && plugin.author_id != session.session.user.id {
+    if !plugin.is_public && plugin.author_id != *session.session.user_id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
@@ -346,7 +348,7 @@ pub async fn guild_add_plugin(
 
 pub async fn fetch_plugin_author(
     config: &DiscordConfig,
-    logged_in_user: Option<&CurrentUser>,
+    logged_in_user: Option<&LoggedInSession>,
     plugin: &Plugin,
 ) -> ApiResult<PluginResponse> {
     let user = fetch_discord_user(config, logged_in_user, plugin.author_id).await?;
@@ -364,7 +366,7 @@ pub async fn fetch_plugin_author(
 
 pub async fn fetch_plugin_authors(
     config: &DiscordConfig,
-    logged_in_user: Option<&CurrentUser>,
+    logged_in_user: Option<&LoggedInSession>,
     plugins: &[Plugin],
 ) -> ApiResult<Vec<PluginResponse>> {
     let mut ids: Vec<_> = plugins.iter().map(|v| v.author_id).collect::<Vec<_>>();
@@ -399,18 +401,13 @@ pub async fn fetch_plugin_authors(
 
 async fn fetch_discord_user(
     config: &DiscordConfig,
-    logged_in_user: Option<&CurrentUser>,
+    logged_in_user: Option<&LoggedInSession>,
     id: Id<UserMarker>,
 ) -> ApiResult<DiscordUser> {
     // shortcut if were trying to fetch the currently signed in user!
     if let Some(current_user) = &logged_in_user {
-        if id == current_user.id {
-            return Ok(DiscordUser {
-                id,
-                avatar: current_user.avatar.map(|v| v.to_string()),
-                discriminator: current_user.discriminator.to_string(),
-                username: current_user.name.clone(),
-            });
+        if id == *current_user.session.user_id {
+            return Ok(DiscordUser::from((*current_user).clone()));
         }
     }
 
@@ -467,7 +464,7 @@ pub async fn add_plugin_image(
     Extension(session): Extension<LoggedInSession>,
     mut multipart: Multipart,
 ) -> ApiResult<EmptyResponse> {
-    if plugin.author_id != session.session.user.id {
+    if plugin.author_id != *session.session.user_id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 
@@ -556,7 +553,7 @@ pub async fn add_plugin_image(
             width,
             height,
             plugin_id: plugin.id,
-            user_id: session.session.user.id.get(),
+            user_id: session.session.user_id.get(),
         })
         .await
         .map_err(|err| {
@@ -595,7 +592,7 @@ pub async fn delete_plugin_image(
     Extension(plugin): Extension<Plugin>,
     Path(ImageParam { image_id }): Path<ImageParam>,
 ) -> ApiResult<EmptyResponse> {
-    if plugin.author_id != session.session.user.id {
+    if plugin.author_id != *session.session.user_id {
         return Err(ApiErrorResponse::NoAccessToPlugin);
     }
 

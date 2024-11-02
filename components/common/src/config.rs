@@ -1,4 +1,5 @@
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
 #[derive(Clone, clap::Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -62,5 +63,17 @@ impl RunConfig {
         .set_redirect_uri(
             RedirectUrl::new(format!("{}/confirm_login", self.frontend_host_base)).unwrap(),
         )
+    }
+
+    pub async fn setup_db_conn_seaorm(
+        &self,
+    ) -> Result<DatabaseConnection, Box<dyn std::error::Error>> {
+        let mut opt = ConnectOptions::new("protocol://username:password@host/database");
+        opt.max_connections(10).min_connections(1);
+
+        let db: DatabaseConnection =
+            Database::connect("protocol://username:password@host/database").await?;
+
+        Ok(db)
     }
 }

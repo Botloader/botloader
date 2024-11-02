@@ -27,7 +27,7 @@ pub async fn handle_create_customer_portal_session(
 
     let session = client
         .create_customer_portal_link(
-            session.session.user.id,
+            *session.session.user_id,
             &format!("{}/user/premium", state.common_config.frontend_host_base),
         )
         .await
@@ -55,7 +55,7 @@ pub async fn handle_create_checkout_session(
 
     let session = client
         .create_checkout_session(
-            session.session.user.id,
+            *session.session.user_id,
             body.tier,
             &format!(
                 "{}/confirm_stripe_purchase",

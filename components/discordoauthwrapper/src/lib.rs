@@ -5,8 +5,15 @@ use std::{
     time::Duration,
 };
 
-use oauth2::reqwest::async_http_client;
-use stores::{web::DiscordOauthToken, Db};
+use entities::discord_oauth_tokens;
+use oauth2::{
+    basic::BasicTokenType, reqwest::async_http_client, EmptyExtraTokenFields,
+    StandardTokenResponse, TokenResponse,
+};
+use sea_orm::{
+    sea_query::OnConflict, sqlx::types::chrono, ActiveValue, DatabaseConnection, EntityTrait,
+    Iterable,
+};
 use twilight_model::{
     id::{marker::UserMarker, Id},
     user::{CurrentUser, CurrentUserGuild},
@@ -23,7 +30,7 @@ struct ApiClientInner<T, TU> {
     user_id: Id<UserMarker>,
     api_provider: T,
     token_refresher: TU,
-    db: Db,
+    db: DatabaseConnection,
 
     // if the refresh token is no longer valid
     broken: AtomicBool,
@@ -49,7 +56,7 @@ where
         user_id: Id<UserMarker>,
         bearer_token: String,
         token_refresher: TU,
-        db: Db,
+        db: DatabaseConnection,
     ) -> Self {
         Self {
             inner: Arc::new(ApiClientInner {
@@ -71,7 +78,12 @@ where
     TU: TokenRefresher + 'static,
     T::OtherError: Debug + Display + Send + Sync + 'static,
 {
-    pub fn new(user_id: Id<UserMarker>, api_provider: T, token_refresher: TU, db: Db) -> Self {
+    pub fn new(
+        user_id: Id<UserMarker>,
+        api_provider: T,
+        token_refresher: TU,
+        db: DatabaseConnection,
+    ) -> Self {
         Self {
             inner: Arc::new(ApiClientInner {
                 user_id,
@@ -130,17 +142,50 @@ where
     }
 
     pub async fn update_token(&self) -> Result<(), BoxError> {
-        let current = self.inner.db.get_oauth_token(self.inner.user_id).await?;
+        let Some(current) = discord_oauth_tokens::Entity::find_by_id(self.inner.user_id)
+            .one(&self.inner.db)
+            .await?
+        else {
+            return Err("Could not find auth token entry".into());
+        };
 
-        let new_token = DiscordOauthToken::new(
-            self.inner.user_id,
-            self.inner.token_refresher.update_token(current).await?,
-        );
+        let oauth2_token = self
+            .inner
+            .token_refresher
+            .update_token(current.discord_bearer_token)
+            .await?;
 
-        let access_token = new_token.access_token.clone();
-        self.inner.db.set_user_oatuh_token(new_token).await?;
+        let new_token_entry = discord_oauth_tokens::ActiveModel {
+            user_id: ActiveValue::Set(self.inner.user_id.into()),
+            discord_bearer_token: ActiveValue::Set(oauth2_token.access_token().secret().clone()),
+            discord_refresh_token: ActiveValue::Set(
+                oauth2_token
+                    .refresh_token()
+                    .map(|at| at.secret().clone())
+                    .unwrap_or_default(),
+            ),
+            discord_token_expires_at: ActiveValue::Set(
+                (chrono::Utc::now()
+                    + oauth2_token
+                        .expires_in()
+                        .unwrap_or_else(|| Duration::from_secs(60 * 60 * 24 * 7)))
+                .into(),
+            ),
+        };
 
-        self.inner.api_provider.update_token(access_token).await;
+        discord_oauth_tokens::Entity::insert(new_token_entry)
+            .on_conflict(
+                OnConflict::column(discord_oauth_tokens::Column::UserId)
+                    .update_columns(discord_oauth_tokens::Column::iter())
+                    .to_owned(),
+            )
+            .exec(&self.inner.db)
+            .await?;
+
+        self.inner
+            .api_provider
+            .update_token(oauth2_token.access_token().secret().clone())
+            .await;
 
         Ok(())
     }
@@ -150,12 +195,11 @@ where
     }
 }
 
+type OauthTokenResponse = StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>;
+
 #[async_trait::async_trait]
 pub trait TokenRefresher {
-    async fn update_token(
-        &self,
-        token: DiscordOauthToken,
-    ) -> Result<stores::web::OauthToken, BoxError>;
+    async fn update_token(&self, refresh_token: String) -> Result<OauthTokenResponse, BoxError>;
 }
 
 #[derive(Debug)]
@@ -190,11 +234,8 @@ pub trait DiscordOauthApiProvider {
 
 #[async_trait::async_trait]
 impl TokenRefresher for oauth2::basic::BasicClient {
-    async fn update_token(
-        &self,
-        token: DiscordOauthToken,
-    ) -> Result<stores::web::OauthToken, BoxError> {
-        let token = oauth2::RefreshToken::new(token.refresh_token);
+    async fn update_token(&self, refresh_token: String) -> Result<OauthTokenResponse, BoxError> {
+        let token = oauth2::RefreshToken::new(refresh_token);
 
         Ok(self
             .exchange_refresh_token(&token)

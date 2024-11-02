@@ -1,7 +1,6 @@
+use common::crypto::gen_token;
 use dashmap::{mapref::entry::Entry, DashMap};
 use oauth2::CsrfToken;
-
-use crate::web::gen_token;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

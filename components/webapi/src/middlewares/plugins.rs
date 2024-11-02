@@ -34,7 +34,7 @@ pub async fn plugin_middleware(
 
     if !plugin.is_public {
         if let Some(session) = session {
-            if plugin.author_id != session.session.user.id {
+            if plugin.author_id != *session.session.user_id {
                 return Err(ApiErrorResponse::NoAccessToPlugin);
             }
 

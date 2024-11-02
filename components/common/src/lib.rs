@@ -12,6 +12,7 @@ use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod config;
+pub mod crypto;
 pub mod discord;
 pub mod dispatch_event;
 pub mod plugin;

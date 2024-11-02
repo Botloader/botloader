@@ -71,6 +71,9 @@ pub enum ApiErrorResponse {
 
     #[error("Stripe integration not enabled")]
     StripeNotEnabled,
+
+    #[error("You need to be logged in to perform this action")]
+    Unauthorized,
 }
 
 impl ApiErrorResponse {
@@ -101,6 +104,7 @@ impl ApiErrorResponse {
             Self::MaxImagesReached => (StatusCode::BAD_REQUEST, 19, None),
             Self::ScriptNotFound => (StatusCode::BAD_REQUEST, 20, None),
             Self::StripeNotEnabled => (StatusCode::INTERNAL_SERVER_ERROR, 21, None),
+            Self::Unauthorized => (StatusCode::UNAUTHORIZED, 22, None),
         }
     }
 }

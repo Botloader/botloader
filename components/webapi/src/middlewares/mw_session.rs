@@ -1,27 +1,54 @@
-use discordoauthwrapper::{ClientCache, DiscordOauthApiClient, TwilightApiProvider};
+use discordoauthwrapper::{DiscordOauthApiClient, TwilightApiProvider};
 
 use axum::{
-    http::{Request, Response},
-    BoxError,
+    extract::{Request, State},
+    middleware::Next,
+    response::Response,
+    Extension,
 };
-use core::fmt;
-use futures::future::BoxFuture;
-use std::{
-    convert::Infallible,
-    ops::Deref,
-    task::{Context, Poll},
-};
-use tower::{Layer, Service};
+
+use entities::{discord_oauth_tokens, web_sessions, TwilightId};
+use sea_orm::{ColumnTrait, DbErr, EntityTrait, QueryFilter};
+use std::{convert::Infallible, ops::Deref};
 use tracing::{error, Instrument};
 
-use stores::{web::Session, Db};
+use crate::{app_state::AppState, errors::ApiErrorResponse};
 
 type OAuthApiClientWrapper = DiscordOauthApiClient<TwilightApiProvider, oauth2::basic::BasicClient>;
 
 #[derive(Clone)]
 pub struct LoggedInSession {
     pub api_client: OAuthApiClientWrapper,
-    pub session: Session,
+    pub session: web_sessions::Model,
+}
+
+impl LoggedInSession {
+    pub async fn load_from_db(token: &str, app_state: &AppState) -> Result<Option<Self>, DbErr> {
+        let Some((session, Some(oauth_token))) = web_sessions::Entity::find_by_id(token)
+            .find_also_related(discord_oauth_tokens::Entity)
+            .one(&app_state.seaorm_db)
+            .await?
+        else {
+            return Ok(None);
+        };
+
+        let api_client = app_state
+            .oauth_api_client_cache
+            .fetch(*session.user_id, || {
+                Result::<_, Infallible>::Ok(OAuthApiClientWrapper::new_twilight(
+                    *session.user_id,
+                    oauth_token.discord_bearer_token.clone(),
+                    app_state.discord_oauth_client.clone(),
+                    app_state.seaorm_db.clone(),
+                ))
+            })
+            .unwrap();
+
+        Ok(Some(LoggedInSession {
+            api_client,
+            session,
+        }))
+    }
 }
 
 #[derive(Clone)]
@@ -41,203 +68,61 @@ impl OptionalSession {
     }
 }
 
-impl LoggedInSession {
-    pub fn new(session: Session, api_client: OAuthApiClientWrapper) -> Self {
-        Self {
-            api_client,
-            session,
-        }
-    }
-}
+pub async fn session_mw(
+    State(state): State<AppState>,
+    mut req: Request,
+    next: Next,
+) -> Result<Response, ApiErrorResponse> {
+    let auth_header = req
+        .headers()
+        .get("Authorization")
+        .map(|v| v.to_str().unwrap_or_default())
+        .unwrap_or_default();
 
-#[derive(Clone)]
-pub struct SessionLayer {
-    pub session_store: Db,
-    pub oauth_conf: oauth2::basic::BasicClient,
-    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-}
-
-impl SessionLayer {
-    pub fn new(session_store: Db, oauth_conf: oauth2::basic::BasicClient) -> Self {
-        Self {
-            session_store,
-            oauth_conf,
-            oauth_api_client_cache: Default::default(),
-        }
+    if auth_header.is_empty() {
+        return Ok(next.run(req).await);
     }
 
-    pub fn require_auth_layer(&self) -> RequireAuthLayer {
-        RequireAuthLayer {}
-    }
-}
+    let Some(logged_in_session) = LoggedInSession::load_from_db(auth_header, &state)
+        .await
+        .map_err(|err| {
+            error!(%err, "failed fetching session from db");
+            ApiErrorResponse::InternalError
+        })?
+    else {
+        return Err(ApiErrorResponse::SessionExpired);
+    };
 
-impl<S> Layer<S> for SessionLayer {
-    type Service = SessionMiddleware<S>;
+    let span = tracing::info_span!("session", user_id=%logged_in_session.session.user_id);
 
-    fn layer(&self, inner: S) -> Self::Service {
-        SessionMiddleware {
-            db: self.session_store.clone(),
-            oauth_conf: self.oauth_conf.clone(),
-            oauth_api_client_cache: self.oauth_api_client_cache.clone(),
-            inner,
-        }
-    }
-}
+    let extensions = req.extensions_mut();
 
-#[derive(Clone)]
-pub struct SessionMiddleware<S> {
-    pub inner: S,
-    pub db: Db,
-    pub oauth_conf: oauth2::basic::BasicClient,
-    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-}
+    extensions.insert(logged_in_session.clone());
+    extensions.insert(OptionalSession(Some(logged_in_session.clone())));
 
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for SessionMiddleware<S>
-where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
-    S::Future: Send + 'static,
-    S::Error: Into<BoxError>,
-    ReqBody: Send + 'static,
-    ResBody: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = BoxError;
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+    let resp = next.run(req).instrument(span).await;
 
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx).map_err(|e| e.into())
+    if logged_in_session.api_client.is_broken() {
+        // remove from store if the refresh token is broken
+        web_sessions::Entity::delete_many()
+            .filter(web_sessions::Column::UserId.eq(TwilightId(*logged_in_session.session.user_id)))
+            .exec(&state.seaorm_db)
+            .await
+            .map_err(|err| error!(%err, "failed clearing sessions from broken token"))
+            .ok();
     }
 
-    fn call(&mut self, mut req: Request<ReqBody>) -> Self::Future {
-        // best practice is to clone the inner service like this
-        // see https://github.com/tower-rs/tower/issues/547 for details
-        let clone = self.inner.clone();
-        let mut inner = std::mem::replace(&mut self.inner, clone);
-
-        let store = self.db.clone();
-        let oauth_conf = self.oauth_conf.clone();
-        let cache = self.oauth_api_client_cache.clone();
-
-        Box::pin(async move {
-            let auth_header = req.headers().get("Authorization");
-
-            match auth_header.map(|e| e.to_str()) {
-                Some(Ok(t)) => {
-                    if let Some(session) = store.get_session(t).await? {
-                        let extensions = req.extensions_mut();
-
-                        let span = tracing::info_span!("session", user_id=%session.user.id);
-
-                        let api_client = cache
-                            .fetch(session.user.id, || {
-                                Result::<_, Infallible>::Ok(OAuthApiClientWrapper::new_twilight(
-                                    session.user.id,
-                                    session.oauth_token.access_token.clone(),
-                                    oauth_conf,
-                                    store.clone(),
-                                ))
-                            })
-                            .unwrap();
-
-                        let logged_in_session = LoggedInSession::new(session, api_client);
-                        extensions.insert(logged_in_session.clone());
-                        extensions.insert(OptionalSession(Some(logged_in_session.clone())));
-
-                        let resp = {
-                            // catch potential work being made creating the future
-                            let _guard = span.enter();
-                            let fut = inner.call(req);
-                            drop(_guard);
-
-                            fut
-                        }
-                        .instrument(span)
-                        .await
-                        .map_err(|e| e.into());
-
-                        if logged_in_session.api_client.is_broken() {
-                            // remove from store if the refresh token is broken
-                            store
-                                .del_all_sessions(logged_in_session.session.user.id)
-                                .await
-                                .map_err(|err| {
-                                    error!(%err, "failed clearing sessions from broken token")
-                                }).ok();
-                        }
-
-                        resp
-                    } else {
-                        inner.call(req).await.map_err(|e| e.into())
-                    }
-                }
-                Some(Err(e)) => Err(e.into()),
-                None => inner.call(req).await.map_err(|e| e.into()),
-            }
-
-            // if let Some(s) = span {
-            //     inner.call(req).instrument(s).await.map_err(|e| e.into())
-            // } else {
-            //     inner.call(req).await.map_err(|e| e.into())
-            // }
-        })
-    }
+    Ok(resp)
 }
 
-#[derive(Clone)]
-pub struct RequireAuthLayer {}
-
-impl<S> Layer<S> for RequireAuthLayer {
-    type Service = RequireAuthMiddleware<S>;
-
-    fn layer(&self, inner: S) -> Self::Service {
-        RequireAuthMiddleware { inner }
-    }
-}
-
-#[derive(Clone)]
-pub struct RequireAuthMiddleware<S> {
-    inner: S,
-}
-
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for RequireAuthMiddleware<S>
-where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
-    S::Future: Send + 'static,
-    S::Error: Into<BoxError>,
-    ReqBody: Send + 'static,
-    ResBody: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = BoxError;
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx).map_err(|e| e.into())
+pub async fn require_auth_mw(
+    session: Extension<OptionalSession>,
+    request: Request,
+    next: Next,
+) -> Result<Response, ApiErrorResponse> {
+    if session.is_none() {
+        return Err(ApiErrorResponse::Unauthorized);
     }
 
-    fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        // best practice is to clone the inner service like this
-        // see https://github.com/tower-rs/tower/issues/547 for details
-        let clone = self.inner.clone();
-        let mut inner = std::mem::replace(&mut self.inner, clone);
-
-        Box::pin(async move {
-            let extensions = req.extensions();
-            match extensions.get::<LoggedInSession>() {
-                Some(_) => inner.call(req).await.map_err(|e| e.into()),
-                None => Err(NoSession(()).into()),
-            }
-        })
-    }
+    Ok(next.run(request).await)
 }
-
-#[derive(Debug, Default)]
-pub struct NoSession(pub ());
-
-impl fmt::Display for NoSession {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.pad("no session or session expired")
-    }
-}
-
-impl std::error::Error for NoSession {}

@@ -18,7 +18,7 @@ pub async fn list_user_premium_slots(
 ) -> ApiResult<Json<Vec<PremiumSlot>>> {
     let slots = state
         .db
-        .get_user_premium_slots(session.session.user.id)
+        .get_user_premium_slots(*session.session.user_id)
         .await
         .map_err(|err| {
             error!(%err, "failed fetching user premium slots");
@@ -36,7 +36,7 @@ pub async fn update_premium_slot_guild(
 ) -> ApiResult<Json<PremiumSlot>> {
     let res = state
         .db
-        .update_premium_slot_attachment(session.session.user.id, slot_id, body.guild_id)
+        .update_premium_slot_attachment(*session.session.user_id, slot_id, body.guild_id)
         .await
         .map_err(|err| {
             error!(%err, "failed updating premium slot");
