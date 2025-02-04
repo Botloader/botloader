@@ -72,7 +72,7 @@ ratelimits! {
 }
 
 // max total amount of bucket storage used on a guild
-numeric_limit! {storage_total_size => [1_000_000, 10_000_000, 100_000_000]}
+numeric_limit! {storage_total_size => [10_000_000, 25_000_000, 100_000_000]}
 
 // max data size in a single task
 numeric_limit! {tasks_data_size => [1_000, 10_000, 10_000]}
