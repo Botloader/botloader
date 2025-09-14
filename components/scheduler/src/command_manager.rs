@@ -264,6 +264,8 @@ pub fn to_twilight_commands(
             description_localizations: Default::default(),
             name_localizations: Default::default(),
             nsfw: None,
+            contexts: None,
+            integration_types: None,
         })
         .collect::<Vec<_>>();
 
@@ -361,6 +363,8 @@ fn make_unknown_group(guild_id: Id<GuildMarker>, name: String) -> TwilightComman
         description_localizations: Default::default(),
         name_localizations: Default::default(),
         nsfw: None,
+        contexts: None,
+        integration_types: None,
     }
 }
 
@@ -404,6 +408,8 @@ pub fn group_to_twilight_command(
         description_localizations: Default::default(),
         name_localizations: Default::default(),
         nsfw: None,
+        contexts: None,
+        integration_types: None,
     }
 }
 

@@ -97,32 +97,26 @@ impl TryFrom<twilight_model::gateway::payload::incoming::MessageUpdate> for Even
     type Error = anyhow::Error;
 
     fn try_from(
-        v: twilight_model::gateway::payload::incoming::MessageUpdate,
+        mut v: twilight_model::gateway::payload::incoming::MessageUpdate,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            attachments: v
-                .attachments
-                .map(|e| e.into_iter().map(From::from).collect()),
-            author: v.author.map(From::from),
+            attachments: Some(v.attachments.drain(..).map(From::from).collect()),
+            author: Some(v.author.clone().into()),
             channel_id: v.channel_id.to_string(),
-            content: v.content,
+            content: Some(v.content.clone()),
             edited_timestamp: v
                 .edited_timestamp
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
-            embeds: v.embeds.map(|e| e.into_iter().map(From::from).collect()),
+            embeds: Some(v.embeds.drain(..).map(From::from).collect()),
             guild_id: v.guild_id.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
-            kind: v.kind.map(TryFrom::try_from).transpose()?,
-            mention_everyone: v.mention_everyone,
-            mention_roles: v
-                .mention_roles
-                .map(|r| r.iter().map(ToString::to_string).collect()),
-            mentions: v.mentions.map(|e| e.into_iter().map(From::from).collect()),
-            pinned: v.pinned,
-            timestamp: v
-                .timestamp
-                .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
-            tts: v.tts,
+            kind: Some(TryFrom::try_from(v.kind)?),
+            mention_everyone: Some(v.mention_everyone),
+            mention_roles: Some(v.mention_roles.iter().map(ToString::to_string).collect()),
+            mentions: Some(v.mentions.drain(..).map(From::from).collect()),
+            pinned: Some(v.pinned),
+            timestamp: Some(NotBigU64(v.timestamp.as_micros() as u64 / 1000)),
+            tts: Some(v.tts),
         })
     }
 }

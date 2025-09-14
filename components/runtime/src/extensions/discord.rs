@@ -1138,7 +1138,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 update_role = update_role.permissions(Permissions::from_bits_truncate(parsed));
             }
             if let Some(unicode_emoji) = &arg.unicode_emoji {
-                update_role = update_role.unicode_emoji(&unicode_emoji);
+                update_role = update_role.unicode_emoji(Some(&unicode_emoji));
             }
 
             Ok(update_role.await)

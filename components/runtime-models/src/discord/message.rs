@@ -196,8 +196,13 @@ impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::GuildIncidentReportRaidFalseAlarm => {
                 Self::GuildIncidentReportRaidFalseAlarm
             }
-            TwilightMessageType::PurchaseNotification => Self::PurchaseNotification,
-            TwilightMessageType::PollResult => Self::PollResult,
+            TwilightMessageType::Unknown(n) => match n {
+                44 => Self::PurchaseNotification,
+                46 => Self::PollResult,
+                _ => {
+                    return Err(anyhow::anyhow!("unknown message type: {}", n));
+                }
+            },
             _ => {
                 return Err(anyhow::anyhow!("unknown message type: {}", u8::from(v)));
             }

@@ -283,6 +283,7 @@ impl From<DbSession> for CurrentUser {
             verified: None,
             accent_color: None,
             banner: None,
+            global_name: None,
         }
     }
 }

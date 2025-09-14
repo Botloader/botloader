@@ -38,22 +38,22 @@ oauth2 = "4.4.2"
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"
 
-twilight-model = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
-twilight-http = { version = "0.16.0-rc.1", features = [
+twilight-model = { version = "0.16.0", git = "https://github.com/jonastar/twilight.git", rev = "7f08d954c7b4f4245047f34de5116abdb53f24d9" }
+twilight-http = { version = "0.16.0", features = [
     "rustls-platform-verifier",
-], git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
-twilight-gateway = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
-twilight-cache-inmemory = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
-twilight-util = { version = "0.16.0-rc.1", features = [
+], git = "https://github.com/jonastar/twilight.git", rev = "7f08d954c7b4f4245047f34de5116abdb53f24d9" }
+twilight-gateway = { version = "0.16.0", git = "https://github.com/jonastar/twilight.git", rev = "7f08d954c7b4f4245047f34de5116abdb53f24d9" }
+twilight-cache-inmemory = { version = "0.16.0", git = "https://github.com/jonastar/twilight.git", rev = "7f08d954c7b4f4245047f34de5116abdb53f24d9" }
+twilight-util = { version = "0.16.0", features = [
     "permission-calculator",
-], git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
-twilight-validate = { version = "0.16.0-rc.1", git = "https://github.com/jonastar/twilight.git", rev = "ca9d121ff0b0c386d738d54b3b066398eb49063a" }
+], git = "https://github.com/jonastar/twilight.git", rev = "7f08d954c7b4f4245047f34de5116abdb53f24d9" }
+twilight-validate = { version = "0.16.0", git = "https://github.com/jonastar/twilight.git", rev = "7f08d954c7b4f4245047f34de5116abdb53f24d9" }
 
-# twilight-model = { version = "0.16.0-rc.1", path = "../forklight" }
-# twilight-http = { version = "0.16.0-rc.1", path = "../forklight" }
-# twilight-gateway = { version = "0.16.0-rc.1", path = "../forklight" }
-# twilight-cache-inmemory = { version = "0.16.0-rc.1", path = "../forklight" }
-# twilight-util = { version = "0.16.0-rc.1", features = [
+# twilight-model = { version = "0.16.0", path = "../forklight/twilight-model" }
+# twilight-http = { version = "0.16.0", path = "../forklight/twilight-http" }
+# twilight-gateway = { version = "0.16.0", path = "../forklight/twilight-gateway" }
+# twilight-cache-inmemory = { version = "0.16.0", path = "../forklight/twilight-cache-inmemory" }
+# twilight-util = { version = "0.16.0", features = [
 #     "permission-calculator",
-# ], path = "../forklight" }
-# twilight-validate = { version = "0.16.0-rc.1", path = "../forklight" }
+# ], path = "../forklight/twilight-util" }
+# twilight-validate = { version = "0.16.0", path = "../forklight/twilight-validate" }

@@ -183,6 +183,7 @@ impl TryFrom<InteractionCallbackData> for TwilightCallbackData {
             choices: None,
             custom_id: None,
             title: None,
+            poll: None,
         })
     }
 }

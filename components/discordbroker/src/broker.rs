@@ -147,7 +147,7 @@ impl Broker {
             Event::GuildDelete(g) => {
                 metrics::gauge!("bl.broker.connected_guilds_total").decrement(1.0);
 
-                if !g.unavailable {
+                if g.unavailable != Some(true) {
                     let _ = self.db.set_guild_left_status(g.id, true).await;
                 }
             }
