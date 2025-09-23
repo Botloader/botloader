@@ -507,7 +507,7 @@ impl Vm {
         }
     }
 
-    async fn complete_module_eval(&mut self, mut fut: impl Future<Output = Result<(), AnyError>>) {
+    async fn complete_module_eval(&mut self, fut: impl Future<Output = Result<(), AnyError>>) {
         let mut pinned: Pin<&mut dyn Future<Output = Result<(), AnyError>>> = pin!(fut);
         loop {
             let fut = CompleteModuleEval {
@@ -757,11 +757,11 @@ pub fn in_mem_source_load_fn(src: &'static str) -> Box<dyn Fn() -> Result<String
     Box::new(move || Ok(src.to_string()))
 }
 
-struct NoOpWaker;
+// struct NoOpWaker;
 
-impl Wake for NoOpWaker {
-    fn wake(self: Arc<Self>) {}
-}
+// impl Wake for NoOpWaker {
+//     fn wake(self: Arc<Self>) {}
+// }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ShutdownReason {

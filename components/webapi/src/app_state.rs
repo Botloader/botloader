@@ -35,9 +35,7 @@ pub async fn init_app_state(common_conf: &RunConfig, web_conf: &WebConfig) -> Ap
 
     let oauth_client = common_conf.get_discord_oauth2_client();
 
-    let bot_rpc_client = botrpc::Client::new(common_conf.bot_rpc_connect_addr.clone())
-        .await
-        .expect("failed connecting to bot rpc");
+    let bot_rpc_client = botrpc::Client::new(common_conf.bot_rpc_connect_addr.clone());
 
     let stripe_client = init_stripe_client(postgres_store.clone(), web_conf);
     let state_client = dbrokerapi::state_client::Client::new(web_conf.broker_api_addr.clone());

@@ -15,10 +15,12 @@ simpleproto = { path = "../../components/simpleproto" }
 dbrokerapi = { path = "../../components/dbrokerapi" }
 botrpc = { path = "../../components/botrpc" }
 vm = { path = "../../components/vm" }
+service = { path = "../../components/service" }
 
 tokio = { workspace = true }
-tonic = { workspace = true }
+reqwest = { workspace = true }
 tracing = { workspace = true }
+axum = { workspace = true }
 futures = { workspace = true }
 async-stream = "0.3"
 serde = { workspace = true }

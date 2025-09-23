@@ -12,7 +12,7 @@ resolver = "2"
 
 [workspace.dependencies]
 metrics = "0.23"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "=1.0.221", features = ["derive"] }
 serde_json = "1.0"
 lazy_static = "1.4.0"
 tracing = "0.1"
@@ -25,15 +25,14 @@ clap = { version = "4.1.4", features = ["derive", "env"] }
 anyhow = "1.0"
 deno_core = "0.283"
 axum = { version = "0.7.7", features = ["ws", "multipart", "macros"] }
-tonic = "0.10.2"
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
+futures-util = "0.3"
 url = "2.2"
 tracing-log = "0.2"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 regex = "1.10"
 oauth2 = "4.4.2"
-
 
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"

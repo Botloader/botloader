@@ -1,77 +1,23 @@
-use futures::{Stream, StreamExt};
-use guild_logger::LogEntry;
-use twilight_model::id::{marker::GuildMarker, Id};
-
-use crate::proto;
-
-type ClientConn = proto::bot_service_client::BotServiceClient<tonic::transport::Channel>;
+use crate::BotServiceClient;
 
 #[derive(Clone)]
 pub struct Client {
-    inner: ClientConn,
+    base_url: String,
+    http: reqwest::Client,
 }
 
 impl Client {
-    pub async fn new(addr: String) -> Result<Client, tonic::transport::Error> {
-        let client = proto::bot_service_client::BotServiceClient::connect(addr).await?;
-
-        Ok(Client { inner: client })
+    pub fn new(base_url: String) -> Self {
+        Self {
+            base_url,
+            http: reqwest::Client::new(),
+        }
     }
+}
 
-    pub fn get_conn(&self) -> ClientConn {
-        self.inner.clone()
-    }
-
-    pub async fn restart_guild_vm(&self, guild_id: Id<GuildMarker>) -> Result<(), tonic::Status> {
-        let mut conn = self.get_conn();
-
-        conn.reload_vm(proto::GuildScriptSpecifier {
-            guild_id: guild_id.get(),
-            script: None,
-        })
-        .await?;
-
-        Ok(())
-    }
-
-    pub async fn guild_log_stream(
-        &self,
-        guild_id: Id<GuildMarker>,
-    ) -> Result<impl Stream<Item = Result<LogEntry, tonic::Status>>, tonic::Status> {
-        let mut conn = self.get_conn();
-
-        let stream = conn
-            .stream_guild_logs(proto::GuildSpecifier {
-                guild_id: guild_id.get(),
-            })
-            .await?
-            .into_inner();
-
-        Ok(stream.map(|item| item.map(Into::into)))
-    }
-
-    pub async fn get_vm_worker_statuses(
-        &self,
-    ) -> Result<Vec<proto::VmWorkerStatus>, tonic::Status> {
-        let mut conn = self.get_conn();
-
-        let result = conn.vm_worker_status(proto::Empty {}).await?;
-
-        Ok(result.into_inner().workers)
-    }
-
-    pub async fn get_guild_status(
-        &self,
-        guild_id: Id<GuildMarker>,
-    ) -> Result<proto::GuildStatusResponse, tonic::Status> {
-        let mut conn = self.get_conn();
-
-        let result = conn
-            .guild_status(proto::GuildSpecifier {
-                guild_id: guild_id.get(),
-            })
-            .await?;
-
-        Ok(result.into_inner())
+impl BotServiceClient for Client {
+    fn request<BodyT>(&self, method: reqwest::Method, path: &str) -> reqwest::RequestBuilder {
+        self.http
+            .request(method, format!("{}/{}", self.base_url, path))
     }
 }

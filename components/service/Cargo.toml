@@ -1,0 +1,13 @@
+[package]
+name = "service"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = { workspace = true, features = ["json"] }
+serde.workspace = true
+serde_json.workspace = true
+reqwest.workspace = true
+futures = { workspace = true }
+futures-util = { workspace = true }
+bytes = "1.10.1"

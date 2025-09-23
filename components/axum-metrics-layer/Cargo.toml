@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 axum = { workspace = true }
 metrics = { workspace = true }
-tower = "0.4"
+tower = "0.5"
 futures = { workspace = true }

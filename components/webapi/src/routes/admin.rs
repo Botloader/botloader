@@ -2,6 +2,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
+use botrpc::BotServiceClient;
 use serde::{Deserialize, Serialize};
 use twilight_model::id::{marker::GuildMarker, Id};
 
@@ -14,7 +15,7 @@ pub async fn get_worker_statuses(
 ) -> ApiResult<Json<Vec<ApiVmWorkerStatus>>> {
     let response = state
         .bot_rpc_client
-        .get_vm_worker_statuses()
+        .vm_worker_status()
         .await
         .map_err(|err| {
             error!(%err, "failed retrieving vm worker statuses");
@@ -23,6 +24,7 @@ pub async fn get_worker_statuses(
 
     Ok(Json(
         response
+            .workers
             .into_iter()
             .map(|v| ApiVmWorkerStatus {
                 worker_id: v.worker_id,
@@ -52,7 +54,7 @@ pub async fn get_guild_status(
 
     let status = state
         .bot_rpc_client
-        .get_guild_status(guild_id)
+        .guild_status(botrpc::types::GuildSpecifier { guild_id })
         .await
         .map_err(|err| {
             error!(%err, "failed retrieving guild status");

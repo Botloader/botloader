@@ -16,6 +16,7 @@ common = { path = "../../components/common" }
 axum-metrics-layer = { path = "../../components/axum-metrics-layer" }
 stripe-premium = { path = "../../components/stripe-premium" }
 runtime-models = { path = "../../components/runtime-models" }
+service = { path = "../../components/service" }
 
 oauth2 = { workspace = true }
 anyhow = { workspace = true }
@@ -30,7 +31,6 @@ tokio = { workspace = true }
 tower-http = { version = "0.5.1", features = ["trace", "set-header"] }
 tower = "0.4"
 axum = { workspace = true }
-tonic = { workspace = true }
 uuid = { workspace = true }
 image = { workspace = true }
 

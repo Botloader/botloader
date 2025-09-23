@@ -5,6 +5,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use botrpc::{types::GuildSpecifier, BotServiceClient};
 use common::plugin::Plugin;
 use runtime_models::internal::script::SettingsOptionValue;
 use serde::{Deserialize, Serialize};
@@ -217,10 +218,12 @@ pub async fn update_guild_script(
 
     state
         .bot_rpc_client
-        .restart_guild_vm(current_guild.id)
+        .reload_vm(GuildSpecifier {
+            guild_id: current_guild.id,
+        })
         .await
         .map_err(|err| {
-            error!(%err, "failed reloading guild vm");
+            error!(?err, "failed reloading guild vm");
             ApiErrorResponse::InternalError
         })?;
 
@@ -374,7 +377,9 @@ pub async fn update_script_plugin(
 
     state
         .bot_rpc_client
-        .restart_guild_vm(current_guild.id)
+        .reload_vm(GuildSpecifier {
+            guild_id: current_guild.id,
+        })
         .await
         .map_err(|err| {
             error!(%err, "failed reloading guild vm");

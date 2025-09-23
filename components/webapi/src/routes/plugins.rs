@@ -6,6 +6,7 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
+use botrpc::BotServiceClient;
 use common::{
     plugin::{Plugin, PluginImageKind},
     DiscordConfig,
@@ -294,7 +295,11 @@ pub async fn publish_plugin_version(
     // restart relevant guild vms
     // TODO: this should be done as a background task, and potentially throttled to avoid a spike
     for guild_id in guilds {
-        if let Err(err) = state.bot_rpc_client.restart_guild_vm(guild_id).await {
+        if let Err(err) = state
+            .bot_rpc_client
+            .reload_vm(botrpc::types::GuildSpecifier { guild_id })
+            .await
+        {
             error!(%err, "failed reloading guild vm");
         }
     }
@@ -334,7 +339,9 @@ pub async fn guild_add_plugin(
 
     state
         .bot_rpc_client
-        .restart_guild_vm(current_guild.id)
+        .reload_vm(botrpc::types::GuildSpecifier {
+            guild_id: current_guild.id,
+        })
         .await
         .map_err(|err| {
             error!(%err, "failed reloading guild vm");

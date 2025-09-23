@@ -112,11 +112,19 @@ checkBrowsers(paths.appPath, isInteractive)
       host: HOST,
       port,
     };
-    console.log(process.env.AAAA);
     if (process.env.WEBPACK_WS_OVERRIDE_PORT) {
       serverConfig.client.webSocketURL.port = 443;
     }
-    const devServer = new WebpackDevServer(serverConfig, compiler);
+
+    const devServer = new WebpackDevServer({
+      ...serverConfig,
+      proxy: [{
+        context: ['/api'],
+        target: `http://localhost:7447`,
+        pathRewrite: { '^/api': '' },
+        ws: true,
+      }]
+    }, compiler);
     // Launch WebpackDevServer.
     devServer.startCallback(() => {
       if (isInteractive) {

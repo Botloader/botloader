@@ -20,7 +20,7 @@ fn compile_typescript_inner(input: &str, filename: String) -> Result<CompiledIte
         let c = Compiler::new(cm.clone());
         let fm = cm.new_source_file(
             Arc::new(FileName::Custom("file:///script.ts".into())),
-            input.into(),
+            input.to_owned(),
         );
 
         match swc::try_with_handler(

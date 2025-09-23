@@ -7,10 +7,12 @@ use axum::{
     },
     response::IntoResponse,
 };
+use botrpc::{types::GuildSpecifier, BotServiceClient};
 use discordoauthwrapper::{ClientCache, DiscordOauthApiClient, TwilightApiProvider};
 use futures::{stream::SelectAll, Stream, StreamExt};
 use guild_logger::LogEntry;
 use serde::{Deserialize, Serialize};
+use service::sse::SseError;
 use twilight_model::{
     guild::Permissions,
     id::{marker::GuildMarker, Id},
@@ -107,10 +109,7 @@ impl WsConn {
         }
     }
 
-    async fn handle_log_stream_item(
-        &mut self,
-        item: Option<Result<LogEntry, tonic::Status>>,
-    ) -> bool {
+    async fn handle_log_stream_item(&mut self, item: Option<Result<LogEntry, SseError>>) -> bool {
         match item {
             Some(Ok(item)) => self.handle_inner_log_item(item).await,
             Some(Err(_)) => {
@@ -252,13 +251,13 @@ impl WsConn {
         let stream = self
             .app_state
             .bot_rpc_client
-            .guild_log_stream(guild_id)
+            .stream_guild_logs(GuildSpecifier { guild_id })
             .await
             .map_err(|_| WsCloseReason::BotRpcError)?;
 
         self.active_log_streams.push(GuildLogStream {
             guild_id,
-            inner: Box::pin(stream),
+            inner: stream,
         });
 
         self.emit_subscriptions().await
@@ -439,11 +438,11 @@ impl WsCloseReason {
 
 struct GuildLogStream {
     guild_id: Id<GuildMarker>,
-    inner: Pin<Box<dyn Stream<Item = Result<LogEntry, tonic::Status>> + Send>>,
+    inner: Pin<Box<dyn Stream<Item = Result<LogEntry, SseError>> + Send + 'static>>,
 }
 
 impl Stream for GuildLogStream {
-    type Item = Result<LogEntry, tonic::Status>;
+    type Item = Result<LogEntry, SseError>;
 
     fn poll_next(
         mut self: Pin<&mut Self>,
