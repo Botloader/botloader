@@ -18,6 +18,7 @@ import { Member } from './member';
 import { Message } from './message';
 import { GuildChannel } from './channel';
 import { User } from './user';
+import { type IModalFields, Modal } from './modal';
 
 /**
  * Base interaction class, this class should be considered UNSTABLE and may change a lot in the future.
@@ -236,7 +237,7 @@ export class ComponentInteraction extends Interaction {
      * 
      * You have to acknowledge the interaction within 3 seconds, and it can only be done once. 
      */
-    async ackWithModal(modal: IModalFields) {
+    async ackWithModal(modal: IModalFields | Modal) {
         this.setCallbackSent();
 
         return OpWrappers.interactionCallback({
@@ -251,13 +252,6 @@ export class ComponentInteraction extends Interaction {
         })
     }
 }
-
-export interface IModalFields {
-    title: string,
-    customId: string,
-    components: IComponent[],
-}
-
 
 export class ModalSubmitInteraction extends Interaction {
     customIdRaw: string;
