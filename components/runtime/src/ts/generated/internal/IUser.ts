@@ -2,7 +2,7 @@
 import type { IUserFlags } from "./IUserFlags";
 import type { PremiumType } from "./PremiumType";
 
-export interface IUser {
+export type IUser = {
   avatar: string | null;
   bot: boolean;
   discriminator: string;
@@ -15,4 +15,4 @@ export interface IUser {
   system: boolean | null;
   banner: string | null;
   accentColor: number | null;
-}
+};

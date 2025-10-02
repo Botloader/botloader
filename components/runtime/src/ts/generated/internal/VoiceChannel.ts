@@ -2,7 +2,7 @@
 import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 import type { VideoQualityMode } from "../discord/VideoQualityMode";
 
-export interface IVoiceChannel {
+export type IVoiceChannel = {
   bitrate: number;
   id: string;
   kind: "Voice" | "StageVoice";
@@ -13,4 +13,4 @@ export interface IVoiceChannel {
   rtcRegion: string | null;
   userLimit: number | null;
   videoQualityMode: VideoQualityMode | null;
-}
+};

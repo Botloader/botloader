@@ -2,11 +2,11 @@
 import type { OpStorageBucketSetCondition } from "./StorageBucketSetCondition";
 import type { OpStorageBucketValue } from "./StorageBucketValue";
 
-export interface OpStorageBucketSetIf {
+export type OpStorageBucketSetIf = {
   bucketName: string;
   key: string;
   value: OpStorageBucketValue;
   ttl?: number;
   cond: OpStorageBucketSetCondition;
   pluginId: string | null;
-}
+};

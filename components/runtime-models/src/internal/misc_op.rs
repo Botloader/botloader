@@ -8,9 +8,11 @@ use crate::discord::message::SendEmoji;
 #[ts(export_to = "bindings/internal/CreateBanFields.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct CreateBanFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub audit_log_reason: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub delete_message_days: Option<u32>,
 }
 
@@ -20,10 +22,10 @@ pub struct CreateBanFields {
 #[serde(rename_all = "camelCase")]
 pub struct GetReactionsFields {
     pub emoji: SendEmoji,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub after: Option<String>,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub limit: Option<u32>,
 }
