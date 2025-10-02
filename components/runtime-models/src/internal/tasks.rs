@@ -29,7 +29,8 @@ pub struct ScheduledTask {
     pub namespace: String,
     pub plugin_id: Option<PluginId>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub key: Option<String>,
     pub execute_at: NotBigU64,
 

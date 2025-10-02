@@ -17,31 +17,43 @@ use super::user::User;
 #[ts(export_to = "bindings/internal/IInvite.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct Invite {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub approximate_member_count: Option<NotBigU64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub approximate_presence_count: Option<NotBigU64>,
     pub channel: Option<InviteChannel>,
     pub code: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub created_at: Option<NotBigU64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub expires_at: Option<NotBigU64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub guild: Option<InviteGuild>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub inviter: Option<User>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max_age: Option<NotBigU64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max_uses: Option<NotBigU64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub target_type: Option<InviteTargetType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub target_user: Option<User>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub temporary: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub uses: Option<NotBigU64>,
 }
 
@@ -82,20 +94,27 @@ impl TryFrom<twilight_model::guild::invite::Invite> for Invite {
 #[ts(export_to = "bindings/internal/ICreateInviteFields.ts")]
 
 pub struct CreateInviteFields {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max_age: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max_uses: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub temporary: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     #[ts(type = "string")]
     pub target_application_id: Option<Id<ApplicationMarker>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     #[ts(type = "string")]
     pub target_user_id: Option<Id<UserMarker>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub target_type: Option<InviteTargetType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub unique: Option<bool>,
 }

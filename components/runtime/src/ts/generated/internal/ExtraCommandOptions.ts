@@ -2,9 +2,9 @@
 import type { ChannelType } from "../discord/ChannelType";
 import type { CommandOptionChoice } from "./CommandOptionChoice";
 
-export interface ExtraCommandOptions {
+export type ExtraCommandOptions = {
   minValue?: number;
   maxValue?: number;
   channelTypes?: Array<ChannelType>;
   choices?: Array<CommandOptionChoice>;
-}
+};

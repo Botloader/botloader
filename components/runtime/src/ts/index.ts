@@ -12,3 +12,18 @@ export * from './scheduled_tasks';
 export * from './image';
 export * as Discord from './discord/index';
 export * as Unstable from './unstable/index';
+
+
+// export type IActionRow = { components: Array<IComponent> };
+// export type IButton = {
+// export type IComponent =
+// export type IEventThreadDelete = {
+// export type IInviteChannel = {
+// export type IInviteGuild = {
+// export type IInviteTargetUser = {
+// export type InviteTargetType = "Stream" | "EmbeddedApplication";
+// export type IPermissionOverwrite = {
+// export type ISelectMenu = {
+// export type ISelectMenuOption = {
+// export type ITextInput = {
+// export type IUnknownComponent = { componentKind: number };

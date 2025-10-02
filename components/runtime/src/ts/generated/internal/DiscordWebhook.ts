@@ -4,7 +4,7 @@ import type { WebhookChannel } from "./WebhookChannel";
 import type { WebhookGuild } from "./WebhookGuild";
 import type { WebhookType } from "./WebhookType";
 
-export interface DiscordWebhook {
+export type DiscordWebhook = {
   id: string;
   applicationId: string | null;
   avatar: string | null;
@@ -17,4 +17,4 @@ export interface DiscordWebhook {
   token: string | null;
   url: string | null;
   user: IUser | null;
-}
+};

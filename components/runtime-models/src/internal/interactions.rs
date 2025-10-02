@@ -23,10 +23,12 @@ pub struct InteractionPartialChannel {
     pub id: String,
     pub kind: ChannelType,
     pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub parent_id: Option<String>,
     pub permissions_raw: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub thread_metadata: Option<ThreadMetadata>,
 }
 
@@ -56,7 +58,8 @@ impl TryFrom<twilight_model::application::interaction::InteractionChannel>
 pub struct InteractionPartialMember {
     pub joined_at: NotBigU64,
     pub nick: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub premium_since: Option<NotBigU64>,
     #[serde(default)]
     pub roles: Vec<String>,

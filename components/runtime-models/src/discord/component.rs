@@ -153,17 +153,21 @@ impl TryFrom<ActionRow> for TwilightActionRow {
 #[ts(export, rename = "IButton", export_to = "bindings/discord/IButton.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct Button {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub custom_id: Option<String>,
     pub style: ButtonStyle,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub disabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub label: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub emoji: Option<ReactionType>,
 }
 
@@ -206,23 +210,28 @@ pub struct SelectMenu {
     pub custom_id: String,
     pub disabled: bool,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub min_values: Option<u8>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max_values: Option<u8>,
 
     pub options: Vec<SelectMenuOption>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub placeholder: Option<String>,
 
     pub select_type: SelectMenuType,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub channel_types: Option<Vec<ChannelType>>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub default_values: Option<Vec<SelectDefaultValue>>,
 }
 
@@ -378,9 +387,11 @@ impl From<SelectMenuType> for TwilightSelectMenuType {
 #[serde(rename_all = "camelCase")]
 pub struct SelectMenuOption {
     pub default: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub emoji: Option<ReactionType>,
     pub label: String,
     pub value: String,
