@@ -4,10 +4,10 @@ orbs:
 executors:
   main:
     docker:
-      - image: rust:1.81.0-bookworm
+      - image: rust:1.90.0-bookworm
   postgres-alongside:
     docker:
-      - image: rust:1.81.0-bookworm
+      - image: rust:1.90.0-bookworm
       - image: cimg/postgres:14.0
         environment:
           POSTGRES_USER: postgres
