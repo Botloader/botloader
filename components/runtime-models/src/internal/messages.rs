@@ -235,7 +235,7 @@ pub struct Message {
     pub timestamp: NotBigU64,
     pub tts: bool,
     pub webhook_id: Option<String>,
-    pub interaction_metadata: Option<Box<InteractionMetadata>>
+    pub interaction_metadata: Option<Box<InteractionMetadata>>,
 }
 
 impl TryFrom<twilight_model::channel::Message> for Message {

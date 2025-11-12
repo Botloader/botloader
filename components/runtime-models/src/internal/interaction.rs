@@ -505,7 +505,7 @@ impl From<twilight_model::application::interaction::InteractionMetadata> for Int
             targer_user: v.target_user.map(From::from),
             triggering_interaction_metadata: v
                 .triggering_interaction_metadata
-                .map(|e| Box::new((*e).try_into())),
+                .map(|e| Box::new((*e).into())),
             user: v.user.into()
         }
     }
