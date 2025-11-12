@@ -8,7 +8,10 @@ use crate::{
             MessageReaction, MessageReference, MessageType,
         },
     },
-    internal::user::User,
+    internal::{
+        user::User,
+        interaction::InteractionMetadata
+    },
     util::NotBigU64,
 };
 use serde::{Deserialize, Serialize};
@@ -232,6 +235,7 @@ pub struct Message {
     pub timestamp: NotBigU64,
     pub tts: bool,
     pub webhook_id: Option<String>,
+    pub interaction_metadata: Option<Box<InteractionMetadata>>
 }
 
 impl TryFrom<twilight_model::channel::Message> for Message {
@@ -278,6 +282,11 @@ impl TryFrom<twilight_model::channel::Message> for Message {
             timestamp: NotBigU64(v.timestamp.as_micros() as u64 / 1000),
             tts: v.tts,
             webhook_id: v.webhook_id.as_ref().map(ToString::to_string),
+            interaction_metadata: v
+                .interaction_metadata
+                .map(|e| (*e).try_into())
+                .transpose()?
+                .map(Box::new),
         })
     }
 }
