@@ -10,6 +10,7 @@ import type { MessageReaction } from "../discord/MessageReaction";
 import type { MessageReference } from "../discord/MessageReference";
 import type { MessageType } from "../discord/MessageType";
 import type { PartialMember } from "../discord/PartialMember";
+import type { IInteractionMetadata } from "./IInteractionMetadata";
 import type { IUser } from "./IUser";
 import type { IUserMention } from "./UserMention";
 
@@ -39,4 +40,5 @@ export type IMessage = {
   timestamp: number;
   tts: boolean;
   webhookId: string | null;
+  interactionMetadata: IInteractionMetadata | null;
 };

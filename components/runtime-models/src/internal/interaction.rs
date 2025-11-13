@@ -452,6 +452,7 @@ impl From<TwilightModalInteractionDataComponent> for ModalInteractionDataCompone
 #[ts(export)]
 #[ts(export_to = "bindings/internal/InteractionType.ts")]
 pub enum InteractionType {
+    Ping = 1,
     ApplicationCommand = 2,
     MessageComponent = 3,
     ApplicationCommandAutocomplete = 4,
@@ -462,6 +463,7 @@ use twilight_model::application::interaction::InteractionType as TwilightInterac
 impl From<TwilightInteractionType> for InteractionType {
     fn from(v: TwilightInteractionType) -> Self {
         match v {
+            TwilightInteractionType::Ping => Self::Ping,
             TwilightInteractionType::ApplicationCommand => Self::ApplicationCommand,
             TwilightInteractionType::MessageComponent => Self::MessageComponent,
             TwilightInteractionType::ApplicationCommandAutocomplete => Self::ApplicationCommandAutocomplete,
@@ -471,9 +473,13 @@ impl From<TwilightInteractionType> for InteractionType {
     }
 }
 
+
 #[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-#[ts(export_to = "bindings/internal/InteractionMetadata.ts")]
+#[ts(
+    export,
+    export_to = "bindings/internal/IInteractionMetadata.ts",
+    rename = "IInteractionMetadata"
+)]
 #[serde(rename_all = "camelCase")]
 pub struct InteractionMetadata {
     pub id: String,
@@ -483,7 +489,7 @@ pub struct InteractionMetadata {
     pub target_message_id: Option<String>,
     pub targer_user: Option<User>,
     pub triggering_interaction_metadata: Option<Box<InteractionMetadata>>,
-    pub user: User
+    pub user: User,
 }
 
 impl From<twilight_model::application::interaction::InteractionMetadata> for InteractionMetadata {

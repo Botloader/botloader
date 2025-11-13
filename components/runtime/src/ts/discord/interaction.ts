@@ -562,3 +562,32 @@ export class AutocompleteInteraction {
         this.input = input
     }
 }
+
+export type InteractionType =
+  | "Ping"
+  | "ApplicationCommand"
+  | "MessageComponent"
+  | "ApplicationCommandAutocomplete"
+  | "ModalSubmit";
+
+export class InteractionMetadata {
+    id: string;
+    interactedMessageId: string | null;
+    kind: InteractionType;
+    originalResponseMessageId: string | null;
+    targetMessageId: string | null;
+    targerUser: User | null;
+    triggeringInteractionMetadata: InteractionMetadata | null;
+    user: User;
+
+    constructor(interactionMetadata: Internal.IInteractionMetadata) {
+        this.id = interactionMetadata.id;
+        this.interactedMessageId = interactionMetadata.interactedMessageId;
+        this.kind = interactionMetadata.kind;
+        this.originalResponseMessageId = interactionMetadata.originalResponseMessageId;
+        this.targetMessageId = interactionMetadata.targetMessageId;
+        this.targerUser = interactionMetadata.targerUser ? new User(interactionMetadata.targerUser) : null;
+        this.triggeringInteractionMetadata = interactionMetadata.triggeringInteractionMetadata ? new InteractionMetadata(interactionMetadata.triggeringInteractionMetadata) : null;
+        this.user = new User(interactionMetadata.user);
+    }
+}
