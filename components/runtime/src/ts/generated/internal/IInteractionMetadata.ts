@@ -8,7 +8,7 @@ export type IInteractionMetadata = {
   kind: InteractionType;
   originalResponseMessageId: string | null;
   targetMessageId: string | null;
-  targerUser: IUser | null;
+  targetUser: IUser | null;
   triggeringInteractionMetadata: IInteractionMetadata | null;
   user: IUser;
 };

@@ -576,7 +576,7 @@ export class InteractionMetadata {
     kind: InteractionType;
     originalResponseMessageId: string | null;
     targetMessageId: string | null;
-    targerUser: User | null;
+    targetUser: User | null;
     triggeringInteractionMetadata: InteractionMetadata | null;
     user: User;
 
@@ -586,7 +586,7 @@ export class InteractionMetadata {
         this.kind = interactionMetadata.kind;
         this.originalResponseMessageId = interactionMetadata.originalResponseMessageId;
         this.targetMessageId = interactionMetadata.targetMessageId;
-        this.targerUser = interactionMetadata.targerUser ? new User(interactionMetadata.targerUser) : null;
+        this.targetUser = interactionMetadata.targetUser ? new User(interactionMetadata.targetUser) : null;
         this.triggeringInteractionMetadata = interactionMetadata.triggeringInteractionMetadata ? new InteractionMetadata(interactionMetadata.triggeringInteractionMetadata) : null;
         this.user = new User(interactionMetadata.user);
     }

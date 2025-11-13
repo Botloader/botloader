@@ -487,7 +487,7 @@ pub struct InteractionMetadata {
     pub kind: InteractionType,
     pub original_response_message_id: Option<String>,
     pub target_message_id: Option<String>,
-    pub targer_user: Option<User>,
+    pub target_user: Option<User>,
     pub triggering_interaction_metadata: Option<Box<InteractionMetadata>>,
     pub user: User,
 }
@@ -508,7 +508,7 @@ impl From<twilight_model::application::interaction::InteractionMetadata> for Int
             target_message_id: v
                 .target_message_id.as_ref()
                 .map(ToString::to_string),
-            targer_user: v.target_user.map(From::from),
+            target_user: v.target_user.map(From::from),
             triggering_interaction_metadata: v
                 .triggering_interaction_metadata
                 .map(|e| Box::new((*e).into())),
