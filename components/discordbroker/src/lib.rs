@@ -21,6 +21,11 @@ pub async fn run(
     }
 
     info!("Launching broker");
+    // Needed because twilight does not do this and that causes a panic down the line when issuing requests to discord
+    // The error can be ignored because this function is called multiple types in full mode
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .ok();
 
     let discord_state = Arc::new(InMemoryCacheBuilder::new().build());
 

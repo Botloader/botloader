@@ -67,7 +67,6 @@ pub struct OpEditChannelMessage {
 pub struct OpCreateFollowUpMessage {
     pub interaction_token: String,
     pub fields: OpCreateMessageFields,
-    pub flags: Option<MessageFlags>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -94,6 +93,10 @@ pub struct OpCreateMessageFields {
     #[serde(default)]
     #[ts(optional)]
     pub attachments: Option<Vec<OpCreateMessageAttachment>>,
+    
+    #[serde(default)]
+    #[ts(optional)]
+    pub flags: Option<MessageFlags>,
 }
 
 // Converts attachments from our internal runtime_models to twilight's models
@@ -316,6 +319,7 @@ impl From<twilight_model::channel::message::Mention> for UserMention {
                 global_name: None,
                 banner: None,
                 accent_color: None,
+                primary_guild: None,
             },
             member: v.member.map(From::from),
         }

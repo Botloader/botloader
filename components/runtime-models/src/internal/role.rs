@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use ts_rs::TS;
 
+use crate::discord::role::RoleColors;
+
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/internal/CreateRoleFields.ts")]
@@ -8,6 +10,9 @@ use ts_rs::TS;
 pub struct OpCreateRoleFields {
     #[ts(optional)]
     pub color: Option<u32>,
+
+    #[ts(optional)]
+    pub colors: Option<RoleColors>,
 
     #[ts(optional)]
     pub hoist: Option<bool>,
@@ -40,6 +45,9 @@ pub struct OpUpdateRoleFields {
     )]
     #[ts(optional)]
     pub color: Option<Option<u32>>,
+
+    #[ts(optional)]
+    pub colors: Option<Option<RoleColors>>,
 
     #[ts(optional)]
     pub hoist: Option<bool>,

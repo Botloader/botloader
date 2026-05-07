@@ -45,7 +45,18 @@ const Flags: [string, bigint][] = [
     ['UseExternalStickers', 1n << 37n],
     ['SendMessagesInThreads', 1n << 38n],
     ['UseEmbeddedActivities', 1n << 39n],
-    ['ModerateMembers', 1n << 40n]
+    ['ModerateMembers', 1n << 40n],
+    ['ViewCreatorMonetizationAnalytics', 1n << 41n],
+    ['UseSoundboard', 1n << 42n],
+    ['CreateGuildExpressions', 1n << 43n],
+    ['CreateEvents', 1n << 44n],
+    ['UseExternalSounds', 1n << 45n],
+    ['SendVoiceMessages', 1n << 46n],
+    ['SetVoiceChannelStatus', 1n << 48n],
+    ['SendPolls', 1n << 49n],
+    ['UseExternalApps', 1n << 50n],
+    ['PinMessages', 1n << 51n],
+    ['BypassSlowmode', 1n << 52n],
 ]
 
 /**
@@ -97,6 +108,17 @@ export class Permissions {
     static readonly SendMessagesInThreads = new Permissions(1n << 38n);
     static readonly UseEmbeddedActivities = new Permissions(1n << 39n);
     static readonly ModerateMembers = new Permissions(1n << 40n);
+    static readonly ViewCreatorMonetizationAnalytics = new Permissions(1n << 41n);
+    static readonly UseSoundboard = new Permissions(1n << 42n);
+    static readonly CreateGuildExpressions = new Permissions(1n << 43n);
+    static readonly CreateEvents = new Permissions(1n << 44n);
+    static readonly UseExternalSounds = new Permissions(1n << 45n);
+    static readonly SendVoiceMessages = new Permissions(1n << 46n);
+    static readonly SetVoiceChannelStatus = new Permissions(1n << 48n);
+    static readonly SendPolls = new Permissions(1n << 49n);
+    static readonly UseExternalApps = new Permissions(1n << 50n);
+    static readonly PinMessages = new Permissions(1n << 51n);
+    static readonly BypassSlowmode = new Permissions(1n << 52n);
 
     readonly value: bigint;
 

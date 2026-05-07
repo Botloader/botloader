@@ -2,19 +2,64 @@ import type { ButtonStyle } from '../generated/discord/ButtonStyle';
 import type { TextInputStyle } from '../generated/discord/TextInputStyle';
 import type { ComponentType } from '../generated/discord/ComponentType';
 import type { ISelectMenuOption } from '../generated/discord/ISelectMenuOption';
+import type {ICheckboxGroupOption} from '../generated/discord/ICheckboxGroupOption';
 import { ReactionType } from '../generated/discord/ReactionType';
-import { ChannelType, IActionRow, IButton, ISelectMenu, ITextInput, SendEmoji } from './index';
+import {
+    ChannelType,
+    IActionRow,
+    IButton,
+    ISelectMenu,
+    ITextInput,
+    ISection,
+    ITextDisplay,
+    IThumbnail,
+    IMediaGallery,
+    IFile,
+    ISeparator,
+    IContainer,
+    ILabel,
+    IFileUpload,
+    //IUnknownComponent,
+    SendEmoji, 
+    //IComponent,
+    IUnfurledMediaItem,
+    IMediaGalleryItem,
+    SeparatorSpacingSize,
+    ICheckbox,
+    ICheckboxGroup,
+} from './index';
 import { encodeInteractionCustomId } from './interaction';
 import { type SelectMenuType } from '../generated/discord/SelectMenuType';
 import { SelectDefaultValue } from '../generated/discord/SelectDefaultValue';
 
-export type AnyComponent = ActionRow | Button | SelectMenu | ShortTextInput | ParagraphTextInput;
+export type AnyComponent = 
+    | ActionRow
+    | Button
+    | SelectMenu
+    | ShortTextInput
+    | ParagraphTextInput
+    | Section
+    | TextDisplay
+    | Thumbnail
+    | MediaGallery
+    | File
+    | Separator
+    | Container
+    | Label
+    | FileUpload
+    | Checkbox
+    | CheckboxGroup;
 
 export abstract class BaseComponent {
     kind: ComponentType;
+    id?: number | undefined;
 
     constructor(kind: ComponentType) {
         this.kind = kind;
+    }
+
+    setId(id: number) {
+        this.id = id;
     }
 }
 
@@ -40,7 +85,7 @@ export abstract class Button extends BaseComponent implements IButton {
     label?: string;
     emoji?: ReactionType;
 
-    constructor(label: string, style: ButtonStyle) {
+    constructor(label: string | undefined, style: ButtonStyle) {
         super("Button");
 
         this.label = label;
@@ -69,8 +114,14 @@ export abstract class Button extends BaseComponent implements IButton {
 }
 
 export class UrlButton extends Button implements IButton {
-    constructor(label: string, url: string) {
-        super(label, "Link");
+    constructor(url: string);
+    constructor(label: string, url: string);
+    constructor(labelOrUrl: string, url?: string) {
+        if (arguments.length >= 2) {
+            super(labelOrUrl, "Link");
+        } else {
+            super(undefined, "Link");
+        }
 
         this.url = url;
     }
@@ -81,7 +132,7 @@ export class CustomButton extends Button implements IButton {
         super(label, "Primary");
 
         this.customId = encodeInteractionCustomId(name, data ?? null);
-    }
+    };
 
     setStyle(style: ButtonStyle) {
         this.style = style;
@@ -258,15 +309,16 @@ export abstract class TextInput extends BaseComponent implements ITextInput {
     kind: "TextInput" = "TextInput";
 
     customId: string;
-    label: string;
-    maxLength: number | null = null;
-    minLength: number | null = null;
-    placeholder: string | null = null;
-    required: boolean | null = null;
+    /** @deprecated */
+    label?: string;
+    maxLength?: number;
+    minLength?: number;
+    placeholder?: string;
+    required?: boolean;
     style: TextInputStyle;
-    value: string | null = null;
+    value?: string;
 
-    constructor(label: string, style: TextInputStyle, name: string, data?: any) {
+    constructor(label: string | undefined, style: TextInputStyle, name: string, data?: any) {
         super("TextInput");
 
         this.label = label;
@@ -302,15 +354,303 @@ export abstract class TextInput extends BaseComponent implements ITextInput {
 export class ShortTextInput extends TextInput implements ITextInput {
     kind: "TextInput" = "TextInput";
 
-    constructor(label: string, name: string, data?: any) {
-        super(label, "Short", name, data);
+    /** @deprecated */
+    constructor(label: string, name: string, data?: any);
+    constructor(name: string, data?: any);
+    constructor(labelOrName: string, nameOrData?: string | any, data?: any) {
+        if (typeof nameOrData === "string" && arguments.length >= 3) {
+            super(labelOrName, "Short", nameOrData, data);
+        } else {
+            super(undefined, "Short", labelOrName, nameOrData);
+        }
     };
 }
 
 export class ParagraphTextInput extends TextInput implements ITextInput {
     kind: "TextInput" = "TextInput";
 
-    constructor(label: string, name: string, data?: any) {
-        super(label, "Paragraph", name, data);
+    /** @deprecated */
+    constructor(label: string, name: string, data?: any);
+    constructor(name: string, data?: any);
+    constructor(labelOrName: string, nameOrData?: string | any, data?: any) {
+        if (typeof nameOrData === "string" && arguments.length >= 3) {
+            super(labelOrName, "Paragraph", nameOrData, data);
+        } else {
+            super(undefined, "Paragraph", labelOrName, nameOrData);
+        }
     };
+}
+
+export class Section extends BaseComponent implements ISection {
+    kind: "Section" = "Section";
+
+    components: AnyComponent[];
+    accessory: AnyComponent;
+
+    constructor(children: AnyComponent[], accessory: AnyComponent) {
+        super("Section");
+        
+        this.components = children;
+        this.accessory = accessory;
+    }
+}
+
+export class TextDisplay extends BaseComponent implements ITextDisplay {
+    kind: "TextDisplay" = "TextDisplay";
+
+    content: string;
+
+    constructor(content: string) {
+        super("TextDisplay");
+
+        this.content = content;
+    }
+}
+
+export class UnfurledMediaItem implements IUnfurledMediaItem {
+    url: string;
+    proxyUrl?: string;
+    height?: number;
+    width?: number;
+    contentType?: string;
+
+    constructor (url: string) {
+        this.url = url;
+    }
+}
+
+export class Thumbnail extends BaseComponent implements IThumbnail {
+    kind: "Thumbnail" = "Thumbnail";
+
+    media: UnfurledMediaItem;
+    description?: string;
+    spoiler?: boolean;
+
+    constructor(media: UnfurledMediaItem) {
+        super("Thumbnail");
+
+        this.media = media;
+    }
+
+    setDescription(description: string) {
+        this.description = description;
+        return this;
+    }
+
+    setSpoiler(spoiler: boolean) {
+        this.spoiler = spoiler;
+        return this;
+    }
+}
+
+export class MediaGalleryItem implements IMediaGalleryItem {
+    media: UnfurledMediaItem;
+    description?: string;
+    spoiler?: boolean;
+    
+    constructor(media: UnfurledMediaItem) {
+        this.media = media;
+    }
+
+    setDescription(description: string) {
+        this.description = description;
+        return this;
+    }
+
+    setSpoiler(spoiler: boolean) {
+        this.spoiler = spoiler;
+        return this;
+    }
+}
+
+export class MediaGallery extends BaseComponent implements IMediaGallery {
+    kind: "MediaGallery" = "MediaGallery";
+    
+    items: MediaGalleryItem[];
+
+    constructor(items: MediaGalleryItem[]) {
+        super("MediaGallery");
+
+        this.items = items;
+    }
+}
+
+export class File extends BaseComponent implements IFile {
+    kind: "File" = "File";
+
+    file: UnfurledMediaItem;
+    spoiler?: boolean;
+
+    constructor(file: UnfurledMediaItem) {
+        super("File");
+
+        this.file = file;
+    }
+
+    setSpoiler(spoiler: boolean) {
+        this.spoiler = spoiler;
+        return this;
+    }
+}
+
+export class Separator extends BaseComponent implements ISeparator {
+    kind: "Separator" = "Separator";
+    
+    divider?: boolean;
+    spacing?: SeparatorSpacingSize;
+
+    constructor() {
+        super("Separator");
+    }
+
+    setDivider(divider: boolean) {
+        this.divider = divider;
+        return this;
+    }
+
+    setSpacing(spacing: SeparatorSpacingSize) {
+        this.spacing = spacing;
+        return this;
+    }
+}
+
+export class Container extends BaseComponent implements IContainer {
+    kind: "Container" = "Container";
+
+    accentColor?: number;
+    spoiler?: boolean;
+    components: AnyComponent[];
+
+    constructor(components: AnyComponent[]) {
+        super("Container");
+
+        this.components = components;
+    }
+
+    setAccentColor(accentColor: number) {
+        this.accentColor = accentColor;
+        return this;
+    }
+
+    setSpoiler(spoiler: boolean) {
+        this.spoiler = spoiler;
+        return this;
+    }
+}
+
+export class Label extends BaseComponent implements ILabel {
+    kind: "Label" = "Label";
+    
+    label: string;
+    description?: string;
+    component: AnyComponent;
+
+    constructor(label: string, component: AnyComponent) {
+        super("Label");
+
+        this.label = label;
+        this.component = component;
+    }
+
+    setDescription(description: string) {
+        this.description = description;
+        return this;
+    }
+}
+
+export class FileUpload extends BaseComponent implements IFileUpload {
+    kind: "FileUpload" = "FileUpload";
+
+    customId: string;
+    maxValues?: number;
+    minValues?: number;
+    required?: boolean;
+
+    constructor(name: string, data?: any) {
+        super("FileUpload");
+
+        this.customId = encodeInteractionCustomId(name, data ?? null);
+    }
+
+    setMinValues(minValues: number) {
+        this.minValues = minValues;
+        return this;
+    }
+
+    setMaxValues(maxValues: number) {
+        this.maxValues = maxValues;
+        return this;
+    }
+
+    setRequired(required: boolean) {
+        this.required = required;
+        return this;
+    }
+}
+
+export class Checkbox extends BaseComponent implements ICheckbox {
+    kind: "Checkbox" = "Checkbox";
+
+    customId: string;
+    default?: boolean;
+
+    constructor(name: string, data?: any) {
+        super("Checkbox");
+
+        this.customId = encodeInteractionCustomId(name, data ?? null);
+    }
+}
+
+export class CheckboxGroup extends BaseComponent implements ICheckboxGroup {
+    kind: "CheckboxGroup" = "CheckboxGroup";
+
+    customId: string;
+    maxValues?: number;
+    minValues?: number;
+    required?: boolean;
+    options: CheckboxGroupOption[];
+
+    constructor(name: string, options: CheckboxGroupOption[], data?: any) {
+        super("CheckboxGroup");
+
+        this.customId = encodeInteractionCustomId(name, data ?? null);
+        this.options = options;
+    }
+
+    setMinValues(minValues: number) {
+        this.minValues = minValues;
+        return this;
+    }
+
+    setMaxValues(maxValues: number) {
+        this.maxValues = maxValues;
+        return this;
+    }
+
+    setRequired(required: boolean) {
+        this.required = required;
+        return this;
+    }
+}
+
+export class CheckboxGroupOption implements ICheckboxGroupOption {
+    default?: boolean;
+    description?: string;
+    label: string;
+    value: string;
+    
+    constructor(label: string, value: string) {
+        this.label = label;
+        this.value = value;
+    }
+
+    setDefault(isDefault: boolean) {
+        this.default = isDefault;
+        return this;
+    }
+
+    setDescription(description: string) {
+        this.description = description;
+        return this;
+    }
 }

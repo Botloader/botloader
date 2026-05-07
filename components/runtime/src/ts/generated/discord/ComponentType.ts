@@ -8,4 +8,15 @@ export type ComponentType =
   | "UserSelectMenu"
   | "RoleSelectMenu"
   | "MentionableSelectMenu"
-  | "ChannelSelectMenu";
+  | "ChannelSelectMenu"
+  | "Section"
+  | "TextDisplay"
+  | "Thumbnail"
+  | "MediaGallery"
+  | "File"
+  | "Separator"
+  | "Container"
+  | "Label"
+  | "FileUpload"
+  | "Checkbox"
+  | "CheckboxGroup";

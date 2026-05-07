@@ -3,6 +3,7 @@ import type { ButtonStyle } from "./ButtonStyle";
 import type { ReactionType } from "./ReactionType";
 
 export type IButton = {
+  id?: number;
   customId?: string;
   style: ButtonStyle;
   disabled?: boolean;

@@ -5,6 +5,7 @@ use crate::{
 };
 use serde::Serialize;
 use ts_rs::TS;
+use twilight_model::id::Id;
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[serde(tag = "kind")]
@@ -112,13 +113,10 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                     values: data
                         .components
                         .into_iter()
-                        .flat_map(|row| {
-                            row.components
-                                .into_iter()
-                                .map(ModalInteractionDataComponent::from)
-                                .collect::<Vec<_>>()
-                        })
-                        .collect::<Vec<_>>(),
+                        .map(ModalInteractionComponent::try_from)
+                        .collect::<Result<Vec<_>, _>>()?,
+                        
+                resolved: data.resolved.map(|rv| rv.try_into()).transpose()?,
                 }))
             }
             Some(_) => Err(anyhow::anyhow!(
@@ -419,31 +417,500 @@ pub struct ModalInteraction {
     pub member: Member,
     pub message: Option<Message>,
     pub token: String,
+    pub resolved: Option<InteractionDataMap>,
 
     pub custom_id: String,
-    pub values: Vec<ModalInteractionDataComponent>,
+    pub values: Vec<ModalInteractionComponent>,
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[serde(tag = "kind")]
+#[ts(export, export_to = "bindings/internal/ModalInteractionComponent.ts")]
+pub enum ModalInteractionComponent {
+    Label(ModalInteractionLabel),
+    ActionRow(ModalInteractionActionRow),
+    SelectMenu(ModalInteractionStringSelect),
+    UserSelectMenu(ModalInteractionUserSelect),
+    RoleSelectMenu(ModalInteractionRoleSelect),
+    MentionableSelectMenu(ModalInteractionMentionableSelect),
+    ChannelSelectMenu(ModalInteractionChannelSelect),
+    TextInput(ModalInteractionTextInput),
+    TextDisplay(ModalInteractionTextDisplay),
+    FileUpload(ModalInteractionFileUpload),
+    Checkbox(ModalInteractionCheckbox),
+    CheckboxGroup(ModalInteractionCheckboxGroup),
+    Unknown(u8),
+}
+
+use twilight_model::application::interaction::modal::ModalInteractionComponent as TwilightModalInteractionComponent;
+
+impl TryFrom<TwilightModalInteractionComponent> for ModalInteractionComponent {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightModalInteractionComponent) -> Result<Self, Self::Error> {
+        Ok(match v {
+            TwilightModalInteractionComponent::Label(inner) => Self::Label(inner.try_into()?),
+            TwilightModalInteractionComponent::ActionRow(inner) => Self::ActionRow(inner.try_into()?),
+            TwilightModalInteractionComponent::StringSelect(inner) => Self::SelectMenu(inner.try_into()?),
+            TwilightModalInteractionComponent::UserSelect(inner) => Self::UserSelectMenu(inner.try_into()?),
+            TwilightModalInteractionComponent::RoleSelect(inner) => Self::RoleSelectMenu(inner.try_into()?),
+            TwilightModalInteractionComponent::MentionableSelect(inner) => Self::MentionableSelectMenu(inner.try_into()?),
+            TwilightModalInteractionComponent::ChannelSelect(inner) => Self::ChannelSelectMenu(inner.try_into()?),
+            TwilightModalInteractionComponent::TextInput(inner) => Self::TextInput(inner.try_into()?),
+            TwilightModalInteractionComponent::TextDisplay(inner) => Self::TextDisplay(inner.try_into()?),
+            TwilightModalInteractionComponent::FileUpload(inner) => Self::FileUpload(inner.try_into()?),
+            TwilightModalInteractionComponent::Checkbox(inner) => Self::Checkbox(inner.try_into()?),
+            TwilightModalInteractionComponent::CheckboxGroup(inner) => Self::CheckboxGroup(inner.try_into()?),
+            TwilightModalInteractionComponent::Unknown(inner) => Self::Unknown(inner.try_into()?),
+        })
+    }
+}
+
+impl TryFrom<ModalInteractionComponent> for TwilightModalInteractionComponent {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ModalInteractionComponent) -> Result<Self, Self::Error> {
+        Ok(match v {
+            ModalInteractionComponent::Label(inner) => Self::Label(inner.try_into()?),
+            ModalInteractionComponent::ActionRow(inner) => Self::ActionRow(inner.try_into()?),
+            ModalInteractionComponent::SelectMenu(inner) => Self::StringSelect(inner.try_into()?),
+            ModalInteractionComponent::UserSelectMenu(inner) => Self::UserSelect(inner.try_into()?),
+            ModalInteractionComponent::RoleSelectMenu(inner) => Self::RoleSelect(inner.try_into()?),
+            ModalInteractionComponent::MentionableSelectMenu(inner) => Self::MentionableSelect(inner.try_into()?),
+            ModalInteractionComponent::ChannelSelectMenu(inner) => Self::ChannelSelect(inner.try_into()?),
+            ModalInteractionComponent::TextInput(inner) => Self::TextInput(inner.try_into()?),
+            ModalInteractionComponent::TextDisplay(inner) => Self::TextDisplay(inner.try_into()?),
+            ModalInteractionComponent::FileUpload(inner) => Self::FileUpload(inner.try_into()?),
+            ModalInteractionComponent::Checkbox(inner) => Self::Checkbox(inner.try_into()?),
+            ModalInteractionComponent::CheckboxGroup(inner) => Self::CheckboxGroup(inner.try_into()?),
+            ModalInteractionComponent::Unknown(inner) => Self::Unknown(inner.try_into()?),
+        })
+    }
+}
+
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalInteractionLabel.ts",
+    rename = "IModalInteractionLabel"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalInteractionLabel {
+    pub id: i32,
+    pub component: Box<ModalInteractionComponent>,
+}
+
+use twilight_model::application::interaction::modal::ModalInteractionLabel as TwilightModalInteractionLabel;
+impl TryFrom<TwilightModalInteractionLabel> for ModalInteractionLabel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightModalInteractionLabel) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            component: Box::new((*v.component).try_into()?),
+        })
+    }
+}
+
+impl TryFrom<ModalInteractionLabel> for TwilightModalInteractionLabel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ModalInteractionLabel) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            component: Box::new((*v.component).try_into()?),
+        })
+    }
 }
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(
     export,
-    export_to = "bindings/internal/IModalInteractionDataComponent.ts",
-    rename = "IModalInteractionDataComponent"
+    export_to = "bindings/internal/IModalInteractionActionRow.ts",
+    rename = "IModalInteractionActionRow"
 )]
 #[serde(rename_all = "camelCase")]
-pub struct ModalInteractionDataComponent {
+pub struct ModalInteractionActionRow {
+    pub id: i32,
+    pub components: Vec<ModalInteractionComponent>,
+}
+
+use twilight_model::application::interaction::modal::ModalInteractionActionRow as TwilightModalInteractionActionRow;
+impl TryFrom<TwilightModalInteractionActionRow> for ModalInteractionActionRow {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightModalInteractionActionRow) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+impl TryFrom<ModalInteractionActionRow> for TwilightModalInteractionActionRow {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ModalInteractionActionRow) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalInteractionSelectMenu.ts",
+    rename = "IModalInteractionSelectMenu"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalInteractionSelectMenu<ValueType> {
+    pub id: i32,
     pub custom_id: String,
-    pub kind: ComponentType,
+    pub values: Vec<ValueType>,
+}
+
+type ModalInteractionStringSelect = ModalInteractionSelectMenu<String>;
+
+use twilight_model::application::interaction::modal::ModalInteractionStringSelect as TwilightModalInteractionStringSelect;
+impl TryFrom<TwilightModalInteractionStringSelect> for ModalInteractionStringSelect {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightModalInteractionStringSelect) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
+
+impl TryFrom<ModalInteractionStringSelect> for TwilightModalInteractionStringSelect {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ModalInteractionStringSelect) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
+
+type ModalInteractionUserSelect = ModalInteractionSelectMenu<String>;
+use twilight_model::application::interaction::modal::ModalInteractionUserSelect as TwilightModalInteractionUserSelect;
+impl From<TwilightModalInteractionUserSelect> for ModalInteractionUserSelect {
+    fn from(v: TwilightModalInteractionUserSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        }
+    }
+}
+
+impl From<ModalInteractionUserSelect> for TwilightModalInteractionUserSelect {
+    fn from(v: ModalInteractionUserSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .filter_map(|s| Id::new_checked(s.parse().ok()?))
+                .collect(),
+        }
+    }
+}
+
+type ModalInteractionRoleSelect = ModalInteractionSelectMenu<String>;
+use twilight_model::application::interaction::modal::ModalInteractionRoleSelect as TwilightModalInteractionRoleSelect;
+impl From<TwilightModalInteractionRoleSelect> for ModalInteractionRoleSelect {
+    fn from(v: TwilightModalInteractionRoleSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        }
+    }
+}
+
+impl From<ModalInteractionRoleSelect> for TwilightModalInteractionRoleSelect {
+    fn from(v: ModalInteractionRoleSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .filter_map(|s| Id::new_checked(s.parse().ok()?))
+                .collect(),
+        }
+    }
+}
+
+type ModalInteractionMentionableSelect = ModalInteractionSelectMenu<String>;
+use twilight_model::application::interaction::modal::ModalInteractionMentionableSelect as TwilightModalInteractionMentionableSelect;
+impl From<TwilightModalInteractionMentionableSelect> for ModalInteractionMentionableSelect {
+    fn from(v: TwilightModalInteractionMentionableSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        }
+    }
+}
+
+impl From<ModalInteractionMentionableSelect> for TwilightModalInteractionMentionableSelect{
+    fn from(v: ModalInteractionMentionableSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .filter_map(|s| Id::new_checked(s.parse().ok()?))
+                .collect(),
+        }
+    }
+}
+
+type ModalInteractionChannelSelect = ModalInteractionSelectMenu<String>;
+use twilight_model::application::interaction::modal::ModalInteractionChannelSelect as TwilightModalInteractionChannelSelect;
+impl From<TwilightModalInteractionChannelSelect> for ModalInteractionChannelSelect {
+    fn from(v: TwilightModalInteractionChannelSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        }
+    }
+}
+
+impl From<ModalInteractionChannelSelect> for TwilightModalInteractionChannelSelect {
+    fn from(v: ModalInteractionChannelSelect) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .filter_map(|s| Id::new_checked(s.parse().ok()?))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalInteractionTextInput.ts",
+    rename = "IModalInteractionTextInput"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalInteractionTextInput {
+    pub custom_id: String,
+    pub id: i32,
     pub value: String,
 }
 
-use twilight_model::application::interaction::modal::ModalInteractionDataComponent as TwilightModalInteractionDataComponent;
-impl From<TwilightModalInteractionDataComponent> for ModalInteractionDataComponent {
-    fn from(v: TwilightModalInteractionDataComponent) -> Self {
+use twilight_model::application::interaction::modal::ModalInteractionTextInput as TwilightModalInteractionTextInput;
+impl From<TwilightModalInteractionTextInput> for ModalInteractionTextInput {
+    fn from(v: TwilightModalInteractionTextInput) -> Self {
         Self {
             custom_id: v.custom_id,
-            kind: v.kind.into(),
-            value: v.value.unwrap_or_default(),
+            id: v.id,
+            value: v.value,
+        }
+    }
+}
+
+impl From<ModalInteractionTextInput> for TwilightModalInteractionTextInput {
+    fn from(v: ModalInteractionTextInput) -> Self {
+        Self {
+            custom_id: v.custom_id,
+            id: v.id,
+            value: v.value,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalInteractionTextDisplay.ts",
+    rename = "IModalInteractionTextDisplay"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalInteractionTextDisplay {
+    pub id: i32,
+}
+
+use twilight_model::application::interaction::modal::ModalInteractionTextDisplay as TwilightModalInteractionTextDisplay;
+impl From<TwilightModalInteractionTextDisplay> for ModalInteractionTextDisplay {
+    fn from(v: TwilightModalInteractionTextDisplay) -> Self {
+        Self {
+            id: v.id,
+        }
+    }
+}
+
+impl From<ModalInteractionTextDisplay> for TwilightModalInteractionTextDisplay {
+    fn from(v: ModalInteractionTextDisplay) -> Self {
+        Self {
+            id: v.id,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalInteractionFileUpload.ts",
+    rename = "IModalInteractionFileUpload"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalInteractionFileUpload {
+    pub id: i32,
+    pub custom_id: String,
+    pub values: Vec<String>,
+}
+
+use twilight_model::application::interaction::modal::ModalInteractionFileUpload as TwilightModalInteractionFileUpload;
+impl From<TwilightModalInteractionFileUpload> for ModalInteractionFileUpload {
+    fn from(v: TwilightModalInteractionFileUpload) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        }
+    }
+}
+
+impl From<ModalInteractionFileUpload> for TwilightModalInteractionFileUpload {
+    fn from(v: ModalInteractionFileUpload) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .iter()
+                .filter_map(|s| Id::new_checked(s.parse().ok()?))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalInteractionCheckbox.ts",
+    rename = "ModalInteractionCheckbox"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalInteractionCheckbox {
+    pub id: i32,
+    pub custom_id: String,
+    pub value: bool,
+}
+
+use twilight_model::application::interaction::modal::ModalInteractionCheckbox as TwilightModalInteractionCheckbox;
+impl From<TwilightModalInteractionCheckbox> for ModalInteractionCheckbox {
+    fn from(v: TwilightModalInteractionCheckbox) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            value: v.value,
+        }
+    }
+}
+
+impl From<ModalInteractionCheckbox> for TwilightModalInteractionCheckbox {
+    fn from(v: ModalInteractionCheckbox) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            value: v.value,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IModalInteractionCheckboxGroup.ts",
+    rename = "ModalInteractionCheckboxGroup"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ModalInteractionCheckboxGroup {
+    pub id: i32,
+    pub custom_id: String,
+    pub values: Vec<String>,
+}
+
+use twilight_model::application::interaction::modal::ModalInteractionCheckboxGroup as TwilightModalInteractionCheckboxGroup;
+impl From<TwilightModalInteractionCheckboxGroup> for ModalInteractionCheckboxGroup {
+    fn from(v: TwilightModalInteractionCheckboxGroup) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+        }
+    }
+}
+
+impl From<ModalInteractionCheckboxGroup> for TwilightModalInteractionCheckboxGroup {
+    fn from(v: ModalInteractionCheckboxGroup) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            values: v
+                .values
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         }
     }
 }

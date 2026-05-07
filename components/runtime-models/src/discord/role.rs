@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use ts_rs::TS;
-use twilight_model::guild::{Role as TwilightRole, RoleTags as TwilightRoleTags};
+use twilight_model::guild::{Role as TwilightRole, RoleTags as TwilightRoleTags, RoleColors as TwilightRoleColors};
 
 use crate::util::NotBigI64;
 
@@ -10,6 +10,7 @@ use crate::util::NotBigI64;
 #[ts(export_to = "bindings/discord/Role.ts")]
 pub struct Role {
     pub(crate) color: u32,
+    pub(crate) colors: RoleColors,
     pub(crate) hoist: bool,
     pub(crate) icon: Option<String>,
     pub(crate) id: String,
@@ -26,6 +27,7 @@ impl From<&TwilightRole> for Role {
     fn from(v: &TwilightRole) -> Self {
         Self {
             color: v.color,
+            colors: v.colors.clone().into(),
             hoist: v.hoist,
             icon: v.icon.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
@@ -44,6 +46,7 @@ impl From<TwilightRole> for Role {
     fn from(v: TwilightRole) -> Self {
         Self {
             color: v.color,
+            colors: v.colors.into(),
             hoist: v.hoist,
             icon: v.icon.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
@@ -74,6 +77,36 @@ impl From<TwilightRoleTags> for RoleTags {
             bot_id: v.bot_id.as_ref().map(ToString::to_string),
             integration_id: v.integration_id.as_ref().map(ToString::to_string),
             premium_subscriber: v.premium_subscriber,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/discord/RoleColors.ts")]
+pub struct RoleColors {
+    pub(crate) primary_color: u32,
+    pub(crate) secondary_color: Option<u32>,
+    pub(crate) tertiary_color: Option<u32>,
+}
+
+impl From<TwilightRoleColors> for RoleColors {
+    fn from(v: TwilightRoleColors) -> Self {
+        Self {
+            primary_color: v.primary_color,
+            secondary_color: v.secondary_color,
+            tertiary_color: v.tertiary_color,
+        }
+    }
+}
+
+impl From<RoleColors> for TwilightRoleColors {
+    fn from(v: RoleColors) -> Self {
+        Self {
+            primary_color: v.primary_color,
+            secondary_color: v.secondary_color,
+            tertiary_color: v.tertiary_color,
         }
     }
 }

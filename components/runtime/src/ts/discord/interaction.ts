@@ -1,4 +1,4 @@
-import { ChannelType, ComponentType, IComponent, Role, ThreadMetadata } from '../generated/discord/index';
+import { ChannelType, ComponentType, IComponent, Role, ThreadMetadata, Attachment } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import {
     CreateMessageFields,
@@ -278,7 +278,57 @@ export class ModalSubmitInteraction extends Interaction {
 
         this.values = {};
         for (const elem of interaction.values) {
-            const parsed = new ModalSubmitInteractionValue(elem);
+            this.parseComponentValues(elem, interaction);
+        }
+    }
+
+    private parseComponentValues(elem: Internal.ModalInteractionComponent, interaction: Internal.IModalInteraction) {
+        let parsed: ModalSubmitInteractionValue | undefined;
+        switch (elem.kind) {
+            // Handle the components that have nested components
+            case "Label":
+                this.parseComponentValues(elem.component, interaction);
+                break;
+
+            case "ActionRow":
+                for (const subElem of elem.components) {
+                    this.parseComponentValues(subElem, interaction);
+                }
+                break;
+                
+            // Value components
+            case 'SelectMenu':
+                parsed = new ModalSubmitInteractionValueSelectMenu(elem);
+                break;
+            case 'ChannelSelectMenu':
+                parsed = new ModalSubmitInteractionValueChannelSelectMenu(elem, interaction.resolved)
+                break;
+            case 'UserSelectMenu':
+                parsed = new ModalSubmitInteractionValueUserSelectMenu(elem, interaction.resolved)
+                break;
+            case 'RoleSelectMenu':
+                parsed = new ModalSubmitInteractionValueRoleSelectMenu(elem, interaction.resolved)
+                break;
+            case 'MentionableSelectMenu':
+                parsed = new ModalSubmitInteractionValueMentionableSelectMenu(elem, interaction.resolved)
+                break;
+            case 'FileUpload':
+                parsed = new ModalSubmitInteractionValueFileUpload(elem, interaction.resolved);
+                break;
+            case 'TextInput':
+                parsed = new ModalSubmitInteractionValueTextInput(elem);
+                break;
+            case 'Checkbox':
+                parsed = new ModalSubmitInteractionValueCheckbox(elem);
+                break;
+            case 'CheckboxGroup':
+                parsed = new ModalSubmitInteractionValueCheckboxGroup(elem);
+                break;
+            default:
+                break;
+        }
+
+        if (parsed) {
             this.values = {
                 ...this.values,
                 [parsed.name]: parsed,
@@ -345,21 +395,231 @@ export class ModalSubmitInteraction extends Interaction {
 
 export interface ModalSubmitInteractionValues {
     [key: string]: ModalSubmitInteractionValue
+        | ModalSubmitInteractionValueTextInput
+        | ModalSubmitInteractionValueSelectMenu
+        | ModalSubmitInteractionValueChannelSelectMenu
+        | ModalSubmitInteractionValueRoleSelectMenu
+        | ModalSubmitInteractionValueUserSelectMenu
+        | ModalSubmitInteractionValueMentionableSelectMenu
+        | ModalSubmitInteractionValueCheckbox
+        | ModalSubmitInteractionValueCheckboxGroup
+        | ModalSubmitInteractionValueFileUpload;
 }
 
 export class ModalSubmitInteractionValue {
     customIdRaw: string;
     name: string;
-    value: string;
+    value: string = "";
     kind: ComponentType;
 
     customData: unknown;
 
-    constructor(from: Internal.IModalInteractionDataComponent) {
+    constructor(from: Extract<Internal.ModalInteractionComponent, {customId: string}>) {
         [this.name, this.customData] = parseInteractionCustomId(from.customId);
         this.customIdRaw = from.customId;
         this.kind = from.kind;
+    }
+}
+
+export class ModalSubmitInteractionValueTextInput extends ModalSubmitInteractionValue {
+    kind: "TextInput" = "TextInput";
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "TextInput"}>) {
+        super(from);
+
         this.value = from.value;
+    }
+}
+
+export class ModalSubmitInteractionValueSelectMenu extends ModalSubmitInteractionValue {
+    kind: "SelectMenu" = "SelectMenu";
+
+    values: string[] = [];
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "SelectMenu"}>) {
+        super(from);
+
+        this.values = from.values;
+    }
+}
+
+export class ModalSubmitInteractionValueChannelSelectMenu extends ModalSubmitInteractionValue {
+    kind: "ChannelSelectMenu" = "ChannelSelectMenu";
+
+    values: InteractionChannel[] = [];
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "ChannelSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
+        super(from);
+        
+        if (!resolved) {
+            throw new Error("No resolved data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of from.values) {
+            const channel = resolved.channels[id]
+            if (!channel) {
+                throw new Error("Failed to resolve channel: " + id)
+            }
+            this.values.push(channel)
+        }
+    }
+}
+
+export class ModalSubmitInteractionValueRoleSelectMenu extends ModalSubmitInteractionValue {
+    kind: "RoleSelectMenu" = "RoleSelectMenu";
+
+    values: InteractionMentionable[] = [];
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "RoleSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
+        super(from);
+        
+        if (!resolved) {
+            throw new Error("No mentionables resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of from.values) {
+            const role = resolved.roles[id]
+            if (role) {
+                this.values.push({
+                    kind: "Role",
+                    value: role
+                })
+
+                return
+            }
+
+            const user = resolved.users[id]
+            if (!user) {
+                throw new Error("Failed to resolve mentionable: " + id)
+            }
+
+            this.values.push({
+                kind: "User",
+                value: {
+                    user: new User(user),
+                    member: resolved.members[id],
+                }
+            })
+        }
+    }
+}
+
+export interface InteractionMember {
+    joinedAt: number;
+    nick: string | null;
+    premiumSince?: number;
+    roles: Array<string>;
+}
+
+export interface InteractionUser {
+    user: User,
+    member?: InteractionMember,
+}
+
+export type InteractionMentionable = {
+    kind: "Role",
+    value: Role
+} | {
+    kind: "User",
+    value: InteractionUser
+}
+
+export class ModalSubmitInteractionValueUserSelectMenu extends ModalSubmitInteractionValue {
+    kind: "UserSelectMenu" = "UserSelectMenu";
+
+    values: InteractionUser[] = [];
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "UserSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
+        super(from);
+        
+        if (!resolved) {
+            throw new Error("No users resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of from.values) {
+            const user = resolved.users[id]
+            if (!user) {
+                throw new Error("Failed to resolve user: " + id)
+            }
+
+            this.values.push({
+                user: new User(user),
+                member: resolved.members[id],
+            })
+        }
+    }
+}
+
+export class ModalSubmitInteractionValueMentionableSelectMenu extends ModalSubmitInteractionValue {
+    kind: "MentionableSelectMenu" = "MentionableSelectMenu"
+
+    values: InteractionUser[] = [];
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "MentionableSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
+        super(from);
+        
+        if (!resolved) {
+            throw new Error("No users resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of from.values) {
+            const user = resolved.users[id]
+            if (!user) {
+                throw new Error("Failed to resolve user: " + id)
+            }
+
+            this.values.push({
+                user: new User(user),
+                member: resolved.members[id],
+            })
+        }
+    }
+}
+
+export class ModalSubmitInteractionValueCheckbox extends ModalSubmitInteractionValue {
+    kind: "Checkbox" = "Checkbox";
+
+    checked: boolean;
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "Checkbox"}>) {
+        super(from);
+
+        this.checked = from.value;
+    }
+}
+
+export class ModalSubmitInteractionValueCheckboxGroup extends ModalSubmitInteractionValue {
+    kind: "CheckboxGroup" = "CheckboxGroup";
+
+    values: string[];
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "CheckboxGroup"}>) {
+        super(from);
+
+        this.values = from.values;
+    }
+}
+
+export class ModalSubmitInteractionValueFileUpload extends ModalSubmitInteractionValue {
+    kind: "FileUpload" = "FileUpload"
+
+    values: Attachment[] = [];
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "FileUpload"}>, resolved: Internal.InteractionDataMap | null) {
+        super(from);
+        
+        if (!resolved) {
+            throw new Error("No attachments resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of from.values) {
+            const attachment = resolved.attachments[id]
+            if (!attachment) {
+                throw new Error("Failed to resolve attachment: " + id)
+            }
+
+            this.values.push(attachment)
+        }
     }
 }
 
@@ -422,26 +682,6 @@ export class RoleSelectMenuInteraction extends ComponentInteraction {
     }
 }
 
-export interface InteractionMember {
-    joinedAt: number;
-    nick: string | null;
-    premiumSince?: number;
-    roles: Array<string>;
-}
-
-export interface InteractionUser {
-    user: User,
-    member?: InteractionMember,
-}
-
-export type InteractionMentionable = {
-    kind: "Role",
-    value: Role
-} | {
-    kind: "User",
-    value: InteractionUser
-}
-
 export class UserSelectMenuInteraction extends ComponentInteraction {
     values: InteractionUser[] = [];
 
@@ -449,7 +689,7 @@ export class UserSelectMenuInteraction extends ComponentInteraction {
         super(interaction);
 
         if (!interaction.resolved) {
-            throw new Error("No roles resolved in data, this is a bot error you should report to the botloader team.")
+            throw new Error("No users resolved in data, this is a bot error you should report to the botloader team.")
         }
 
         for (const id of interaction.values) {

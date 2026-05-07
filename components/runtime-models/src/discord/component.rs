@@ -16,6 +16,17 @@ pub enum ComponentType {
     RoleSelectMenu,
     MentionableSelectMenu,
     ChannelSelectMenu,
+    Section,
+    TextDisplay,
+    Thumbnail,
+    MediaGallery,
+    File,
+    Separator,
+    Container,
+    Label,
+    FileUpload,
+    Checkbox,
+    CheckboxGroup,
 }
 
 use twilight_model::channel::message::component::ComponentType as TwilightComponentType;
@@ -30,6 +41,17 @@ impl From<TwilightComponentType> for ComponentType {
             TwilightComponentType::MentionableSelectMenu => Self::MentionableSelectMenu,
             TwilightComponentType::ChannelSelectMenu => Self::ChannelSelectMenu,
             TwilightComponentType::TextInput => Self::TextInput,
+            TwilightComponentType::Section => Self::Section,
+            TwilightComponentType::TextDisplay => Self::TextDisplay,
+            TwilightComponentType::Thumbnail => Self::Thumbnail,
+            TwilightComponentType::MediaGallery => Self::MediaGallery,
+            TwilightComponentType::File => Self::File,
+            TwilightComponentType::Separator => Self::Separator,
+            TwilightComponentType::Container => Self::Container,
+            TwilightComponentType::Label => Self::Label,
+            TwilightComponentType::FileUpload => Self::FileUpload,
+            TwilightComponentType::Checkbox => Self::Checkbox,
+            TwilightComponentType::CheckboxGroup => Self::CheckboxGroup,
             _ => todo!(),
         }
     }
@@ -52,6 +74,17 @@ pub enum Component {
     RoleSelectMenu(SelectMenu),
     MentionableSelectMenu(SelectMenu),
     ChannelSelectMenu(SelectMenu),
+    Section(Section),
+    TextDisplay(TextDisplay),
+    Thumbnail(Thumbnail),
+    MediaGallery(MediaGallery),
+    File(FileDisplay),
+    Separator(Separator),
+    Container(Container),
+    Label(Label),
+    FileUpload(FileUpload),
+    Checkbox(Checkbox),
+    CheckboxGroup(CheckboxGroup),
 
     Unknown(UnknownComponent),
 }
@@ -75,6 +108,17 @@ impl TryFrom<TwilightComponent> for Component {
                 _ => todo!(),
             },
             TwilightComponent::TextInput(inner) => Ok(Self::TextInput(inner.into())),
+            TwilightComponent::TextDisplay(inner) => Ok(Self::TextDisplay(inner.try_into()?)),
+            TwilightComponent::MediaGallery(inner) => Ok(Self::MediaGallery(inner.try_into()?)),
+            TwilightComponent::Separator(inner) => Ok(Self::Separator(inner.try_into()?)),
+            TwilightComponent::File(inner) => Ok(Self::File(inner.try_into()?)),
+            TwilightComponent::Section(inner) => Ok(Self::Section(inner.try_into()?)),
+            TwilightComponent::Container(inner) => Ok(Self::Container(inner.try_into()?)),
+            TwilightComponent::Thumbnail(inner) => Ok(Self::Thumbnail(inner.try_into()?)),
+            TwilightComponent::Label(inner) => Ok(Self::Label(inner.try_into()?)),
+            TwilightComponent::FileUpload(inner) => Ok(Self::FileUpload(inner.try_into()?)),
+            TwilightComponent::Checkbox(inner) => Ok(Self::Checkbox(inner.try_into()?)),
+            TwilightComponent::CheckboxGroup(inner) => Ok(Self::CheckboxGroup(inner.try_into()?)),
             TwilightComponent::Unknown(t) => {
                 Ok(Self::Unknown(UnknownComponent { component_kind: t }))
             }
@@ -90,11 +134,22 @@ impl TryFrom<Component> for TwilightComponent {
             Component::Button(inner) => Self::Button(inner.into()),
             Component::SelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
             Component::TextInput(inner) => Self::TextInput(inner.into()),
-            Component::Unknown(c) => Self::Unknown(c.component_kind),
             Component::UserSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
             Component::RoleSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
             Component::MentionableSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
             Component::ChannelSelectMenu(inner) => Self::SelectMenu(inner.try_into()?),
+            Component::Section(inner) => Self::Section(inner.try_into()?),
+            Component::TextDisplay(inner) => Self::TextDisplay(inner.try_into()?),
+            Component::Thumbnail(inner) => Self::Thumbnail(inner.try_into()?),
+            Component::MediaGallery(inner) => Self::MediaGallery(inner.try_into()?),
+            Component::File(inner) => Self::File(inner.try_into()?),
+            Component::Separator(inner) => Self::Separator(inner.try_into()?),
+            Component::Container(inner) => Self::Container(inner.try_into()?),
+            Component::Label(inner) => Self::Label(inner.try_into()?),
+            Component::FileUpload(inner) => Self::FileUpload(inner.try_into()?),
+            Component::Checkbox(inner) => Self::Checkbox(inner.try_into()?),
+            Component::CheckboxGroup(inner) => Self::CheckboxGroup(inner.try_into()?),
+            Component::Unknown(c) => Self::Unknown(c.component_kind),
         })
     }
 }
@@ -118,6 +173,9 @@ pub struct UnknownComponent {
 )]
 #[serde(rename_all = "camelCase")]
 pub struct ActionRow {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
     pub components: Vec<Component>,
 }
 
@@ -127,6 +185,7 @@ impl TryFrom<TwilightActionRow> for ActionRow {
 
     fn try_from(v: TwilightActionRow) -> Result<Self, Self::Error> {
         Ok(Self {
+            id: v.id,
             components: v
                 .components
                 .into_iter()
@@ -140,6 +199,7 @@ impl TryFrom<ActionRow> for TwilightActionRow {
 
     fn try_from(v: ActionRow) -> Result<Self, Self::Error> {
         Ok(Self {
+            id: v.id,
             components: v
                 .components
                 .into_iter()
@@ -153,6 +213,9 @@ impl TryFrom<ActionRow> for TwilightActionRow {
 #[ts(export, rename = "IButton", export_to = "bindings/discord/IButton.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct Button {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub custom_id: Option<String>,
@@ -175,6 +238,7 @@ use twilight_model::channel::message::component::Button as TwilightButton;
 impl From<TwilightButton> for Button {
     fn from(v: TwilightButton) -> Self {
         Self {
+            id: v.id,
             custom_id: v.custom_id,
             disabled: Some(v.disabled),
             style: v.style.into(),
@@ -188,6 +252,7 @@ impl From<TwilightButton> for Button {
 impl From<Button> for TwilightButton {
     fn from(v: Button) -> Self {
         Self {
+            id: v.id,
             custom_id: v.custom_id,
             disabled: v.disabled.unwrap_or_default(),
             style: v.style.into(),
@@ -207,6 +272,10 @@ impl From<Button> for TwilightButton {
 )]
 #[serde(rename_all = "camelCase")]
 pub struct SelectMenu {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+
     pub custom_id: String,
     pub disabled: bool,
 
@@ -233,6 +302,10 @@ pub struct SelectMenu {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub default_values: Option<Vec<SelectDefaultValue>>,
+    
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub required: Option<bool>,
 }
 
 use twilight_model::channel::message::component::SelectDefaultValue as TwilightSelectDefaultValue;
@@ -244,6 +317,7 @@ impl TryFrom<TwilightSelectMenu> for SelectMenu {
 
     fn try_from(v: TwilightSelectMenu) -> Result<Self, Self::Error> {
         Ok(Self {
+            id: v.id,
             custom_id: v.custom_id,
             disabled: v.disabled,
             min_values: v.min_values,
@@ -265,6 +339,7 @@ impl TryFrom<TwilightSelectMenu> for SelectMenu {
                 .default_values
                 .map(|v| v.into_iter().map(Into::into).collect()),
             select_type: v.kind.into(),
+            required: v.required,
         })
     }
 }
@@ -273,6 +348,7 @@ impl TryFrom<SelectMenu> for TwilightSelectMenu {
 
     fn try_from(v: SelectMenu) -> Result<Self, Self::Error> {
         Ok(Self {
+            id: v.id,
             custom_id: v.custom_id,
             disabled: v.disabled,
             min_values: v.min_values,
@@ -295,6 +371,7 @@ impl TryFrom<SelectMenu> for TwilightSelectMenu {
                 })
                 .transpose()?,
             kind: v.select_type.into(),
+            required: v.required,
         })
     }
 }
@@ -468,13 +545,28 @@ impl From<ButtonStyle> for TwilightButtonStyle {
 )]
 #[serde(rename_all = "camelCase")]
 pub struct TextInput {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
     pub custom_id: String,
-    pub label: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max_length: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub min_length: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub placeholder: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub required: Option<bool>,
     pub style: TextInputStyle,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub value: Option<String>,
 }
 
@@ -489,6 +581,7 @@ use twilight_model::channel::message::component::TextInput as TwilightTextInput;
 impl From<TwilightTextInput> for TextInput {
     fn from(v: TwilightTextInput) -> Self {
         Self {
+            id: v.id,
             custom_id: v.custom_id,
             label: v.label,
             max_length: v.max_length,
@@ -504,6 +597,7 @@ impl From<TwilightTextInput> for TextInput {
 impl From<TextInput> for TwilightTextInput {
     fn from(v: TextInput) -> Self {
         Self {
+            id: v.id,
             custom_id: v.custom_id,
             label: v.label,
             max_length: v.max_length,
@@ -532,6 +626,656 @@ impl From<TextInputStyle> for TwilightTextInputStyle {
         match v {
             TextInputStyle::Short => Self::Short,
             TextInputStyle::Paragraph => Self::Paragraph,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ISection",
+    export_to = "bindings/discord/ISection.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct Section {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub components: Vec<Component>,
+    pub accessory: Box<Component>,
+}
+
+use twilight_model::channel::message::component::Section as TwilightSection;
+impl TryFrom<TwilightSection> for Section {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightSection) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+            accessory: Box::new((*v.accessory).try_into()?),
+        })
+    }
+}
+
+impl TryFrom<Section> for TwilightSection {
+    type Error = anyhow::Error;
+
+    fn try_from(v: Section) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+            accessory: Box::new((*v.accessory).try_into()?),
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ITextDisplay",
+    export_to = "bindings/discord/ITextDisplay.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDisplay {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub content: String,
+}
+
+use twilight_model::channel::message::component::TextDisplay as TwilightTextDisplay;
+impl From<TwilightTextDisplay> for TextDisplay {
+    fn from(v: TwilightTextDisplay) -> Self {
+        Self {
+            id: v.id,
+            content: v.content,
+        }
+    }
+}
+
+impl From<TextDisplay> for TwilightTextDisplay {
+    fn from(v: TextDisplay) -> Self {
+        Self {
+            id: v.id,
+            content: v.content,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IThumbnail",
+    export_to = "bindings/discord/IThumbnail.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct Thumbnail {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub media: UnfurledMediaItem,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub description: Option<Option<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub spoiler: Option<bool>,
+
+}
+
+use twilight_model::channel::message::component::Thumbnail as TwilightThumbnail;
+impl From<TwilightThumbnail> for Thumbnail {
+    fn from(v: TwilightThumbnail) -> Self {
+        Self {
+            id: v.id,
+            media: v.media.into(),
+            description: v.description,
+            spoiler: v.spoiler
+        }
+    }
+}
+
+impl From<Thumbnail> for TwilightThumbnail {
+    fn from(v: Thumbnail) -> Self {
+        Self {
+            id: v.id,
+            media: v.media.into(),
+            description: v.description,
+            spoiler: v.spoiler,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IUnfurledMediaItem",
+    export_to = "bindings/discord/IUnfurledMediaItem.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct UnfurledMediaItem {
+    pub url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub proxy_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub height: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub width: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub content_type: Option<String>,
+}
+
+use twilight_model::channel::message::component::UnfurledMediaItem as TwilightUnfurledMediaItem;
+impl From<TwilightUnfurledMediaItem> for UnfurledMediaItem {
+    fn from(v: TwilightUnfurledMediaItem) -> Self {
+        Self {
+            url: v.url,
+            proxy_url: v.proxy_url,
+            height: v.height.flatten(),
+            width: v.width.flatten(),
+            content_type: v.content_type,
+        }
+    }
+}
+
+impl From<UnfurledMediaItem> for TwilightUnfurledMediaItem {
+    fn from(v: UnfurledMediaItem) -> Self {
+        Self {
+            url: v.url,
+            proxy_url: v.proxy_url,
+            height: Some(v.height),
+            width: Some(v.width),
+            content_type: v.content_type,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IMediaGallery",
+    export_to = "bindings/discord/IMediaGallery.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaGallery {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub items: Vec<MediaGalleryItem>,
+}
+
+use twilight_model::channel::message::component::MediaGallery as TwilightMediaGallery;
+impl TryFrom<TwilightMediaGallery> for MediaGallery {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightMediaGallery) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            items: v
+                .items
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+impl TryFrom<MediaGallery> for TwilightMediaGallery {
+    type Error = anyhow::Error;
+
+    fn try_from(v: MediaGallery) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            items: v
+                .items
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IMediaGalleryItem",
+    export_to = "bindings/discord/IMediaGalleryItem.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaGalleryItem {
+    pub media: UnfurledMediaItem,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub spoiler: Option<bool>,
+}
+
+use twilight_model::channel::message::component::MediaGalleryItem as TwilightMediaGalleryItem;
+impl From<TwilightMediaGalleryItem> for MediaGalleryItem {
+    fn from(v: TwilightMediaGalleryItem) -> Self {
+        Self {
+            media: v.media.into(),
+            description: v.description,
+            spoiler: v.spoiler,
+        }
+    }
+}
+
+impl From<MediaGalleryItem> for TwilightMediaGalleryItem {
+    fn from(v: MediaGalleryItem) -> Self {
+        Self {
+            media: v.media.into(),
+            description: v.description,
+            spoiler: v.spoiler,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IFile",
+    export_to = "bindings/discord/IFile.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct FileDisplay {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub file: UnfurledMediaItem,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub spoiler: Option<bool>,
+}
+
+use twilight_model::channel::message::component::FileDisplay as TwilightFileDisplay;
+impl From<TwilightFileDisplay> for FileDisplay {
+    fn from(v: TwilightFileDisplay) -> Self {
+        Self {
+            id: v.id,
+            file: v.file.into(),
+            spoiler: v.spoiler,
+        }
+    }
+}
+
+impl From<FileDisplay> for TwilightFileDisplay {
+    fn from(v: FileDisplay) -> Self {
+        Self {
+            id: v.id,
+            file: v.file.into(),
+            spoiler: v.spoiler,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ISeparator",
+    export_to = "bindings/discord/ISeparator.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct Separator {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub divider: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub spacing: Option<SeparatorSpacingSize>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(export, export_to = "bindings/discord/SeparatorSpacingSize.ts")]
+pub enum SeparatorSpacingSize {
+    Small,
+    Large,
+}
+
+use twilight_model::channel::message::component::Separator as TwilightSeparator;
+impl From<TwilightSeparator> for Separator {
+    fn from(v: TwilightSeparator) -> Self {
+        Self {
+            id: v.id,
+            divider: v.divider,
+            spacing: v.spacing.map(Into::into),
+        }
+    }
+}
+
+impl From<Separator> for TwilightSeparator {
+    fn from(v: Separator) -> Self {
+        Self {
+            id: v.id,
+            divider: v.divider,
+            spacing: v.spacing.map(Into::into),
+        }
+    }
+}
+
+use twilight_model::channel::message::component::SeparatorSpacingSize as TwilightSeparatorSpacingSize;
+impl From<TwilightSeparatorSpacingSize> for SeparatorSpacingSize {
+    fn from(v: TwilightSeparatorSpacingSize) -> Self {
+        match v {
+            TwilightSeparatorSpacingSize::Small => Self::Small,
+            TwilightSeparatorSpacingSize::Large => Self::Large,
+            _ => todo!(),
+        }
+    }
+}
+
+impl From<SeparatorSpacingSize> for TwilightSeparatorSpacingSize {
+    fn from(v: SeparatorSpacingSize) -> Self {
+        match v {
+            SeparatorSpacingSize::Small => Self::Small,
+            SeparatorSpacingSize::Large => Self::Large,
+        }
+    }
+}
+
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IContainer",
+    export_to = "bindings/discord/IContainer.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct Container {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub accent_color: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub spoiler: Option<bool>,
+    pub components: Vec<Component>,
+}
+
+use twilight_model::channel::message::component::Container as TwilightContainer;
+impl TryFrom<TwilightContainer> for Container {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightContainer) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            accent_color: v.accent_color.flatten(),
+            spoiler: v.spoiler,
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+impl TryFrom<Container> for TwilightContainer {
+    type Error = anyhow::Error;
+
+    fn try_from(v: Container) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            accent_color: Some(v.accent_color),
+            spoiler: v.spoiler,
+            components: v
+                .components
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ILabel",
+    export_to = "bindings/discord/ILabel.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct Label {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub label: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub description: Option<String>,
+    pub component: Box<Component>,
+}
+
+use twilight_model::channel::message::component::Label as TwilightLabel;
+impl TryFrom<TwilightLabel> for Label {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightLabel) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            label: v.label,
+            description: v.description,
+            component: Box::new((*v.component).try_into()?)
+        })
+    }
+}
+
+impl TryFrom<Label> for TwilightLabel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: Label) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: v.id,
+            label: v.label,
+            description: v.description,
+            component: Box::new((*v.component).try_into()?)
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "IFileUpload",
+    export_to = "bindings/discord/IFileUpload.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct FileUpload {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub custom_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub max_values: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub min_values: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub required: Option<bool>,
+}
+
+use twilight_model::channel::message::component::FileUpload as TwilightFileUpload;
+impl From<TwilightFileUpload> for FileUpload {
+    fn from(v: TwilightFileUpload) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            max_values: v.max_values,
+            min_values: v.min_values,
+            required: v.required,
+        }
+    }
+}
+
+impl From<FileUpload> for TwilightFileUpload {
+    fn from(v: FileUpload) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            max_values: v.max_values,
+            min_values: v.min_values,
+            required: v.required,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ICheckbox",
+    export_to = "bindings/discord/ICheckbox.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct Checkbox {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub custom_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub default: Option<bool>,
+}
+
+use twilight_model::channel::message::component::Checkbox as TwilightCheckbox;
+impl From<TwilightCheckbox> for Checkbox {
+    fn from(v: TwilightCheckbox) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            default: v.default,
+        }
+    }
+}
+
+impl From<Checkbox> for TwilightCheckbox {
+    fn from(v: Checkbox) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            default: v.default,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ICheckboxGroup",
+    export_to = "bindings/discord/ICheckboxGroup.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct CheckboxGroup {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub id: Option<i32>,
+    pub custom_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub max_values: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub min_values: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub required: Option<bool>,
+
+    pub options: Vec<CheckboxGroupOption>,
+}
+
+use twilight_model::channel::message::component::CheckboxGroup as TwilightCheckboxGroup;
+impl From<TwilightCheckboxGroup> for CheckboxGroup {
+    fn from(v: TwilightCheckboxGroup) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            max_values: v.max_values,
+            min_values: v.min_values,
+            required: v.required,
+            options: v
+                .options
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+        }
+    }
+}
+
+impl From<CheckboxGroup> for TwilightCheckboxGroup {
+    fn from(v: CheckboxGroup) -> Self {
+        Self {
+            id: v.id,
+            custom_id: v.custom_id,
+            max_values: v.max_values,
+            min_values: v.min_values,
+            required: v.required,
+            options: v
+                .options
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+        }
+    }
+}
+
+
+#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[ts(
+    export,
+    rename = "ICheckboxGroupOption",
+    export_to = "bindings/discord/ICheckboxGroupOption.ts"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct CheckboxGroupOption {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub default: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub description: Option<String>,
+    pub label: String,
+    pub value: String,
+}
+
+use twilight_model::channel::message::component::CheckboxGroupOption as TwilightCheckboxGroupOption;
+impl From<TwilightCheckboxGroupOption> for CheckboxGroupOption {
+    fn from (v: TwilightCheckboxGroupOption) -> Self {
+        Self {
+            default: v.default,
+            description: v.description,
+            label: v.label,
+            value: v.value,
+        }
+    }
+}
+
+impl From<CheckboxGroupOption> for TwilightCheckboxGroupOption {
+    fn from (v: CheckboxGroupOption) -> Self {
+        Self {
+            default: v.default,
+            description: v.description,
+            label: v.label,
+            value: v.value,
         }
     }
 }

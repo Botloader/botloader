@@ -1,10 +1,11 @@
 import type { IUser } from "../generated/internal/IUser";
 import type { CdnImageSize } from "./common";
-import type { PremiumType } from "../generated/internal/PremiumType"
+import type { PremiumType } from "../generated/internal/PremiumType";
+import type { IPrimaryGuild } from "../generated/internal/IPrimaryGuild";
 import { ExractClassProperties } from "../core_util";
-export type { PremiumType } from "../generated/internal/PremiumType"
+export type { PremiumType } from "../generated/internal/PremiumType";
 
-export type UserFields = ExractClassProperties<User>
+export type UserFields = ExractClassProperties<Omit<User, "primaryGuild">> & {primaryGuild: ExractClassProperties<PrimaryGuild> | null};
 
 export class User {
     avatar: string | null;
@@ -36,6 +37,7 @@ export class User {
      */
     accentColor: number | null;
 
+    primaryGuild: PrimaryGuild | null = null;
 
     /**
      * @internal
@@ -53,6 +55,10 @@ export class User {
         this.accentColor = json.accentColor;
         this.globalName = json.globalName;
         this.banner = json.banner;
+
+        if (json.primaryGuild) {
+            this.primaryGuild = new PrimaryGuild(json.primaryGuild);
+        }
     }
 
     mention() {
@@ -63,17 +69,17 @@ export class User {
      * @returns a url to the user's avatar with the desired size (defaults to 256) 
      */
     avatarUrl(options?: { size?: CdnImageSize }): string {
-        const base = "https://cdn.discordapp.com/"
+        const base = "https://cdn.discordapp.com/";
         const size = options?.size ?? 128;
 
 
         if (this.avatar) {
             let format = this.avatar.startsWith("a_") ? "gif" : "png";
-            return base + `avatars/${this.id}/${this.avatar}.${format}?size=${size}`
+            return base + `avatars/${this.id}/${this.avatar}.${format}?size=${size}`;
         }
 
         const parsedDiscrim = parseInt(this.discriminator);
-        return base + `embed/avatars/${parsedDiscrim % 5}.png?size=${size}`
+        return base + `embed/avatars/${parsedDiscrim % 5}.png?size=${size}`;
     }
 
     /**
@@ -81,7 +87,7 @@ export class User {
      */
     createdAt(): Date {
         const snowflake = BigInt(this.id);
-        const unixTime = (snowflake >> 22n) + 1420070400000n
+        const unixTime = (snowflake >> 22n) + 1420070400000n;
         return new Date(Number(unixTime));
     }
 }
@@ -101,6 +107,31 @@ export interface UserFlags {
     verifiedDeveloper: boolean;
     certifiedModerator: boolean;
     botHttpInteractions: boolean;
+}
+
+export class PrimaryGuild {
+    identityGuildId: string | null;
+    identityEnabled: boolean | null;
+    tag: string | null;
+    badge: string | null
+
+    constructor(json: IPrimaryGuild) {
+        this.identityGuildId = json.identityGuildId;
+        this.identityEnabled = json.identityEnabled;
+        this.tag = json.tag;
+        this.badge = json.badge;
+    }
+
+    badgeUrl(options?: { size?: CdnImageSize }): string | null {
+        if (!this.identityGuildId || !this.badge) {
+            return null;
+        }
+        
+        const base = "https://cdn.discordapp.com/";
+        const size = options?.size ?? 128;
+
+        return base + `guild-tag-badges/${this.identityGuildId}/${this.badge}.png?size=${size}`;
+    }
 }
 
 // export type PremiumType = "none" | "nitroClassic" | "nitro" | "nitroBasic";

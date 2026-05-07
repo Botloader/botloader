@@ -15,7 +15,7 @@ services:
     image: botloader/backend:latest
     command: discord-broker
     env_file: .env
-    restart: always    
+    restart: always
 
   schedulerwithworker:
     depends_on:

@@ -2,7 +2,7 @@
   "name": "botloader-vscode",
   "displayName": "botloader",
   "description": "Botloader integration for vs code",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "publisher": "botloader",
   "repository": {
     "url": "https://github.com/BotLoader/botloader"
@@ -145,6 +145,16 @@
           "type": "boolean",
           "default": true,
           "description": "Is https enabled on the api? (if you're using anything but localhost then you should use https)"
+        },
+        "botloader.webHost": {
+          "type": "string",
+          "default": "botloader.io",
+          "description": "The web server hostname, you can point this to a local testing server for development purposes. (botloader.io is the official one)."
+        },
+        "botloader.webHttpsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Is https enabled on the web? (if you're using anything but localhost then you should use https)"
         }
       }
     }
