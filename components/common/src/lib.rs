@@ -59,7 +59,7 @@ pub fn setup_tracing(config: &config::RunConfig, service_name: &str) {
         std::mem::forget(sentry::init(sentry::ClientOptions {
             dsn: Some(FromStr::from_str(dsn).unwrap()),
             server_name: Some(Cow::Owned(service_name.to_owned())),
-            traces_sample_rate: 1.0,
+            traces_sample_rate: 0.0,
             ..Default::default()
         }));
     }
@@ -91,7 +91,7 @@ pub fn setup_tracing_otlp(_url: &str, _service_name: String) {
 
     let sentry_layer = sentry_tracing::layer()
         .event_filter(|md| match md.level() {
-            &tracing::Level::ERROR => EventFilter::Exception,
+            &tracing::Level::ERROR => EventFilter::Event,
             _ => EventFilter::Ignore,
         })
         .enable_span_attributes();

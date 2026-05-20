@@ -64,32 +64,44 @@ impl From<twilight_model::gateway::payload::incoming::ReactionAdd> for EventMess
 #[ts(export_to = "bindings/internal/EventMessageUpdate.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct EventMessageUpdate {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub attachments: Option<Vec<Attachment>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub author: Option<User>,
     pub channel_id: String,
     pub content: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub edited_timestamp: Option<NotBigU64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub embeds: Option<Vec<Embed>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub guild_id: Option<String>,
     pub id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub kind: Option<MessageType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub mention_everyone: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub mention_roles: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub mentions: Option<Vec<UserMention>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub pinned: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub timestamp: Option<NotBigU64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub tts: Option<bool>,
 }
 
@@ -147,13 +159,16 @@ pub struct EventInviteCreate {
     pub channel_id: String,
     pub code: String,
     pub created_at: NotBigU64,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub inviter: Option<User>,
     pub max_age: NotBigU64,
     pub max_uses: NotBigU64,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub target_user_type: Option<InviteTargetType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub target_user: Option<InviteTargetUser>,
     pub temporary: bool,
     pub uses: u8,
@@ -192,7 +207,8 @@ pub struct VoiceState {
     pub channel_id: Option<String>,
     pub deaf: bool,
     pub guild_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub member: Option<Member>,
     pub mute: bool,
     pub self_deaf: bool,

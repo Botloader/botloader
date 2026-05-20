@@ -164,20 +164,20 @@ pub struct CommandOption {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/ExtraCommandOptions.ts")]
 pub struct ExtraCommandOptions {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub min_value: Option<f64>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub max_value: Option<f64>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub channel_types: Option<Vec<ChannelType>>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub choices: Option<Vec<CommandOptionChoice>>,
 }
 

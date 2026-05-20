@@ -516,25 +516,32 @@ impl EditChannel {
 pub struct UpdateThread {
     pub channel_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub tag_ids: Option<Vec<String>>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub archived: Option<bool>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_archive_duration_minutes: Option<u16>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub invitable: Option<bool>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub locked: Option<bool>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub name: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub rate_limit_per_user: Option<u16>,
 }
 
@@ -658,9 +665,11 @@ impl CreateChannel {
 pub struct CreateThread {
     pub channel_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_archive_duration_minutes: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub invitable: Option<bool>,
     pub kind: ChannelType,
     pub name: String,
@@ -677,7 +686,8 @@ pub struct CreateThreadFromMessage {
     pub channel_id: String,
     pub message_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_archive_duration_minutes: Option<u16>,
     pub name: String,
 }
@@ -693,13 +703,16 @@ pub struct CreateForumThread {
     pub channel_id: String,
     pub name: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub tag_ids: Option<Vec<String>>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub auto_archive_duration_minutes: Option<u16>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub rate_limit_per_user: Option<u16>,
 
     pub message: OpCreateMessageFields,
@@ -713,7 +726,8 @@ pub struct CreateForumThread {
 )]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadsListing {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub has_more: Option<bool>,
     pub members: Vec<ThreadMember>,
     pub threads: Vec<GuildChannel>,
@@ -746,7 +760,8 @@ impl TryFrom<twilight_model::channel::thread::ThreadsListing> for ThreadsListing
 #[serde(rename_all = "camelCase")]
 pub struct ListThreadsRequest {
     pub channel_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub before: Option<NotBigU64>,
 }
 
@@ -759,11 +774,14 @@ pub struct ListThreadsRequest {
 #[serde(rename_all = "camelCase")]
 pub struct ListThreadMembersRequest {
     pub channel_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub after_user_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub limit: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub with_member: Option<bool>,
 }
 

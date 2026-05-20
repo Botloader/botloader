@@ -1,6 +1,9 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    borrow::Cow,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 
 use axum::{
@@ -11,7 +14,10 @@ use axum::{
     Json, Router,
 };
 use axum_extra::extract::Query;
-use dbrokerapi::{models::BrokerEmoji, state_client::ConnectedGuildsResponse};
+use dbrokerapi::{
+    models::{BrokerEmoji, BrokerGuild},
+    state_client::ConnectedGuildsResponse,
+};
 use serde::Deserialize;
 use tokio::sync::mpsc::unbounded_channel;
 use tracing::info;
@@ -113,11 +119,52 @@ pub async fn run_http_server(
 async fn handle_get_guild(
     Path(guild_id_u): Path<u64>,
     State(state): State<RouterState>,
-) -> ApiResult<Json<CachedGuild>> {
+) -> ApiResult<Json<BrokerGuild>> {
     let guild_id = Id::new_checked(guild_id_u).ok_or(ApiError::BadGuildId)?;
 
     if let Some(g) = state.discord_state.guild(guild_id) {
-        return Ok(Json(g.value().clone()));
+        let broker_guild = BrokerGuild {
+            id: g.id(),
+            name: g.name().to_string(),
+            icon: g.icon().map(|v| v.to_string()),
+            splash: g.splash().map(|v| v.to_string()),
+            discovery_splash: g.discovery_splash().map(|v| v.to_string()),
+            owner_id: g.owner_id(),
+            afk_channel_id: g.afk_channel_id(),
+            afk_timeout: g.afk_timeout().get() as u64,
+            verification_level: g.verification_level(),
+            explicit_content_filter: g.explicit_content_filter(),
+            mfa_level: g.mfa_level(),
+            application_id: g.application_id(),
+            system_channel_id: g.system_channel_id(),
+            widget_enabled: g.widget_enabled(),
+            widget_channel_id: g.widget_channel_id(),
+            rules_channel_id: g.rules_channel_id(),
+            preferred_locale: g.preferred_locale().to_string(),
+            premium_tier: g.premium_tier(),
+            premium_subscription_count: g.premium_subscription_count(),
+            banner: g.banner().map(|v| v.to_string()),
+            default_message_notifications: g.default_message_notifications(),
+            description: g.description().map(|v| v.to_string()),
+            features: g
+                .features()
+                .map(|v| Cow::from(v.clone()).to_string())
+                .collect(),
+            joined_at: g.joined_at(),
+            large: g.large(),
+            max_members: g.max_members(),
+            max_presences: g.max_presences(),
+            member_count: g.member_count(),
+            nsfw_level: g.nsfw_level(),
+            owner: g.owner(),
+            permissions: g.permissions(),
+            premium_progress_bar_enabled: g.premium_progress_bar_enabled(),
+            system_channel_flags: g.system_channel_flags(),
+            unavailable: g.unavailable().unwrap_or(false),
+            vanity_url_code: g.vanity_url_code().map(|v| v.to_owned()),
+        };
+
+        return Ok(Json(broker_guild));
     }
 
     Err(ApiError::GuildNotFound)

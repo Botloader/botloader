@@ -2,7 +2,7 @@
 import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 import type { VideoQualityMode } from "../discord/VideoQualityMode";
 
-export interface IEditChannel {
+export type IEditChannel = {
   bitrate?: number;
   name?: string;
   nsfw?: boolean;
@@ -13,4 +13,4 @@ export interface IEditChannel {
   topic?: string;
   userLimit?: number;
   videoQualityMode?: VideoQualityMode;
-}
+};

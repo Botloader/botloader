@@ -326,8 +326,8 @@ pub enum SendEmoji {
         id: String,
         // Name is nil if the emoji data is no longer avaiable, for
         // example if the emoji have been deleted off the guild.
-        #[serde(default)]
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
         name: Option<String>,
     },
     Unicode {
@@ -382,33 +382,32 @@ impl From<twilight_model::channel::message::MessageReference> for MessageReferen
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/discord/MessageFlags.ts")]
 pub struct MessageFlags {
-    // #[ts(optional)]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub crossposted: Option<bool>, //  1 << 0	this message has been published to subscribed channels (via Channel Following)
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub is_crosspost: Option<bool>, //  1 << 1	this message originated from a message in another channel (via Channel Following)
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub suppress_embeds: Option<bool>, //  1 << 2	do not include any embeds when serializing this message
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub source_message_deleted: Option<bool>, //  1 << 3	the source message for this crosspost has been deleted (via Channel Following)
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub urgent: Option<bool>, //  1 << 4	this message came from the urgent message system
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub has_thread: Option<bool>, //  1 << 5	this message has an associated thread, with the same id as the message
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub ephemeral: Option<bool>, //  1 << 6	this message is only visible to the user who invoked the Interaction
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub loading: Option<bool>, //  1 << 7	this message is an Interaction Response and the bot is "thinking"
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub failed_to_mention_some_roles_in_thread: Option<bool>, //  1 << 8	this message failed to mention some roles and add their members to the thread
 }
 

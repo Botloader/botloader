@@ -7,7 +7,7 @@ import type { PremiumTier } from "./PremiumTier";
 import type { SystemChannelFlags } from "./SystemChannelFlags";
 import type { VerificationLevel } from "./VerificationLevel";
 
-export interface Guild {
+export type Guild = {
   id: string;
   name: string;
   icon: string | null;
@@ -38,4 +38,4 @@ export interface Guild {
   verificationLevel: VerificationLevel;
   widgetChannelId: string | null;
   widgetEnabled: boolean | null;
-}
+};

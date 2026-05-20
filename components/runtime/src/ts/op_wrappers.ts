@@ -491,12 +491,12 @@ export namespace OpWrappers {
         return op_discord_delete_all_reactions_for_emoji([channelId, messageId], emoji)
     }
 
-    export function opImageProperties(data: ArrayBuffer): Internal.ImageProperties {
+    export function opImageProperties(data: ArrayBufferLike): Internal.ImageProperties {
         return Deno.core.ops.op_bl_image_properties(data)
     }
 
     export function opImageTranscode(args: {
-        data: ArrayBuffer,
+        data: ArrayBufferLike,
         inFormat: SupportedImageFormat,
         outFormat: SupportedEncodeImageFormat,
         resize?: readonly [number, number],

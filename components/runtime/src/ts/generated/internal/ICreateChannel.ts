@@ -2,7 +2,7 @@
 import type { ChannelType } from "../discord/ChannelType";
 import type { IPermissionOverwrite } from "../discord/IPermissionOverwrite";
 
-export interface ICreateChannel {
+export type ICreateChannel = {
   name: string;
   kind?: ChannelType;
   bitrate?: number;
@@ -13,4 +13,4 @@ export interface ICreateChannel {
   rateLimitPerUser?: number;
   topic?: string;
   userLimit?: number;
-}
+};

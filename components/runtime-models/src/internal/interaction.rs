@@ -447,3 +447,72 @@ impl From<TwilightModalInteractionDataComponent> for ModalInteractionDataCompone
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/internal/InteractionType.ts")]
+pub enum InteractionType {
+    Ping = 1,
+    ApplicationCommand = 2,
+    MessageComponent = 3,
+    ApplicationCommandAutocomplete = 4,
+    ModalSubmit = 5
+}
+
+use twilight_model::application::interaction::InteractionType as TwilightInteractionType;
+impl From<TwilightInteractionType> for InteractionType {
+    fn from(v: TwilightInteractionType) -> Self {
+        match v {
+            TwilightInteractionType::Ping => Self::Ping,
+            TwilightInteractionType::ApplicationCommand => Self::ApplicationCommand,
+            TwilightInteractionType::MessageComponent => Self::MessageComponent,
+            TwilightInteractionType::ApplicationCommandAutocomplete => Self::ApplicationCommandAutocomplete,
+            TwilightInteractionType::ModalSubmit => Self::ModalSubmit,
+            _ => todo!(),
+        }
+    }
+}
+
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "bindings/internal/IInteractionMetadata.ts",
+    rename = "IInteractionMetadata"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct InteractionMetadata {
+    pub id: String,
+    pub interacted_message_id: Option<String>,
+    pub kind: InteractionType,
+    pub original_response_message_id: Option<String>,
+    pub target_message_id: Option<String>,
+    pub target_user: Option<User>,
+    pub triggering_interaction_metadata: Option<Box<InteractionMetadata>>,
+    pub user: User,
+}
+
+impl From<twilight_model::application::interaction::InteractionMetadata> for InteractionMetadata {
+    fn from(v: twilight_model::application::interaction::InteractionMetadata) -> Self {
+        Self {
+            id: v.id.to_string(),
+            interacted_message_id: v
+                .interacted_message_id
+                .as_ref()
+                .map(ToString::to_string),
+            kind: v.kind.into(),
+            original_response_message_id: v
+                .original_response_message_id
+                .as_ref()
+                .map(ToString::to_string),
+            target_message_id: v
+                .target_message_id.as_ref()
+                .map(ToString::to_string),
+            target_user: v.target_user.map(From::from),
+            triggering_interaction_metadata: v
+                .triggering_interaction_metadata
+                .map(|e| Box::new((*e).into())),
+            user: v.user.into()
+        }
+    }
+}

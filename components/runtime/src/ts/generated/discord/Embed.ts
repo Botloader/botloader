@@ -7,7 +7,7 @@ import type { EmbedProvider } from "./EmbedProvider";
 import type { EmbedThumbnail } from "./EmbedThumbnail";
 import type { EmbedVideo } from "./EmbedVideo";
 
-export interface Embed {
+export type Embed = {
   author?: EmbedAuthor;
   color?: number;
   description?: string;
@@ -21,4 +21,4 @@ export interface Embed {
   title?: string;
   url?: string;
   video?: EmbedVideo;
-}
+};

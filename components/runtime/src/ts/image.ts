@@ -39,9 +39,9 @@ export class Image {
 
     readonly properties: ImageProperties;
 
-    readonly data: ArrayBuffer;
+    readonly data: ArrayBufferLike;
 
-    constructor(data: ArrayBuffer, properties?: ImageProperties) {
+    constructor(data: ArrayBufferLike, properties?: ImageProperties) {
         this.data = data
         this.properties = properties ? properties : OpWrappers.opImageProperties(data);
     }

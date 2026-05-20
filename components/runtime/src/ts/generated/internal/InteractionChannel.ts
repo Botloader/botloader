@@ -2,11 +2,11 @@
 import type { ChannelType } from "../discord/ChannelType";
 import type { ThreadMetadata } from "../discord/ThreadMetadata";
 
-export interface InteractionPartialChannel {
+export type InteractionPartialChannel = {
   id: string;
   kind: ChannelType;
   name: string;
   parentId?: string;
   permissionsRaw: string;
   threadMetadata?: ThreadMetadata;
-}
+};

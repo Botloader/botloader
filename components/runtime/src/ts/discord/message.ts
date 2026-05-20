@@ -1,4 +1,5 @@
 import { User } from "./user";
+import { InteractionMetadata } from "./interaction";
 import { CreateMessageFields, ICreateThreadFromMessage, createPin, createThreadFromMessage, deleteMessage, deletePin, editMessage, getCurrentGuildId } from "./dapi";
 
 import type { Attachment } from "../generated/discord/Attachment";
@@ -42,6 +43,7 @@ export class Message {
     timestamp: number;
     tts: boolean;
     webhookId: string | null;
+    interactionMetadata: InteractionMetadata | null;
 
     /**
      * @internal
@@ -72,6 +74,7 @@ export class Message {
         this.timestamp = json.timestamp;
         this.tts = json.tts;
         this.webhookId = json.webhookId;
+        this.interactionMetadata = json.interactionMetadata ? new InteractionMetadata(json.interactionMetadata) : null;
     }
 
     hyperlink() {

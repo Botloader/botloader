@@ -4,7 +4,7 @@ import type { ISelectMenuOption } from "./ISelectMenuOption";
 import type { SelectDefaultValue } from "./SelectDefaultValue";
 import type { SelectMenuType } from "./SelectMenuType";
 
-export interface ISelectMenu {
+export type ISelectMenu = {
   customId: string;
   disabled: boolean;
   minValues?: number;
@@ -14,4 +14,4 @@ export interface ISelectMenu {
   selectType: SelectMenuType;
   channelTypes?: Array<ChannelType>;
   defaultValues?: Array<SelectDefaultValue>;
-}
+};
