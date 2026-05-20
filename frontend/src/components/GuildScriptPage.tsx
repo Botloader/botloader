@@ -332,32 +332,56 @@ function EditSettingsOptionList({ list }: {
     }
 
 
-    const value = rawValue === undefined
-        ? []
+    const value: SettingsOptionValue[][] = rawValue === undefined
+        ? Array.isArray(list.defaultValue)
+            ? (list.defaultValue as any[])
+                .filter(row => Array.isArray(row))
+                .map(row => (row as any[])
+                    .filter(field => field
+                        && typeof field === "object"
+                        && typeof field.name === "string"
+                        && "value" in field)
+                    .map(field => ({
+                        name: field.name,
+                        value: Array.isArray(field.value) ? [...field.value] : field.value,
+                    })))
+            : []
         : Array.isArray(rawValue.value)
-            ? rawValue.value as SettingsOptionValue[][]
+            ? (rawValue.value as SettingsOptionValue[][]).map(row => [...row])
             : []
 
 
     function newItem() {
 
         setValue([
-            ...value,
+            ...value.map(row => [...row]),
             [],
         ])
     }
 
     function deleteItem(index: number) {
-        const copy = [...value]
+        const copy = value.map(row => [...row])
         copy.splice(index, 1)
         setValue(copy)
     }
 
     return <Paper sx={{ marginTop: 3, padding: 1 }} elevation={2}>
-        <Box display={"flex"} justifyContent={"space-between"}>
-            <Typography>{list.label}</Typography>
+        <Box display={"flex"} justifyContent={"space-between"} alignItems={"start"} gap={1}>
             <Box>
+                <Typography>{list.label}</Typography>
+                <Typography variant='body2'>{list.description}</Typography>
+            </Box>
+            <Box display={"flex"} gap={1}>
+                {(Boolean(rawValue) && (list.defaultValue || !list.required)) &&
+                    <IconButton
+                        type="button"
+                        color='warning'
+                        onClick={() => setValue(null)}
+                    >
+                        <ReplayIcon />
+                    </IconButton>}
                 <Button
+                    type="button"
                     onClick={newItem}
                     variant="contained"
                     size="small"
@@ -366,7 +390,6 @@ function EditSettingsOptionList({ list }: {
                 </Button>
             </Box>
         </Box>
-        <Typography variant='body2'>{list.description}</Typography>
         <Box paddingLeft={1}>
             {
                 value.map((item, i) => {
@@ -376,7 +399,7 @@ function EditSettingsOptionList({ list }: {
                             return item.find(v => v.name === name)
                         },
                         setFieldValue(name, newValue) {
-                            const copy = [...value]
+                            const copy = value.map(row => [...row])
                             const row = copy[i]
                             const currentIndex = row.findIndex(v => name === v.name)
                             console.log("Setting", name, "to", newValue, currentIndex)
@@ -386,7 +409,7 @@ function EditSettingsOptionList({ list }: {
                                 } else {
                                     row[currentIndex] = { name, value: newValue }
                                 }
-                            } else if (value !== null) {
+                            } else if (newValue !== null) {
                                 row.push({ name, value: newValue })
                             }
                             setValue(copy)
@@ -416,7 +439,7 @@ function EditSettingsOptionList({ list }: {
                             ))}
                         </SettingsValuesContext.Provider>
                         <Box alignSelf={"center"}>
-                            <Button color="error" onClick={() => {
+                            <Button type="button" color="error" onClick={() => {
                                 deleteItem(i)
                                 console.log("deleting", i)
                             }}><DeleteIcon /></Button>
