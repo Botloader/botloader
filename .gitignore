@@ -12,6 +12,9 @@ target/
 # VSCode local configurations folder
 .vscode/
 
+# VS local configuration folder
+.vs/
+
 # Local environment variables
 .env
 
@@ -21,5 +24,6 @@ components/jack-runtime/src/ts/*.d.ts
 scripts/*.d.ts
 scripts/bot/*.d.ts
 components/runtime/src/ts/typings
+**/tsconfig.tsbuildinfo
 
 **/node_modules
