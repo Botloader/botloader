@@ -576,8 +576,10 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             }
 
             if let Some(forward) = &args.fields.forward {
+                // Validate the forwarded message exists in this guild to prevent forwarding what doesn't belong to us
+                let src_channel = parse_get_guild_channel(&self.state, &rt_ctx, &forward.channel_id).await?;
                 mc = mc.forward(
-                    parse_discord_id(&forward.channel_id)?,
+                    src_channel.id,
                     parse_discord_id(&forward.message_id)?
                 );
             }
