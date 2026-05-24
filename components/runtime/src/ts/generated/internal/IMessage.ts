@@ -11,6 +11,7 @@ import type { MessageReference } from "../discord/MessageReference";
 import type { MessageType } from "../discord/MessageType";
 import type { PartialMember } from "../discord/PartialMember";
 import type { IInteractionMetadata } from "./IInteractionMetadata";
+import type { IMessageSnapshot } from "./IMessageSnapshot";
 import type { IUser } from "./IUser";
 import type { IUserMention } from "./UserMention";
 
@@ -41,4 +42,5 @@ export type IMessage = {
   tts: boolean;
   webhookId: string | null;
   interactionMetadata: IInteractionMetadata | null;
+  messageSnapshots: Array<IMessageSnapshot>;
 };

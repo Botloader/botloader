@@ -10,7 +10,9 @@ import {
     Attachment,
     InteractionChannel,
     InteractionUser,
-    InteractionMentionable
+    InteractionMentionable,
+    PermissionResolvable,
+    Permissions
 } from "./discord/index";
 import { User } from "./discord/user";
 import { Member } from "./discord/member";
@@ -33,7 +35,7 @@ export namespace Commands {
 
         addCommand(cmd: Command) {
             if (this.commands.find(v => matchesCommand(cmd, v.name, v.group?.name, v.group?.parent?.name))) {
-                throw new Error(`Duplicate commands registered! Cmd: ${cmd.name}, parent: ${cmd.group?.name}, parent of parent: ${cmd.group?.parent?.name}`)
+                throw new Error(`Duplicate commands registered! Cmd: ${cmd.name}, parent: ${cmd.group?.name}, parent of parent: ${cmd.group?.parent?.name}`);
             }
 
             this.commands.push(cmd);
@@ -49,8 +51,8 @@ export namespace Commands {
             }
 
             if (interaction.isAutocomplete) {
-                await this.handleAutoComplete(command, interaction)
-                return
+                await this.handleAutoComplete(command, interaction);
+                return;
             }
 
             let ctx = new ExecutedCommandContext(interaction);
@@ -66,13 +68,13 @@ export namespace Commands {
                     optionsMap[opt.name] = this.resolveOption(interaction.dataMap, opt.value);
                 }
 
-                await this.runCommand(command, ctx, optionsMap)
+                await this.runCommand(command, ctx, optionsMap);
             } else if (interaction.kind === "Message") {
                 if (interaction.targetId) {
                     let message = interaction.dataMap.messages[interaction.targetId];
-                    await this.runCommand(command, ctx, new Message(message))
+                    await this.runCommand(command, ctx, new Message(message));
                 } else {
-                    throw new Error("message not found in datamap")
+                    throw new Error("message not found in datamap");
                 }
             } else if (interaction.kind === "User") {
                 if (interaction.targetId) {
@@ -83,20 +85,20 @@ export namespace Commands {
                         member,
                     };
 
-                    await this.runCommand(command, ctx, args)
+                    await this.runCommand(command, ctx, args);
                 } else {
-                    throw new Error("member not found in datamap")
+                    throw new Error("member not found in datamap");
                 }
             } else {
-                throw new Error("Unknown command type")
+                throw new Error("Unknown command type");
             }
         }
 
         async runCommand(command: Command, ctx: ExecutedCommandContext, args: any) {
             try {
-                await command.cb(ctx, args)
+                await command.cb(ctx, args);
 
-                const fullName = fullCommandName(ctx.commandName, ctx.parentName, ctx.parentParentName)
+                const fullName = fullCommandName(ctx.commandName, ctx.parentName, ctx.parentParentName);
                 if (!ctx.hasSentCallback) {
                     ctx.ackWithMessage({
                         embeds: [{
@@ -106,14 +108,14 @@ export namespace Commands {
                         }],
                         flags: {
                             ephemeral: true,
-                        }
-                    })
+                        },
+                    });
 
                     console.output({
                         items: [`Command handler [${fullName}] did not send a callback before it returned.`],
                         level: "error",
-                        includeCaller: false
-                    })
+                        includeCaller: false,
+                    });
                 } else if (ctx.isResponseDeferred && !ctx.isDeferredResponseSent) {
                     ctx.createFollowup({
                         embeds: [{
@@ -123,17 +125,17 @@ export namespace Commands {
                         }],
                         flags: {
                             ephemeral: true,
-                        }
-                    })
+                        },
+                    });
 
                     console.output({
                         items: [`Command handler [${fullName}] did not send a response before it returned.`],
                         level: "error",
-                        includeCaller: false
-                    })
+                        includeCaller: false,
+                    });
                 }
             } catch (error: any) {
-                let origStack = error.stack
+                let origStack = error.stack;
 
                 if (ctx.hasSentCallback) {
                     ctx.createFollowup({
@@ -144,8 +146,8 @@ export namespace Commands {
                         }],
                         flags: {
                             ephemeral: true,
-                        }
-                    })
+                        },
+                    });
 
                 } else {
                     ctx.ackWithMessage({
@@ -156,26 +158,26 @@ export namespace Commands {
                         }],
                         flags: {
                             ephemeral: true,
-                        }
-                    })
+                        },
+                    });
                 }
 
-                const fullName = fullCommandName(ctx.commandName, ctx.parentName, ctx.parentParentName)
+                const fullName = fullCommandName(ctx.commandName, ctx.parentName, ctx.parentParentName);
                 console.output({
                     items: [`Command handler [${fullName}] threw an exception: ${error.message}\n${origStack}`],
                     level: "error",
-                    includeCaller: false
-                })
+                    includeCaller: false,
+                });
             }
         }
 
         async handleAutoComplete(command: Command, interaction: Internal.CommandInteraction) {
-            let options: OptionChoice<number | string>[] = []
+            let options: OptionChoice<number | string>[] = [];
             try {
-                options = await this.getAutocompleteResponse(command, interaction)
+                options = await this.getAutocompleteResponse(command, interaction);
             } catch (error) {
-                console.log("Autocomplete handler threw an error: ", error)
-                options = []
+                console.log("Autocomplete handler threw an error: ", error);
+                options = [];
             }
 
             await OpWrappers.interactionCallback({
@@ -185,30 +187,30 @@ export namespace Commands {
                     kind: "Autocomplete",
                     choices: options,
                 }
-            })
+            });
         }
 
         async getAutocompleteResponse(command: Command, interaction: Internal.CommandInteraction): Promise<OptionChoice<string>[] | OptionChoice<number>[]> {
             const focusedInteractionOption = interaction.options.find(v => v.value.kind === "focused")
             if (!focusedInteractionOption || focusedInteractionOption.value.kind !== "focused") {
-                console.log("Could not find focused option in autocomplete interaction")
-                return []
+                console.log("Could not find focused option in autocomplete interaction");
+                return [];
             }
 
-            const interactionArg = new AutocompleteInteraction(interaction, focusedInteractionOption.value.value)
-            const definition = command.options ? command.options[focusedInteractionOption.name] : null
+            const interactionArg = new AutocompleteInteraction(interaction, focusedInteractionOption.value.value);
+            const definition = command.options ? command.options[focusedInteractionOption.name] : null;
             if (!definition) {
-                console.log("Could not find option deifnition for focused option ", { command: command.name, option: focusedInteractionOption.name })
-                return []
+                console.log("Could not find option deifnition for focused option ", { command: command.name, option: focusedInteractionOption.name });
+                return [];
             }
 
             if (!("autocomplete" in definition.extraOptions) || !definition.extraOptions.autocomplete) {
-                console.log("Command option does not have autocomplete ", { command: command.name, option: focusedInteractionOption.name })
-                return []
+                console.log("Command option does not have autocomplete ", { command: command.name, option: focusedInteractionOption.name });
+                return [];
             }
 
-            const optionsOutput = await definition.extraOptions.autocomplete(interactionArg)
-            return optionsOutput
+            const optionsOutput = await definition.extraOptions.autocomplete(interactionArg);
+            return optionsOutput;
         }
 
         private resolveOption(map: Internal.InteractionDataMap, opt: Internal.CommandInteractionOptionValue): unknown {
@@ -222,8 +224,8 @@ export namespace Commands {
                     const ret: InteractionUser = {
                         user: new User(user),
                         member: map.members[opt.value],
-                    }
-                    return ret
+                    };
+                    return ret;
 
                 case "role":
                     const role: Role = map.roles[opt.value];
@@ -243,18 +245,18 @@ export namespace Commands {
                             value: {
                                 user: new User(mentionableUser),
                                 member: map.members[opt.value],
-                            }
-                        }
+                            },
+                        };
                     } else {
                         let mentionableRole = map.roles[opt.value];
                         if (!mentionableRole) {
-                            throw new Error("interaction mentionable (role or user) not found in data map")
+                            throw new Error("interaction mentionable (role or user) not found in data map");
                         }
 
                         metionableRet = {
                             kind: "Role",
-                            value: mentionableRole
-                        }
+                            value: mentionableRole,
+                        };
                     }
 
                     return metionableRet;
@@ -294,7 +296,7 @@ export namespace Commands {
             }
         }
 
-        return false
+        return false;
     }
 
     /**
@@ -353,8 +355,8 @@ export namespace Commands {
                     title: modal.title,
                     customId: modal.customId,
                     components: modal.components,
-                }
-            })
+                },
+            });
         }
     }
 
@@ -368,12 +370,13 @@ export namespace Commands {
     export interface Command {
         name: string;
         description: string;
-        kind: Internal.CommandType,
-        group?: Group,
+        kind: Internal.CommandType;
+        group?: Group;
         options?: OptionMap;
-        ackMode: AckMode,
-        ackMessageFlags: MessageFlags,
-        cb: (ctx: {}, args: {}) => any,
+        ackMode: AckMode;
+        ackMessageFlags: MessageFlags;
+        defaultMemberPermissions?: string;
+        cb: (ctx: {}, args: {}) => any;
     }
 
     export type OptionType = Option["kind"];
@@ -481,6 +484,8 @@ export namespace Commands {
 
         subGroups: Group[] = [];
 
+        defaultMemberPermissions?: string;
+
         /**
          * @param name name of the group as it shows in discord, 1-32 characters (no symbols except - and _)
          * @param description description of the group, 1-100 characters
@@ -508,6 +513,19 @@ export namespace Commands {
             group.parent = this;
             this.subGroups.push(group);
             return group;
+        }
+
+        /**
+         * Sets the default member permissions required to run commands in this group
+         * Set to 0 to restrict to administrators
+         */
+        setDefaultMemberPermissions(permissions: PermissionResolvable) {
+            if (this.isSubGroup) {
+                throw `default member permissions can only be set on the parent group for group ${this.name}`;
+            }
+
+            this.defaultMemberPermissions = new Permissions(permissions).toString();
+            return this;
         }
     }
 
@@ -539,12 +557,13 @@ export namespace Commands {
         private options: OptionMap;
         private group?: Group;
         private ackMode: AckMode = "DeferredMessage";
-        private ackMessageFlags: MessageFlags = {}
+        private ackMessageFlags: MessageFlags = {};
+        private defaultMemberPermissions?: string;
 
         /**
          * @internal
          */
-        onBuilt?: (cmd: Command) => void
+        onBuilt?: (cmd: Command) => void;
 
         constructor(name: string, description: string, options: OptionMap, group?: Group) {
             this.name = name;
@@ -586,9 +605,18 @@ export namespace Commands {
          * Sets the flags for the mssage sent when sending the intial interaction response.
          * Epehemeral means that it can only be see by the person issuing the command.
          */
-        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds">) {
-            this.ackMessageFlags = flags
-            return this
+        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds" | "isComponentsV2" | "suppressNotifications">) {
+            this.ackMessageFlags = flags;
+            return this;
+        }
+
+        /**
+         * Sets the default member permissions required to run this command
+         * Set to 0 to restrict to administrators
+         */
+        setDefaultMemberPermissions(permissions: PermissionResolvable) {
+            this.defaultMemberPermissions = new Permissions(permissions).toString();
+            return this;
         }
 
         /**
@@ -596,7 +624,7 @@ export namespace Commands {
          */
         addOptionNumber<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: NumberOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "Number", description, opts)
+            return this.addOption(name, "Number", description, opts);
         }
 
         /**
@@ -604,7 +632,7 @@ export namespace Commands {
          */
         addOptionString<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: StringOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "String", description, opts)
+            return this.addOption(name, "String", description, opts);
         }
 
         /**
@@ -612,7 +640,7 @@ export namespace Commands {
          */
         addOptionInteger<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: IntegerOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "Integer", description, opts)
+            return this.addOption(name, "Integer", description, opts);
         }
 
         /**
@@ -620,7 +648,7 @@ export namespace Commands {
          */
         addOptionBoolean<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: BooleanOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "Boolean", description, opts)
+            return this.addOption(name, "Boolean", description, opts);
         }
 
         /**
@@ -628,7 +656,7 @@ export namespace Commands {
          */
         addOptionUser<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: UserOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "User", description, opts)
+            return this.addOption(name, "User", description, opts);
         }
 
         /**
@@ -636,7 +664,7 @@ export namespace Commands {
          */
         addOptionChannel<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: ChannelOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "Channel", description, opts)
+            return this.addOption(name, "Channel", description, opts);
         }
 
         /**
@@ -644,7 +672,7 @@ export namespace Commands {
          */
         addOptionRole<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: RoleOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "Role", description, opts)
+            return this.addOption(name, "Role", description, opts);
         }
 
         /**
@@ -652,7 +680,7 @@ export namespace Commands {
          */
         addOptionMentionable<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: MentionableOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "Mentionable", description, opts)
+            return this.addOption(name, "Mentionable", description, opts);
         }
 
         /**
@@ -660,7 +688,7 @@ export namespace Commands {
          */
         addOptionAttachment<TKey extends string, TRequired extends boolean | undefined>
             (name: TKey, description: string, opts?: AttachmentOption & BaseOptionSettings<TRequired>) {
-            return this.addOption(name, "Attachment", description, opts)
+            return this.addOption(name, "Attachment", description, opts);
         }
 
         /**
@@ -690,9 +718,9 @@ export namespace Commands {
                     description: description,
                     extraOptions: {
                         ...opts,
-                    }
+                    },
                 },
-            }
+            };
 
             // Return a new builder with new typings
             // The new opts type is "layered" on top of the old one, making us able to use
@@ -719,13 +747,18 @@ export namespace Commands {
                 ackMode: this.ackMode,
                 ackMessageFlags: this.ackMessageFlags,
                 cb: callback as any,
+                defaultMemberPermissions: this.defaultMemberPermissions,
             };
-
-            if (this.onBuilt) {
-                this.onBuilt(built)
+            
+            if (this.group && this.defaultMemberPermissions) {
+                throw `default member permissions can only be set if no group is present, on command ${this.name}`;
             }
 
-            return built
+            if (this.onBuilt) {
+                this.onBuilt(built);
+            }
+
+            return built;
         }
     }
 
@@ -734,7 +767,7 @@ export namespace Commands {
 
 
     export interface BaseOptionSettings<TRequired extends boolean | undefined = undefined> {
-        required?: TRequired
+        required?: TRequired,
     }
 
     interface OptionsKindTable {
@@ -751,7 +784,7 @@ export namespace Commands {
 
     type ParsedOptionsMap<T> = {
         [Prop in keyof T]: T[Prop] extends { required: false } ? (OptionParsedType<T[Prop]> | undefined) : OptionParsedType<T[Prop]>
-    }
+    };
 
     type OptionParsedType<T> =
         T extends { kind: "String" } ? string :
@@ -779,12 +812,13 @@ export namespace Commands {
     export class UserCommandBuilder {
         name: string;
         ackMode: AckMode = "DeferredMessage";
-        private ackMessageFlags: MessageFlags = {}
+        private ackMessageFlags: MessageFlags = {};
+        private defaultMemberPermissions?: string;
 
         /**
          * @internal
          */
-        onBuilt?: (cmd: Command) => void
+        onBuilt?: (cmd: Command) => void;
 
         constructor(name: string) {
             this.name = name;
@@ -810,9 +844,18 @@ export namespace Commands {
          * Sets the flags for the mssage sent when sending the intial interaction response.
          * Epehemeral means that it can only be see by the person issuing the command.
          */
-        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds">) {
-            this.ackMessageFlags = flags
-            return this
+        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds" | "isComponentsV2" | "suppressNotifications">) {
+            this.ackMessageFlags = flags;
+            return this;
+        }
+
+        /**
+         * Sets the default member permissions required to run this command
+         * Set to 0 to restrict to administrators
+         */
+        setDefaultMemberPermissions(permissions: PermissionResolvable) {
+            this.defaultMemberPermissions = new Permissions(permissions).toString();
+            return this;
         }
 
         build(cb: (ctx: ExecutedCommandContext, target: InteractionUser) => any): Command {
@@ -823,13 +866,14 @@ export namespace Commands {
                 ackMode: this.ackMode,
                 cb: cb as any,
                 ackMessageFlags: this.ackMessageFlags,
-            }
+                defaultMemberPermissions: this.defaultMemberPermissions,
+            };
 
             if (this.onBuilt) {
-                this.onBuilt(built)
+                this.onBuilt(built);
             }
 
-            return built
+            return built;
         }
     }
 
@@ -847,12 +891,13 @@ export namespace Commands {
     export class MessageCommandBuilder {
         name: string;
         ackMode: AckMode = "DeferredMessage";
-        private ackMessageFlags: MessageFlags = {}
+        private ackMessageFlags: MessageFlags = {};
+        private defaultMemberPermissions?: string;
 
         /**
          * @internal
          */
-        onBuilt?: (cmd: Command) => void
+        onBuilt?: (cmd: Command) => void;
 
         constructor(name: string) {
             this.name = name;
@@ -878,9 +923,18 @@ export namespace Commands {
          * Sets the flags for the mssage sent when sending the intial interaction response.
          * Epehemeral means that it can only be see by the person issuing the command.
          */
-        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds">) {
-            this.ackMessageFlags = flags
-            return this
+        setAckMessageFlags(flags: Pick<MessageFlags, "ephemeral" | "suppressEmbeds" | "isComponentsV2" | "suppressNotifications">) {
+            this.ackMessageFlags = flags;
+            return this;
+        }
+
+        /**
+         * Sets the default member permissions required to run this command
+         * Set to 0 to restrict to administrators
+         */
+        setDefaultMemberPermissions(permissions: PermissionResolvable) {
+            this.defaultMemberPermissions = new Permissions(permissions).toString();
+            return this;
         }
 
         build(cb: (ctx: ExecutedCommandContext, target: Message) => any): Command {
@@ -891,19 +945,20 @@ export namespace Commands {
                 ackMode: this.ackMode,
                 cb: cb as any,
                 ackMessageFlags: this.ackMessageFlags,
-            }
+                defaultMemberPermissions: this.defaultMemberPermissions,
+            };
 
             if (this.onBuilt) {
-                this.onBuilt(built)
+                this.onBuilt(built);
             }
 
-            return built
+            return built;
         }
     }
 }
 
 function fullCommandName(commandName: string, parentName: string | undefined, parentParentName: string | undefined) {
-    let parent = parentName ? (parentName + " ") : ""
-    let parentParent = parentParentName ? (parentParentName + " ") : ""
-    return "/" + parentParent + parent + commandName
+    let parent = parentName ? (parentName + " ") : "";
+    let parentParent = parentParentName ? (parentParentName + " ") : "";
+    return "/" + parentParent + parent + commandName;
 }

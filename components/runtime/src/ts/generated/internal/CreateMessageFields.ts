@@ -3,6 +3,7 @@ import type { Embed } from "../discord/Embed";
 import type { IComponent } from "../discord/IComponent";
 import type { MessageFlags } from "../discord/MessageFlags";
 import type { AllowedMentions } from "./AllowedMentions";
+import type { MessageForward } from "./MessageForward";
 import type { OpCreateMessageAttachment } from "./OpCreateMessageAttachment";
 
 export type OpCreateMessageFields = {
@@ -13,4 +14,5 @@ export type OpCreateMessageFields = {
   replyToMessageId?: string;
   attachments?: Array<OpCreateMessageAttachment>;
   flags?: MessageFlags;
+  forward?: MessageForward;
 };

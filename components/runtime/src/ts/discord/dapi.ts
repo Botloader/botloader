@@ -132,7 +132,12 @@ export interface CreateMessageFields extends BaseCreateMessageFields {
      */
     replyToMessageId?: string;
 
+    /**
+     * List of flags for this message
+     */
     flags?: BaseMessageFlags;
+
+    forward?: MessageForward;
 }
 
 export interface CreateWebhookMessageFields extends CreateMessageFields {
@@ -189,6 +194,18 @@ export interface AllowedMentions {
      * For replies, whether to mention the author of the message being replied to (default false)
      */
     repliedUser?: boolean;
+}
+
+export interface MessageForward {
+    /**
+     * ID of the Channel containing the message to be forwarded
+     */
+    channelId: string;
+
+    /**
+     * Message ID to be forwarded
+     */
+    messageId: string;
 }
 
 /**

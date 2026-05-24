@@ -252,7 +252,6 @@ where
 
                         "RATELIMIT_429"
                     }
-                    //ErrorType::ServiceUnavailable { .. } => "SERVICE_UNAVAILABLE",
                     _ => break Err(handle_discord_error(state, discord_err)),
                 },
                 Err(err) => break Err(err),
@@ -574,6 +573,13 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
             if let Some(reply) = &args.fields.reply_to_message_id {
                 mc = mc.reply(parse_discord_id(reply)?);
+            }
+
+            if let Some(forward) = &args.fields.forward {
+                mc = mc.forward(
+                    parse_discord_id(&forward.channel_id)?,
+                    parse_discord_id(&forward.message_id)?
+                );
             }
 
             if attachments.len() > 0 {
@@ -1844,7 +1850,6 @@ pub async fn op_discord_interaction_edit_original_response(
             .update_response(&args.interaction_token)
             .content(args.fields.content.as_deref())
             .embeds(maybe_embeds.as_deref())
-            //.content(args.fields.content.as_deref())
             .attachments(&attachments);
             
         if let Some(flags) = &args.fields.flags {
@@ -1993,7 +1998,6 @@ pub async fn op_discord_interaction_edit_followup_message(
             .content(args.fields.content.as_deref())
             .embeds(maybe_embeds.as_deref())
             .components(components.as_deref())
-            //.content(args.fields.content.as_deref())
             .attachments(&attachments);
 
         let mentions = args.fields.allowed_mentions.map(Into::into);

@@ -5,4 +5,5 @@ export type CommandGroup = {
   name: string;
   description: string;
   subGroups: Array<CommandSubGroup>;
+  defaultMemberPermissions?: string;
 };

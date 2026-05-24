@@ -3,6 +3,8 @@ import type { CdnImageSize } from "./common";
 import type { PremiumType } from "../generated/internal/PremiumType";
 import type { IPrimaryGuild } from "../generated/internal/IPrimaryGuild";
 import { ExractClassProperties } from "../core_util";
+import { PartialMember } from "../generated/discord/PartialMember";
+import { IUserMention } from "../generated/internal/UserMention";
 export type { PremiumType } from "../generated/internal/PremiumType";
 
 export type UserFields = ExractClassProperties<Omit<User, "primaryGuild">> & {primaryGuild: ExractClassProperties<PrimaryGuild> | null};
@@ -131,6 +133,19 @@ export class PrimaryGuild {
         const size = options?.size ?? 128;
 
         return base + `guild-tag-badges/${this.identityGuildId}/${this.badge}.png?size=${size}`;
+    }
+}
+
+export class UserMention extends User {
+    member: PartialMember | null;
+
+    /**
+     * @internal
+     */
+    constructor(json: IUserMention) {
+        super(json.user);
+
+        this.member = json.member;
     }
 }
 

@@ -9,4 +9,5 @@ export type Command = {
   group?: string;
   subGroup?: string;
   kind: CommandType;
+  defaultMemberPermissions?: string;
 };

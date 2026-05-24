@@ -265,6 +265,7 @@ export class ModalSubmitInteraction extends Interaction {
     message: Message | null;
 
     values: ModalSubmitInteractionValues;
+    valuesV2: ModalSubmitInteractionValuesV2;
 
     /**
      * @internal
@@ -277,13 +278,25 @@ export class ModalSubmitInteraction extends Interaction {
         this.message = interaction.message ? new Message(interaction.message) : null;
 
         this.values = {};
+        this.valuesV2 = {
+            textInput: {},
+            selectMenu: {},
+            channelSelectMenu: {},
+            roleSelectMenu: {},
+            userSelectMenu: {},
+            mentionableSelectMenu: {},
+            checkbox: {},
+            checkboxGroup: {},
+            fileUpload: {},
+        };
+
         for (const elem of interaction.values) {
             this.parseComponentValues(elem, interaction);
         }
     }
 
     private parseComponentValues(elem: Internal.ModalInteractionComponent, interaction: Internal.IModalInteraction) {
-        let parsed: ModalSubmitInteractionValue | undefined;
+        let parsed: ModalSubmitInteractionValueV2 | undefined;
         switch (elem.kind) {
             // Handle the components that have nested components
             case "Label":
@@ -295,44 +308,51 @@ export class ModalSubmitInteraction extends Interaction {
                     this.parseComponentValues(subElem, interaction);
                 }
                 break;
-                
+            
             // Value components
             case 'SelectMenu':
                 parsed = new ModalSubmitInteractionValueSelectMenu(elem);
+                this.valuesV2["selectMenu"][parsed.name] = parsed as ModalSubmitInteractionValueSelectMenu;
                 break;
             case 'ChannelSelectMenu':
-                parsed = new ModalSubmitInteractionValueChannelSelectMenu(elem, interaction.resolved)
+                parsed = new ModalSubmitInteractionValueChannelSelectMenu(elem, interaction.resolved);
+                this.valuesV2["channelSelectMenu"][parsed.name] = parsed as ModalSubmitInteractionValueChannelSelectMenu;
                 break;
             case 'UserSelectMenu':
-                parsed = new ModalSubmitInteractionValueUserSelectMenu(elem, interaction.resolved)
+                parsed = new ModalSubmitInteractionValueUserSelectMenu(elem, interaction.resolved);
+                this.valuesV2["userSelectMenu"][parsed.name] = parsed as ModalSubmitInteractionValueUserSelectMenu;
                 break;
             case 'RoleSelectMenu':
-                parsed = new ModalSubmitInteractionValueRoleSelectMenu(elem, interaction.resolved)
+                parsed = new ModalSubmitInteractionValueRoleSelectMenu(elem, interaction.resolved);
+                this.valuesV2["roleSelectMenu"][parsed.name] = parsed as ModalSubmitInteractionValueRoleSelectMenu;
                 break;
             case 'MentionableSelectMenu':
-                parsed = new ModalSubmitInteractionValueMentionableSelectMenu(elem, interaction.resolved)
+                parsed = new ModalSubmitInteractionValueMentionableSelectMenu(elem, interaction.resolved);
+                this.valuesV2["mentionableSelectMenu"][parsed.name] = parsed as ModalSubmitInteractionValueMentionableSelectMenu;
                 break;
             case 'FileUpload':
                 parsed = new ModalSubmitInteractionValueFileUpload(elem, interaction.resolved);
+                this.valuesV2["fileUpload"][parsed.name] = parsed as ModalSubmitInteractionValueFileUpload;
                 break;
             case 'TextInput':
                 parsed = new ModalSubmitInteractionValueTextInput(elem);
+                this.valuesV2["textInput"][parsed.name] = parsed as ModalSubmitInteractionValueTextInput;
+
+                this.values = {
+                    ...this.values,
+                    [parsed.name]: new ModalSubmitInteractionValue(elem),
+                }
                 break;
             case 'Checkbox':
                 parsed = new ModalSubmitInteractionValueCheckbox(elem);
+                this.valuesV2["checkbox"][parsed.name] = parsed as ModalSubmitInteractionValueCheckbox;
                 break;
             case 'CheckboxGroup':
                 parsed = new ModalSubmitInteractionValueCheckboxGroup(elem);
+                this.valuesV2["checkboxGroup"][parsed.name] = parsed as ModalSubmitInteractionValueCheckboxGroup;
                 break;
             default:
                 break;
-        }
-
-        if (parsed) {
-            this.values = {
-                ...this.values,
-                [parsed.name]: parsed,
-            }
         }
     }
 
@@ -394,22 +414,41 @@ export class ModalSubmitInteraction extends Interaction {
 }
 
 export interface ModalSubmitInteractionValues {
-    [key: string]: ModalSubmitInteractionValue
-        | ModalSubmitInteractionValueTextInput
-        | ModalSubmitInteractionValueSelectMenu
-        | ModalSubmitInteractionValueChannelSelectMenu
-        | ModalSubmitInteractionValueRoleSelectMenu
-        | ModalSubmitInteractionValueUserSelectMenu
-        | ModalSubmitInteractionValueMentionableSelectMenu
-        | ModalSubmitInteractionValueCheckbox
-        | ModalSubmitInteractionValueCheckboxGroup
-        | ModalSubmitInteractionValueFileUpload;
+    [key: string]: ModalSubmitInteractionValue;
+}
+
+interface ModalSubmitInteractionValuesV2 {
+    textInput: { [key: string]: ModalSubmitInteractionValue };
+    selectMenu: { [key: string]: ModalSubmitInteractionValueSelectMenu };
+    channelSelectMenu: { [key: string]: ModalSubmitInteractionValueChannelSelectMenu };
+    roleSelectMenu: { [key: string]: ModalSubmitInteractionValueRoleSelectMenu };
+    userSelectMenu: { [key: string]: ModalSubmitInteractionValueUserSelectMenu };
+    mentionableSelectMenu: { [key: string]: ModalSubmitInteractionValueMentionableSelectMenu };
+    checkbox: { [key: string]: ModalSubmitInteractionValueCheckbox };
+    checkboxGroup: { [key: string]: ModalSubmitInteractionValueCheckboxGroup };
+    fileUpload: { [key: string]: ModalSubmitInteractionValueFileUpload };
 }
 
 export class ModalSubmitInteractionValue {
     customIdRaw: string;
     name: string;
-    value: string = "";
+    value: string;
+    kind: ComponentType;
+
+    customData: unknown;
+
+    constructor(from: Extract<Internal.ModalInteractionComponent, {value: string}>) {
+        [this.name, this.customData] = parseInteractionCustomId(from.customId);
+        this.customIdRaw = from.customId;
+        this.kind = from.kind;
+        
+        this.value = from.value;
+    }
+}
+
+export class ModalSubmitInteractionValueV2 {
+    customIdRaw: string;
+    name: string;
     kind: ComponentType;
 
     customData: unknown;
@@ -421,7 +460,8 @@ export class ModalSubmitInteractionValue {
     }
 }
 
-export class ModalSubmitInteractionValueTextInput extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueTextInput extends ModalSubmitInteractionValueV2 {
+    value: string;
     kind: "TextInput" = "TextInput";
 
     constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "TextInput"}>) {
@@ -431,7 +471,7 @@ export class ModalSubmitInteractionValueTextInput extends ModalSubmitInteraction
     }
 }
 
-export class ModalSubmitInteractionValueSelectMenu extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueSelectMenu extends ModalSubmitInteractionValueV2 {
     kind: "SelectMenu" = "SelectMenu";
 
     values: string[] = [];
@@ -443,7 +483,7 @@ export class ModalSubmitInteractionValueSelectMenu extends ModalSubmitInteractio
     }
 }
 
-export class ModalSubmitInteractionValueChannelSelectMenu extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueChannelSelectMenu extends ModalSubmitInteractionValueV2 {
     kind: "ChannelSelectMenu" = "ChannelSelectMenu";
 
     values: InteractionChannel[] = [];
@@ -465,7 +505,7 @@ export class ModalSubmitInteractionValueChannelSelectMenu extends ModalSubmitInt
     }
 }
 
-export class ModalSubmitInteractionValueRoleSelectMenu extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueRoleSelectMenu extends ModalSubmitInteractionValueV2 {
     kind: "RoleSelectMenu" = "RoleSelectMenu";
 
     values: InteractionMentionable[] = [];
@@ -524,7 +564,7 @@ export type InteractionMentionable = {
     value: InteractionUser
 }
 
-export class ModalSubmitInteractionValueUserSelectMenu extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueUserSelectMenu extends ModalSubmitInteractionValueV2 {
     kind: "UserSelectMenu" = "UserSelectMenu";
 
     values: InteractionUser[] = [];
@@ -550,7 +590,7 @@ export class ModalSubmitInteractionValueUserSelectMenu extends ModalSubmitIntera
     }
 }
 
-export class ModalSubmitInteractionValueMentionableSelectMenu extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueMentionableSelectMenu extends ModalSubmitInteractionValueV2 {
     kind: "MentionableSelectMenu" = "MentionableSelectMenu"
 
     values: InteractionUser[] = [];
@@ -576,7 +616,7 @@ export class ModalSubmitInteractionValueMentionableSelectMenu extends ModalSubmi
     }
 }
 
-export class ModalSubmitInteractionValueCheckbox extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueCheckbox extends ModalSubmitInteractionValueV2 {
     kind: "Checkbox" = "Checkbox";
 
     checked: boolean;
@@ -588,7 +628,7 @@ export class ModalSubmitInteractionValueCheckbox extends ModalSubmitInteractionV
     }
 }
 
-export class ModalSubmitInteractionValueCheckboxGroup extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueCheckboxGroup extends ModalSubmitInteractionValueV2 {
     kind: "CheckboxGroup" = "CheckboxGroup";
 
     values: string[];
@@ -600,7 +640,7 @@ export class ModalSubmitInteractionValueCheckboxGroup extends ModalSubmitInterac
     }
 }
 
-export class ModalSubmitInteractionValueFileUpload extends ModalSubmitInteractionValue {
+export class ModalSubmitInteractionValueFileUpload extends ModalSubmitInteractionValueV2 {
     kind: "FileUpload" = "FileUpload"
 
     values: Attachment[] = [];

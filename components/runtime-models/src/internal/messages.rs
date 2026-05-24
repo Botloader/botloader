@@ -5,12 +5,13 @@ use crate::{
         member::PartialMember,
         message::{
             Attachment, ChannelMention, MessageActivity, MessageApplication, MessageFlags,
-            MessageReaction, MessageReference, MessageType,
+            MessageReaction, MessageReference, MessageType
         },
     },
     internal::{
+        interaction::InteractionMetadata,
         user::User,
-        interaction::InteractionMetadata
+        snapshot::MessageSnapshot,
     },
     util::NotBigU64,
 };
@@ -97,6 +98,10 @@ pub struct OpCreateMessageFields {
     #[serde(default)]
     #[ts(optional)]
     pub flags: Option<MessageFlags>,
+
+    #[serde(default)]
+    #[ts(optional)]
+    pub forward: Option<MessageForward>,
 }
 
 // Converts attachments from our internal runtime_models to twilight's models
@@ -188,6 +193,15 @@ impl From<MentionParseTypes> for TwilightParseTypes {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/MessageForward.ts")]
+pub struct MessageForward {
+    pub channel_id: String,
+    pub message_id: String,
+}
+
 #[derive(Clone, Debug, Deserialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/internal/GetMessages.ts")]
@@ -239,6 +253,7 @@ pub struct Message {
     pub tts: bool,
     pub webhook_id: Option<String>,
     pub interaction_metadata: Option<Box<InteractionMetadata>>,
+    pub message_snapshots: Vec<MessageSnapshot>,
 }
 
 impl TryFrom<twilight_model::channel::Message> for Message {
@@ -290,6 +305,11 @@ impl TryFrom<twilight_model::channel::Message> for Message {
                 .map(|e| (*e).try_into())
                 .transpose()?
                 .map(Box::new),
+            message_snapshots: v
+                .message_snapshots
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
         })
     }
 }
