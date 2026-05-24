@@ -1065,6 +1065,12 @@ export async function removeThreadMember(channelId: string, userId: string) {
     })
 }
 
+export async function createTypingTrigger(channelId: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_create_typing_trigger",
+        arg: channelId
+    })
+}
 
 
 // discord_list_thread_members

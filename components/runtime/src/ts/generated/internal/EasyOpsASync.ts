@@ -56,6 +56,7 @@ export type EasyOpsASync =
     "kind": "discord_bulk_edit_channels";
     "arg": Array<IEditGuildChannelPosition>;
   }
+  | { "kind": "discord_create_typing_trigger"; "arg": string }
   | { "kind": "discord_create_role"; "arg": OpCreateRoleFields }
   | { "kind": "discord_update_role"; "arg": OpUpdateRoleFields }
   | {

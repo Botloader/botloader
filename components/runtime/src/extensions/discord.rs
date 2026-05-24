@@ -1092,6 +1092,24 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
     }
 
     #[allow(async_fn_in_trait)]
+    async fn discord_create_typing_trigger(&self, arg: String) -> Result<(),anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel_id = parse_discord_id(&arg)?;
+
+        discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .create_typing_trigger(channel_id)
+                .await
+        })
+        .await?;
+
+        Ok(())
+    }
+
+    #[allow(async_fn_in_trait)]
     async fn discord_create_role(&self, arg: OpCreateRoleFields) -> Result<Role, anyhow::Error> {
         let rt_ctx = get_rt_ctx(&self.state);
 

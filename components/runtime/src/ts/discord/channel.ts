@@ -14,7 +14,7 @@ import type { INewsThread } from "../generated/internal/NewsThread";
 import type { ITextChannel } from "../generated/internal/TextChannel";
 import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
 import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
-import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, addThreadMember, createForumThread, createStandaloneThread, createThreadFromMessage, editChannel, editThread, getPins, removeThreadMember } from "./dapi";
+import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, addThreadMember, createForumThread, createStandaloneThread, createThreadFromMessage, createTypingTrigger, editChannel, editThread, getPins, removeThreadMember } from "./dapi";
 
 export type GuildChannel =
     | CategoryChannel
@@ -116,6 +116,10 @@ export abstract class BaseChannel {
 
     pins() {
         return getPins(this.id);
+    }
+
+    createTypingTrigger() {
+        return createTypingTrigger(this.id);
     }
 }
 

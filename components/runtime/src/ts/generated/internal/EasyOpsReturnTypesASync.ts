@@ -29,6 +29,7 @@ export type EasyOpsReturnTypesASync = {
   discord_list_private_archived_threads: IThreadsListing;
   discord_edit_thread: InternalGuildChannel;
   discord_bulk_edit_channels: null;
+  discord_create_typing_trigger: null;
   discord_create_role: Role;
   discord_update_role: Role;
   discord_update_role_positions: Array<Role>;
