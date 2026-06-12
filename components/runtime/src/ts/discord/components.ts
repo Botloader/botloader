@@ -85,10 +85,8 @@ export abstract class Button extends BaseComponent implements IButton {
     label?: string;
     emoji?: ReactionType;
 
-    constructor(label: string | undefined, style: ButtonStyle) {
+    constructor(style: ButtonStyle) {
         super("Button");
-
-        this.label = label;
         this.style = style;
     };
 
@@ -111,16 +109,18 @@ export abstract class Button extends BaseComponent implements IButton {
 
         return this;
     }
+
+    setLabel(label: string) {
+        this.label = label;
+        return this;
+    }
 }
 
 export class UrlButton extends Button implements IButton {
-    constructor(url: string);
-    constructor(label: string, url: string);
-    constructor(labelOrUrl: string, url?: string) {
-        if (arguments.length >= 2) {
-            super(labelOrUrl, "Link");
-        } else {
-            super(undefined, "Link");
+    constructor(label: string | undefined, url: string) {
+        super("Link");
+        if (label) {
+            this.label = label;
         }
 
         this.url = url;
@@ -128,8 +128,11 @@ export class UrlButton extends Button implements IButton {
 }
 
 export class CustomButton extends Button implements IButton {
-    constructor(label: string, name: string, data?: any) {
-        super(label, "Primary");
+    constructor(label: string | undefined, name: string, data?: any) {
+        super("Primary");
+        if (label) {
+            this.label = label;
+        }
 
         this.customId = encodeInteractionCustomId(name, data ?? null);
     };
@@ -318,10 +321,9 @@ export abstract class TextInput extends BaseComponent implements ITextInput {
     style: TextInputStyle;
     value?: string;
 
-    constructor(label: string | undefined, style: TextInputStyle, name: string, data?: any) {
+    constructor(style: TextInputStyle, name: string, data?: any) {
         super("TextInput");
 
-        this.label = label;
         this.style = style;
         this.customId = encodeInteractionCustomId(name, data ?? null);
     };
@@ -354,14 +356,10 @@ export abstract class TextInput extends BaseComponent implements ITextInput {
 export class ShortTextInput extends TextInput implements ITextInput {
     kind: "TextInput" = "TextInput";
 
-    /** @deprecated */
-    constructor(label: string, name: string, data?: any);
-    constructor(name: string, data?: any);
-    constructor(labelOrName: string, nameOrData?: string | any, data?: any) {
-        if (typeof nameOrData === "string" && arguments.length >= 3) {
-            super(labelOrName, "Short", nameOrData, data);
-        } else {
-            super(undefined, "Short", labelOrName, nameOrData);
+    constructor(label: string | undefined, name: string, data?: any) {
+        super("Short", name, data);
+        if (label) {
+            this.label = label;
         }
     };
 }
@@ -369,14 +367,10 @@ export class ShortTextInput extends TextInput implements ITextInput {
 export class ParagraphTextInput extends TextInput implements ITextInput {
     kind: "TextInput" = "TextInput";
 
-    /** @deprecated */
-    constructor(label: string, name: string, data?: any);
-    constructor(name: string, data?: any);
-    constructor(labelOrName: string, nameOrData?: string | any, data?: any) {
-        if (typeof nameOrData === "string" && arguments.length >= 3) {
-            super(labelOrName, "Paragraph", nameOrData, data);
-        } else {
-            super(undefined, "Paragraph", labelOrName, nameOrData);
+    constructor(label: string | undefined, name: string, data?: any) {
+        super("Paragraph", name, data);
+        if (label) {
+            this.label = label;
         }
     };
 }
@@ -545,11 +539,18 @@ export class Label extends BaseComponent implements ILabel {
     description?: string;
     component: AnyComponent;
 
-    constructor(label: string, component: AnyComponent) {
+    constructor(component: TextInput);
+    constructor(label: string, component: AnyComponent);
+    constructor(label: string | TextInput, component?: AnyComponent) {
         super("Label");
 
-        this.label = label;
-        this.component = component;
+        if (label instanceof TextInput) {
+            this.label = label.label ?? "";
+            this.component = label;
+        } else {
+            this.label = label;
+            this.component = component!;
+        }
     }
 
     setDescription(description: string) {

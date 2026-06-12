@@ -258,7 +258,6 @@ export interface IModalFields {
     components: IComponent[],
 }
 
-
 export class ModalSubmitInteraction extends Interaction {
     customIdRaw: string;
     channelId: string;
@@ -413,6 +412,144 @@ export class ModalSubmitInteraction extends Interaction {
     }
 }
 
+export interface InteractionMember {
+    joinedAt: number;
+    nick: string | null;
+    premiumSince?: number;
+    roles: Array<string>;
+}
+
+export interface InteractionUser {
+    user: User,
+    member?: InteractionMember,
+}
+
+export type InteractionMentionable = {
+    kind: "Role",
+    value: Role
+} | {
+    kind: "User",
+    value: InteractionUser
+}
+
+/**
+ * Helper class to resolve interaction values to their corresponding types
+ * 
+ * @internal
+ */
+class InteractionDataResolver {
+    static fromRoleSelectMenu(values: string[], resolved: Internal.InteractionDataMap | null) {
+        const roleValues: Role[] = [];
+
+        if (!resolved) {
+            throw new Error("No roles resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of values) {
+            const role = resolved.roles[id];
+            if (!role) {
+                throw new Error("Failed to resolve role: " + role)
+            }
+            roleValues.push(role);
+        }
+
+        return roleValues;
+    }
+
+    static fromChannelSelectMenu(values: string[], resolved: Internal.InteractionDataMap | null) {
+        const channelValues: InteractionChannel[] = [];
+
+        if (!resolved) {
+            throw new Error("No resolved data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of values) {
+            const channel = resolved.channels[id]
+            if (!channel) {
+                throw new Error("Failed to resolve channel: " + id)
+            }
+            channelValues.push(channel)
+        }
+
+        return channelValues
+    }
+
+    static fromUserSelectMenu(values: string[], resolved: Internal.InteractionDataMap | null) {
+        const userValues: InteractionUser[] = [];
+
+        if (!resolved) {
+            throw new Error("No users resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of values) {
+            const user = resolved.users[id]
+            if (!user) {
+                throw new Error("Failed to resolve user: " + id)
+            }
+
+            userValues.push({
+                user: new User(user),
+                member: resolved.members[id],
+            })
+        }
+
+        return userValues;
+    }
+
+    static fromMentionablesSelectMenu(values: string[], resolved: Internal.InteractionDataMap | null) {
+        const mentionableValues: InteractionMentionable[] = [];
+        
+        if (!resolved) {
+            throw new Error("No mentionables resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of values) {
+            const role = resolved.roles[id]
+            if (role) {
+                mentionableValues.push({
+                    kind: "Role",
+                    value: role
+                })
+
+                continue;
+            }
+
+            const user = resolved.users[id]
+            if (!user) {
+                throw new Error("Failed to resolve mentionable: " + id)
+            }
+
+            mentionableValues.push({
+                kind: "User",
+                value: {
+                    user: new User(user),
+                    member: resolved.members[id],
+                }
+            })
+        }
+
+        return mentionableValues;
+    }
+
+    static fromAttachmentsUpload(values: string[], resolved: Internal.InteractionDataMap | null) {
+        const attachmentValues: Attachment[] = [];
+        if (!resolved) {
+            throw new Error("No attachments resolved in data, this is a bot error you should report to the botloader team.")
+        }
+
+        for (const id of values) {
+            const attachment = resolved.attachments[id]
+            if (!attachment) {
+                throw new Error("Failed to resolve attachment: " + id)
+            }
+
+            attachmentValues.push(attachment)
+        }
+
+        return attachmentValues;
+    }
+}
+
 export interface ModalSubmitInteractionValues {
     [key: string]: ModalSubmitInteractionValue;
 }
@@ -491,77 +628,20 @@ export class ModalSubmitInteractionValueChannelSelectMenu extends ModalSubmitInt
     constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "ChannelSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
         super(from);
         
-        if (!resolved) {
-            throw new Error("No resolved data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of from.values) {
-            const channel = resolved.channels[id]
-            if (!channel) {
-                throw new Error("Failed to resolve channel: " + id)
-            }
-            this.values.push(channel)
-        }
+        this.values = InteractionDataResolver.fromChannelSelectMenu(from.values, resolved);
     }
 }
 
 export class ModalSubmitInteractionValueRoleSelectMenu extends ModalSubmitInteractionValueV2 {
     kind: "RoleSelectMenu" = "RoleSelectMenu";
 
-    values: InteractionMentionable[] = [];
+    values: Role[] = [];
 
     constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "RoleSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
         super(from);
         
-        if (!resolved) {
-            throw new Error("No mentionables resolved in data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of from.values) {
-            const role = resolved.roles[id]
-            if (role) {
-                this.values.push({
-                    kind: "Role",
-                    value: role
-                })
-
-                return
-            }
-
-            const user = resolved.users[id]
-            if (!user) {
-                throw new Error("Failed to resolve mentionable: " + id)
-            }
-
-            this.values.push({
-                kind: "User",
-                value: {
-                    user: new User(user),
-                    member: resolved.members[id],
-                }
-            })
-        }
+        this.values = InteractionDataResolver.fromRoleSelectMenu(from.values, resolved);
     }
-}
-
-export interface InteractionMember {
-    joinedAt: number;
-    nick: string | null;
-    premiumSince?: number;
-    roles: Array<string>;
-}
-
-export interface InteractionUser {
-    user: User,
-    member?: InteractionMember,
-}
-
-export type InteractionMentionable = {
-    kind: "Role",
-    value: Role
-} | {
-    kind: "User",
-    value: InteractionUser
 }
 
 export class ModalSubmitInteractionValueUserSelectMenu extends ModalSubmitInteractionValueV2 {
@@ -572,47 +652,19 @@ export class ModalSubmitInteractionValueUserSelectMenu extends ModalSubmitIntera
     constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "UserSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
         super(from);
         
-        if (!resolved) {
-            throw new Error("No users resolved in data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of from.values) {
-            const user = resolved.users[id]
-            if (!user) {
-                throw new Error("Failed to resolve user: " + id)
-            }
-
-            this.values.push({
-                user: new User(user),
-                member: resolved.members[id],
-            })
-        }
+        this.values = InteractionDataResolver.fromUserSelectMenu(from.values, resolved);
     }
 }
 
 export class ModalSubmitInteractionValueMentionableSelectMenu extends ModalSubmitInteractionValueV2 {
     kind: "MentionableSelectMenu" = "MentionableSelectMenu"
 
-    values: InteractionUser[] = [];
+    values: InteractionMentionable[] = [];
 
     constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "MentionableSelectMenu"}>, resolved: Internal.InteractionDataMap | null) {
         super(from);
         
-        if (!resolved) {
-            throw new Error("No users resolved in data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of from.values) {
-            const user = resolved.users[id]
-            if (!user) {
-                throw new Error("Failed to resolve user: " + id)
-            }
-
-            this.values.push({
-                user: new User(user),
-                member: resolved.members[id],
-            })
-        }
+        this.values = InteractionDataResolver.fromMentionablesSelectMenu(from.values, resolved);
     }
 }
 
@@ -648,24 +700,12 @@ export class ModalSubmitInteractionValueFileUpload extends ModalSubmitInteractio
     constructor(from: Extract<Internal.ModalInteractionComponent, {kind: "FileUpload"}>, resolved: Internal.InteractionDataMap | null) {
         super(from);
         
-        if (!resolved) {
-            throw new Error("No attachments resolved in data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of from.values) {
-            const attachment = resolved.attachments[id]
-            if (!attachment) {
-                throw new Error("Failed to resolve attachment: " + id)
-            }
-
-            this.values.push(attachment)
-        }
+        this.values = InteractionDataResolver.fromAttachmentsUpload(from.values, resolved);
     }
 }
 
 export class SelectMenuInteraction extends ComponentInteraction {
     values: string[];
-
 
     constructor(interaction: Internal.MessageComponentInteraction) {
         super(interaction);
@@ -689,17 +729,7 @@ export class ChannelSelectMenuInteraction extends ComponentInteraction {
     constructor(interaction: Internal.MessageComponentInteraction) {
         super(interaction);
 
-        if (!interaction.resolved) {
-            throw new Error("No resolved data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of interaction.values) {
-            const channel = interaction.resolved.channels[id]
-            if (!channel) {
-                throw new Error("Failed to resolve channel: " + id)
-            }
-            this.values.push(channel)
-        }
+        this.values = InteractionDataResolver.fromChannelSelectMenu(interaction.values, interaction.resolved);
     }
 }
 
@@ -709,16 +739,7 @@ export class RoleSelectMenuInteraction extends ComponentInteraction {
     constructor(interaction: Internal.MessageComponentInteraction) {
         super(interaction);
 
-        if (!interaction.resolved) {
-            throw new Error("No roles resolved in data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const role of interaction.values) {
-            this.values.push(interaction.resolved.roles[role])
-            if (!this.values[this.values.length - 1]) {
-                throw new Error("Failed to resolve role: " + role)
-            }
-        }
+        this.values = InteractionDataResolver.fromRoleSelectMenu(interaction.values, interaction.resolved);
     }
 }
 
@@ -728,21 +749,7 @@ export class UserSelectMenuInteraction extends ComponentInteraction {
     constructor(interaction: Internal.MessageComponentInteraction) {
         super(interaction);
 
-        if (!interaction.resolved) {
-            throw new Error("No users resolved in data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of interaction.values) {
-            const user = interaction.resolved.users[id]
-            if (!user) {
-                throw new Error("Failed to resolve user: " + id)
-            }
-
-            this.values.push({
-                user: new User(user),
-                member: interaction.resolved.members[id],
-            })
-        }
+        this.values = InteractionDataResolver.fromUserSelectMenu(interaction.values, interaction.resolved);
     }
 }
 
@@ -752,34 +759,7 @@ export class MentionableSelectMenuInteraction extends ComponentInteraction {
     constructor(interaction: Internal.MessageComponentInteraction) {
         super(interaction);
 
-        if (!interaction.resolved) {
-            throw new Error("No roles resolved in data, this is a bot error you should report to the botloader team.")
-        }
-
-        for (const id of interaction.values) {
-            const role = interaction.resolved.roles[id]
-            if (role) {
-                this.values.push({
-                    kind: "Role",
-                    value: role
-                })
-
-                return
-            }
-
-            const user = interaction.resolved.users[id]
-            if (!user) {
-                throw new Error("Failed to resolve mentionable: " + id)
-            }
-
-            this.values.push({
-                kind: "User",
-                value: {
-                    user: new User(user),
-                    member: interaction.resolved.members[id],
-                }
-            })
-        }
+        this.values = InteractionDataResolver.fromMentionablesSelectMenu(interaction.values, interaction.resolved);
     }
 }
 
