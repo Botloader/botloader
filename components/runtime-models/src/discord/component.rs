@@ -519,7 +519,7 @@ impl From<TwilightButtonStyle> for ButtonStyle {
             TwilightButtonStyle::Success => Self::Success,
             TwilightButtonStyle::Danger => Self::Danger,
             TwilightButtonStyle::Link => Self::Link,
-            TwilightButtonStyle::Unknown(6) => Self::Premium,
+            TwilightButtonStyle::Premium => Self::Premium,
             _ => todo!(),
         }
     }
@@ -532,7 +532,7 @@ impl From<ButtonStyle> for TwilightButtonStyle {
             ButtonStyle::Success => Self::Success,
             ButtonStyle::Danger => Self::Danger,
             ButtonStyle::Link => Self::Link,
-            ButtonStyle::Premium => Self::Unknown(6),
+            ButtonStyle::Premium => Self::Premium,
         }
     }
 }

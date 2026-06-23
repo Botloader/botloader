@@ -152,6 +152,7 @@ export abstract class BaseSelectMenu extends BaseComponent implements ISelectMen
     maxValues?: number | undefined;
     options: ISelectMenuOption[] = [];
     placeholder?: string | undefined;
+    required?: boolean;
     selectType: SelectMenuType;
 
     constructor(kind: SelectMenuType, name: string, data?: any) {
@@ -160,6 +161,11 @@ export abstract class BaseSelectMenu extends BaseComponent implements ISelectMen
         this.customId = encodeInteractionCustomId(name, data ?? null)
         this.selectType = kind;
         this.disabled = false;
+    }
+
+    setRequired(required: boolean) {
+        this.required = required;
+        return this;
     }
 
     setDisabled(disabled: boolean) {
