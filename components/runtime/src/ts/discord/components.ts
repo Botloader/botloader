@@ -117,7 +117,7 @@ export abstract class Button extends BaseComponent implements IButton {
 }
 
 export class UrlButton extends Button implements IButton {
-    constructor(label: string | undefined, url: string) {
+    constructor(label: string | null, url: string) {
         super("Link");
         if (label) {
             this.label = label;
@@ -128,7 +128,7 @@ export class UrlButton extends Button implements IButton {
 }
 
 export class CustomButton extends Button implements IButton {
-    constructor(label: string | undefined, name: string, data?: any) {
+    constructor(label: string | null, name: string, data?: any) {
         super("Primary");
         if (label) {
             this.label = label;
@@ -362,7 +362,7 @@ export abstract class TextInput extends BaseComponent implements ITextInput {
 export class ShortTextInput extends TextInput implements ITextInput {
     kind: "TextInput" = "TextInput";
 
-    constructor(label: string | undefined, name: string, data?: any) {
+    constructor(label: string | null, name: string, data?: any) {
         super("Short", name, data);
         if (label) {
             this.label = label;
@@ -373,7 +373,7 @@ export class ShortTextInput extends TextInput implements ITextInput {
 export class ParagraphTextInput extends TextInput implements ITextInput {
     kind: "TextInput" = "TextInput";
 
-    constructor(label: string | undefined, name: string, data?: any) {
+    constructor(label: string | null, name: string, data?: any) {
         super("Paragraph", name, data);
         if (label) {
             this.label = label;
