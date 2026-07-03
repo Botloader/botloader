@@ -127,6 +127,8 @@ ops_async! {
 
     discord_bulk_edit_channels(Vec<EditGuildChannelPosition>) => (),
 
+    discord_create_typing_trigger(String) => (),
+
     discord_create_role(OpCreateRoleFields) => Role,
     discord_update_role(OpUpdateRoleFields) => Role,
     discord_update_role_positions(Vec<UpdateRolePosition>) => Vec<Role>,

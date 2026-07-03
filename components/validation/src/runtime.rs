@@ -17,7 +17,7 @@ impl Validator for Command {
     type ContextData = ();
 
     fn validate(&self, ctx: &mut ValidationContext, _: &()) {
-        check_name_field(ctx, "name", &self.name);
+        check_name_field(ctx, "name", &self.name, matches!(self.kind, CommandType::Chat));
 
         if matches!(self.kind, CommandType::Chat) {
             check_description_field(ctx, "description", &self.description);
@@ -29,11 +29,11 @@ impl Validator for Command {
         }
 
         if let Some(group) = &self.group {
-            check_name_field(ctx, "group", group);
+            check_name_field(ctx, "group", group, true);
         }
 
         if let Some(group) = &self.sub_group {
-            check_name_field(ctx, "sub_group", group);
+            check_name_field(ctx, "sub_group", group, true);
         }
 
         if self.options.len() > 25 {
@@ -59,7 +59,7 @@ impl Validator for CommandOption {
     type ContextData = ();
 
     fn validate(&self, ctx: &mut ValidationContext, _: &()) {
-        check_name_field(ctx, "name", &self.name);
+        check_name_field(ctx, "name", &self.name, true);
         check_description_field(ctx, "description", &self.description);
     }
 }
@@ -68,7 +68,7 @@ impl Validator for CommandGroup {
     type ContextData = ();
 
     fn validate(&self, ctx: &mut ValidationContext, _: &()) {
-        check_name_field(ctx, "name", &self.name);
+        check_name_field(ctx, "name", &self.name, true);
         check_description_field(ctx, "description", &self.description);
 
         for sub_group in &self.sub_groups {
@@ -83,12 +83,12 @@ impl Validator for CommandSubGroup {
     type ContextData = ();
 
     fn validate(&self, ctx: &mut ValidationContext, _: &()) {
-        check_name_field(ctx, "name", &self.name);
+        check_name_field(ctx, "name", &self.name, true);
         check_description_field(ctx, "description", &self.description);
     }
 }
 
-fn check_name_field(ctx: &mut ValidationContext, field: &str, value: &str) {
+fn check_name_field(ctx: &mut ValidationContext, field: &str, value: &str, chat_command: bool) {
     if value.chars().count() < 1 {
         ctx.push_field_error(field, "has to be atleast 1 character".to_string());
     }
@@ -98,14 +98,21 @@ fn check_name_field(ctx: &mut ValidationContext, field: &str, value: &str) {
 
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"^[\w-]+$"#).unwrap();
+        static ref RERelaxed: Regex = Regex::new(r#"^[\w -]+$"#).unwrap();
     }
 
-    if !RE.is_match(value) {
-        ctx.push_field_error(field, "can only contain 'word' characters".to_string());
-    }
+    if chat_command {
+        if !RE.is_match(value) {
+            ctx.push_field_error(field, "can only contain 'word' characters".to_string());
+        }
 
-    if value.to_lowercase() != value {
-        ctx.push_field_error(field, "has to be lower-case".to_string());
+        if value.to_lowercase() != value {
+            ctx.push_field_error(field, "has to be lower-case".to_string());
+        }
+    } else {
+        if !RERelaxed.is_match(value) {
+            ctx.push_field_error(field, "can only contain 'word or space' characters".to_string());
+        }
     }
 }
 

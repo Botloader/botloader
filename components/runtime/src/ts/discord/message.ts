@@ -1,6 +1,7 @@
-import { User } from "./user";
+import { User, UserMention } from "./user";
 import { InteractionMetadata } from "./interaction";
-import { CreateMessageFields, ICreateThreadFromMessage, createPin, createThreadFromMessage, deleteMessage, deletePin, editMessage, getCurrentGuildId } from "./dapi";
+import { MessageSnapshot } from "./snapshot";
+import { CreateMessageFields, ICreateThreadFromMessage, createMessage, createPin, createThreadFromMessage, deleteMessage, deletePin, editMessage, getCurrentGuildId } from "./dapi";
 
 import type { Attachment } from "../generated/discord/Attachment";
 import type { ChannelMention } from "../generated/discord/ChannelMention";
@@ -15,7 +16,6 @@ import type { MessageType } from "../generated/discord/MessageType";
 import type { PartialMember } from "../generated/discord/PartialMember";
 
 import type { IMessage } from "../generated/internal/IMessage";
-import type { IUserMention } from "../generated/internal/UserMention";
 
 export class Message {
     activity: MessageActivity | null;
@@ -23,19 +23,21 @@ export class Message {
     attachments: Attachment[];
     author: User;
     channelId: string;
-    content: string;
     components: IComponent[];
+    content: string;
     editedTimestamp: number | null;
     embeds: Embed[];
     flags: MessageFlags | null;
     guildId: string;
     id: string;
+    interactionMetadata: InteractionMetadata | null;
     kind: MessageType;
     member: PartialMember | null;
     mentionChannels: ChannelMention[];
     mentionEveryone: boolean;
     mentionRoles: string[];
     mentions: UserMention[];
+    messageSnapshots: MessageSnapshot[];
     pinned: boolean;
     reactions: MessageReaction[];
     reference: MessageReference | null;
@@ -43,7 +45,6 @@ export class Message {
     timestamp: number;
     tts: boolean;
     webhookId: string | null;
-    interactionMetadata: InteractionMetadata | null;
 
     /**
      * @internal
@@ -54,19 +55,21 @@ export class Message {
         this.attachments = json.attachments;
         this.author = new User(json.author);
         this.channelId = json.channelId;
-        this.content = json.content;
         this.components = json.components;
+        this.content = json.content;
         this.editedTimestamp = json.editedTimestamp;
         this.embeds = json.embeds;
         this.flags = json.flags;
         this.guildId = json.guildId ?? getCurrentGuildId();
         this.id = json.id;
+        this.interactionMetadata = json.interactionMetadata ? new InteractionMetadata(json.interactionMetadata) : null;
         this.kind = json.kind;
         this.member = json.member;
         this.mentionChannels = json.mentionChannels;
         this.mentionEveryone = json.mentionEveryone;
         this.mentionRoles = json.mentionRoles;
         this.mentions = json.mentions.map(v => new UserMention(v));
+        this.messageSnapshots = json.messageSnapshots.map(v => new MessageSnapshot(v));
         this.pinned = json.pinned;
         this.reactions = json.reactions;
         this.reference = json.reference;
@@ -74,7 +77,8 @@ export class Message {
         this.timestamp = json.timestamp;
         this.tts = json.tts;
         this.webhookId = json.webhookId;
-        this.interactionMetadata = json.interactionMetadata ? new InteractionMetadata(json.interactionMetadata) : null;
+
+
     }
 
     hyperlink() {
@@ -97,24 +101,20 @@ export class Message {
         return editMessage(this.channelId, this.id, fields);
     }
 
+    forward(channelId: string) {
+        return createMessage(channelId, {
+            forward: {
+                channelId: this.channelId,
+                messageId: this.id
+            }
+        });
+    }
+
     createThread(fields: Omit<ICreateThreadFromMessage, "messageId" | "channelId">) {
         return createThreadFromMessage({
             ...fields,
             channelId: this.channelId,
             messageId: this.id,
         })
-    }
-}
-
-export class UserMention extends User {
-    member: PartialMember | null;
-
-    /**
-     * @internal
-     */
-    constructor(json: IUserMention) {
-        super(json.user);
-
-        this.member = json.member;
     }
 }

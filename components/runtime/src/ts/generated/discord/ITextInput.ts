@@ -2,12 +2,13 @@
 import type { TextInputStyle } from "./TextInputStyle";
 
 export type ITextInput = {
+  id?: number;
   customId: string;
-  label: string;
-  maxLength: number | null;
-  minLength: number | null;
-  placeholder: string | null;
-  required: boolean | null;
+  label?: string;
+  maxLength?: number;
+  minLength?: number;
+  placeholder?: string;
+  required?: boolean;
   style: TextInputStyle;
-  value: string | null;
+  value?: string;
 };

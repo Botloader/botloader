@@ -16,6 +16,7 @@ use twilight_model::application::command::{
 use runtime_models::internal::script::{Command, CommandGroup, ScriptMeta};
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
+use twilight_model::guild::Permissions;
 
 #[derive(Clone, Debug)]
 pub struct Handle {
@@ -260,7 +261,10 @@ pub fn to_twilight_commands(
             kind: cmd.kind.into(),
             version: Id::new(1),
             dm_permission: None,
-            default_member_permissions: None,
+            default_member_permissions: cmd
+                .default_member_permissions
+                .as_ref()
+                .map(|perms| Permissions::from_bits_truncate(perms.parse().unwrap_or(0))),
             description_localizations: Default::default(),
             name_localizations: Default::default(),
             nsfw: None,
@@ -403,7 +407,10 @@ pub fn group_to_twilight_command(
         name: group.name.clone(),
         options: opts,
         version: Id::new(1),
-        default_member_permissions: None,
+        default_member_permissions: group
+            .default_member_permissions
+            .as_ref()
+            .map(|perms| Permissions::from_bits_truncate(perms.parse().unwrap_or(0))),
         dm_permission: None,
         description_localizations: Default::default(),
         name_localizations: Default::default(),

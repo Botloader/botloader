@@ -1,6 +1,5 @@
 import { Member } from "./member";
-import { User } from "./user";
-import { UserMention } from "./message";
+import { User, UserMention } from "./user";
 
 import type { ReactionType } from "../generated/discord/ReactionType";
 import type { Attachment } from "../generated/discord/Attachment";

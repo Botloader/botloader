@@ -59,6 +59,10 @@ pub struct CommandGroup {
     pub name: String,
     pub description: String,
     pub sub_groups: Vec<CommandSubGroup>,
+
+    #[serde(default)]
+    #[ts(optional)]
+    pub default_member_permissions: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
@@ -86,6 +90,10 @@ pub struct Command {
     pub sub_group: Option<String>,
 
     pub kind: CommandType,
+
+    #[serde(default)]
+    #[ts(optional)]
+    pub default_member_permissions: Option<String>,
 }
 
 impl From<Command> for twilight_model::application::command::CommandOption {

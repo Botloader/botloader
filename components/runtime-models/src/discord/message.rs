@@ -409,6 +409,18 @@ pub struct MessageFlags {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub failed_to_mention_some_roles_in_thread: Option<bool>, //  1 << 8	this message failed to mention some roles and add their members to the thread
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub suppress_notifications: Option<bool>, // 1 << 12	this message will not trigger push and desktop notifications
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub is_voice_message: Option<bool>, // 1 << 13	this message is a voice message
+    //#[serde(default, skip_serializing_if = "Option::is_none")]
+    //#[ts(optional)]
+    //pub has_snapshot: Option<bool>, // 1 << 14	this message has a snapshot (via Message Forwarding)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub is_components_v2: Option<bool>, // 1 << 15	allows you to create fully component-driven messages
 }
 
 impl From<twilight_model::channel::message::MessageFlags> for MessageFlags {
@@ -427,6 +439,10 @@ impl From<twilight_model::channel::message::MessageFlags> for MessageFlags {
             failed_to_mention_some_roles_in_thread: Some(
                 v.contains(TwilightMessageFlags::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD),
             ),
+            suppress_notifications: Some(v.contains(TwilightMessageFlags::SUPPRESS_NOTIFICATIONS)),
+            is_voice_message: Some(v.contains(TwilightMessageFlags::IS_VOICE_MESSAGE)),
+            //has_snapshot: Some(v.contains(TwilightMessageFlags::HAS_SNAPSHOT)),
+            is_components_v2: Some(v.contains(TwilightMessageFlags::SUPPRESS_NOTIFICATIONS)),
         }
     }
 }
@@ -460,6 +476,15 @@ impl From<MessageFlags> for twilight_model::channel::message::MessageFlags {
         }
         if matches!(v.failed_to_mention_some_roles_in_thread, Some(true)) {
             out |= Self::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD;
+        }
+        if matches!(v.suppress_notifications, Some(true)) {
+            out |= Self::SUPPRESS_NOTIFICATIONS
+        }
+        if matches!(v.is_voice_message, Some(true)) {
+            out |= Self::IS_VOICE_MESSAGE
+        }
+        if matches!(v.is_components_v2, Some(true)) {
+            out |= Self::IS_COMPONENTS_V2;
         }
 
         out

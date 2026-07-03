@@ -10,4 +10,7 @@ export type MessageFlags = {
   ephemeral?: boolean;
   loading?: boolean;
   failedToMentionSomeRolesInThread?: boolean;
+  suppressNotifications?: boolean;
+  isVoiceMessage?: boolean;
+  isComponentsV2?: boolean;
 };

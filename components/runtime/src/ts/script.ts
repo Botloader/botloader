@@ -442,6 +442,7 @@ export class Script {
                 kind: cmd.kind,
                 group,
                 subGroup,
+                defaultMemberPermissions: cmd.defaultMemberPermissions,
             }
         });
 
@@ -460,6 +461,7 @@ export class Script {
                             name: cmd.group.parent.name,
                             description: cmd.group.description,
                             subGroups: [],
+                            defaultMemberPermissions: cmd.group.parent.defaultMemberPermissions,
                         }
                         groups.push(parent);
                     }
@@ -486,6 +488,7 @@ export class Script {
                         description: cmd.group.description,
                         // we cannot have both commands and subgroups, unless im mistaken?
                         subGroups: [],
+                        defaultMemberPermissions: cmd.group.defaultMemberPermissions,
                     })
                 }
             }

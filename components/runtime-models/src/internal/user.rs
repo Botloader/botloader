@@ -18,6 +18,7 @@ pub struct User {
     pub system: Option<bool>,
     pub banner: Option<String>,
     pub accent_color: Option<u32>,
+    pub primary_guild: Option<PrimaryGuild>,
 }
 
 impl From<twilight_model::user::User> for User {
@@ -35,6 +36,7 @@ impl From<twilight_model::user::User> for User {
             banner: v.banner.as_ref().map(ToString::to_string),
             accent_color: v.accent_color,
             global_name: v.global_name,
+            primary_guild: v.primary_guild.map(From::from),
         }
     }
 }
@@ -53,6 +55,7 @@ impl From<twilight_model::user::CurrentUser> for User {
             banner: v.banner.as_ref().map(ToString::to_string),
             accent_color: v.accent_color,
             global_name: None,
+            primary_guild: None,
         }
     }
 }
@@ -98,7 +101,7 @@ pub struct UserFlags {
     pub(crate) verified_bot: bool,             // Verified Bot
     pub(crate) verified_developer: bool,       // Early Verified Bot Developer
     pub(crate) certified_moderator: bool,      // Discord Certified Moderator
-    pub(crate) bot_http_interactions: bool, // Bot uses only HTTP interactions and is shown in the online member list
+    pub(crate) bot_http_interactions: bool,    // Bot uses only HTTP interactions and is shown in the online member list
 }
 
 impl From<twilight_model::user::UserFlags> for UserFlags {
@@ -124,6 +127,28 @@ impl From<twilight_model::user::UserFlags> for UserFlags {
                 .contains(twilight_model::user::UserFlags::MODERATOR_PROGRAMS_ALUMNI),
             bot_http_interactions: uf
                 .contains(twilight_model::user::UserFlags::BOT_HTTP_INTERACTIONS),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, rename = "IPrimaryGuild")]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/internal/IPrimaryGuild.ts")]
+pub struct PrimaryGuild {
+    pub identity_guild_id: Option<String>,
+    pub identity_enabled: Option<bool>,
+    pub tag: Option<String>,
+    pub badge: Option<String>,
+}
+
+impl From<twilight_model::user::PrimaryGuild> for PrimaryGuild {
+    fn from(v: twilight_model::user::PrimaryGuild) -> Self {
+        Self {
+            identity_guild_id: v.identity_guild_id.as_ref().map(ToString::to_string),
+            identity_enabled: v.identity_enabled,
+            tag: v.tag,
+            badge: v.badge.as_ref().map(ToString::to_string),
         }
     }
 }

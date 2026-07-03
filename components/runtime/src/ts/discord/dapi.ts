@@ -1,5 +1,5 @@
 import { base64Encode, encodeText } from '../core_util';
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType } from '../generated/discord/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType, RoleColors } from '../generated/discord/index';
 import * as Internal from '../generated/internal/index';
 import { Image } from '../image';
 import { OpWrappers } from '../op_wrappers';
@@ -131,6 +131,13 @@ export interface CreateMessageFields extends BaseCreateMessageFields {
      * Shows up as a reply to the following message
      */
     replyToMessageId?: string;
+
+    /**
+     * List of flags for this message
+     */
+    flags?: BaseMessageFlags;
+
+    forward?: MessageForward;
 }
 
 export interface CreateWebhookMessageFields extends CreateMessageFields {
@@ -149,14 +156,23 @@ export interface InteractionCreateMessageFields extends BaseCreateMessageFields 
     flags?: InteractionMessageFlags,
 }
 
+export interface BaseMessageFlags {
+    suppressNotifications?: boolean;
 
-export interface InteractionMessageFlags {
+    suppressEmbeds?: boolean,
+
+    isComponentsV2?: boolean,
+}
+
+export interface InteractionMessageFlags extends BaseMessageFlags {
     /**
      * Ephemeral messages can only be seen by the author of the interaction
      */
     ephemeral?: boolean,
 
-    suppressEmbeds?: boolean,
+    /*suppressEmbeds?: boolean,
+
+    isComponentsV2?: boolean,*/
 }
 
 
@@ -178,6 +194,18 @@ export interface AllowedMentions {
      * For replies, whether to mention the author of the message being replied to (default false)
      */
     repliedUser?: boolean;
+}
+
+export interface MessageForward {
+    /**
+     * ID of the Channel containing the message to be forwarded
+     */
+    channelId: string;
+
+    /**
+     * Message ID to be forwarded
+     */
+    messageId: string;
 }
 
 /**
@@ -231,6 +259,7 @@ export function toOpMessageFields(fields: CreateMessageFields): Internal.OpCreat
         ...fields,
         allowedMentions: allowedMentions!,
         attachments,
+        flags: fields.flags ?? {}
     }
 }
 
@@ -296,6 +325,7 @@ export function getRoles(): Promise<Role[]> {
 export interface CreateRoleFields {
     name?: string;
     color?: number;
+    colors?: RoleColors;
 
     /**
      * "Hoisted" roles makes members show up under the role in the members list
@@ -313,6 +343,7 @@ export async function createRole(args: CreateRoleFields): Promise<Role> {
         arg: {
             name: args.name,
             color: args.color,
+            colors: args.colors,
             hoist: args.hoist,
             mentionable: args.mentionable,
             permissions: args.permissions ? new Permissions(args.permissions).toString() : undefined,
@@ -324,6 +355,7 @@ export async function createRole(args: CreateRoleFields): Promise<Role> {
 export interface EditRoleFields {
     name?: string;
     color?: number | null;
+    colors?: RoleColors;
 
     /**
      * "Hoisted" roles makes members show up under the role in the members list
@@ -341,6 +373,7 @@ export async function editRole(roleId: string, args: EditRoleFields): Promise<Ro
             roleId: roleId,
             name: args.name,
             color: args.color,
+            colors: args.colors,
             hoist: args.hoist,
             mentionable: args.mentionable,
             permissions: args.permissions ? new Permissions(args.permissions).toString() : undefined,
@@ -837,13 +870,11 @@ export async function createInteractionFollowupMessage(token: string, resp: stri
         return new Message(await OpWrappers.createInteractionFollowupMessage({
             interactionToken: token,
             fields: { content: resp },
-            flags: flags || {},
         }))
     } else {
         return new Message(await OpWrappers.createInteractionFollowupMessage({
             interactionToken: token,
             fields: toOpMessageFields(resp),
-            flags: flags || {},
         }))
     }
 }
@@ -852,7 +883,6 @@ export async function editInteractionFollowupMessage(token: string, messageId: s
     return await OpWrappers.editInteractionFollowupMessage(messageId, {
         interactionToken: token,
         fields: toOpMessageFields(fields),
-        flags: fields.flags ?? {},
     })
 }
 
@@ -868,7 +898,6 @@ export async function editInteractionOriginalResponse(token: string, fields: Int
     return new Message(await OpWrappers.editInteractionOriginal({
         interactionToken: token,
         fields: toOpMessageFields(fields),
-        flags: fields.flags ?? {},
     }))
 }
 
@@ -1036,6 +1065,12 @@ export async function removeThreadMember(channelId: string, userId: string) {
     })
 }
 
+export async function createTypingTrigger(channelId: string) {
+    await OpWrappers.callAsyncOp({
+        kind: "discord_create_typing_trigger",
+        arg: channelId
+    })
+}
 
 
 // discord_list_thread_members

@@ -296,7 +296,12 @@ async function updateTypeDecls(context: vscode.ExtensionContext) {
 }
 
 async function downloadTypeDecls(context: vscode.ExtensionContext): Promise<void> {
-	let resp = await fetch("https://botloader.io/typings.tar");
+	const config = vscode.workspace.getConfiguration("botloader");
+	const webHostBase: string = config.get("webHost")!;
+	const webHttps: boolean = config.get("webHttpsEnabled")!;
+	const httpHostBase = webHttps ? "https://" + webHostBase : "http://" + webHostBase;
+	const downloadPath = vscode.Uri.joinPath(vscode.Uri.parse(httpHostBase, true), "typings.tar")
+	let resp = await fetch(downloadPath.toString());
 
 	const outPath = vscode.Uri.joinPath(context.globalStorageUri, "/typings");
 	console.log("downloading types to: ", outPath.fsPath, resp.status);

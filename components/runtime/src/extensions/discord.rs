@@ -252,7 +252,6 @@ where
 
                         "RATELIMIT_429"
                     }
-                    ErrorType::ServiceUnavailable { .. } => "SERVICE_UNAVAILABLE",
                     _ => break Err(handle_discord_error(state, discord_err)),
                 },
                 Err(err) => break Err(err),
@@ -556,8 +555,13 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             let mut mc = conf
                 .client
                 .create_message(channel.id)
-                .embeds(&maybe_embeds)
-                .components(&components);
+                .embeds(&maybe_embeds);
+
+            if let Some(flags) = &args.fields.flags {
+                mc = mc.flags(flags.clone().into());
+            }
+            
+            mc = mc.components(&components);
 
             if let Some(content) = &args.fields.content {
                 mc = mc.content(content)
@@ -569,6 +573,15 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
             if let Some(reply) = &args.fields.reply_to_message_id {
                 mc = mc.reply(parse_discord_id(reply)?);
+            }
+
+            if let Some(forward) = &args.fields.forward {
+                // Validate the forwarded message exists in this guild to prevent forwarding what doesn't belong to us
+                let src_channel = parse_get_guild_channel(&self.state, &rt_ctx, &forward.channel_id).await?;
+                mc = mc.forward(
+                    src_channel.id,
+                    parse_discord_id(&forward.message_id)?
+                );
             }
 
             if attachments.len() > 0 {
@@ -614,8 +627,13 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 .discord_config
                 .client
                 .update_message(channel.id, message_id.cast())
-                .content(args.fields.content.as_deref())
-                .components(components.as_deref());
+                .content(args.fields.content.as_deref());
+                
+            if let Some(flags) = &args.fields.flags {
+                mc = mc.flags(flags.clone().into());
+            }
+            
+            mc = mc.components(components.as_deref());
 
             if let Some(embeds) = &maybe_embeds {
                 mc = mc.embeds(Some(embeds));
@@ -1074,6 +1092,24 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
     }
 
     #[allow(async_fn_in_trait)]
+    async fn discord_create_typing_trigger(&self, arg: String) -> Result<(),anyhow::Error> {
+        let rt_ctx = get_rt_ctx(&self.state);
+
+        let channel_id = parse_discord_id(&arg)?;
+
+        discord_request(&self.state, async move {
+            rt_ctx
+                .discord_config
+                .client
+                .create_typing_trigger(channel_id)
+                .await
+        })
+        .await?;
+
+        Ok(())
+    }
+
+    #[allow(async_fn_in_trait)]
     async fn discord_create_role(&self, arg: OpCreateRoleFields) -> Result<Role, anyhow::Error> {
         let rt_ctx = get_rt_ctx(&self.state);
 
@@ -1082,6 +1118,9 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
             if let Some(color) = arg.color {
                 create_role = create_role.color(color);
+            }
+            if let Some(colors) = arg.colors {
+                create_role = create_role.colors(colors.into());
             }
             if let Some(hoist) = arg.hoist {
                 create_role = create_role.hoist(hoist);
@@ -1123,6 +1162,9 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
 
             if let Some(color) = arg.color {
                 update_role = update_role.color(color);
+            }
+            if let Some(colors) = arg.colors {
+                update_role = update_role.colors(colors.map(Into::into));
             }
             if let Some(hoist) = arg.hoist {
                 update_role = update_role.hoist(hoist);
@@ -1828,9 +1870,13 @@ pub async fn op_discord_interaction_edit_original_response(
             .update_response(&args.interaction_token)
             .content(args.fields.content.as_deref())
             .embeds(maybe_embeds.as_deref())
-            .components(components.as_deref())
-            .content(args.fields.content.as_deref())
             .attachments(&attachments);
+            
+        if let Some(flags) = &args.fields.flags {
+            mc = mc.flags(flags.clone().into());
+        }
+
+        mc = mc.components(components.as_deref());
 
         let mentions = args.fields.allowed_mentions.map(Into::into);
         if mentions.is_some() {
@@ -1912,12 +1958,13 @@ pub async fn op_discord_interaction_followup_message(
         let mut mc = interaction_client
             .create_followup(&args.interaction_token)
             .embeds(&maybe_embeds)
-            .components(&components)
             .attachments(&attachments);
 
-        if let Some(flags) = args.flags {
+        if let Some(flags) = args.fields.flags {
             mc = mc.flags(flags.into());
         }
+
+        mc = mc.components(&components);
 
         if let Some(content) = &args.fields.content {
             mc = mc.content(content)
@@ -1971,7 +2018,6 @@ pub async fn op_discord_interaction_edit_followup_message(
             .content(args.fields.content.as_deref())
             .embeds(maybe_embeds.as_deref())
             .components(components.as_deref())
-            .content(args.fields.content.as_deref())
             .attachments(&attachments);
 
         let mentions = args.fields.allowed_mentions.map(Into::into);
@@ -2421,8 +2467,8 @@ pub async fn op_discord_get_channel_pins(
     .model()
     .await?;
 
-    pins.into_iter()
-        .map(TryInto::try_into)
+    pins.items.into_iter()
+        .map(|s| s.message.try_into())
         .collect::<Result<_, _>>()
 }
 
