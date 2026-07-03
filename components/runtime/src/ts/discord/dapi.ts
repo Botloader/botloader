@@ -854,18 +854,6 @@ export async function getInteractionFollowupMessage(token: string, messageId: st
 }
 
 export async function createInteractionFollowupMessage(token: string, resp: string | InteractionCreateMessageFields): Promise<Message> {
-    let flags: InteractionMessageFlags = {}
-    if (arguments.length === 3) {
-        // legacy support, remove at some point in the future
-        flags = arguments[2];
-    } else {
-        if (typeof resp === "object") {
-            if (resp.flags) {
-                flags = resp.flags
-            }
-        }
-    }
-
     if (typeof resp === "string") {
         return new Message(await OpWrappers.createInteractionFollowupMessage({
             interactionToken: token,
