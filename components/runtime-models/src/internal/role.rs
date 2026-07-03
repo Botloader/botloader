@@ -17,8 +17,9 @@ pub struct OpCreateRoleFields {
     #[ts(optional)]
     pub hoist: Option<bool>,
 
-    // #[ts(optional)]
-    // pub icon: Option<String>,
+    #[ts(optional)]
+    pub icon: Option<String>,
+
     #[ts(optional)]
     pub mentionable: Option<bool>,
 
@@ -51,8 +52,14 @@ pub struct OpUpdateRoleFields {
 
     #[ts(optional)]
     pub hoist: Option<bool>,
+    
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
+    #[ts(optional)]
+    pub icon: Option<Option<String>>,
 
-    // pub icon: Option<String>,
     #[ts(optional)]
     pub mentionable: Option<bool>,
 
@@ -66,8 +73,12 @@ pub struct OpUpdateRoleFields {
     #[ts(optional)]
     pub permissions: Option<String>,
 
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
     #[ts(optional)]
-    pub unicode_emoji: Option<String>,
+    pub unicode_emoji: Option<Option<String>>,
 }
 
 #[derive(Clone, Debug, Deserialize, TS)]

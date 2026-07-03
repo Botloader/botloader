@@ -37,16 +37,16 @@ oauth2 = "4.4.2"
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"
 
-twilight-model = { version = "0.17.1", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
+twilight-model = { version = "0.17.1", git = "https://github.com/jonastar/twilight.git", rev = "164dfea81de2823377c3425bf3f138d1363de4dd" }
 twilight-http = { version = "0.17.1", features = [
     "rustls-platform-verifier",
-], git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-gateway = { version = "0.17.1", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-cache-inmemory = { version = "0.17.1", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
+], git = "https://github.com/jonastar/twilight.git", rev = "164dfea81de2823377c3425bf3f138d1363de4dd" }
+twilight-gateway = { version = "0.17.1", git = "https://github.com/jonastar/twilight.git", rev = "164dfea81de2823377c3425bf3f138d1363de4dd" }
+twilight-cache-inmemory = { version = "0.17.1", git = "https://github.com/jonastar/twilight.git", rev = "164dfea81de2823377c3425bf3f138d1363de4dd" }
 twilight-util = { version = "0.17.0", features = [
     "permission-calculator",
-], git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-validate = { version = "0.17.0", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
+], git = "https://github.com/jonastar/twilight.git", rev = "164dfea81de2823377c3425bf3f138d1363de4dd" }
+twilight-validate = { version = "0.17.0", git = "https://github.com/jonastar/twilight.git", rev = "164dfea81de2823377c3425bf3f138d1363de4dd" }
 
 # twilight-model = { version = "0.16.0", path = "../forklight/twilight-model" }
 # twilight-http = { version = "0.16.0", path = "../forklight/twilight-http" }

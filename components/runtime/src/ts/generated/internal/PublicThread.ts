@@ -3,6 +3,7 @@ import type { ThreadMetadata } from "../discord/ThreadMetadata";
 import type { ISelfThreadMember } from "./ISelfThreadMember";
 
 export type IPublicThread = {
+  appliedTags: Array<string> | null;
   defaultAutoArchiveDurationMinutes: number | null;
   id: string;
   kind: "PublicThread";
@@ -12,6 +13,7 @@ export type IPublicThread = {
   name: string;
   ownerId: string | null;
   parentId: string | null;
+  pinned: boolean | null;
   rateLimitPerUser: number | null;
   threadMetadata: ThreadMetadata;
 };

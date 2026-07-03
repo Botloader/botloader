@@ -1043,6 +1043,10 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 req = req.auto_archive_duration(auto_archive_duration_minutes.into())
             }
 
+            if let Some(flags) = arg.flags {
+                req = req.flags(flags.map(Into::into));
+            }
+
             if let Some(invitable) = arg.invitable {
                 req = req.invitable(invitable)
             }
@@ -1122,6 +1126,9 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             if let Some(colors) = arg.colors {
                 create_role = create_role.colors(colors.into());
             }
+            if let Some(icon) = &arg.icon {
+                create_role = create_role.icon(icon.as_bytes());
+            }
             if let Some(hoist) = arg.hoist {
                 create_role = create_role.hoist(hoist);
             }
@@ -1166,6 +1173,9 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             if let Some(colors) = arg.colors {
                 update_role = update_role.colors(colors.map(Into::into));
             }
+            if let Some(icon) = &arg.icon {
+                update_role = update_role.icon(icon.as_deref());
+            }
             if let Some(hoist) = arg.hoist {
                 update_role = update_role.hoist(hoist);
             }
@@ -1180,7 +1190,7 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
                 update_role = update_role.permissions(Permissions::from_bits_truncate(parsed));
             }
             if let Some(unicode_emoji) = &arg.unicode_emoji {
-                update_role = update_role.unicode_emoji(Some(&unicode_emoji));
+                update_role = update_role.unicode_emoji(unicode_emoji.as_deref());
             }
 
             Ok(update_role.await)
@@ -2268,10 +2278,12 @@ pub async fn op_discord_edit_channel(
     get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
     Ok(discord_request_with_extra_error(&state, async move {
+        let mut default_reaction_emoji: Option<twilight_model::channel::forum::DefaultReaction> = None;
+        let mut forum_tags = Vec::new();
         let mut overwrites = Vec::new();
         let edit = rt_ctx.discord_config.client.update_channel(channel_id);
 
-        Ok(params.apply(&mut overwrites, edit)?.await)
+        Ok(params.apply(&mut forum_tags, &mut default_reaction_emoji, &mut overwrites, edit)?.await)
     })
     .await?
     .model()
@@ -2288,13 +2300,19 @@ pub async fn op_discord_create_channel(
     let rt_ctx = get_rt_ctx(&state);
 
     Ok(discord_request_with_extra_error(&state, async move {
+        let mut default_reaction_emoji =
+            twilight_model::channel::forum::DefaultReaction {
+                emoji_id: None,
+                emoji_name: None
+            };
+        let mut forum_tags = Vec::new();
         let mut overwrites = Vec::new();
         let edit = rt_ctx
             .discord_config
             .client
             .create_guild_channel(rt_ctx.guild_id, &params.name);
 
-        Ok(params.apply(&mut overwrites, edit)?.await)
+        Ok(params.apply(&mut forum_tags, &mut default_reaction_emoji, &mut overwrites, edit)?.await)
     })
     .await?
     .model()

@@ -1493,20 +1493,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "6.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5041cc499144891f3790297212f32a74fb938e5136a14943f338ef9e0ae276cf"
-dependencies = [
- "cfg-if 1.0.4",
- "crossbeam-utils",
- "hashbrown 0.14.5",
- "lock_api",
- "once_cell",
- "parking_lot_core",
-]
-
-[[package]]
 name = "data-encoding"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2411,7 +2397,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68a7f542ee6b35af73b06abc0dad1c1bae89964e4e253bc4b587b91c9637867b"
 dependencies = [
  "cfg-if 1.0.4",
- "dashmap 5.5.3",
+ "dashmap",
  "futures",
  "futures-timer",
  "no-std-compat",
@@ -4503,7 +4489,7 @@ checksum = "6d4639c317ff6c06bfbca5d56a763dbd599766acf7d8f1e350eab15caf219b20"
 dependencies = [
  "anyhow",
  "browserslist-rs",
- "dashmap 5.5.3",
+ "dashmap",
  "from_variant",
  "once_cell",
  "rustc-hash 2.1.2",
@@ -6272,7 +6258,7 @@ dependencies = [
  "base64 0.13.1",
  "chrono",
  "common",
- "dashmap 5.5.3",
+ "dashmap",
  "oauth2",
  "rand 0.8.6",
  "runtime-models",
@@ -6364,7 +6350,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "bytes-str",
- "dashmap 5.5.3",
+ "dashmap",
  "either",
  "indexmap 2.14.0",
  "jsonc-parser",
@@ -6516,7 +6502,7 @@ checksum = "a737811bc412f055818d80ae999db259678e1e2dacd91639d28a61750a251373"
 dependencies = [
  "anyhow",
  "bytes-str",
- "dashmap 5.5.3",
+ "dashmap",
  "globset",
  "indexmap 2.14.0",
  "once_cell",
@@ -6844,7 +6830,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "003fdf93059f1c505ed81463ccf49230db69bb5003ff09606a6732f34ef81506"
 dependencies = [
  "auto_impl",
- "dashmap 5.5.3",
+ "dashmap",
  "par-core",
  "parking_lot",
  "regex",
@@ -6865,7 +6851,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88b18efc917461092d80e4480e1b4afe4a54be50a3818fec78c1469b264e64d9"
 dependencies = [
  "anyhow",
- "dashmap 5.5.3",
+ "dashmap",
  "lru 0.16.4",
  "normpath",
  "once_cell",
@@ -7178,7 +7164,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2098c7da8c4f235342ec1f7a0eb61264214d4d1b3185a0d43b2833543745b3ca"
 dependencies = [
  "bytes-str",
- "dashmap 5.5.3",
+ "dashmap",
  "indexmap 2.14.0",
  "once_cell",
  "par-core",
@@ -7341,7 +7327,7 @@ version = "21.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3acde6aa6ba214763f3bfc1f34686eed44266b9e602717e579f662ee2a3537f1"
 dependencies = [
- "dashmap 5.5.3",
+ "dashmap",
  "rustc-hash 2.1.2",
  "swc_atoms",
  "swc_common 21.0.1",
@@ -8139,10 +8125,10 @@ dependencies = [
 [[package]]
 name = "twilight-cache-inmemory"
 version = "0.17.1"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "bitflags 2.11.1",
- "dashmap 6.1.0",
+ "dashmap",
  "serde",
  "twilight-model",
 ]
@@ -8150,7 +8136,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway"
 version = "0.17.1"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "bitflags 2.11.1",
  "fastrand 2.4.1",
@@ -8170,7 +8156,7 @@ dependencies = [
 [[package]]
 name = "twilight-gateway-queue"
 version = "0.17.0"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "tokio",
  "tracing",
@@ -8179,7 +8165,7 @@ dependencies = [
 [[package]]
 name = "twilight-http"
 version = "0.17.1"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "brotli-decompressor",
  "fastrand 2.4.1",
@@ -8202,7 +8188,7 @@ dependencies = [
 [[package]]
 name = "twilight-http-ratelimiting"
 version = "0.17.1"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "hashbrown 0.16.1",
  "tokio",
@@ -8213,7 +8199,7 @@ dependencies = [
 [[package]]
 name = "twilight-model"
 version = "0.17.1"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "bitflags 2.11.1",
  "serde",
@@ -8225,7 +8211,7 @@ dependencies = [
 [[package]]
 name = "twilight-util"
 version = "0.17.0"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "twilight-model",
 ]
@@ -8233,7 +8219,7 @@ dependencies = [
 [[package]]
 name = "twilight-validate"
 version = "0.17.0"
-source = "git+https://github.com/LittleEngineer/twilight.git?rev=6d1586d3b77f3c01471765e29ca29224829fed81#6d1586d3b77f3c01471765e29ca29224829fed81"
+source = "git+https://github.com/jonastar/twilight.git?rev=164dfea81de2823377c3425bf3f138d1363de4dd#164dfea81de2823377c3425bf3f138d1363de4dd"
 dependencies = [
  "twilight-model",
 ]
