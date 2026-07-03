@@ -563,6 +563,12 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
             
             mc = mc.components(&components);
 
+            if let Some(flags) = &args.fields.flags {
+                mc = mc.flags(flags.clone().into());
+            }
+            
+            mc = mc.components(&components);
+
             if let Some(content) = &args.fields.content {
                 mc = mc.content(content)
             }
@@ -2951,6 +2957,12 @@ impl Display for BlDiscordApiError {
             f.write_str(" (")?;
             Display::fmt(errors, f)?;
             f.write_str(")")?;
+        }
+
+        Ok(())
+    }
+}
+rite_str(")")?;
         }
 
         Ok(())
