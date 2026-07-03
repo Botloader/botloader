@@ -52,7 +52,6 @@ pub struct OpUpdateRoleFields {
 
     #[ts(optional)]
     pub hoist: Option<bool>,
-<<<<<<< HEAD
     
     #[serde(
         deserialize_with = "crate::deserialize_undefined_null_optional_field",
@@ -60,8 +59,6 @@ pub struct OpUpdateRoleFields {
     )]
     #[ts(optional)]
     pub icon: Option<Option<String>>,
-=======
->>>>>>> upstream/master
 
     #[ts(optional)]
     pub mentionable: Option<bool>,
