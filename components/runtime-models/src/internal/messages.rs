@@ -1,6 +1,6 @@
 use crate::{
     discord::{
-        component::Component,
+        component::{convert_components_lossy, Component},
         embed::Embed,
         member::PartialMember,
         message::{
@@ -267,11 +267,7 @@ impl TryFrom<twilight_model::channel::Message> for Message {
             author: v.author.into(),
             channel_id: v.channel_id.to_string(),
             content: v.content,
-            components: v
-                .components
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+            components: convert_components_lossy(v.components)?,
             edited_timestamp: v
                 .edited_timestamp
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),

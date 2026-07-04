@@ -1,6 +1,9 @@
 use super::{member::Member, messages::Message, script::CommandOptionType};
 use crate::{
-    discord::{component::ComponentType, message::Attachment},
+    discord::{
+        component::{ComponentType, UnsupportedComponent},
+        message::Attachment,
+    },
     util::NotBigI64,
 };
 use serde::Serialize;
@@ -96,7 +99,7 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                 message: v.message.unwrap().try_into()?,
                 token: v.token,
                 custom_id: data.custom_id,
-                component_type: data.component_type.into(),
+                component_type: data.component_type.try_into()?,
                 values: data.values,
                 resolved: data.resolved.map(|rv| rv.try_into()).transpose()?,
             })),
@@ -110,13 +113,8 @@ impl TryFrom<twilight_model::application::interaction::Interaction> for Interact
                     message: v.message.map(TryInto::try_into).transpose()?,
                     token: v.token,
                     custom_id: data.custom_id,
-                    values: data
-                        .components
-                        .into_iter()
-                        .map(ModalInteractionComponent::try_from)
-                        .collect::<Result<Vec<_>, _>>()?,
-                        
-                resolved: data.resolved.map(|rv| rv.try_into()).transpose()?,
+                    values: convert_modal_components_lossy(data.components)?,
+                    resolved: data.resolved.map(|rv| rv.try_into()).transpose()?,
                 }))
             }
             Some(_) => Err(anyhow::anyhow!(
@@ -439,10 +437,27 @@ pub enum ModalInteractionComponent {
     FileUpload(ModalInteractionFileUpload),
     Checkbox(ModalInteractionCheckbox),
     CheckboxGroup(ModalInteractionCheckboxGroup),
-    Unknown(u8),
 }
 
 use twilight_model::application::interaction::modal::ModalInteractionComponent as TwilightModalInteractionComponent;
+
+/// Converts a list of incoming modal components, dropping components that
+/// can't be represented in the API (component types Discord added after this
+/// was built) instead of failing the whole conversion.
+fn convert_modal_components_lossy(
+    components: Vec<TwilightModalInteractionComponent>,
+) -> anyhow::Result<Vec<ModalInteractionComponent>> {
+    components
+        .into_iter()
+        .filter_map(|c| match ModalInteractionComponent::try_from(c) {
+            Err(err) if err.downcast_ref::<UnsupportedComponent>().is_some() => {
+                tracing::info!("dropping {err}");
+                None
+            }
+            other => Some(other),
+        })
+        .collect()
+}
 
 impl TryFrom<TwilightModalInteractionComponent> for ModalInteractionComponent {
     type Error = anyhow::Error;
@@ -461,7 +476,9 @@ impl TryFrom<TwilightModalInteractionComponent> for ModalInteractionComponent {
             TwilightModalInteractionComponent::FileUpload(inner) => Self::FileUpload(inner.try_into()?),
             TwilightModalInteractionComponent::Checkbox(inner) => Self::Checkbox(inner.try_into()?),
             TwilightModalInteractionComponent::CheckboxGroup(inner) => Self::CheckboxGroup(inner.try_into()?),
-            TwilightModalInteractionComponent::Unknown(inner) => Self::Unknown(inner.try_into()?),
+            TwilightModalInteractionComponent::Unknown(inner) => {
+                return Err(UnsupportedComponent(format!("modal component type {inner}")).into())
+            }
         })
     }
 }
@@ -483,7 +500,6 @@ impl TryFrom<ModalInteractionComponent> for TwilightModalInteractionComponent {
             ModalInteractionComponent::FileUpload(inner) => Self::FileUpload(inner.try_into()?),
             ModalInteractionComponent::Checkbox(inner) => Self::Checkbox(inner.try_into()?),
             ModalInteractionComponent::CheckboxGroup(inner) => Self::CheckboxGroup(inner.try_into()?),
-            ModalInteractionComponent::Unknown(inner) => Self::Unknown(inner.try_into()?),
         })
     }
 }
@@ -543,11 +559,7 @@ impl TryFrom<TwilightModalInteractionActionRow> for ModalInteractionActionRow {
     fn try_from(v: TwilightModalInteractionActionRow) -> Result<Self, Self::Error> {
         Ok(Self {
             id: v.id,
-            components: v
-                .components
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+            components: convert_modal_components_lossy(v.components)?,
         })
     }
 }

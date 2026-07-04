@@ -20,5 +20,4 @@ export type ModalInteractionComponent =
   | { "kind": "TextDisplay" } & IModalInteractionTextDisplay
   | { "kind": "FileUpload" } & IModalInteractionFileUpload
   | { "kind": "Checkbox" } & ModalInteractionCheckbox
-  | { "kind": "CheckboxGroup" } & ModalInteractionCheckboxGroup
-  | { "kind": "Unknown" } & number;
+  | { "kind": "CheckboxGroup" } & ModalInteractionCheckboxGroup;

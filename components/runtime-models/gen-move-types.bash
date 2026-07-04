@@ -17,4 +17,4 @@ find bindings -name "*.ts" -type f -exec sed -i 's/{ \[key in string\]?: \(.*\) 
 if [ -d "../runtime/src/ts/generated" ]; then
     rm -r ../runtime/src/ts/generated
 fi
-mv bindings/ ../runtime/src/ts/generated
+mv bindings/ ../runtime/src/ts/generated/

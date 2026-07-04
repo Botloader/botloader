@@ -14,7 +14,6 @@ import type { ISeparator } from "./ISeparator";
 import type { ITextDisplay } from "./ITextDisplay";
 import type { ITextInput } from "./ITextInput";
 import type { IThumbnail } from "./IThumbnail";
-import type { IUnknownComponent } from "./IUnknownComponent";
 
 export type IComponent =
   | { "kind": "ActionRow" } & IActionRow
@@ -35,5 +34,4 @@ export type IComponent =
   | { "kind": "Label" } & ILabel
   | { "kind": "FileUpload" } & IFileUpload
   | { "kind": "Checkbox" } & ICheckbox
-  | { "kind": "CheckboxGroup" } & ICheckboxGroup
-  | { "kind": "Unknown" } & IUnknownComponent;
+  | { "kind": "CheckboxGroup" } & ICheckboxGroup;

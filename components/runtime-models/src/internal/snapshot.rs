@@ -1,7 +1,7 @@
 use crate::
 {
 	discord::{
-		component::Component,
+		component::{convert_components_lossy, Component},
 		embed::Embed,
 		message::{
 			Attachment, MessageFlags, MessageType,
@@ -76,11 +76,7 @@ impl TryFrom<twilight_model::channel::message::MessageSnapshot> for MessageSnaps
 		let m = v.message;
 		Ok(Self {
 			attachments: m.attachments.into_iter().map(From::from).collect(),
-			components: m
-				.components
-				.into_iter()
-				.map(TryInto::try_into)
-				.collect::<Result<_, _>>()?,
+			components: convert_components_lossy(m.components)?,
 			content: m.content,
 			edited_timestamp: m
                 .edited_timestamp

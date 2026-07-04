@@ -30,9 +30,11 @@ pub enum ComponentType {
 }
 
 use twilight_model::channel::message::component::ComponentType as TwilightComponentType;
-impl From<TwilightComponentType> for ComponentType {
-    fn from(v: TwilightComponentType) -> Self {
-        match v {
+impl TryFrom<TwilightComponentType> for ComponentType {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightComponentType) -> Result<Self, Self::Error> {
+        Ok(match v {
             TwilightComponentType::ActionRow => Self::ActionRow,
             TwilightComponentType::Button => Self::Button,
             TwilightComponentType::TextSelectMenu => Self::SelectMenu,
@@ -52,8 +54,13 @@ impl From<TwilightComponentType> for ComponentType {
             TwilightComponentType::FileUpload => Self::FileUpload,
             TwilightComponentType::Checkbox => Self::Checkbox,
             TwilightComponentType::CheckboxGroup => Self::CheckboxGroup,
-            _ => todo!(),
-        }
+            TwilightComponentType::Unknown(n) => {
+                return Err(UnsupportedComponent(format!("component type {n}")).into())
+            }
+            other => {
+                return Err(UnsupportedComponent(format!("component type {other:?}")).into())
+            }
+        })
     }
 }
 
@@ -85,8 +92,40 @@ pub enum Component {
     FileUpload(FileUpload),
     Checkbox(Checkbox),
     CheckboxGroup(CheckboxGroup),
+}
 
-    Unknown(UnknownComponent),
+/// Error returned when converting an incoming component (or one of its
+/// required children) that this API has no representation for.
+///
+/// List conversion sites use [`convert_components_lossy`] to drop these
+/// instead of failing the whole conversion.
+#[derive(Debug, Clone)]
+pub struct UnsupportedComponent(pub String);
+
+impl std::fmt::Display for UnsupportedComponent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "unsupported component: {}", self.0)
+    }
+}
+
+impl std::error::Error for UnsupportedComponent {}
+
+/// Converts a list of incoming components, dropping components that can't be
+/// represented in the API (component types Discord added after this was
+/// built) instead of failing the whole conversion.
+pub fn convert_components_lossy(
+    components: Vec<TwilightComponent>,
+) -> anyhow::Result<Vec<Component>> {
+    components
+        .into_iter()
+        .filter_map(|c| match Component::try_from(c) {
+            Err(err) if err.downcast_ref::<UnsupportedComponent>().is_some() => {
+                tracing::info!("dropping {err}");
+                None
+            }
+            other => Some(other),
+        })
+        .collect()
 }
 
 use twilight_model::channel::message::component::Component as TwilightComponent;
@@ -96,7 +135,7 @@ impl TryFrom<TwilightComponent> for Component {
     fn try_from(v: TwilightComponent) -> Result<Self, Self::Error> {
         match v {
             TwilightComponent::ActionRow(inner) => Ok(Self::ActionRow(inner.try_into()?)),
-            TwilightComponent::Button(inner) => Ok(Self::Button(inner.into())),
+            TwilightComponent::Button(inner) => Ok(Self::Button(inner.try_into()?)),
             TwilightComponent::SelectMenu(inner) => match inner.kind {
                 TwilightSelectMenuType::Text => Ok(Self::SelectMenu(inner.try_into()?)),
                 TwilightSelectMenuType::User => Ok(Self::UserSelectMenu(inner.try_into()?)),
@@ -105,9 +144,9 @@ impl TryFrom<TwilightComponent> for Component {
                     Ok(Self::MentionableSelectMenu(inner.try_into()?))
                 }
                 TwilightSelectMenuType::Channel => Ok(Self::ChannelSelectMenu(inner.try_into()?)),
-                _ => todo!(),
+                other => Err(UnsupportedComponent(format!("select menu kind {other:?}")).into()),
             },
-            TwilightComponent::TextInput(inner) => Ok(Self::TextInput(inner.into())),
+            TwilightComponent::TextInput(inner) => Ok(Self::TextInput(inner.try_into()?)),
             TwilightComponent::TextDisplay(inner) => Ok(Self::TextDisplay(inner.try_into()?)),
             TwilightComponent::MediaGallery(inner) => Ok(Self::MediaGallery(inner.try_into()?)),
             TwilightComponent::Separator(inner) => Ok(Self::Separator(inner.try_into()?)),
@@ -120,7 +159,7 @@ impl TryFrom<TwilightComponent> for Component {
             TwilightComponent::Checkbox(inner) => Ok(Self::Checkbox(inner.try_into()?)),
             TwilightComponent::CheckboxGroup(inner) => Ok(Self::CheckboxGroup(inner.try_into()?)),
             TwilightComponent::Unknown(t) => {
-                Ok(Self::Unknown(UnknownComponent { component_kind: t }))
+                Err(UnsupportedComponent(format!("component type {t}")).into())
             }
         }
     }
@@ -149,20 +188,8 @@ impl TryFrom<Component> for TwilightComponent {
             Component::FileUpload(inner) => Self::FileUpload(inner.try_into()?),
             Component::Checkbox(inner) => Self::Checkbox(inner.try_into()?),
             Component::CheckboxGroup(inner) => Self::CheckboxGroup(inner.try_into()?),
-            Component::Unknown(c) => Self::Unknown(c.component_kind),
         })
     }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
-#[ts(
-    export,
-    rename = "IUnknownComponent",
-    export_to = "bindings/discord/IUnknownComponent.ts"
-)]
-#[serde(rename_all = "camelCase")]
-pub struct UnknownComponent {
-    pub component_kind: u8,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
@@ -186,11 +213,7 @@ impl TryFrom<TwilightActionRow> for ActionRow {
     fn try_from(v: TwilightActionRow) -> Result<Self, Self::Error> {
         Ok(Self {
             id: v.id,
-            components: v
-                .components
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+            components: convert_components_lossy(v.components)?,
         })
     }
 }
@@ -235,17 +258,19 @@ pub struct Button {
 }
 
 use twilight_model::channel::message::component::Button as TwilightButton;
-impl From<TwilightButton> for Button {
-    fn from(v: TwilightButton) -> Self {
-        Self {
+impl TryFrom<TwilightButton> for Button {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightButton) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: v.id,
             custom_id: v.custom_id,
             disabled: Some(v.disabled),
-            style: v.style.into(),
+            style: v.style.try_into()?,
             url: v.url,
             label: v.label,
             emoji: v.emoji.map(Into::into),
-        }
+        })
     }
 }
 
@@ -338,7 +363,7 @@ impl TryFrom<TwilightSelectMenu> for SelectMenu {
             default_values: v
                 .default_values
                 .map(|v| v.into_iter().map(Into::into).collect()),
-            select_type: v.kind.into(),
+            select_type: v.kind.try_into()?,
             required: v.required,
         })
     }
@@ -430,16 +455,20 @@ pub enum SelectMenuType {
     Channel,
 }
 
-impl From<TwilightSelectMenuType> for SelectMenuType {
-    fn from(value: TwilightSelectMenuType) -> Self {
-        match value {
+impl TryFrom<TwilightSelectMenuType> for SelectMenuType {
+    type Error = anyhow::Error;
+
+    fn try_from(value: TwilightSelectMenuType) -> Result<Self, Self::Error> {
+        Ok(match value {
             TwilightSelectMenuType::Text => SelectMenuType::Text,
             TwilightSelectMenuType::User => SelectMenuType::User,
             TwilightSelectMenuType::Role => SelectMenuType::Role,
             TwilightSelectMenuType::Mentionable => SelectMenuType::Mentionable,
             TwilightSelectMenuType::Channel => SelectMenuType::Channel,
-            _ => todo!(),
-        }
+            other => {
+                return Err(UnsupportedComponent(format!("select menu kind {other:?}")).into())
+            }
+        })
     }
 }
 
@@ -511,17 +540,19 @@ pub enum ButtonStyle {
 }
 
 use twilight_model::channel::message::component::ButtonStyle as TwilightButtonStyle;
-impl From<TwilightButtonStyle> for ButtonStyle {
-    fn from(v: TwilightButtonStyle) -> Self {
-        match v {
+impl TryFrom<TwilightButtonStyle> for ButtonStyle {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightButtonStyle) -> Result<Self, Self::Error> {
+        Ok(match v {
             TwilightButtonStyle::Primary => Self::Primary,
             TwilightButtonStyle::Secondary => Self::Secondary,
             TwilightButtonStyle::Success => Self::Success,
             TwilightButtonStyle::Danger => Self::Danger,
             TwilightButtonStyle::Link => Self::Link,
             TwilightButtonStyle::Premium => Self::Premium,
-            _ => todo!(),
-        }
+            other => return Err(UnsupportedComponent(format!("button style {other:?}")).into()),
+        })
     }
 }
 impl From<ButtonStyle> for TwilightButtonStyle {
@@ -578,9 +609,11 @@ pub enum TextInputStyle {
 }
 
 use twilight_model::channel::message::component::TextInput as TwilightTextInput;
-impl From<TwilightTextInput> for TextInput {
-    fn from(v: TwilightTextInput) -> Self {
-        Self {
+impl TryFrom<TwilightTextInput> for TextInput {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightTextInput) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: v.id,
             custom_id: v.custom_id,
             label: v.label,
@@ -588,9 +621,9 @@ impl From<TwilightTextInput> for TextInput {
             min_length: v.min_length,
             placeholder: v.placeholder,
             required: v.required,
-            style: v.style.into(),
+            style: v.style.try_into()?,
             value: v.value,
-        }
+        })
     }
 }
 
@@ -611,13 +644,17 @@ impl From<TextInput> for TwilightTextInput {
 }
 
 use twilight_model::channel::message::component::TextInputStyle as TwilightTextInputStyle;
-impl From<TwilightTextInputStyle> for TextInputStyle {
-    fn from(v: TwilightTextInputStyle) -> Self {
-        match v {
+impl TryFrom<TwilightTextInputStyle> for TextInputStyle {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightTextInputStyle) -> Result<Self, Self::Error> {
+        Ok(match v {
             TwilightTextInputStyle::Short => Self::Short,
             TwilightTextInputStyle::Paragraph => Self::Paragraph,
-            _ => todo!(),
-        }
+            other => {
+                return Err(UnsupportedComponent(format!("text input style {other:?}")).into())
+            }
+        })
     }
 }
 
@@ -652,11 +689,7 @@ impl TryFrom<TwilightSection> for Section {
     fn try_from(v: TwilightSection) -> Result<Self, Self::Error> {
         Ok(Self {
             id: v.id,
-            components: v
-                .components
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+            components: convert_components_lossy(v.components)?,
             accessory: Box::new((*v.accessory).try_into()?),
         })
     }
@@ -951,13 +984,15 @@ pub enum SeparatorSpacingSize {
 }
 
 use twilight_model::channel::message::component::Separator as TwilightSeparator;
-impl From<TwilightSeparator> for Separator {
-    fn from(v: TwilightSeparator) -> Self {
-        Self {
+impl TryFrom<TwilightSeparator> for Separator {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightSeparator) -> Result<Self, Self::Error> {
+        Ok(Self {
             id: v.id,
             divider: v.divider,
-            spacing: v.spacing.map(Into::into),
-        }
+            spacing: v.spacing.map(TryInto::try_into).transpose()?,
+        })
     }
 }
 
@@ -972,13 +1007,19 @@ impl From<Separator> for TwilightSeparator {
 }
 
 use twilight_model::channel::message::component::SeparatorSpacingSize as TwilightSeparatorSpacingSize;
-impl From<TwilightSeparatorSpacingSize> for SeparatorSpacingSize {
-    fn from(v: TwilightSeparatorSpacingSize) -> Self {
-        match v {
+impl TryFrom<TwilightSeparatorSpacingSize> for SeparatorSpacingSize {
+    type Error = anyhow::Error;
+
+    fn try_from(v: TwilightSeparatorSpacingSize) -> Result<Self, Self::Error> {
+        Ok(match v {
             TwilightSeparatorSpacingSize::Small => Self::Small,
             TwilightSeparatorSpacingSize::Large => Self::Large,
-            _ => todo!(),
-        }
+            other => {
+                return Err(
+                    UnsupportedComponent(format!("separator spacing {other:?}")).into(),
+                )
+            }
+        })
     }
 }
 
@@ -1021,11 +1062,7 @@ impl TryFrom<TwilightContainer> for Container {
             id: v.id,
             accent_color: v.accent_color.flatten(),
             spoiler: v.spoiler,
-            components: v
-                .components
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+            components: convert_components_lossy(v.components)?,
         })
     }
 }
