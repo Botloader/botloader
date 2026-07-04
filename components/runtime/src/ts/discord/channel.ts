@@ -327,6 +327,18 @@ export class PublicThread extends Thread {
         this.appliedTags = json.appliedTags;
         this.pinned = json.pinned;
     }
+
+    pin() {
+        return this.edit({
+            flags: { pinned: true },
+        }) as Promise<PublicThread>;
+    }
+
+    unpin() {
+        return this.edit({
+            flags: { pinned: false },
+        }) as Promise<PublicThread>;
+    }
 }
 
 export class NewsThread extends BaseChannel {
