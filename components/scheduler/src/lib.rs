@@ -5,6 +5,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info};
 use twilight_model::id::Id;
 
+pub mod bench;
 mod broker_client;
 mod command_manager;
 mod dispatch_conv;

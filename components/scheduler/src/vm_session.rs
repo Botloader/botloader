@@ -463,24 +463,56 @@ impl VmSession {
     }
 
     pub async fn send_discord_guild_event(&mut self, evt: DiscordEvent) {
+        self.inner_send_discord_guild_event(evt, None).await;
+    }
+
+    /// Same as [Self::send_discord_guild_event] but returns a receiver that resolves
+    /// when the event has been acked by the vm.
+    ///
+    /// Returns None if the event was not dispatched (no scripts, unknown event
+    /// type or conversion failure). Currently only used for benchmarking.
+    pub async fn send_discord_guild_event_tracked(
+        &mut self,
+        evt: DiscordEvent,
+    ) -> Option<oneshot::Receiver<()>> {
+        let (tx, rx) = oneshot::channel();
+        if self.inner_send_discord_guild_event(evt, Some(tx)).await {
+            Some(rx)
+        } else {
+            None
+        }
+    }
+
+    async fn inner_send_discord_guild_event(
+        &mut self,
+        evt: DiscordEvent,
+        resp: Option<oneshot::Sender<()>>,
+    ) -> bool {
         let t_clone = evt.t.clone();
         let ts_clone = evt.timestamp;
         match crate::dispatch_conv::discord_event_to_dispatch(evt) {
             Ok(Some(converted_evt)) => {
+                if self.scripts.is_empty() {
+                    return false;
+                }
+
                 self.dispatch_worker_evt(
                     converted_evt.name.to_string(),
                     converted_evt.data,
-                    PendingAckType::Dispatch(None),
+                    PendingAckType::Dispatch(resp),
                     EventSource::Discord,
                     ts_clone,
                 )
                 .await;
+                true
             }
             Ok(None) => {
-                tracing::warn!(t = t_clone, "skipped converting dispatch event")
+                tracing::warn!(t = t_clone, "skipped converting dispatch event");
+                false
             }
             Err(err) => {
-                error!(%err, t=t_clone, "failed converting dispatch event")
+                error!(%err, t=t_clone, "failed converting dispatch event");
+                false
             }
         }
     }

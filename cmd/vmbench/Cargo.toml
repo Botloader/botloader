@@ -1,0 +1,25 @@
+[package]
+name = "vmbench"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vm = { path = "../../components/vm" }
+runtime = { path = "../../components/runtime" }
+scheduler = { path = "../../components/scheduler" }
+vmworker = { path = "../../components/vmworker" }
+stores = { path = "../../components/stores" }
+common = { path = "../../components/common" }
+guild-logger = { path = "../../components/guild-logger" }
+dbrokerapi = { path = "../../components/dbrokerapi" }
+
+async-trait = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rustls = { version = "0.23" }
+
+twilight-model = { workspace = true }
+twilight-http = { workspace = true }

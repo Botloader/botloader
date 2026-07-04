@@ -21,4 +21,13 @@ impl Db {
 
         Ok(Self { pool })
     }
+
+    /// Creates a Db without connecting, connections are only established when used.
+    ///
+    /// Useful when you need a Db instance but never issue queries (e.g. benchmarks).
+    pub fn new_with_url_lazy(url: &str) -> Result<Self, anyhow::Error> {
+        let pool = PgPoolOptions::new().max_connections(5).connect_lazy(url)?;
+
+        Ok(Self { pool })
+    }
 }

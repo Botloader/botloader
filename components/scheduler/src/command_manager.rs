@@ -14,9 +14,9 @@ use twilight_model::application::command::{
 };
 
 use runtime_models::internal::script::{Command, CommandGroup, ScriptMeta};
+use twilight_model::guild::Permissions;
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
-use twilight_model::guild::Permissions;
 
 #[derive(Clone, Debug)]
 pub struct Handle {
