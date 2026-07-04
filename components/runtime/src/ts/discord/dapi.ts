@@ -1,10 +1,11 @@
 import { base64Encode, encodeText } from '../core_util';
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType, RoleColors } from '../generated/discord/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType, RoleColors, ForumLayout, ForumSortOrder, ChannelFlags } from '../generated/discord/index';
+import { IDefaultReaction } from '../generated/internal/IDefaultReaction';
 import * as Internal from '../generated/internal/index';
 import { Image } from '../image';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, Thread, ThreadMember, guildChannelFromInternal, threadChannelFromInternal } from './channel';
-import type { AutoArchiveMinutes } from './channel';
+import type { AutoArchiveMinutes, DefaultReaction, ForumTag } from './channel';
 import { CustomEmoji } from './emoji';
 import { VoiceState } from './events';
 import { Invite } from './invite';
@@ -327,6 +328,8 @@ export interface CreateRoleFields {
     color?: number;
     colors?: RoleColors;
 
+    icon?: string | Image;
+
     /**
      * "Hoisted" roles makes members show up under the role in the members list
      */
@@ -338,12 +341,22 @@ export interface CreateRoleFields {
 }
 
 export async function createRole(args: CreateRoleFields): Promise<Role> {
+    let iconData: string | undefined = undefined;
+    if (args.icon) {
+        if (args.icon instanceof Image) {
+            iconData = args.icon.dataUri();
+        } else {
+            iconData = args.icon;
+        }
+    }
+
     return await OpWrappers.callAsyncOp({
         kind: "discord_create_role",
         arg: {
             name: args.name,
             color: args.color,
             colors: args.colors,
+            icon: iconData,
             hoist: args.hoist,
             mentionable: args.mentionable,
             permissions: args.permissions ? new Permissions(args.permissions).toString() : undefined,
@@ -357,16 +370,30 @@ export interface EditRoleFields {
     color?: number | null;
     colors?: RoleColors;
 
+    icon?: string | Image | null;
+
     /**
      * "Hoisted" roles makes members show up under the role in the members list
      */
     hoist?: boolean;
     mentionable?: boolean;
     permissions?: PermissionResolvable;
-    unicodeEmoji?: string;
+    unicodeEmoji?: string | null;
 }
 
 export async function editRole(roleId: string, args: EditRoleFields): Promise<Role> {
+    let iconData: string | undefined | null = undefined;
+    if (typeof args.icon !== "undefined") {
+        if (null === args.icon) {
+            iconData = null;
+        }
+        else if (args.icon instanceof Image) {
+            iconData = args.icon.dataUri();
+        } else {
+            iconData = args.icon;
+        }
+    }
+
     return await OpWrappers.callAsyncOp({
         kind: "discord_update_role",
         arg: {
@@ -374,6 +401,7 @@ export async function editRole(roleId: string, args: EditRoleFields): Promise<Ro
             name: args.name,
             color: args.color,
             colors: args.colors,
+            icon: iconData,
             hoist: args.hoist,
             mentionable: args.mentionable,
             permissions: args.permissions ? new Permissions(args.permissions).toString() : undefined,
@@ -415,12 +443,16 @@ export async function getChannels(): Promise<GuildChannel[]> {
 export interface ICreateChannel {
     name: string;
     kind?: ChannelType;
+    availableTags?: (ForumTag | Internal.IForumTag)[];
     bitrate?: number;
+    defaultForumLayout?: ForumLayout;
+    defaultReactionEmoji?: DefaultReaction | IDefaultReaction;
+    defaultSortOrder?: ForumSortOrder;
     nsfw?: boolean;
     parentId?: string;
 
     /**
-     * You can use the {@see PermissionOverwrite} class here. 
+     * You can use the {@link PermissionOverwrite} class here. 
      * @example 
      * ```ts
      * {
@@ -444,12 +476,17 @@ export async function createChannel(fields: ICreateChannel): Promise<GuildChanne
  */
 export interface IEditChannel {
     bitrate?: number;
+    defaultForumLayout?: ForumLayout;
+    defaultReactionEmoji?: DefaultReaction | IDefaultReaction | null;
+    defaultSortOrder?: ForumSortOrder | null;
+    flags?: Omit<ChannelFlags, "pinned">;
     name?: string;
+    availableTags?: (ForumTag | Internal.IForumTag)[];
     nsfw?: boolean;
     parentId?: string | null;
 
     /**
-     * You can use the {@see PermissionOverwrite} class here. 
+     * You can use the {@link PermissionOverwrite} class here. 
      * @example 
      * ```ts
      * {
@@ -727,7 +764,7 @@ export async function getMemberGuildPermissions(userId: string): Promise<Permiss
 /**
  * Calculates the server permissions of a member
  * 
- * This function does not take channel overwrites into account, use {@see getMemberChannelPermissions} for that
+ * This function does not take channel overwrites into account, use {@link getMemberChannelPermissions} for that
  */
 export async function getMemberGuildPermissions(memberOrUserId: Member | string): Promise<Permissions> {
     let userId = "";
@@ -1003,6 +1040,8 @@ export interface IEditThread {
      * The id of the thread to edit
      */
     channelId: string;
+
+    flags?: Pick<ChannelFlags, "pinned"> | null;
 
     tagIds?: string[];
 

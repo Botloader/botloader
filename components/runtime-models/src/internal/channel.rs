@@ -6,12 +6,90 @@ use twilight_model::id::{marker::ChannelMarker, Id};
 use twilight_validate::channel::ChannelValidationError;
 
 use crate::{
-    discord::channel::{ChannelType, PermissionOverwrite, ThreadMetadata, VideoQualityMode},
+    discord::channel::{
+        ChannelFlags, ChannelType, ForumLayout, ForumSortOrder, PermissionOverwrite, ThreadMetadata, VideoQualityMode
+    },
     internal::member::Member,
     util::NotBigU64,
 };
 
 use super::messages::{Message, OpCreateMessageFields};
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[ts(export, rename = "IDefaultReaction")]
+#[ts(export_to = "bindings/internal/IDefaultReaction.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct DefaultReaction {
+    pub emoji_id: Option<String>,
+    pub emoji_name: Option<String>,
+}
+
+impl From<twilight_model::channel::forum::DefaultReaction> for DefaultReaction {
+    fn from(v: twilight_model::channel::forum::DefaultReaction) -> Self {
+        Self {
+            emoji_id: v.emoji_id.as_ref().map(ToString::to_string),
+            emoji_name: v.emoji_name
+        }
+    }
+}
+
+impl TryFrom<DefaultReaction> for twilight_model::channel::forum::DefaultReaction {
+    type Error = ();
+
+    fn try_from(v: DefaultReaction) -> Result<Self, Self::Error> {
+        Ok(Self {
+            emoji_id: if let Some(e) = &v.emoji_id {
+                Some(Id::new_checked(e.parse().map_err(|_| ())?).ok_or(())?)
+            } else {
+                None
+            },
+            emoji_name: v.emoji_name
+        })
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[ts(export, rename = "IForumTag")]
+#[ts(export_to = "bindings/internal/IForumTag.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct ForumTag {
+    pub id: String,
+    pub name: String,
+    pub moderated: bool,
+    pub emoji_id: Option<String>,
+    pub emoji_name: Option<String>,
+}
+
+impl From<twilight_model::channel::forum::ForumTag> for ForumTag {
+    fn from(v: twilight_model::channel::forum::ForumTag) -> Self {
+        Self {
+            id: v.id.to_string(),
+            name: v.name,
+            moderated: v.moderated,
+            emoji_id: v.emoji_id.as_ref().map(ToString::to_string),
+            emoji_name: v.emoji_name
+        }
+    }
+}
+
+impl TryFrom<ForumTag> for twilight_model::channel::forum::ForumTag {
+    type Error = ();
+
+    fn try_from(v: ForumTag) -> Result<Self, Self::Error> {
+        Ok(Self {
+            // Allow zero for the id because Discord will simply create a new tag if the ID doesn't exist
+            id: unsafe { Id::new_unchecked(v.id.parse().map_err(|_| ())?) },
+            name: v.name,
+            moderated: v.moderated,
+            emoji_id: if let Some(e) = &v.emoji_id {
+                Some(Id::new_checked(e.parse().map_err(|_| ())?).ok_or(())?)
+            } else {
+                None
+            },
+            emoji_name: v.emoji_name
+        })
+    }
+}
 
 #[derive(Clone, Debug, Serialize, TS)]
 #[serde(untagged)]
@@ -124,6 +202,11 @@ impl TryFrom<twilight_model::channel::Channel> for VoiceChannel {
 #[ts(export_to = "bindings/internal/TextChannel.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct TextChannel {
+    pub available_tags: Option<Vec<ForumTag>>,
+    pub default_forum_layout: Option<ForumLayout>,
+    pub default_reaction_emoji: Option<DefaultReaction>,
+    pub default_sort_order: Option<ForumSortOrder>,
+    pub flags: Option<ChannelFlags>,
     pub id: String,
     #[ts(type = "'Text'|'News'|'Forum'|'GuildDirectory'")]
     pub kind: ChannelType,
@@ -142,6 +225,13 @@ impl TryFrom<twilight_model::channel::Channel> for TextChannel {
 
     fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
         Ok(Self {
+            available_tags: v
+                .available_tags
+                .map(|v| v.into_iter().map(Into::into).collect()),
+            default_forum_layout: v.default_forum_layout.map(Into::into),
+            default_reaction_emoji: v.default_reaction_emoji.map(Into::into),
+            default_sort_order: v.default_sort_order.map(Into::into),
+            flags: v.flags.map(From::from),
             id: v.id.to_string(),
             kind: v.kind.try_into()?,
             last_pin_timestamp: v
@@ -168,6 +258,7 @@ impl TryFrom<twilight_model::channel::Channel> for TextChannel {
 #[ts(export_to = "bindings/internal/PublicThread.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct PublicThread {
+    pub applied_tags: Option<Vec<String>>,
     pub default_auto_archive_duration_minutes: Option<u32>,
     pub id: String,
     #[ts(type = "'PublicThread'")]
@@ -178,6 +269,7 @@ pub struct PublicThread {
     pub name: String,
     pub owner_id: Option<String>,
     pub parent_id: Option<String>,
+    pub pinned: Option<bool>,
     pub rate_limit_per_user: Option<u16>,
     pub thread_metadata: ThreadMetadata,
 }
@@ -187,6 +279,9 @@ impl TryFrom<twilight_model::channel::Channel> for PublicThread {
 
     fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
         Ok(Self {
+            applied_tags: v
+                .applied_tags
+                .map(|v| v.iter().map(ToString::to_string).collect()),
             default_auto_archive_duration_minutes: v
                 .default_auto_archive_duration
                 .map(|v| v.number() as u32),
@@ -198,6 +293,7 @@ impl TryFrom<twilight_model::channel::Channel> for PublicThread {
             name: v.name.unwrap_or_default(),
             owner_id: v.owner_id.as_ref().map(ToString::to_string),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
+            pinned: v.flags.map(|v| v.contains(twilight_model::channel::ChannelFlags::PINNED)),
             rate_limit_per_user: v.rate_limit_per_user,
             thread_metadata: v.thread_metadata.unwrap_or_else(empty_thread_meta).into(),
         })
@@ -397,7 +493,33 @@ fn empty_thread_meta() -> twilight_model::channel::thread::ThreadMetadata {
 pub struct EditChannel {
     #[ts(optional)]
     #[serde(default)]
+    available_tags: Option<Vec<ForumTag>>,
+
+    #[ts(optional)]
+    #[serde(default)]
+    default_forum_layout: Option<ForumLayout>,
+    
+    #[ts(optional)]
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
+    default_reaction_emoji: Option<Option<DefaultReaction>>,
+
+    #[ts(optional)]
+    #[serde(
+        deserialize_with = "crate::deserialize_undefined_null_optional_field",
+        default
+    )]
+    default_sort_order: Option<Option<ForumSortOrder>>,
+
+    #[ts(optional)]
+    #[serde(default)]
     bitrate: Option<u32>,
+    
+    #[ts(optional)]
+    #[serde(default)]
+    flags: Option<ChannelFlags>,
 
     #[ts(optional)]
     #[serde(default)]
@@ -442,6 +564,8 @@ pub struct EditChannel {
 impl EditChannel {
     pub fn apply<'a, 'b, 'c>(
         &'a self,
+        available_tags_buf: &'b mut Vec<twilight_model::channel::forum::ForumTag>,
+        default_reaction_emoji_buf: &'b mut Option<twilight_model::channel::forum::DefaultReaction>,
         perms_buf: &'b mut Vec<twilight_model::channel::permission_overwrite::PermissionOverwrite>,
         mut req: twilight_http::request::channel::UpdateChannel<'c>,
     ) -> Result<twilight_http::request::channel::UpdateChannel<'c>, ChannelValidationError>
@@ -449,8 +573,40 @@ impl EditChannel {
         'a: 'c,
         'b: 'c,
     {
+        if let Some(available_tags) = &self.available_tags {
+            // TODO: should we error on bad forum tags instead of throwing them away?
+            available_tags_buf.extend(available_tags
+                    .clone()
+                    .into_iter()
+                    .filter_map(|v: ForumTag| TryInto::<twilight_model::channel::forum::ForumTag>::try_into(v).ok())
+            );
+            
+            req = req.available_tags(available_tags_buf);
+        }
+
         if let Some(bitrate) = &self.bitrate {
             req = req.bitrate(*bitrate);
+        }
+
+        if let Some(default_forum_layout) = &self.default_forum_layout {
+            req = req.default_forum_layout((*default_forum_layout).into());
+        }
+        
+        if let Some(default_reaction_emoji) = &self.default_reaction_emoji {
+            *default_reaction_emoji_buf = match default_reaction_emoji {
+                Some(t) => t.clone().try_into().ok(),
+                None => None,
+            };
+
+            req = req.default_reaction_emoji(default_reaction_emoji_buf.as_ref());
+        }
+
+        if let Some(default_sort_order) = &self.default_sort_order {
+            req = req.default_sort_order(default_sort_order.map(Into::into));
+        }
+
+        if let Some(flags) = &self.flags {
+            req = req.flags((*flags).into());
         }
 
         if let Some(name) = &self.name {
@@ -527,6 +683,10 @@ pub struct UpdateThread {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub auto_archive_duration_minutes: Option<u16>,
+    
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub flags: Option<Option<ChannelFlags>>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -553,6 +713,22 @@ pub struct UpdateThread {
 )]
 #[serde(rename_all = "camelCase")]
 pub struct CreateChannel {
+    #[ts(optional)]
+    #[serde(default)]
+    available_tags: Option<Vec<ForumTag>>,
+    
+    #[ts(optional)]
+    #[serde(default)]
+    default_forum_layout: Option<ForumLayout>,
+    
+    #[ts(optional)]
+    #[serde(default)]
+    default_reaction_emoji: Option<DefaultReaction>,
+    
+    #[ts(optional)]
+    #[serde(default)]
+    default_sort_order: Option<ForumSortOrder>,
+    
     pub name: String,
 
     #[ts(optional)]
@@ -595,6 +771,8 @@ pub struct CreateChannel {
 impl CreateChannel {
     pub fn apply<'a, 'b, 'c>(
         &'a self,
+        available_tags_buf: &'b mut Vec<twilight_model::channel::forum::ForumTag>,
+        default_reaction_emoji_buf: &'b mut twilight_model::channel::forum::DefaultReaction,
         perms_buf: &'b mut Vec<twilight_model::channel::permission_overwrite::PermissionOverwrite>,
         mut req: twilight_http::request::guild::CreateGuildChannel<'c>,
     ) -> Result<twilight_http::request::guild::CreateGuildChannel<'c>, ChannelValidationError>
@@ -602,9 +780,35 @@ impl CreateChannel {
         'a: 'c,
         'b: 'c,
     {
+        if let Some(available_tags) = &self.available_tags {
+            // TODO: should we error on bad forum tags instead of throwing them away?
+            available_tags_buf.extend(available_tags
+                    .clone()
+                    .into_iter()
+                    .filter_map(|v: ForumTag| TryInto::<twilight_model::channel::forum::ForumTag>::try_into(v).ok())
+            );
+            
+            req = req.available_tags(available_tags_buf);
+        }
+
         if let Some(bitrate) = &self.bitrate {
             req = req.bitrate(*bitrate);
         }
+        if let Some(default_forum_layout) = &self.default_forum_layout {
+            req = req.default_forum_layout((*default_forum_layout).into());
+        }
+
+        if let Some(default_reaction_emoji) = &self.default_reaction_emoji {
+            if let Ok(emoji) = default_reaction_emoji.clone().try_into() {
+                *default_reaction_emoji_buf = emoji;
+                req = req.default_reaction_emoji(default_reaction_emoji_buf);
+            }
+        }
+        
+        if let Some(default_sort_order) = &self.default_sort_order {
+            req = req.default_sort_order((*default_sort_order).into());
+        }
+
 
         if let Some(nsfw) = &self.nsfw {
             req = req.nsfw(*nsfw);

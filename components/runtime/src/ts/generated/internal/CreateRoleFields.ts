@@ -5,6 +5,7 @@ export type OpCreateRoleFields = {
   color?: number;
   colors?: RoleColors;
   hoist?: boolean;
+  icon?: string;
   mentionable?: boolean;
   name?: string;
   permissions?: string;

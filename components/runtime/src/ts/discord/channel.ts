@@ -4,6 +4,9 @@ import type { IPermissionOverwrite } from "../generated/discord/IPermissionOverw
 import type { ThreadMetadata } from "../generated/discord/ThreadMetadata";
 import type { VideoQualityMode } from "../generated/discord/VideoQualityMode";
 import type { ChannelType } from "../generated/discord/ChannelType";
+import type { ForumLayout } from "../generated/discord/ForumLayout";
+import type { ForumSortOrder } from "../generated/discord/ForumSortOrder";
+import { ChannelFlags } from "../generated/discord/ChannelFlags";
 
 import type { InternalGuildChannel } from "../generated/internal/GuildChannel";
 import type { IPrivateThread } from "../generated/internal/PrivateThread";
@@ -14,6 +17,8 @@ import type { INewsThread } from "../generated/internal/NewsThread";
 import type { ITextChannel } from "../generated/internal/TextChannel";
 import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
 import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
+import type { IDefaultReaction } from "../generated/internal/IDefaultReaction";
+import type { IForumTag } from "../generated/internal/IForumTag";
 import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, addThreadMember, createForumThread, createStandaloneThread, createThreadFromMessage, createTypingTrigger, editChannel, editThread, getPins, removeThreadMember } from "./dapi";
 
 export type GuildChannel =
@@ -32,8 +37,10 @@ export type GuildChannel =
 export function guildChannelFromInternal(json: InternalGuildChannel): GuildChannel {
     if (json.kind === "Voice" || json.kind === "StageVoice") {
         return new VoiceChannel(json);
-    } else if (json.kind === "Text" || json.kind === "News" || json.kind === "Forum" || json.kind === "GuildDirectory") {
+    } else if (json.kind === "Text" || json.kind === "News" || json.kind === "GuildDirectory") {
         return new TextChannel(json);
+    } else if (json.kind === "Forum") {
+        return  new ForumChannel(json);
     } else if (json.kind === "Category") {
         return new CategoryChannel(json);
     } else if (json.kind === "NewsThread") {
@@ -106,6 +113,10 @@ export abstract class BaseChannel {
         return this instanceof TextChannel;
     }
 
+    isForumChannel(): this is ForumChannel {
+        return this instanceof ForumChannel;
+    }
+
     isVoiceChannel(): this is VoiceChannel {
         return this instanceof VoiceChannel;
     }
@@ -140,6 +151,7 @@ export class CategoryChannel extends BaseChannel {
 }
 
 export class TextChannel extends BaseChannel {
+    flags: ChannelFlags | null;
     kind: "Text" | "News" | "Forum" | "GuildDirectory";
     lastPinTimestamp: number | null;
     nsfw: boolean;
@@ -154,6 +166,7 @@ export class TextChannel extends BaseChannel {
     constructor(json: ITextChannel) {
         super(json);
 
+        this.flags = json.flags;
         this.kind = json.kind;
         this.lastPinTimestamp = json.lastPinTimestamp;
         this.nsfw = json.nsfw;
@@ -194,6 +207,28 @@ export class TextChannel extends BaseChannel {
             ...fields,
             channelId: this.id
         })
+    }
+}
+
+export class ForumChannel extends TextChannel {
+    kind: "Forum" = "Forum";
+    availableTags: ForumTag[] | null;
+    defaultForumLayout: ForumLayout | null;
+    defaultReactionEmoji: DefaultReaction | null;
+    defaultSortOrder: ForumSortOrder | null;
+
+    /**
+     * @internal
+     */
+    constructor(json: ITextChannel) {
+        super(json);
+
+        this.availableTags = json.availableTags?.map((tag) => ForumTag.fromInternal(tag)) ?? null;
+        this.defaultForumLayout = json.defaultForumLayout;
+        this.defaultReactionEmoji = json.defaultReactionEmoji ?
+                                        DefaultReaction.fromInternal(json.defaultReactionEmoji) :
+                                        null;
+        this.defaultSortOrder = json.defaultSortOrder;
     }
 }
 
@@ -281,12 +316,28 @@ export class PrivateThread extends Thread {
 
 export class PublicThread extends Thread {
     kind: "PublicThread" = "PublicThread";
+    appliedTags: string[] | null;
+    pinned: boolean | null;
 
     /**
      * @internal
      */
     constructor(json: IPublicThread) {
         super(json);
+        this.appliedTags = json.appliedTags;
+        this.pinned = json.pinned;
+    }
+
+    pin() {
+        return this.edit({
+            flags: { pinned: true },
+        }) as Promise<PublicThread>;
+    }
+
+    unpin() {
+        return this.edit({
+            flags: { pinned: false },
+        }) as Promise<PublicThread>;
     }
 }
 
@@ -323,6 +374,70 @@ export class VoiceChannel extends BaseChannel {
         this.rtcRegion = json.rtcRegion;
         this.userLimit = json.userLimit;
         this.videoQualityMode = json.videoQualityMode;
+    }
+}
+
+export class DefaultReaction implements IDefaultReaction
+{
+    emojiId: string | null = null;
+    emojiName: string | null = null;
+
+    /**
+     * @internal
+     */
+    static fromInternal(data: IDefaultReaction) {
+        const defaultReaction = new DefaultReaction();
+        defaultReaction.emojiId = data.emojiId;
+        defaultReaction.emojiName = data.emojiName;
+        return defaultReaction;
+    }
+
+    setEmojiId(emojiId: string | null) {
+        this.emojiId = emojiId;
+        this.emojiName = null;
+        return this;
+    }
+
+    setEmojiName(emojiName: string | null) {
+        this.emojiName = emojiName;
+        this.emojiId = null;
+        return this;
+    }
+}
+
+export class ForumTag implements IForumTag {
+    id: string;
+    name: string;
+    moderated: boolean;
+    emojiId: string | null = null;
+    emojiName: string | null = null;
+
+    constructor(id: string | null, name: string, moderated: boolean) {
+        this.id = id ?? "0";
+        this.name = name;
+        this.moderated = moderated;
+    }
+    
+    /**
+     * @internal
+     */
+    static fromInternal(data: IForumTag) {
+        const tag = new ForumTag(data.id, data.name, data.moderated);
+        tag.emojiId = data.emojiId;
+        tag.emojiName = data.emojiName;
+        return tag;
+    }
+
+    setEmojiId(emojiId: string | null) {
+        this.emojiId = emojiId;
+        this.emojiName = null;
+        return this;
+    }
+
+    setEmojiName(emojiName: string | null) {
+        this.emojiName = emojiName;
+        this.emojiId = null;
+        return this;
     }
 }
 

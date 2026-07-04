@@ -228,3 +228,108 @@ impl From<PermissionOverwriteType>
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/ForumLayout.ts")]
+pub enum ForumLayout {
+    GalleryView,
+    ListView,
+    NotSet,
+}
+
+impl From<twilight_model::channel::forum::ForumLayout> for ForumLayout {
+    fn from(v: twilight_model::channel::forum::ForumLayout) -> Self {
+        match v {
+            twilight_model::channel::forum::ForumLayout::GalleryView => Self::GalleryView,
+            twilight_model::channel::forum::ForumLayout::ListView => Self::ListView,
+            twilight_model::channel::forum::ForumLayout::NotSet => Self::NotSet,
+            _ => todo!(),
+        }
+    }
+}
+
+impl From<ForumLayout> for twilight_model::channel::forum::ForumLayout {
+    fn from(v: ForumLayout) -> Self {
+        match v {
+            ForumLayout::GalleryView => Self::GalleryView,
+            ForumLayout::ListView => Self::ListView,
+            ForumLayout::NotSet => Self::NotSet,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/ForumSortOrder.ts")]
+pub enum ForumSortOrder {
+    CreationDate,
+    LatestActivity,
+}
+
+impl From<twilight_model::channel::forum::ForumSortOrder> for ForumSortOrder {
+    fn from(v: twilight_model::channel::forum::ForumSortOrder) -> Self {
+        match v {
+            twilight_model::channel::forum::ForumSortOrder::CreationDate => Self::CreationDate,
+            twilight_model::channel::forum::ForumSortOrder::LatestActivity => Self::LatestActivity,
+            _ => todo!(),
+        }
+    }
+}
+
+impl From<ForumSortOrder> for twilight_model::channel::forum::ForumSortOrder {
+    fn from(v: ForumSortOrder) -> Self {
+        match v {
+            ForumSortOrder::CreationDate => Self::CreationDate,
+            ForumSortOrder::LatestActivity => Self::LatestActivity,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "bindings/discord/ChannelFlags.ts")]
+pub struct ChannelFlags {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub pinned: Option<bool>, //  1 << 0	this thread is pinned to the top of its parent GUILD_FORUM or GUILD_MEDIA channel
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub require_tag: Option<bool>, // 1 << 4    whether a tag is required to be specified when creating a thread in a GUILD_FORUM or a GUILD_MEDIA channel. Tags are specified in the applied_tags field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub hide_media_download_options: Option<bool>, // 1 << 15   when set hides the embedded media download options. Available only for media channels
+}
+
+impl From<twilight_model::channel::ChannelFlags> for ChannelFlags {
+    fn from(v: twilight_model::channel::ChannelFlags) -> Self {
+        use twilight_model::channel::ChannelFlags as TwilightChannelFlags;
+
+        Self {
+            pinned: Some(v.contains(TwilightChannelFlags::PINNED)),
+            require_tag: Some(v.contains(TwilightChannelFlags::REQUIRE_TAG)),
+            hide_media_download_options: Some(v.contains(TwilightChannelFlags::HIDE_MEDIA_DOWNLOAD_OPTIONS)),
+        }
+    }
+}
+
+impl From<ChannelFlags> for twilight_model::channel::ChannelFlags {
+    fn from(v: ChannelFlags) -> Self {
+        let mut out = Self::empty();
+
+        if matches!(v.pinned, Some(true)) {
+            out |= Self::PINNED;
+        }
+        
+        if matches!(v.require_tag, Some(true)) {
+            out |= Self::REQUIRE_TAG;
+        }
+        
+        if matches!(v.hide_media_download_options, Some(true)) {
+            out |= Self::HIDE_MEDIA_DOWNLOAD_OPTIONS;
+        }
+
+        out
+    }
+}

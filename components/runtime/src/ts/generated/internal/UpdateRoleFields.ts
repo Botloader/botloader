@@ -6,8 +6,9 @@ export type OpUpdateRoleFields = {
   color?: number | null;
   colors?: RoleColors | null;
   hoist?: boolean;
+  icon?: string | null;
   mentionable?: boolean;
   name?: string | null;
   permissions?: string;
-  unicodeEmoji?: string;
+  unicodeEmoji?: string | null;
 };
