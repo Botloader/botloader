@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use axum::{
     extract::{Extension, Path, State},
     response::IntoResponse,
@@ -14,7 +12,7 @@ use tracing::error;
 use twilight_model::user::CurrentUserGuild;
 use validation::{
     validate,
-    web::{GuildData, ScriptValidationContextData},
+    web::ScriptValidationContextData,
     ValidationError,
 };
 
@@ -165,41 +163,14 @@ pub async fn update_guild_script(
         enabled: payload.enabled,
         original_source: payload.original_source,
         name: payload.name,
-        contributes: None,
         plugin_version_number: None,
-        settings_definitions: None,
         settings_values: payload.settings_values,
     };
 
     {
-        let validation_data = if sc.settings_definitions.is_some() {
-            let channels = state
-                .state_client
-                .get_channels(current_guild.id)
-                .await
-                .map_err(|err| {
-                    error!(%err, "failed fetching guild channels");
-                    ApiErrorResponse::InternalError
-                })?;
-
-            let roles = state
-                .state_client
-                .get_roles(current_guild.id)
-                .await
-                .map_err(|err| {
-                    error!(%err, "failed fetching guild roles");
-                    ApiErrorResponse::InternalError
-                })?;
-
-            ScriptValidationContextData {
-                script: current_script,
-                guild_data: Some(Rc::new(GuildData { channels, roles })),
-            }
-        } else {
-            ScriptValidationContextData {
-                script: current_script,
-                guild_data: None,
-            }
+        let validation_data = ScriptValidationContextData {
+            script: current_script,
+            guild_data: None,
         };
 
         if let Err(validation_errors) = validate(&sc, &validation_data) {
@@ -254,40 +225,13 @@ pub async fn validate_script_settings(
         enabled: payload.enabled,
         original_source: payload.original_source,
         name: payload.name,
-        contributes: None,
         plugin_version_number: None,
-        settings_definitions: None,
         settings_values: payload.settings_values,
     };
 
-    let validation_data = if sc.settings_definitions.is_some() {
-        let channels = state
-            .state_client
-            .get_channels(current_guild.id)
-            .await
-            .map_err(|err| {
-                error!(%err, "failed fetching guild channels");
-                ApiErrorResponse::InternalError
-            })?;
-
-        let roles = state
-            .state_client
-            .get_roles(current_guild.id)
-            .await
-            .map_err(|err| {
-                error!(%err, "failed fetching guild roles");
-                ApiErrorResponse::InternalError
-            })?;
-
-        ScriptValidationContextData {
-            script: current_script,
-            guild_data: Some(Rc::new(GuildData { channels, roles })),
-        }
-    } else {
-        ScriptValidationContextData {
-            script: current_script,
-            guild_data: None,
-        }
+    let validation_data = ScriptValidationContextData {
+        script: current_script,
+        guild_data: None,
     };
 
     if let Err(validation_errors) = validate(&sc, &validation_data) {
@@ -360,9 +304,7 @@ pub async fn update_script_plugin(
         enabled: None,
         original_source: Some(new_source),
         name: None,
-        contributes: None,
         plugin_version_number: Some(plugin.current_version),
-        settings_definitions: None,
         settings_values: None,
     };
 

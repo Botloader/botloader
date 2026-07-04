@@ -4,7 +4,6 @@ use std::time::{Duration, Instant};
 
 use common::DiscordConfig;
 use guild_logger::{LogEntry, LogSender};
-use stores::config::Script;
 use stores::Db;
 use tokio::sync::mpsc;
 use tracing::{error, info};
@@ -166,20 +165,15 @@ impl Manager {
     }
 
     async fn update_guild_commands(&mut self, guild_id: Id<GuildMarker>) -> Result<(), ()> {
-        let all_guild_scripts = self
+        let script_commands = self
             .config_store
-            .list_scripts(guild_id)
+            .get_enabled_script_command_contributes(guild_id)
             .await
             .map_err(|err| {
-                error!(%err, "failed retrieving guild scripts");
+                error!(%err, "failed retrieving guild script command contributes");
             })?;
 
-        let enabled_guild_scripts = all_guild_scripts
-            .into_iter()
-            .filter(|v| v.enabled)
-            .collect::<Vec<_>>();
-
-        let merged = merge_script_commands(enabled_guild_scripts);
+        let merged = merge_script_commands(script_commands);
 
         let serialized = serde_json::to_string(&merged).unwrap();
         if let Some(current) = self.cached_commands.get(&guild_id) {
@@ -420,11 +414,11 @@ pub fn group_to_twilight_command(
     }
 }
 
-fn merge_script_commands(scripts: Vec<Script>) -> Vec<TwilightCommand> {
+fn merge_script_commands(scripts: Vec<Vec<TwilightCommand>>) -> Vec<TwilightCommand> {
     let mut result = Vec::new();
 
-    for script in scripts {
-        for cmd in script.contributes.commands {
+    for script_commands in scripts {
+        for cmd in script_commands {
             if let Some(existing) = result
                 .iter_mut()
                 .find(|v: &&mut TwilightCommand| v.name == cmd.name)

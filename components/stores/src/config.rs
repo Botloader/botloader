@@ -28,9 +28,8 @@ impl Db {
     ) -> ConfigStoreResult<DbScript> {
         match sqlx::query_as!(
             DbScript,
-            "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
-             settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 AND \
+            "SELECT id, guild_id, original_source, name, enabled, plugin_id, plugin_auto_update, \
+             plugin_version_number, settings_values FROM guild_scripts WHERE guild_id = $1 AND \
              name = $2 AND plugin_id IS NULL;",
             guild_id.get() as i64,
             script_name
@@ -51,9 +50,8 @@ impl Db {
     ) -> ConfigStoreResult<DbScript> {
         Ok(sqlx::query_as!(
             DbScript,
-            "SELECT id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
-             settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 AND id \
+            "SELECT id, guild_id, name, original_source, enabled, plugin_id, plugin_auto_update, \
+             plugin_version_number, settings_values FROM guild_scripts WHERE guild_id = $1 AND id \
              = $2;",
             guild_id.get() as i64,
             id
@@ -82,16 +80,18 @@ impl Db {
     ) -> ConfigStoreResult<Vec<Script>> {
         let res = sqlx::query_as!(
             DbScript,
-            "SELECT id, guild_id, original_source, name, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
-             settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 ORDER \
+            "SELECT id, guild_id, original_source, name, enabled, plugin_id, plugin_auto_update, \
+             plugin_version_number, settings_values FROM guild_scripts WHERE guild_id = $1 ORDER \
              BY id ASC",
             guild_id.get() as i64,
         )
-        .fetch_all(conn)
+        .fetch_all(&mut *conn)
         .await?;
 
-        Ok(res.into_iter().map(|e| e.into()).collect())
+        let mut scripts: Vec<Script> = res.into_iter().map(|e| e.into()).collect();
+        Self::attach_script_derived(conn, guild_id, &mut scripts).await?;
+
+        Ok(scripts)
     }
 
     async fn inner_create_script(
@@ -112,9 +112,8 @@ impl Db {
             "INSERT INTO guild_scripts (guild_id, name, original_source, enabled, plugin_id, \
              plugin_auto_update, plugin_version_number) 
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, guild_id, name, original_source, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
-             settings_definitions, settings_values;",
+RETURNING id, guild_id, name, original_source, enabled, plugin_id, plugin_auto_update, \
+             plugin_version_number, settings_values;",
             guild_id.get() as i64,
             script.name,
             script.original_source,
@@ -254,10 +253,17 @@ impl Db {
         guild_id: Id<GuildMarker>,
         script_name: String,
     ) -> ConfigStoreResult<Script> {
-        Ok(self
+        let mut script: Script = self
             .get_db_script_by_name(guild_id, &script_name)
             .await?
-            .into())
+            .into();
+        Self::attach_script_derived(
+            &mut *self.pool.acquire().await?,
+            guild_id,
+            std::slice::from_mut(&mut script),
+        )
+        .await?;
+        Ok(script)
     }
 
     pub async fn get_script_by_id(
@@ -265,10 +271,17 @@ impl Db {
         guild_id: Id<GuildMarker>,
         script_id: u64,
     ) -> ConfigStoreResult<Script> {
-        Ok(self
+        let mut script: Script = self
             .get_db_script_by_id(guild_id, script_id as i64)
             .await?
-            .into())
+            .into();
+        Self::attach_script_derived(
+            &mut *self.pool.acquire().await?,
+            guild_id,
+            std::slice::from_mut(&mut script),
+        )
+        .await?;
+        Ok(script)
     }
 
     pub async fn create_script(
@@ -284,10 +297,6 @@ impl Db {
         guild_id: Id<GuildMarker>,
         script: UpdateScript,
     ) -> ConfigStoreResult<Script> {
-        let commands_enc = script.contributes.map(|v| serde_json::to_value(v).unwrap());
-        let settings_definitions = script
-            .settings_definitions
-            .map(|v| serde_json::to_value(v).unwrap());
         let settings_values = script
             .settings_values
             .map(|v| serde_json::to_value(v).unwrap());
@@ -298,59 +307,152 @@ impl Db {
                     UPDATE guild_scripts SET
                     original_source = COALESCE($3, guild_scripts.original_source),
                     enabled = COALESCE($4, guild_scripts.enabled),
-                    contributes_commands = COALESCE($5, guild_scripts.contributes_commands),
-                    plugin_version_number = COALESCE($6, guild_scripts.plugin_version_number),
-                    settings_definitions = COALESCE($7, guild_scripts.settings_definitions),
-                    settings_values = COALESCE($8, guild_scripts.settings_values)
+                    plugin_version_number = COALESCE($5, guild_scripts.plugin_version_number),
+                    settings_values = COALESCE($6, guild_scripts.settings_values)
                     WHERE guild_id = $1 AND id=$2
-                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
-             settings_definitions, settings_values;
+                    RETURNING id, name, original_source, guild_id, enabled, plugin_id, \
+             plugin_auto_update, plugin_version_number, settings_values;
                 ",
             guild_id.get() as i64,
             script.id as i64,
             script.original_source,
             script.enabled,
-            commands_enc,
             script.plugin_version_number.map(|v| v as i32),
-            settings_definitions,
             settings_values,
         )
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(res.into())
+        let mut converted: Script = res.into();
+        Self::attach_script_derived(
+            &mut *self.pool.acquire().await?,
+            guild_id,
+            std::slice::from_mut(&mut converted),
+        )
+        .await?;
+
+        Ok(converted)
     }
 
-    pub async fn update_script_contributes(
+    /// Upserts the derived state observed for a script during a vm boot.
+    pub async fn upsert_script_derived(
         &self,
         guild_id: Id<GuildMarker>,
         script_id: u64,
-        contribs: ScriptContributes,
-    ) -> ConfigStoreResult<Script> {
-        let commands_enc = serde_json::to_value(contribs.commands).unwrap();
-        let intervals_enc = serde_json::to_value(contribs.interval_timers).unwrap();
+        update: UpdateScriptDerived,
+    ) -> ConfigStoreResult<()> {
+        let commands_enc = serde_json::to_value(update.contributes.commands).unwrap();
+        let intervals_enc = serde_json::to_value(update.contributes.interval_timers).unwrap();
+        let settings_definitions_enc = serde_json::to_value(update.settings_definitions).unwrap();
 
-        let res = sqlx::query_as!(
-            DbScript,
+        sqlx::query!(
             "
-                    UPDATE guild_scripts SET
-                    contributes_commands = $3,
-                    contributes_interval_timers = $4
-                    WHERE guild_id = $1 AND id=$2
-                    RETURNING id, name, original_source, guild_id, enabled, contributes_commands, \
-             contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, \
-             settings_definitions, settings_values;
+                    INSERT INTO guild_script_derived (script_id, guild_id, source_hash, \
+             settings_hash, runtime_version, contributes_commands, contributes_interval_timers, \
+             settings_definitions, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
+                    ON CONFLICT (script_id) DO UPDATE SET
+                    source_hash = $3,
+                    settings_hash = $4,
+                    runtime_version = $5,
+                    contributes_commands = $6,
+                    contributes_interval_timers = $7,
+                    settings_definitions = $8,
+                    updated_at = now();
                 ",
-            guild_id.get() as i64,
             script_id as i64,
+            guild_id.get() as i64,
+            update.source_hash,
+            update.settings_hash,
+            SCRIPT_RUNTIME_VERSION,
             commands_enc,
             intervals_enc,
+            settings_definitions_enc,
         )
-        .fetch_one(&self.pool)
+        .execute(&self.pool)
         .await?;
 
-        Ok(res.into())
+        Ok(())
+    }
+
+    /// The inputs each of the guild's derived-state rows was observed under,
+    /// used to skip the [Self::upsert_script_derived] write when nothing changed.
+    pub async fn get_script_derived_freshness(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> ConfigStoreResult<Vec<ScriptDerivedFreshness>> {
+        let rows = sqlx::query!(
+            "SELECT script_id, source_hash, settings_hash, runtime_version FROM \
+             guild_script_derived WHERE guild_id = $1",
+            guild_id.get() as i64,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| ScriptDerivedFreshness {
+                script_id: row.script_id as u64,
+                source_hash: row.source_hash,
+                settings_hash: row.settings_hash,
+                runtime_version: row.runtime_version,
+            })
+            .collect())
+    }
+
+    /// Command contributions of the guild's enabled scripts, without dragging
+    /// script sources along.
+    pub async fn get_enabled_script_command_contributes(
+        &self,
+        guild_id: Id<GuildMarker>,
+    ) -> ConfigStoreResult<Vec<Vec<twilight_model::application::command::Command>>> {
+        let rows = sqlx::query!(
+            "SELECT d.contributes_commands FROM guild_script_derived d
+                    INNER JOIN guild_scripts s ON s.id = d.script_id
+                    WHERE d.guild_id = $1 AND s.enabled
+                    ORDER BY d.script_id ASC",
+            guild_id.get() as i64,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| serde_json::from_value(row.contributes_commands).unwrap_or_default())
+            .collect())
+    }
+
+    async fn attach_script_derived(
+        conn: &mut PgConnection,
+        guild_id: Id<GuildMarker>,
+        scripts: &mut [Script],
+    ) -> ConfigStoreResult<()> {
+        if scripts.is_empty() {
+            return Ok(());
+        }
+
+        let rows = sqlx::query!(
+            "SELECT script_id, contributes_commands, contributes_interval_timers, \
+             settings_definitions FROM guild_script_derived WHERE guild_id = $1",
+            guild_id.get() as i64,
+        )
+        .fetch_all(conn)
+        .await?;
+
+        for row in rows {
+            if let Some(script) = scripts.iter_mut().find(|v| v.id == row.script_id as u64) {
+                script.contributes = ScriptContributes {
+                    commands: serde_json::from_value(row.contributes_commands).unwrap_or_default(),
+                    interval_timers: serde_json::from_value(row.contributes_interval_timers)
+                        .unwrap_or_default(),
+                };
+                script.settings_definitions = row
+                    .settings_definitions
+                    .map(|v| serde_json::from_value(v).unwrap_or_default());
+            }
+        }
+
+        Ok(())
     }
 
     pub async fn del_script(
@@ -1140,23 +1242,14 @@ struct DbScript {
     original_source: String,
     name: String,
     enabled: bool,
-    contributes_commands: serde_json::Value,
-    contributes_interval_timers: serde_json::Value,
     plugin_id: Option<i64>,
     plugin_auto_update: Option<bool>,
     plugin_version_number: Option<i32>,
-    settings_definitions: serde_json::Value,
     settings_values: serde_json::Value,
 }
 
 impl From<DbScript> for Script {
     fn from(script: DbScript) -> Self {
-        let commands_dec = serde_json::from_value(script.contributes_commands).unwrap_or_default();
-        let intervals_dec =
-            serde_json::from_value(script.contributes_interval_timers).unwrap_or_default();
-
-        let settings_definitions =
-            serde_json::from_value(script.settings_definitions).unwrap_or_default();
         let settings_values = serde_json::from_value(script.settings_values).unwrap_or_default();
 
         Self {
@@ -1164,14 +1257,15 @@ impl From<DbScript> for Script {
             name: script.name,
             original_source: script.original_source,
             enabled: script.enabled,
+            // derived state lives in guild_script_derived, see attach_script_derived
             contributes: ScriptContributes {
-                commands: commands_dec,
-                interval_timers: intervals_dec,
+                commands: Vec::new(),
+                interval_timers: Vec::new(),
             },
             plugin_id: script.plugin_id.map(|v| v as u64),
             plugin_auto_update: script.plugin_auto_update,
             plugin_version_number: script.plugin_version_number.map(|v| v as u32),
-            settings_definitions,
+            settings_definitions: None,
             settings_values,
         }
     }
@@ -1414,9 +1508,7 @@ pub struct UpdateScript {
     pub name: Option<String>,
     pub original_source: Option<String>,
     pub enabled: Option<bool>,
-    pub contributes: Option<ScriptContributes>,
     pub plugin_version_number: Option<u32>,
-    pub settings_definitions: Option<Vec<SettingsOptionDefinition>>,
     pub settings_values: Option<Vec<SettingsOptionValue>>,
 }
 
@@ -1443,6 +1535,50 @@ pub struct IntervalTimerContrib {
     pub name: String,
     pub interval: crate::timers::IntervalType,
     pub plugin_id: Option<u64>,
+}
+
+/// Stamped onto guild_script_derived rows; bump it when a runtime or compiler
+/// change can alter what unchanged scripts produce (contributions, settings
+/// definitions), so all stored derived state is considered stale and gets
+/// refreshed on the next vm boot.
+pub const SCRIPT_RUNTIME_VERSION: &str = "1";
+
+/// New derived state observed for a script during a vm boot, along with the
+/// inputs it was observed under.
+#[derive(Debug, Clone)]
+pub struct UpdateScriptDerived {
+    pub source_hash: String,
+    pub settings_hash: String,
+    pub contributes: ScriptContributes,
+    pub settings_definitions: Vec<SettingsOptionDefinition>,
+}
+
+/// The inputs a stored guild_script_derived row was observed under.
+#[derive(Debug, Clone)]
+pub struct ScriptDerivedFreshness {
+    pub script_id: u64,
+    pub source_hash: String,
+    pub settings_hash: String,
+    pub runtime_version: String,
+}
+
+impl ScriptDerivedFreshness {
+    pub fn is_fresh(&self, source_hash: &str, settings_hash: &str) -> bool {
+        self.source_hash == source_hash
+            && self.settings_hash == settings_hash
+            && self.runtime_version == SCRIPT_RUNTIME_VERSION
+    }
+}
+
+pub fn hash_script_source(source: &str) -> String {
+    use sha2::Digest;
+    hex::encode(sha2::Sha256::digest(source.as_bytes()))
+}
+
+pub fn hash_settings_values(values: &[SettingsOptionValue]) -> String {
+    use sha2::Digest;
+    let serialized = serde_json::to_string(values).unwrap();
+    hex::encode(sha2::Sha256::digest(serialized.as_bytes()))
 }
 
 /// A guilds config, for storing core botloader settings

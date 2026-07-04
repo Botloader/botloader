@@ -43,10 +43,7 @@ impl Validator for UpdateScript {
         }
 
         if let Some(values) = &self.settings_values {
-            let definitions = self
-                .settings_definitions
-                .as_ref()
-                .or(ctx_data.script.settings_definitions.as_ref());
+            let definitions = ctx_data.script.settings_definitions.as_ref();
 
             ctx.push_field("settings_values".to_owned());
 

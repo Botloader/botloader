@@ -91,9 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         name: None,
                         original_source: None,
                         enabled: None,
-                        contributes: None,
                         plugin_version_number: None,
-                        settings_definitions: None,
                         settings_values: Some(deserialized),
                     },
                 )

@@ -27,6 +27,8 @@ oauth2 = { workspace = true }
 dashmap = "5.4.0"
 rand = "0.8"
 base64 = "0.13"
+sha2 = "0.10"
+hex = "0.4"
 chrono = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }

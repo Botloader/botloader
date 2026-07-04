@@ -19,7 +19,10 @@ use guild_logger::{entry::CreateLogEntry, GuildLogSender};
 use runtime_models::{internal::script::ScriptMeta, util::PluginId};
 use scheduler_worker_rpc::{CreateScriptsVmReq, MetricEvent, SchedulerMessage, WorkerMessage};
 use stores::{
-    config::{IntervalTimerContrib, Script, ScriptContributes, UpdateScript},
+    config::{
+        hash_script_source, hash_settings_values, IntervalTimerContrib, Script,
+        ScriptContributes, ScriptDerivedFreshness, UpdateScriptDerived, SCRIPT_RUNTIME_VERSION,
+    },
     timers::{IntervalTimer, ScheduledTask},
     Db,
 };
@@ -45,6 +48,9 @@ pub struct VmSession {
     current_worker: Option<WorkerHandle>,
     force_load_scripts_next: bool,
     scripts: Vec<Script>,
+    // inputs the stored derived state of each script was observed under,
+    // used to skip the db write in script_loaded when nothing changed
+    derived_freshness: HashMap<u64, ScriptDerivedFreshness>,
 
     dispatch_id_gen: u64,
     current_vm_session_id: u64,
@@ -81,6 +87,7 @@ impl VmSession {
             pending_acks: HashMap::new(),
             current_worker: None,
             scripts: Vec::new(),
+            derived_freshness: HashMap::new(),
             force_load_scripts_next: false,
 
             interval_timers_man: interval_timer_man,
@@ -276,16 +283,27 @@ impl VmSession {
 
     async fn try_retry_load_guild_scripts(&mut self) {
         loop {
-            match self.stores.list_scripts(self.guild_id).await {
-                Ok(scripts) => {
-                    self.scripts = scripts.into_iter().filter(|v| v.enabled).collect();
-                    return;
-                }
+            let scripts = match self.stores.list_scripts(self.guild_id).await {
+                Ok(scripts) => scripts,
                 Err(err) => {
                     error!(%err, "failed loading guild scripts, retrying in 10 secs");
                     tokio::time::sleep(Duration::from_secs(10)).await;
+                    continue;
                 }
-            }
+            };
+
+            let freshness = match self.stores.get_script_derived_freshness(self.guild_id).await {
+                Ok(freshness) => freshness,
+                Err(err) => {
+                    error!(%err, "failed loading derived script state, retrying in 10 secs");
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                    continue;
+                }
+            };
+
+            self.scripts = scripts.into_iter().filter(|v| v.enabled).collect();
+            self.derived_freshness = freshness.into_iter().map(|v| (v.script_id, v)).collect();
+            return;
         }
     }
 
@@ -734,7 +752,7 @@ impl VmSession {
             })
             .collect();
 
-        self.update_db_contribs(&evt, interval_contribs.clone())
+        self.update_db_derived_state(&evt, interval_contribs.clone())
             .await;
 
         self.interval_timers_man
@@ -747,11 +765,26 @@ impl VmSession {
             .send_loaded_script(self.guild_id, evt);
     }
 
-    async fn update_db_contribs(
+    async fn update_db_derived_state(
         &mut self,
         evt: &ScriptMeta,
         interval_contribs: Vec<IntervalTimerContrib>,
     ) {
+        let script_id = evt.script_id.0;
+        let Some(script) = self.scripts.iter().find(|v| v.id == script_id) else {
+            warn!(script_id, "loaded script is not in the session script list");
+            return;
+        };
+
+        let source_hash = hash_script_source(&script.original_source);
+        let settings_hash = hash_settings_values(&script.settings_values);
+
+        if let Some(stored) = self.derived_freshness.get(&script_id) {
+            if stored.is_fresh(&source_hash, &settings_hash) {
+                return;
+            }
+        }
+
         let twilight_commands = crate::command_manager::to_twilight_commands(
             self.guild_id,
             &evt.commands,
@@ -761,38 +794,34 @@ impl VmSession {
         // TODO: handle errors here, maybe retry?
         if let Err(err) = self
             .stores
-            .update_script_contributes(
+            .upsert_script_derived(
                 self.guild_id,
-                evt.script_id.0,
-                ScriptContributes {
-                    commands: twilight_commands,
-                    interval_timers: interval_contribs,
+                script_id,
+                UpdateScriptDerived {
+                    source_hash: source_hash.clone(),
+                    settings_hash: settings_hash.clone(),
+                    contributes: ScriptContributes {
+                        commands: twilight_commands,
+                        interval_timers: interval_contribs,
+                    },
+                    settings_definitions: evt.settings.clone(),
                 },
             )
             .await
         {
-            error!(%err, script_id = evt.script_id.0, "failed updating db contribs",);
+            error!(%err, script_id, "failed updating derived script state");
+            return;
         }
 
-        if let Err(err) = self
-            .stores
-            .update_script(
-                self.guild_id,
-                UpdateScript {
-                    id: evt.script_id.0,
-                    name: None,
-                    original_source: None,
-                    enabled: None,
-                    contributes: None,
-                    plugin_version_number: None,
-                    settings_definitions: Some(evt.settings.clone()),
-                    settings_values: None,
-                },
-            )
-            .await
-        {
-            error!(%err, script_id = evt.script_id.0, "failed updating db contribs (settings)");
-        }
+        self.derived_freshness.insert(
+            script_id,
+            ScriptDerivedFreshness {
+                script_id,
+                source_hash,
+                settings_hash,
+                runtime_version: SCRIPT_RUNTIME_VERSION.to_string(),
+            },
+        );
     }
 }
 
