@@ -21,7 +21,7 @@ use dbrokerapi::{
 use serde::Deserialize;
 use tokio::sync::mpsc::unbounded_channel;
 use tracing::info;
-use twilight_cache_inmemory::{model::CachedGuild, InMemoryCache};
+use twilight_cache_inmemory::InMemoryCache;
 use twilight_model::{
     channel::Channel,
     guild::{Member, Role},

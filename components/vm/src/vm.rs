@@ -20,7 +20,7 @@ use std::pin::{pin, Pin};
 use std::{
     rc::Rc,
     sync::{atomic::AtomicBool, Arc, RwLock as StdRwLock},
-    task::{Context, Poll, Wake},
+    task::{Context, Poll},
 };
 use stores::config::Script;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};

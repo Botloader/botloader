@@ -177,7 +177,7 @@ struct RequestReponseBodyResource {
 }
 
 impl Resource for RequestReponseBodyResource {
-    fn name(&self) -> Cow<str> {
+    fn name(&self) -> Cow<'static, str> {
         "requestReponseBodyResource".into()
     }
 
