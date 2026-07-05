@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, guild_id, original_source, name, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 ORDER BY id ASC",
+  "query": "SELECT id, guild_id, original_source, name, enabled, plugin_id, plugin_auto_update, plugin_version_number, settings_values FROM guild_scripts WHERE guild_id = $1 AND name = $2 AND plugin_id IS NULL;",
   "describe": {
     "columns": [
       {
@@ -30,43 +30,29 @@
       },
       {
         "ordinal": 5,
-        "name": "contributes_commands",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 6,
-        "name": "contributes_interval_timers",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 7,
         "name": "plugin_id",
         "type_info": "Int8"
       },
       {
-        "ordinal": 8,
+        "ordinal": 6,
         "name": "plugin_auto_update",
         "type_info": "Bool"
       },
       {
-        "ordinal": 9,
+        "ordinal": 7,
         "name": "plugin_version_number",
         "type_info": "Int4"
       },
       {
-        "ordinal": 10,
-        "name": "settings_definitions",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 11,
+        "ordinal": 8,
         "name": "settings_values",
         "type_info": "Jsonb"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8"
+        "Int8",
+        "Text"
       ]
     },
     "nullable": [
@@ -75,14 +61,11 @@
       false,
       false,
       false,
-      false,
-      false,
-      true,
       true,
       true,
       true,
       true
     ]
   },
-  "hash": "a925f9cda2096ed6fec3b80a4ae4623d0e135ca5c88995867e66cfb024898170"
+  "hash": "9af905bf81ca866a90fd0b3ee322cabd00974cc4f75e3ba2831bc1acc167241b"
 }

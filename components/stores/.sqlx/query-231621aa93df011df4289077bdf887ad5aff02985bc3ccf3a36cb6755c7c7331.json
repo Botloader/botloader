@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT script_id, contributes_commands, contributes_interval_timers, settings_definitions FROM guild_script_derived WHERE guild_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "script_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "contributes_commands",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 2,
+        "name": "contributes_interval_timers",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "settings_definitions",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "231621aa93df011df4289077bdf887ad5aff02985bc3ccf3a36cb6755c7c7331"
+}

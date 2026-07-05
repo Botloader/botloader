@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT script_id, source_hash, settings_hash, runtime_version FROM guild_script_derived WHERE guild_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "script_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "source_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "settings_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "runtime_version",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "83466bb7a30019c55315e77750830e401cb697c9b328fe38789f408bdde0cbe3"
+}

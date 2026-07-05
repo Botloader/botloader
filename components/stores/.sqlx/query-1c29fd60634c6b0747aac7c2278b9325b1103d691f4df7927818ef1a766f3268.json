@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, guild_id, name, original_source, enabled, contributes_commands, contributes_interval_timers, plugin_id, plugin_auto_update, plugin_version_number, settings_definitions, settings_values FROM guild_scripts WHERE guild_id = $1 AND id = $2;",
+  "query": "INSERT INTO guild_scripts (guild_id, name, original_source, enabled, plugin_id, plugin_auto_update, plugin_version_number) \nVALUES ($1, $2, $3, $4, $5, $6, $7)\nRETURNING id, guild_id, name, original_source, enabled, plugin_id, plugin_auto_update, plugin_version_number, settings_values;",
   "describe": {
     "columns": [
       {
@@ -30,36 +30,21 @@
       },
       {
         "ordinal": 5,
-        "name": "contributes_commands",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 6,
-        "name": "contributes_interval_timers",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 7,
         "name": "plugin_id",
         "type_info": "Int8"
       },
       {
-        "ordinal": 8,
+        "ordinal": 6,
         "name": "plugin_auto_update",
         "type_info": "Bool"
       },
       {
-        "ordinal": 9,
+        "ordinal": 7,
         "name": "plugin_version_number",
         "type_info": "Int4"
       },
       {
-        "ordinal": 10,
-        "name": "settings_definitions",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 11,
+        "ordinal": 8,
         "name": "settings_values",
         "type_info": "Jsonb"
       }
@@ -67,7 +52,12 @@
     "parameters": {
       "Left": [
         "Int8",
-        "Int8"
+        "Text",
+        "Text",
+        "Bool",
+        "Int8",
+        "Bool",
+        "Int4"
       ]
     },
     "nullable": [
@@ -76,14 +66,11 @@
       false,
       false,
       false,
-      false,
-      false,
-      true,
       true,
       true,
       true,
       true
     ]
   },
-  "hash": "c75733dc5cf5d4bf9dad444ccb6587cdd2b46cce7076a6039c609be5896f710b"
+  "hash": "1c29fd60634c6b0747aac7c2278b9325b1103d691f4df7927818ef1a766f3268"
 }

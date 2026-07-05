@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.contributes_commands FROM guild_script_derived d\n                    INNER JOIN guild_scripts s ON s.id = d.script_id\n                    WHERE d.guild_id = $1 AND s.enabled\n                    ORDER BY d.script_id ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "contributes_commands",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4d4650b21158a331881dbf38d7994f80c662b07bcee72468a41c470b10529b95"
+}
