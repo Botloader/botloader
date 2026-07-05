@@ -1,5 +1,9 @@
 # You need to build the base image first and tag it as botloader-base
 FROM botloader-base as builder
+# Set by CI from the release git tag, e.g. "2026.5.1"; when empty the build
+# falls back to git describe / "dev" (see components/common/build.rs)
+ARG BOTLOADER_VERSION=""
+ENV BOTLOADER_VERSION=$BOTLOADER_VERSION
 RUN cargo build --release --bin backend
 
 #run

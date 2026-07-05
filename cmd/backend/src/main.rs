@@ -56,7 +56,7 @@ async fn main() {
 }
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(version = common::VERSION, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

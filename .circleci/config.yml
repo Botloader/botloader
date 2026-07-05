@@ -28,7 +28,9 @@ jobs:
       - run:
           name: Build backend
           command: |
-            docker build -t botloader/backend -f cmd/backend/Dockerfile .
+            # On release tag builds (vYYYY.MAJOR.MINOR) embed the version in the binary,
+            # otherwise the build falls back to git describe / "dev"
+            docker build --build-arg BOTLOADER_VERSION="${CIRCLE_TAG#v}" -t botloader/backend -f cmd/backend/Dockerfile .
       - run:
           name: Docker login
           command: |
@@ -48,6 +50,12 @@ jobs:
             # docker push "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
             # docker push "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
             # docker push "botloader/bl-dbserver:$CIRCLE_BUILD_NUM"
+            # on release tag builds, also tag with the version
+            if [ -n "$CIRCLE_TAG" ]; then
+              VERSION="${CIRCLE_TAG#v}"
+              docker tag botloader/backend:latest "botloader/backend:$VERSION"
+              docker push "botloader/backend:$VERSION"
+            fi
   build-frontend-image:
     resource_class: medium
     docker:
@@ -90,22 +98,31 @@ jobs:
             docker push "botloader/bl-frontend:latest"
             docker tag botloader/bl-frontend:latest "botloader/bl-frontend:$CIRCLE_BUILD_NUM"
             docker push "botloader/bl-frontend:$CIRCLE_BUILD_NUM"
+            # on release tag builds, also tag with the version
+            if [ -n "$CIRCLE_TAG" ]; then
+              VERSION="${CIRCLE_TAG#v}"
+              docker tag botloader/bl-frontend:latest "botloader/bl-frontend:$VERSION"
+              docker push "botloader/bl-frontend:$VERSION"
+            fi
+# Jobs run on pushes to master and on release tags (vYYYY.MAJOR.MINOR, e.g. v2026.5.1).
+# CircleCI ignores tag pushes unless a job has an explicit tags filter.
+release_filters: &release_filters
+  filters:
+    branches:
+      only: master
+    tags:
+      only: /^v\d{4}\.\d+\.\d+$/
+
 workflows:
   build-n-publish-frontend:
     jobs:
       - build-frontend-image:
-          filters:
-            branches:
-              only: master
+          <<: *release_filters
       - publish-frontend-images:
-          filters:
-            branches:
-              only: master
+          <<: *release_filters
           requires:
             - build-frontend-image
   build-n-publish-backend:
     jobs:
       - build-publish-backend-docker-images:
-          filters:
-            branches:
-              only: master
+          <<: *release_filters

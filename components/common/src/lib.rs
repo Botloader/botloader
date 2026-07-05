@@ -20,6 +20,10 @@ pub mod user;
 
 pub use discord::*;
 
+/// Botloader release version in year.major.minor form (e.g. "2026.5.1"),
+/// a `git describe` string for untagged builds, or "dev" as a last resort.
+pub const VERSION: &str = env!("BOTLOADER_VERSION");
+
 pub fn load_config<T: Parser>() -> T {
     match dotenv::dotenv() {
         Ok(_) => {}
@@ -37,6 +41,8 @@ pub fn setup_metrics(metrics_listen_addr: &str) {
         .unwrap();
 
     metrics::set_global_recorder(recorder).unwrap();
+
+    metrics::gauge!("botloader_build_info", "version" => VERSION).set(1.0);
 
     info!("exposing metrics at {}", metrics_listen_addr);
     tokio::spawn(exporter);
@@ -58,6 +64,7 @@ pub fn setup_tracing(config: &config::RunConfig, service_name: &str) {
     if let Some(dsn) = config.sentry_dsn.as_ref() {
         std::mem::forget(sentry::init(sentry::ClientOptions {
             dsn: Some(FromStr::from_str(dsn).unwrap()),
+            release: Some(Cow::Borrowed(VERSION)),
             server_name: Some(Cow::Owned(service_name.to_owned())),
             traces_sample_rate: 0.0,
             ..Default::default()
