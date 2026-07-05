@@ -86,10 +86,11 @@ impl VmWorkerPool {
         guild_id: Id<GuildMarker>,
         premium_tier: Option<PremiumSlotTier>,
     ) -> WorkerHandle {
+        let started_at = Instant::now();
+        let priority_index = premium_tier_index(premium_tier);
+
         let rx = {
             let mut w = self.inner.lock().unwrap();
-
-            let priority_index = premium_tier_index(premium_tier);
 
             // try to find one with identical guild id, avoids us having to reload all scripts
             let mut i = priority_index;
@@ -106,6 +107,7 @@ impl VmWorkerPool {
                     let worker = pool.remove(pref_worker);
                     w.track_claimed_worker(ClaimedWorker::new_claim(guild_id, &worker));
                     info!("found worker in preferred search");
+                    record_claim_wait("preferred", priority_index, started_at);
                     return worker;
                 }
 
@@ -136,6 +138,7 @@ impl VmWorkerPool {
                     let worker = pool.remove(can);
                     w.track_claimed_worker(ClaimedWorker::new_claim(guild_id, &worker));
                     info!("found worker in least recently used search");
+                    record_claim_wait("lru", priority_index, started_at);
                     return worker;
                 }
 
@@ -156,7 +159,9 @@ impl VmWorkerPool {
         };
 
         // the tx end should never be dropped
-        rx.await.unwrap()
+        let worker = rx.await.unwrap();
+        record_claim_wait("queued", priority_index, started_at);
+        worker
     }
 
     pub fn spawn_workers(&self, tier: Option<PremiumSlotTier>, n: usize) {
@@ -404,6 +409,19 @@ fn premium_tier_index(tier: Option<PremiumSlotTier>) -> usize {
         Some(PremiumSlotTier::Lite) => 1,
         Some(PremiumSlotTier::Premium) => 2,
     }
+}
+
+/// Time from requesting a worker until one was handed over, in fractional
+/// milliseconds. `outcome` is how the worker was found: "preferred"
+/// (same-guild vm still alive), "lru", or "queued" (pool was empty, waited
+/// for a return — the only outcome that can block unboundedly).
+fn record_claim_wait(outcome: &'static str, priority_index: usize, started_at: Instant) {
+    metrics::histogram!(
+        "bl.scheduler.worker_claim_wait",
+        "outcome" => outcome,
+        "priority_index" => priority_index.to_string(),
+    )
+    .record(started_at.elapsed().as_secs_f64() * 1000.0);
 }
 
 struct QueuedWorkerRequest {

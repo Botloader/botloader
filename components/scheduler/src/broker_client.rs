@@ -69,6 +69,8 @@ impl BrokerConn {
                 }
             }
             BrokerEvent::DiscordEvent(evt) => {
+                crate::dispatch_metrics::record_stage("broker_recv", "discord", evt.timestamp);
+
                 if self
                     .scheduler_tx
                     .send(SchedulerCommand::DiscordEvent(evt))

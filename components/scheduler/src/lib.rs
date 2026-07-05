@@ -9,6 +9,7 @@ pub mod bench;
 mod broker_client;
 mod command_manager;
 mod dispatch_conv;
+mod dispatch_metrics;
 mod guild_handler;
 mod integration_testing;
 mod interval_timer_manager;

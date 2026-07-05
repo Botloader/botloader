@@ -222,6 +222,8 @@ impl Scheduler {
             }
             SchedulerCommand::BrokerConnected => {}
             SchedulerCommand::DiscordEvent(evt) => {
+                crate::dispatch_metrics::record_stage("scheduler_recv", "discord", evt.timestamp);
+
                 if !self.try_unsuspend_guild(evt.guild_id) {
                     return;
                 }

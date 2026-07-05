@@ -46,6 +46,12 @@ pub struct VmSession {
     vm_session_id: u64,
     dispatch_id_gen: u64,
     pending_acks: HashMap<u64, PendingAck>,
+
+    /// True from vm creation until the vm's event loop first drains
+    /// completely: dispatches sent while this is set queue behind the
+    /// compilation and top level execution of every script, which is the
+    /// expensive cold path. Used to label latency metrics.
+    vm_cold: bool,
 }
 
 impl VmSession {
@@ -67,6 +73,7 @@ impl VmSession {
             dispatch_id_gen: 0,
             pending_acks: HashMap::new(),
             worker,
+            vm_cold: false,
         }
     }
 
@@ -89,6 +96,7 @@ impl VmSession {
             dispatch_id_gen: 0,
             pending_acks: HashMap::new(),
             worker,
+            vm_cold: false,
         };
 
         match session.send_create_scripts_vm(vm_session_id, scripts, premium_tier) {
@@ -116,6 +124,7 @@ impl VmSession {
     ) -> Result<(), ()> {
         let evt_id = self.gen_dispatch_id();
         self.vm_session_id = session_id;
+        self.vm_cold = true;
 
         self.worker
             .tx
@@ -133,6 +142,7 @@ impl VmSession {
             PendingAck {
                 dispatched_session_id: session_id,
                 kind: PendingAckType::Restart,
+                dispatched: None,
             },
         );
 
@@ -171,6 +181,11 @@ impl VmSession {
                     PendingAck {
                         dispatched_session_id: self.vm_session_id,
                         kind: ack,
+                        dispatched: Some(DispatchMeta {
+                            source,
+                            source_timestamp: ts,
+                            vm_cold: self.vm_cold,
+                        }),
                     },
                 );
                 Ok(())
@@ -204,6 +219,15 @@ impl VmSession {
                     return Vec::new();
                 };
 
+                if let Some(meta) = &item.dispatched {
+                    metrics::histogram!(
+                        "dispatch_event_acked_latency",
+                        "event_source" => crate::dispatch_metrics::event_source_label(meta.source),
+                        "vm_cold" => if meta.vm_cold { "true" } else { "false" },
+                    )
+                    .record(crate::dispatch_metrics::elapsed_millis(meta.source_timestamp));
+                }
+
                 match item.kind {
                     PendingAckType::Dispatch(Some(resp)) => {
                         let _ = resp.send(());
@@ -220,6 +244,10 @@ impl VmSession {
             WorkerMessage::ScriptStarted(meta) => vec![SessionEvent::ScriptStarted(meta)],
             WorkerMessage::ScriptsInit => todo!(),
             WorkerMessage::NonePending => {
+                // the vm's event loop has drained, script init is done and
+                // future dispatches run against a warm vm
+                self.vm_cold = false;
+
                 if self.pending_acks.is_empty() {
                     vec![SessionEvent::VmIdle]
                 } else {
@@ -446,6 +474,17 @@ pub enum VmSessionEvent {
 pub struct PendingAck {
     dispatched_session_id: u64,
     kind: PendingAckType,
+    /// Set for event dispatches (not vm restarts), used to record the acked
+    /// latency metric.
+    dispatched: Option<DispatchMeta>,
+}
+
+struct DispatchMeta {
+    source: EventSource,
+    source_timestamp: DateTime<Utc>,
+    /// Whether the vm was still cold (see [VmSession::vm_cold]) when this
+    /// event was dispatched to it.
+    vm_cold: bool,
 }
 
 pub enum PendingAckType {

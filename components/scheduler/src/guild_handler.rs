@@ -307,6 +307,8 @@ impl GuildHandler {
     }
 
     async fn handle_broker_event(&mut self, evt: DiscordEvent) {
+        crate::dispatch_metrics::record_stage("guild_handler_recv", "discord", evt.timestamp);
+
         match &evt.event {
             DiscordEventData::GuildCreate(_) => {}
             DiscordEventData::GuildDelete(_) => {
@@ -636,7 +638,14 @@ impl GuildHandler {
 
             let session = self.session.as_mut().expect("ensure_session claims a worker");
             match session.dispatch(t.clone(), data.clone(), ack, source, ts) {
-                Ok(()) => return,
+                Ok(()) => {
+                    crate::dispatch_metrics::record_stage(
+                        "worker_sent",
+                        crate::dispatch_metrics::event_source_label(source),
+                        ts,
+                    );
+                    return;
+                }
                 Err(returned_ack) => {
                     ack = returned_ack;
                     error!("worker died while trying to dispatch event, retrying in a second");
