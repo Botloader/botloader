@@ -32,6 +32,8 @@ using a `YEAR.MAJOR.MINOR` version scheme (e.g. `2026.5.1`):
 
 ## [Unreleased]
 
+## [2026.1.0] - 2026-07-05
+
 ### Added
 
 - Release versioning: `YEAR.MAJOR.MINOR` version embedded in the backend binary,
