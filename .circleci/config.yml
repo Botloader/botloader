@@ -4,10 +4,10 @@ orbs:
 executors:
   main:
     docker:
-      - image: rust:1.90.0-bookworm
+      - image: rust:1.96.1-bookworm
   postgres-alongside:
     docker:
-      - image: rust:1.90.0-bookworm
+      - image: rust:1.96.1-bookworm
       - image: cimg/postgres:14.0
         environment:
           POSTGRES_USER: postgres
@@ -48,28 +48,6 @@ jobs:
             # docker push "botloader/bl-schedulerwithworker:$CIRCLE_BUILD_NUM"
             # docker push "botloader/bl-jobs:$CIRCLE_BUILD_NUM"
             # docker push "botloader/bl-dbserver:$CIRCLE_BUILD_NUM"
-  build-publish-db-migration-image:
-    docker:
-      - image: cimg/base:2022.06
-    steps:
-      - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run:
-          name: Build image
-          command: |
-            docker build -t botloader/bl-dbmigrations -f cmd/dbmigrations/Dockerfile .
-      - run:
-          name: Docker login
-          command: |
-            echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: |
-            # tag with build number
-            docker tag botloader/bl-dbmigrations:latest "botloader/bl-dbmigrations:$CIRCLE_BUILD_NUM"
-            # push
-            docker push "botloader/bl-dbmigrations:$CIRCLE_BUILD_NUM"
   build-frontend-image:
     resource_class: medium
     docker:
@@ -128,12 +106,6 @@ workflows:
   build-n-publish-backend:
     jobs:
       - build-publish-backend-docker-images:
-          filters:
-            branches:
-              only: master
-  build-publish-db-migration-image:
-    jobs:
-      - build-publish-db-migration-image:
           filters:
             branches:
               only: master

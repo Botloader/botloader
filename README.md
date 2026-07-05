@@ -16,8 +16,8 @@ The backend consists of several pieces:
 
 - webapi
   - The botloader HTTP API that the frontend uses
-- dbmigrations
-  - Applies database migrations found in `components/stores`
+- migrations
+  - Subcommand of the backend binary that applies the database migrations found in `components/stores` (embedded in the binary)
 - DiscordBroker
   - Manages the gateway connection with discord, receives events and either queues them up or forwards them to the scheduler is connected
   - Also responsible for managing the state cache, exposing a API to query cached information
