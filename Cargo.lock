@@ -795,6 +795,7 @@ dependencies = [
  "jobs",
  "rustls 0.23.39",
  "scheduler",
+ "stores",
  "tokio",
  "vmworker",
  "webapi",

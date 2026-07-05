@@ -13,6 +13,7 @@ jobs = { path = "../../components/jobs" }
 vmworker = { path = "../../components/vmworker" }
 
 common = { path = "../../components/common" }
+stores = { path = "../../components/stores" }
 
 clap = { workspace = true }
 tokio = { workspace = true }

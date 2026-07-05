@@ -7,11 +7,19 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ../components/stores/migrations/:/docker-entrypoint-initdb.d
+
+  migrations:
+    depends_on:
+      - db
+    image: botloader/backend:latest
+    command: migrations
+    env_file: .env
+    restart: on-failure
 
   broker:
     depends_on:
-      - db
+      migrations:
+        condition: service_completed_successfully
     image: botloader/backend:latest
     command: discord-broker
     env_file: .env

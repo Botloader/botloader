@@ -1,7 +1,6 @@
 [workspace]
 members = ["components/*", "cmd/*"]
 exclude = [
-    "cmd/dbmigrations",
     "cmd/schedulerwithworker",
     "cmd/scheduler",
     "cmd/vmworker",

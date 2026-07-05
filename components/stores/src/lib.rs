@@ -30,4 +30,10 @@ impl Db {
 
         Ok(Self { pool })
     }
+
+    /// Applies any pending migrations, the migration files are embedded in the binary.
+    pub async fn run_migrations(&self) -> Result<(), anyhow::Error> {
+        sqlx::migrate!().run(&self.pool).await?;
+        Ok(())
+    }
 }

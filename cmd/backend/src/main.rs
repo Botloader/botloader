@@ -47,6 +47,11 @@ async fn main() {
             .await;
         }
         Commands::Jobs(conf) => jobs::run(conf.common, conf.jobs_config, true).await,
+        Commands::Migrations(conf) => {
+            let db = stores::Db::new_with_url(&conf.database_url).await.unwrap();
+            db.run_migrations().await.unwrap();
+            println!("migrations applied");
+        }
     }
 }
 
@@ -65,6 +70,14 @@ enum Commands {
     VmWorker(WorkerConfig),
     Jobs(WrappedJobsConfig),
     Full(Box<AllConfig>),
+    /// Applies pending database migrations
+    Migrations(MigrationsConfig),
+}
+
+#[derive(Clone, clap::Parser, Debug)]
+struct MigrationsConfig {
+    #[clap(long, env = "DATABASE_URL")]
+    database_url: String,
 }
 
 fn get_worker_launch_config() -> WorkerLaunchConfig {
