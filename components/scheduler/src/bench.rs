@@ -9,7 +9,7 @@
 //! used by the vmbench binary and is not part of the normal scheduler runtime.
 
 use std::{
-    sync::{Arc, RwLock},
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -26,8 +26,7 @@ use twilight_model::{
 };
 
 use crate::{
-    guild_handler::PremiumTierState,
-    vm_session::VmSession,
+    guild_handler::{GuildHandle, GuildHandler, PremiumTierState},
     vmworkerpool::{VmWorkerPool, WorkerLaunchConfig},
     SchedulerConfig,
 };
@@ -57,12 +56,14 @@ pub struct FullFlowTimings {
 
 pub struct FullFlowBencher {
     db: Db,
-    // a single long lived session is used across iterations, like a guild
-    // handler in production: vm session ids must keep incrementing so stale
-    // shutdown messages from a previous vm on a reclaimed worker aren't
-    // mistaken for the current vm's shutdown
-    session: VmSession,
-    premium_tier: Arc<RwLock<PremiumTierState>>,
+    // a single long lived handler is used across iterations, like in
+    // production: vm session ids must keep incrementing so stale shutdown
+    // messages from a previous vm on a reclaimed worker aren't mistaken for
+    // the current vm's shutdown
+    handler: GuildHandler,
+    // keeps the handler's command channel alive so next_event never sees a
+    // closed channel
+    _handle: GuildHandle,
     // kept alive so command manager sends succeed, but deliberately never ran:
     // command contributions queue up here instead of being synced to the
     // discord api
@@ -137,21 +138,19 @@ impl FullFlowBencher {
             no_reuse_vms: false,
         });
 
-        let premium_tier = Arc::new(RwLock::new(PremiumTierState::Unknown));
-        let session = VmSession::new(
+        let (handler, handle) = GuildHandler::new(
             scheduler_config,
             opts.db.clone(),
             opts.guild_id,
-            opts.logger.with_guild(opts.guild_id),
+            opts.logger,
             worker_pool,
             cmd_handle,
-            premium_tier.clone(),
         );
 
         Ok(Self {
             db: opts.db,
-            session,
-            premium_tier,
+            handler,
+            _handle: handle,
             _cmd_manager: cmd_manager,
             guild_id: opts.guild_id,
         })
@@ -165,16 +164,13 @@ impl FullFlowBencher {
 
         // mirrors GuildHandler::setup for a guild going active
         let tier = self.fetch_premium_tier().await;
-        {
-            let mut w = self.premium_tier.write().unwrap();
-            *w = PremiumTierState::Fetched(tier);
-        }
-        self.session.reload_guild_scripts().await;
+        self.handler.set_premium_tier(PremiumTierState::Fetched(tier));
+        self.handler.reload_guild_scripts().await;
 
         let vm_requested = started.elapsed();
 
         let Some(mut ack_rx) = self
-            .session
+            .handler
             .send_discord_guild_event_tracked(message_create_event(self.guild_id))
             .await
         else {
@@ -185,8 +181,11 @@ impl FullFlowBencher {
             tokio::select! {
                 biased;
                 _ = &mut ack_rx => break started.elapsed(),
-                action = self.session.next_action() => {
-                    if self.session.handle_action(action).await.is_some() {
+                action = self.handler.next_event() => {
+                    let Some(action) = action else {
+                        anyhow::bail!("guild handler command channel closed during the bench");
+                    };
+                    if !self.handler.handle_next_action(action).await {
                         anyhow::bail!("vm session shut down before the event was acked");
                     }
                 }
@@ -194,7 +193,7 @@ impl FullFlowBencher {
         };
 
         // tear the vm down between iterations so the next one starts cold
-        self.session.shutdown().await;
+        self.handler.shutdown().await;
 
         Ok(FullFlowTimings {
             vm_requested,

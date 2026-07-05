@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use common::{config::RunConfig, DiscordConfig};
+use discordoauthwrapper::ClientCache;
 use stores::Db;
 use tracing::{info, warn};
 use twilight_model::id::Id;
@@ -16,6 +17,7 @@ pub struct InnerAppState {
     pub common_config: RunConfig,
     pub stripe_client: Option<stripe_premium::Client>,
     pub discord_oauth_client: oauth2::basic::BasicClient,
+    pub oauth_api_client_cache: ClientCache,
     pub news_handle: NewsHandle,
     pub discord_config: Arc<DiscordConfig>,
     pub bot_rpc_client: botrpc::Client,
@@ -43,8 +45,9 @@ pub async fn init_app_state(common_conf: &RunConfig, web_conf: &WebConfig) -> Ap
     Arc::new(InnerAppState {
         web_config: web_conf.clone(),
         common_config: common_conf.clone(),
-        db: postgres_store,
+        db: postgres_store.clone(),
         stripe_client,
+        oauth_api_client_cache: ClientCache::new_twilight(oauth_client.clone(), postgres_store),
         discord_oauth_client: oauth_client,
         news_handle,
         discord_config,

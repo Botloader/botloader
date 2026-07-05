@@ -142,7 +142,8 @@ async fn run_vm_bench(args: VmArgs) {
     let shared = SharedContext::new(args.quiet);
 
     println!(
-        "benchmarking in-process vm creation: {} scripts per vm, {} warmup + {} measured iterations",
+        "benchmarking in-process vm creation: {} scripts per vm, {} warmup + {} measured \
+         iterations",
         scripts.len(),
         args.warmup,
         args.iterations
@@ -189,7 +190,10 @@ async fn run_full_bench(args: FullArgs) {
 
     let scripts = load_scripts(&args.scripts);
     if scripts.is_empty() {
-        eprintln!("the full flow bench needs at least one script, events aren't dispatched to guilds without scripts");
+        eprintln!(
+            "the full flow bench needs at least one script, events aren't dispatched to guilds \
+             without scripts"
+        );
         std::process::exit(1);
     }
 
@@ -255,7 +259,8 @@ async fn run_full_bench(args: FullArgs) {
     }
 
     println!(
-        "\nall times are per run (event in -> guild activation -> vm created -> event acked), over {} measured runs:",
+        "\nall times are per run (event in -> guild activation -> vm created -> event acked), \
+         over {} measured runs:",
         samples.len()
     );
     print_stats(

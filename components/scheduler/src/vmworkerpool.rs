@@ -18,11 +18,6 @@ use tokio::{
 use tracing::{error, info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
 
-pub enum WorkerRetrieved {
-    SameGuild,
-    OtherGuild,
-}
-
 struct PoolInner {
     worker_id_gen: u64,
 
@@ -80,16 +75,10 @@ impl VmWorkerPool {
         &self,
         guild_id: Id<GuildMarker>,
         premium_tier: Option<PremiumSlotTier>,
-    ) -> (WorkerHandle, WorkerRetrieved) {
+    ) -> WorkerHandle {
         let mut worker = self.inner_get_worker(guild_id, premium_tier).await;
-        let wr = if matches!(worker.last_active_guild, Some(g) if g == guild_id) {
-            WorkerRetrieved::SameGuild
-        } else {
-            WorkerRetrieved::OtherGuild
-        };
-
         worker.claim(guild_id);
-        (worker, wr)
+        worker
     }
 
     async fn inner_get_worker(
@@ -332,6 +321,11 @@ pub struct WorkerHandle {
     pub claimed_at: Instant,
     pub worker_id: u64,
     pub priority_index: usize,
+
+    /// Shadow of the vm currently alive inside the worker process, if any.
+    /// Maintained by [crate::vm_session::VmSession]; travels with the handle
+    /// through the pool so a re-claiming guild can resume its vm.
+    pub session_state: Option<crate::vm_session::SessionState>,
 }
 
 impl WorkerHandle {
@@ -391,6 +385,8 @@ fn init_worker_handles(
         claimed_at: Instant::now(),
         worker_id: pending.worker_id,
         priority_index: pending.priority_index,
+
+        session_state: None,
     }
 }
 

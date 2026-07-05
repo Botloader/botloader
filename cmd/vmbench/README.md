@@ -30,7 +30,8 @@ This drives the same code as `GuildHandler`/`VmSession` (via
 measuring until the vm acks it. Between iterations the vm is torn down so
 every run is a cold start.
 
-Requirements (same environment as the integration tests, e.g. `source .env`):
+Requirements (same environment as the integration tests; `run.sh` picks these
+up from the repo root `.env` automatically if they aren't already set):
 
 - `DATABASE_URL` — the provided scripts **replace the bench guild's scripts in
   this database** (default bench guild id: `999000000000000001`, override with
@@ -38,7 +39,8 @@ Requirements (same environment as the integration tests, e.g. `source .env`):
 - `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` — the vm
   worker processes fetch the discord config on startup
 - don't run it while a real scheduler is running on the same machine, they
-  share the worker socket (`/tmp/botloader_scheduler_workers`)
+  share the worker socket (`/tmp/botloader_scheduler_workers`); `run.sh`
+  refuses to start if something is listening on it
 
 ## Usage
 

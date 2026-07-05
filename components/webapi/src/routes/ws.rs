@@ -1,14 +1,13 @@
-use std::{borrow::Cow, convert::Infallible, pin::Pin, task::Poll, time::Duration};
+use std::{borrow::Cow, pin::Pin, task::Poll, time::Duration};
 
 use axum::{
     extract::{
         ws::{CloseCode, CloseFrame, Message, WebSocket, WebSocketUpgrade},
-        Extension, State,
+        State,
     },
     response::IntoResponse,
 };
 use botrpc::{types::GuildSpecifier, BotServiceClient};
-use discordoauthwrapper::{ClientCache, DiscordOauthApiClient, TwilightApiProvider};
 use futures::{stream::SelectAll, Stream, StreamExt};
 use guild_logger::LogEntry;
 use serde::{Deserialize, Serialize};
@@ -21,27 +20,16 @@ use twilight_model::{
 
 use crate::{app_state::AppState, middlewares::LoggedInSession};
 
-pub async fn ws_handler(
-    ws: WebSocketUpgrade,
-    Extension(client_cache): Extension<
-        ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-    >,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket_upgrade(socket, client_cache, state))
+pub async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket_upgrade(socket, state))
 }
 
-async fn handle_socket_upgrade(
-    socket: WebSocket,
-    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-    state: AppState,
-) {
-    WsConn::new(socket, client_cache, state).run().await;
+async fn handle_socket_upgrade(socket: WebSocket, state: AppState) {
+    WsConn::new(socket, state).run().await;
 }
 
 struct WsConn {
     socket: WebSocket,
-    client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
 
     active_log_streams: SelectAll<GuildLogStream>,
 
@@ -53,17 +41,12 @@ struct WsConn {
 type WsResult = Result<(), WsCloseReason>;
 
 impl WsConn {
-    fn new(
-        socket: WebSocket,
-        client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-        state: AppState,
-    ) -> Self {
+    fn new(socket: WebSocket, state: AppState) -> Self {
         Self {
             socket,
             active_log_streams: SelectAll::new(),
             state: WsState::UnAuth,
             app_state: state,
-            client_cache,
         }
     }
 
@@ -201,16 +184,9 @@ impl WsConn {
             .map_err(|_| WsCloseReason::InternalError)?
         {
             let api_client = self
-                .client_cache
-                .fetch(session.user.id, || {
-                    Result::<_, Infallible>::Ok(DiscordOauthApiClient::new_twilight(
-                        session.user.id,
-                        session.oauth_token.access_token.clone(),
-                        self.app_state.discord_oauth_client.clone(),
-                        self.app_state.db.clone(),
-                    ))
-                })
-                .unwrap();
+                .app_state
+                .oauth_api_client_cache
+                .fetch(session.user.id, &session.oauth_token.access_token);
 
             let logged_in_session = LoggedInSession::new(session, api_client);
 

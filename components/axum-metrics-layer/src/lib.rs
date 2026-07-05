@@ -1,6 +1,6 @@
 use axum::{
     extract::{MatchedPath, Request},
-    response::Response,
+    http::Response,
 };
 use futures::future::BoxFuture;
 use std::{
@@ -31,9 +31,9 @@ pub struct MetricsMiddleware<S> {
     name_prefix: &'static str,
 }
 
-impl<S> Service<Request> for MetricsMiddleware<S>
+impl<S, ResBody> Service<Request> for MetricsMiddleware<S>
 where
-    S: Service<Request, Response = Response> + Send + 'static,
+    S: Service<Request, Response = Response<ResBody>> + Send + 'static,
     S::Future: Send + 'static,
 {
     type Response = S::Response;

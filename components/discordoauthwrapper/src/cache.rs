@@ -1,73 +1,60 @@
-use std::{
-    fmt::{Debug, Display},
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 use lru::LruCache;
+use stores::Db;
 use twilight_model::id::{marker::UserMarker, Id};
 
-use crate::DiscordOauthApiClient;
+use crate::{DiscordOauthClient, TwilightOauthClient};
 
-type CacheInner<T, TU> = LruCache<Id<UserMarker>, DiscordOauthApiClient<T, TU>>;
+/// Creates a client for the given user id and access token, used when there's
+/// no cached client for the user. Swap this out for a mock factory in tests.
+pub type ClientFactory =
+    Arc<dyn Fn(Id<UserMarker>, &str) -> Arc<dyn DiscordOauthClient> + Send + Sync>;
 
-pub struct ClientCache<T, TU> {
-    inner: Arc<RwLock<CacheInner<T, TU>>>,
+type CacheInner = LruCache<Id<UserMarker>, Arc<dyn DiscordOauthClient>>;
+
+#[derive(Clone)]
+pub struct ClientCache {
+    factory: ClientFactory,
+    inner: Arc<RwLock<CacheInner>>,
 }
 
-impl<T, TU> Clone for ClientCache<T, TU> {
-    fn clone(&self) -> Self {
+impl ClientCache {
+    pub fn new(factory: ClientFactory) -> Self {
         Self {
-            inner: self.inner.clone(),
-        }
-    }
-}
-
-impl<T, TU> Default for ClientCache<T, TU> {
-    fn default() -> Self {
-        Self {
-            inner: Arc::new(RwLock::new(CacheInner::new(10000))),
-        }
-    }
-}
-
-impl<T, TU> ClientCache<T, TU>
-where
-    T: crate::DiscordOauthApiProvider + 'static,
-    TU: crate::TokenRefresher + 'static,
-    T::OtherError: Debug + Display + Send + Sync + 'static,
-{
-    pub fn new() -> Self {
-        Self {
-            inner: Arc::new(RwLock::new(CacheInner::new(10000))),
+            factory,
+            inner: Arc::new(RwLock::new(LruCache::new(10000))),
         }
     }
 
-    pub fn get(&self, user_id: Id<UserMarker>) -> Option<DiscordOauthApiClient<T, TU>> {
-        let mut write = self.inner.write().unwrap();
-        let client = write.get(&user_id);
-        client.cloned()
+    /// A cache producing real discord clients, refreshing tokens through the
+    /// provided oauth client and persisting them to the provided db.
+    pub fn new_twilight(oauth_client: oauth2::basic::BasicClient, db: Db) -> Self {
+        Self::new(Arc::new(move |user_id, access_token| {
+            Arc::new(TwilightOauthClient::new(
+                user_id,
+                access_token.to_owned(),
+                oauth_client.clone(),
+                db.clone(),
+            ))
+        }))
     }
 
-    pub fn fetch<F, FR>(
+    /// Returns the cached client for the user, creating one through the
+    /// factory otherwise.
+    pub fn fetch(
         &self,
         user_id: Id<UserMarker>,
-        f: F,
-    ) -> Result<DiscordOauthApiClient<T, TU>, FR>
-    where
-        F: FnOnce() -> Result<DiscordOauthApiClient<T, TU>, FR>,
-    {
+        access_token: &str,
+    ) -> Arc<dyn DiscordOauthClient> {
         let mut write = self.inner.write().unwrap();
         if let Some(v) = write.get(&user_id) {
-            return Ok(v.clone());
+            return v.clone();
         }
 
-        match f() {
-            Ok(v) => {
-                write.put(user_id, v.clone());
-                Ok(v)
-            }
-            Err(err) => Err(err),
-        }
+        let client = (self.factory)(user_id, access_token);
+        write.put(user_id, client.clone());
+        client
     }
 
     pub fn del(&self, user_id: Id<UserMarker>) {

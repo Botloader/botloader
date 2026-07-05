@@ -1,27 +1,39 @@
-use discordoauthwrapper::{ClientCache, DiscordOauthApiClient, TwilightApiProvider};
+use discordoauthwrapper::DiscordOauthClient;
 
 use axum::{
+    body::Body,
+    extract::State,
     http::{Request, Response},
+    middleware::Next,
     BoxError,
 };
 use core::fmt;
 use futures::future::BoxFuture;
 use std::{
-    convert::Infallible,
     ops::Deref,
+    sync::Arc,
     task::{Context, Poll},
 };
 use tower::{Layer, Service};
-use tracing::{error, Instrument};
+use tracing::{error, info, Instrument};
 
-use stores::{web::Session, Db};
+use stores::web::Session;
 
-type OAuthApiClientWrapper = DiscordOauthApiClient<TwilightApiProvider, oauth2::basic::BasicClient>;
+use crate::{app_state::AppState, errors::ApiErrorResponse};
 
 #[derive(Clone)]
 pub struct LoggedInSession {
-    pub api_client: OAuthApiClientWrapper,
+    pub api_client: Arc<dyn DiscordOauthClient>,
     pub session: Session,
+}
+
+impl LoggedInSession {
+    pub fn new(session: Session, api_client: Arc<dyn DiscordOauthClient>) -> Self {
+        Self {
+            api_client,
+            session,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -41,146 +53,84 @@ impl OptionalSession {
     }
 }
 
-impl LoggedInSession {
-    pub fn new(session: Session, api_client: OAuthApiClientWrapper) -> Self {
-        Self {
-            api_client,
-            session,
+/// Looks up the session behind the Authorization header, if any, and makes it
+/// available to inner services through [LoggedInSession]/[OptionalSession]
+/// request extensions.
+pub async fn session_mw(
+    State(state): State<AppState>,
+    mut req: Request<Body>,
+    next: Next,
+) -> Result<axum::response::Response, ApiErrorResponse> {
+    let session = match req.headers().get("Authorization").map(|v| v.to_str()) {
+        Some(Ok(token)) => state.db.get_session(token).await.map_err(|err| {
+            error!(%err, "failed fetching session");
+            ApiErrorResponse::InternalError
+        })?,
+        // treat a malformed header the same as an absent one
+        Some(Err(_)) => None,
+        None => None,
+    };
+
+    let Some(session) = session else {
+        req.extensions_mut().insert(OptionalSession::none());
+        return Ok(next.run(req).await);
+    };
+
+    let span = tracing::info_span!("session", user_id=%session.user.id);
+
+    async {
+        let api_client = state
+            .oauth_api_client_cache
+            .fetch(session.user.id, &session.oauth_token.access_token);
+
+        let logged_in_session = LoggedInSession::new(session, api_client);
+
+        // Check if the session is broken, for example they unauthorized botloader or something along those lines.
+        let was_broken = check_broken_session(&state, &logged_in_session).await;
+        if !was_broken {
+            req.extensions_mut().insert(logged_in_session.clone());
+            req.extensions_mut()
+                .insert(OptionalSession(Some(logged_in_session.clone())));
+        } else {
+            info!("Found broken session before handler ran");
+            req.extensions_mut().insert(OptionalSession(None));
         }
-    }
-}
 
-#[derive(Clone)]
-pub struct SessionLayer {
-    pub session_store: Db,
-    pub oauth_conf: oauth2::basic::BasicClient,
-    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-}
+        let resp = next.run(req).await;
 
-impl SessionLayer {
-    pub fn new(session_store: Db, oauth_conf: oauth2::basic::BasicClient) -> Self {
-        Self {
-            session_store,
-            oauth_conf,
-            oauth_api_client_cache: Default::default(),
-        }
-    }
-
-    pub fn require_auth_layer(&self) -> RequireAuthLayer {
-        RequireAuthLayer {}
-    }
-}
-
-impl<S> Layer<S> for SessionLayer {
-    type Service = SessionMiddleware<S>;
-
-    fn layer(&self, inner: S) -> Self::Service {
-        SessionMiddleware {
-            db: self.session_store.clone(),
-            oauth_conf: self.oauth_conf.clone(),
-            oauth_api_client_cache: self.oauth_api_client_cache.clone(),
-            inner,
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct SessionMiddleware<S> {
-    pub inner: S,
-    pub db: Db,
-    pub oauth_conf: oauth2::basic::BasicClient,
-    pub oauth_api_client_cache: ClientCache<TwilightApiProvider, oauth2::basic::BasicClient>,
-}
-
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for SessionMiddleware<S>
-where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
-    S::Future: Send + 'static,
-    S::Error: Into<BoxError>,
-    ReqBody: Send + 'static,
-    ResBody: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = BoxError;
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx).map_err(|e| e.into())
-    }
-
-    fn call(&mut self, mut req: Request<ReqBody>) -> Self::Future {
-        // best practice is to clone the inner service like this
-        // see https://github.com/tower-rs/tower/issues/547 for details
-        let clone = self.inner.clone();
-        let mut inner = std::mem::replace(&mut self.inner, clone);
-
-        let store = self.db.clone();
-        let oauth_conf = self.oauth_conf.clone();
-        let cache = self.oauth_api_client_cache.clone();
-
-        Box::pin(async move {
-            let auth_header = req.headers().get("Authorization");
-
-            match auth_header.map(|e| e.to_str()) {
-                Some(Ok(t)) => {
-                    if let Some(session) = store.get_session(t).await? {
-                        let extensions = req.extensions_mut();
-
-                        let span = tracing::info_span!("session", user_id=%session.user.id);
-
-                        let api_client = cache
-                            .fetch(session.user.id, || {
-                                Result::<_, Infallible>::Ok(OAuthApiClientWrapper::new_twilight(
-                                    session.user.id,
-                                    session.oauth_token.access_token.clone(),
-                                    oauth_conf,
-                                    store.clone(),
-                                ))
-                            })
-                            .unwrap();
-
-                        let logged_in_session = LoggedInSession::new(session, api_client);
-                        extensions.insert(logged_in_session.clone());
-                        extensions.insert(OptionalSession(Some(logged_in_session.clone())));
-
-                        let resp = {
-                            // catch potential work being made creating the future
-                            let _guard = span.enter();
-                            let fut = inner.call(req);
-                            drop(_guard);
-
-                            fut
-                        }
-                        .instrument(span)
-                        .await
-                        .map_err(|e| e.into());
-
-                        if logged_in_session.api_client.is_broken() {
-                            // remove from store if the refresh token is broken
-                            store
-                                .del_all_sessions(logged_in_session.session.user.id)
-                                .await
-                                .map_err(|err| {
-                                    error!(%err, "failed clearing sessions from broken token")
-                                }).ok();
-                        }
-
-                        resp
-                    } else {
-                        inner.call(req).await.map_err(|e| e.into())
-                    }
-                }
-                Some(Err(e)) => Err(e.into()),
-                None => inner.call(req).await.map_err(|e| e.into()),
+        // re-check after running the inner handler, as it could have changed
+        if !was_broken {
+            if check_broken_session(&state, &logged_in_session).await {
+                info!("Found broken session after handler ran");
             }
+        }
 
-            // if let Some(s) = span {
-            //     inner.call(req).instrument(s).await.map_err(|e| e.into())
-            // } else {
-            //     inner.call(req).await.map_err(|e| e.into())
-            // }
-        })
+        Ok(resp)
     }
+    .instrument(span)
+    .await
+}
+
+async fn check_broken_session(
+    state: &Arc<crate::app_state::InnerAppState>,
+    logged_in_session: &LoggedInSession,
+) -> bool {
+    if !logged_in_session.api_client.is_broken() {
+        return false;
+    }
+
+    // the refresh token is invalid, the user needs to re-authorize;
+    // drop the client and log them out everywhere
+    let user_id = logged_in_session.session.user.id;
+    state.oauth_api_client_cache.del(user_id);
+    state
+        .db
+        .del_all_sessions(user_id)
+        .await
+        .map_err(|err| error!(%err, "failed clearing sessions from broken token"))
+        .ok();
+
+    true
 }
 
 #[derive(Clone)]
