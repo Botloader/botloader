@@ -84,7 +84,7 @@ pub async fn run(
     let authorized_admin_routes = Router::new()
         .route("/vm_workers", get(routes::admin::get_worker_statuses))
         .route(
-            "/guild/:guild_id/status",
+            "/guild/{guild_id}/status",
             get(routes::admin::get_guild_status),
         )
         .layer(axum::middleware::from_fn_with_state(
@@ -108,16 +108,16 @@ pub async fn run(
             get(routes::scripts::get_all_guild_scripts_with_plugins),
         )
         .route(
-            "/scripts/:script_id",
+            "/scripts/{script_id}",
             patch(routes::scripts::update_guild_script)
                 .delete(routes::scripts::delete_guild_script),
         )
         .route(
-            "/scripts/:script_id/validate_settings",
+            "/scripts/{script_id}/validate_settings",
             post(routes::scripts::validate_script_settings),
         )
         .route(
-            "/scripts/:script_id/update_plugin",
+            "/scripts/{script_id}/update_plugin",
             post(routes::scripts::update_script_plugin),
         )
         .route("/add_plugin", post(routes::plugins::guild_add_plugin))
@@ -126,11 +126,11 @@ pub async fn run(
 
     let authorized_api_routes =
         Router::new()
-            .nest("/guilds/:guild", authorized_api_guild_routes)
+            .nest("/guilds/{guild}", authorized_api_guild_routes)
             .nest("/admin", authorized_admin_routes)
             .route("/guilds", get(routes::guilds::list_user_guilds_route))
             .route(
-                "/premium_slots/:slot_id/update_guild",
+                "/premium_slots/{slot_id}/update_guild",
                 post(routes::premium::update_premium_slot_guild),
             )
             .route(
@@ -150,31 +150,31 @@ pub async fn run(
                 get(routes::plugins::get_user_plugins).put(routes::plugins::create_plugin),
             )
             .route(
-                "/user/plugins/:plugin_id",
+                "/user/plugins/{plugin_id}",
                 patch(routes::plugins::update_plugin_meta).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
             .route(
-                "/user/plugins/:plugin_id/dev_version",
+                "/user/plugins/{plugin_id}/dev_version",
                 patch(routes::plugins::update_plugin_dev_source).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
             .route(
-                "/user/plugins/:plugin_id/publish_script_version",
+                "/user/plugins/{plugin_id}/publish_script_version",
                 post(routes::plugins::publish_plugin_version).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
             .route(
-                "/user/plugins/:plugin_id/images",
+                "/user/plugins/{plugin_id}/images",
                 post(routes::plugins::add_plugin_image).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
             .route(
-                "/user/plugins/:plugin_id/images/:image_id",
+                "/user/plugins/{plugin_id}/images/{image_id}",
                 delete(routes::plugins::delete_plugin_image).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
@@ -201,7 +201,7 @@ pub async fn run(
         .route("/error", get(routes::errortest::handle_errortest))
         .route("/login", get(AuthHandlers::handle_login))
         .route(
-            "/media/plugins/:plugin_id/images/*image_id_specifier_with_extension",
+            "/media/plugins/{plugin_id}/images/{*image_id_specifier_with_extension}",
             get(routes::plugins::get_plugin_image),
         )
         .route(
@@ -209,7 +209,7 @@ pub async fn run(
             get(routes::plugins::get_published_public_plugins),
         )
         .route(
-            "/api/plugins/:plugin_id",
+            "/api/plugins/{plugin_id}",
             get(routes::plugins::get_plugin).layer(axum::middleware::from_fn_with_state(
                 state.clone(),
                 plugin_middleware,

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, pin::Pin, task::Poll, time::Duration};
+use std::{pin::Pin, task::Poll, time::Duration};
 
 use axum::{
     extract::{
@@ -138,7 +138,7 @@ impl WsConn {
         self.socket
             .send(Message::Close(Some(CloseFrame {
                 code,
-                reason: Cow::from(desc),
+                reason: desc.into(),
             })))
             .await
             .ok(); // we don't really care about the error here
@@ -292,7 +292,7 @@ impl WsConn {
     }
 
     async fn send_ping(&mut self) -> bool {
-        match self.send(Message::Ping(vec![69])).await {
+        match self.send(Message::Ping(vec![69].into())).await {
             Ok(_) => true,
             Err(reason) => {
                 self.close(reason).await;
@@ -312,7 +312,7 @@ impl WsConn {
 
     async fn send_event(&mut self, evt: WsEvent) -> WsResult {
         let encoded = serde_json::to_string(&evt).map_err(|_| WsCloseReason::JsonEncodeError)?;
-        self.send(Message::Text(encoded)).await
+        self.send(Message::Text(encoded.into())).await
     }
 }
 

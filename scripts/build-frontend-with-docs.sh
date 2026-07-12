@@ -3,6 +3,7 @@ set -e
 
 # cd to the script location
 cd "${0%/*}"
+cd ..
 
 # build docs
 cd components/runtime/docgen

@@ -80,21 +80,21 @@ pub async fn run_http_server(
     broker_handle: BrokerHandle,
 ) {
     let app = Router::new()
-        // .route("/guilds/:guild_id/stream_events", get(handle_stream_events))
-        .route("/guilds/:guild_id", get(handle_get_guild))
+        // .route("/guilds/{guild_id}/stream_events", get(handle_stream_events))
+        .route("/guilds/{guild_id}", get(handle_get_guild))
         .route(
-            "/guilds/:guild_id/voice_states",
+            "/guilds/{guild_id}/voice_states",
             get(handle_get_guild_voice_states),
         )
-        .route("/guilds/:guild_id/emojis", get(handle_get_emojis))
-        .route("/guilds/:guild_id/channels", get(handle_get_channels))
+        .route("/guilds/{guild_id}/emojis", get(handle_get_emojis))
+        .route("/guilds/{guild_id}/channels", get(handle_get_channels))
         .route(
-            "/guilds/:guild_id/channels/:channel_id",
+            "/guilds/{guild_id}/channels/{channel_id}",
             get(handle_get_channel),
         )
-        .route("/guilds/:guild_id/members", get(handle_get_members))
-        .route("/guilds/:guild_id/roles", get(handle_get_roles))
-        .route("/guilds/:guild_id/roles/:role_id", get(handle_get_role))
+        .route("/guilds/{guild_id}/members", get(handle_get_members))
+        .route("/guilds/{guild_id}/roles", get(handle_get_roles))
+        .route("/guilds/{guild_id}/roles/{role_id}", get(handle_get_role))
         .route("/connected_guilds", get(handle_get_connected_guilds))
         .with_state(RouterState::new(InnerRouterState {
             broker_handle,
