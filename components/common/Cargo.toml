@@ -16,6 +16,7 @@ tracing-log = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+schemars = { workspace = true }
 dotenv = "0.15"
 clap = { workspace = true }
 chrono = { workspace = true }

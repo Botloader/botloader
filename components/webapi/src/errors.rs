@@ -105,6 +105,36 @@ impl ApiErrorResponse {
     }
 }
 
+/// Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation
+#[derive(serde::Serialize, schemars::JsonSchema)]
+pub struct ApiErrorBody {
+    pub code: u32,
+    pub description: String,
+    pub extra_data: Option<serde_json::Value>,
+}
+
+impl aide::OperationOutput for ApiErrorResponse {
+    type Inner = ApiErrorBody;
+
+    fn operation_response(
+        ctx: &mut aide::generate::GenContext,
+        operation: &mut aide::openapi::Operation,
+    ) -> Option<aide::openapi::Response> {
+        axum::Json::<ApiErrorBody>::operation_response(ctx, operation)
+    }
+
+    fn inferred_responses(
+        ctx: &mut aide::generate::GenContext,
+        operation: &mut aide::openapi::Operation,
+    ) -> Vec<(Option<u16>, aide::openapi::Response)> {
+        // error codes vary per variant; document as the default response
+        match Self::operation_response(ctx, operation) {
+            Some(response) => vec![(None, response)],
+            None => Vec::new(),
+        }
+    }
+}
+
 impl IntoResponse for ApiErrorResponse {
     fn into_response(self) -> Response {
         let (resp_code, err_code, extra) = self.public_desc();

@@ -1,12 +1,16 @@
 use std::sync::Arc;
 
+use aide::{
+    axum::{routing as api_routing, ApiRouter},
+    openapi::OpenApi,
+};
 use axum::{
     error_handling::HandleErrorLayer,
     extract::Extension,
     http::StatusCode,
     response::IntoResponse,
-    routing::{delete, get, patch, post},
-    BoxError, Router,
+    routing::{get, post},
+    BoxError,
 };
 
 use routes::auth::AuthHandlers;
@@ -17,6 +21,7 @@ use tracing::{info, Level};
 use twilight_model::id::{marker::GuildMarker, Id};
 
 mod app_state;
+mod discord_schemas;
 mod errors;
 mod middlewares;
 mod news_poller;
@@ -81,150 +86,178 @@ pub async fn run(
             require_current_guild_admin_middleware,
         ));
 
-    let authorized_admin_routes = Router::new()
-        .route("/vm_workers", get(routes::admin::get_worker_statuses))
-        .route(
+    let authorized_admin_routes = ApiRouter::new()
+        .api_route(
+            "/vm_workers",
+            api_routing::get(routes::admin::get_worker_statuses),
+        )
+        .api_route(
             "/guild/{guild_id}/status",
-            get(routes::admin::get_guild_status),
+            api_routing::get(routes::admin::get_guild_status),
         )
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             bl_admin_only_mw,
         ));
 
-    let authorized_api_guild_routes = Router::new()
-        .route("/reload_vm", post(routes::vm::reload_guild_vm))
-        .route("/settings", get(routes::guilds::get_guild_settings))
-        .route(
+    let authorized_api_guild_routes = ApiRouter::new()
+        .api_route("/reload_vm", api_routing::post(routes::vm::reload_guild_vm))
+        .api_route("/settings", api_routing::get(routes::guilds::get_guild_settings))
+        .api_route(
             "/premium_slots",
-            get(routes::guilds::get_guild_premium_slots),
+            api_routing::get(routes::guilds::get_guild_premium_slots),
         )
-        .route(
+        .api_route(
             "/scripts",
-            get(routes::scripts::get_all_guild_scripts).put(routes::scripts::create_guild_script),
+            api_routing::get(routes::scripts::get_all_guild_scripts)
+                .put(routes::scripts::create_guild_script),
         )
-        .route(
+        .api_route(
             "/scripts_with_plugins",
-            get(routes::scripts::get_all_guild_scripts_with_plugins),
+            api_routing::get(routes::scripts::get_all_guild_scripts_with_plugins),
         )
-        .route(
+        .api_route(
             "/scripts/{script_id}",
-            patch(routes::scripts::update_guild_script)
+            api_routing::patch(routes::scripts::update_guild_script)
                 .delete(routes::scripts::delete_guild_script),
         )
-        .route(
+        .api_route(
             "/scripts/{script_id}/validate_settings",
-            post(routes::scripts::validate_script_settings),
+            api_routing::post(routes::scripts::validate_script_settings),
         )
-        .route(
+        .api_route(
             "/scripts/{script_id}/update_plugin",
-            post(routes::scripts::update_script_plugin),
+            api_routing::post(routes::scripts::update_script_plugin),
         )
-        .route("/add_plugin", post(routes::plugins::guild_add_plugin))
-        .route("/full_guild", get(routes::guilds::get_full_guild))
+        .api_route(
+            "/add_plugin",
+            api_routing::post(routes::plugins::guild_add_plugin),
+        )
+        .api_route("/full_guild", api_routing::get(routes::guilds::get_full_guild))
         .layer(auth_guild_mw_stack);
 
     let authorized_api_routes =
-        Router::new()
+        ApiRouter::new()
             .nest("/guilds/{guild}", authorized_api_guild_routes)
             .nest("/admin", authorized_admin_routes)
-            .route("/guilds", get(routes::guilds::list_user_guilds_route))
-            .route(
+            .api_route(
+                "/guilds",
+                api_routing::get(routes::guilds::list_user_guilds_route),
+            )
+            .api_route(
                 "/premium_slots/{slot_id}/update_guild",
-                post(routes::premium::update_premium_slot_guild),
+                api_routing::post(routes::premium::update_premium_slot_guild),
             )
-            .route(
+            .api_route(
                 "/premium_slots",
-                get(routes::premium::list_user_premium_slots),
+                api_routing::get(routes::premium::list_user_premium_slots),
             )
-            .route(
+            .api_route(
                 "/sessions",
-                get(routes::sessions::get_all_sessions)
+                api_routing::get(routes::sessions::get_all_sessions)
                     .delete(routes::sessions::del_session)
                     .put(routes::sessions::create_api_token),
             )
-            .route("/sessions/all", delete(routes::sessions::del_all_sessions))
-            .route("/current_user", get(routes::general::get_current_user))
-            .route(
+            .api_route(
+                "/sessions/all",
+                api_routing::delete(routes::sessions::del_all_sessions),
+            )
+            .api_route(
+                "/current_user",
+                api_routing::get(routes::general::get_current_user),
+            )
+            .api_route(
                 "/user/plugins",
-                get(routes::plugins::get_user_plugins).put(routes::plugins::create_plugin),
+                api_routing::get(routes::plugins::get_user_plugins)
+                    .put(routes::plugins::create_plugin),
             )
-            .route(
+            .api_route(
                 "/user/plugins/{plugin_id}",
-                patch(routes::plugins::update_plugin_meta).layer(
+                api_routing::patch(routes::plugins::update_plugin_meta).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
-            .route(
+            .api_route(
                 "/user/plugins/{plugin_id}/dev_version",
-                patch(routes::plugins::update_plugin_dev_source).layer(
+                api_routing::patch(routes::plugins::update_plugin_dev_source).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
-            .route(
+            .api_route(
                 "/user/plugins/{plugin_id}/publish_script_version",
-                post(routes::plugins::publish_plugin_version).layer(
+                api_routing::post(routes::plugins::publish_plugin_version).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
-            .route(
+            .api_route(
                 "/user/plugins/{plugin_id}/images",
-                post(routes::plugins::add_plugin_image).layer(
+                api_routing::post(routes::plugins::add_plugin_image).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
-            .route(
+            .api_route(
                 "/user/plugins/{plugin_id}/images/{image_id}",
-                delete(routes::plugins::delete_plugin_image).layer(
+                api_routing::delete(routes::plugins::delete_plugin_image).layer(
                     axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
                 ),
             )
-            .route("/logout", post(AuthHandlers::handle_logout))
-            .route(
+            .api_route("/logout", api_routing::post(AuthHandlers::handle_logout))
+            .api_route(
                 "/stripe/customer_portal",
-                post(routes::stripe::handle_create_customer_portal_session),
+                api_routing::post(routes::stripe::handle_create_customer_portal_session),
             )
-            .route(
+            .api_route(
                 "/stripe/create_checkout_session",
-                post(routes::stripe::handle_create_checkout_session),
+                api_routing::post(routes::stripe::handle_create_checkout_session),
             );
 
     let auth_routes_mw_stack = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(handle_mw_err_no_auth))
         .layer(RequireAuthLayer {});
 
-    let authorized_routes = Router::new()
+    let authorized_routes = ApiRouter::new()
         .nest("/api", authorized_api_routes)
         .layer(auth_routes_mw_stack);
 
-    let public_routes = Router::new()
+    let public_routes = ApiRouter::new()
         .route("/error", get(routes::errortest::handle_errortest))
         .route("/login", get(AuthHandlers::handle_login))
         .route(
             "/media/plugins/{plugin_id}/images/{*image_id_specifier_with_extension}",
             get(routes::plugins::get_plugin_image),
         )
-        .route(
+        .api_route(
             "/api/plugins",
-            get(routes::plugins::get_published_public_plugins),
+            api_routing::get(routes::plugins::get_published_public_plugins),
         )
-        .route(
+        .api_route(
             "/api/plugins/{plugin_id}",
-            get(routes::plugins::get_plugin).layer(axum::middleware::from_fn_with_state(
-                state.clone(),
-                plugin_middleware,
-            )),
+            api_routing::get(routes::plugins::get_plugin).layer(
+                axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
+            ),
         )
-        .route("/api/news", get(routes::general::get_news))
+        .api_route("/api/news", api_routing::get(routes::general::get_news))
         .route("/api/ws", get(routes::ws::ws_handler))
-        .route(
+        .api_route(
             "/api/confirm_login",
-            post(AuthHandlers::handle_confirm_login),
+            api_routing::post(AuthHandlers::handle_confirm_login),
         )
         .route("/api/stripe/webhook", post(routes::stripe::handle_webhook));
 
+    let mut api = OpenApi {
+        info: aide::openapi::Info {
+            title: "Botloader HTTP API".to_string(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
     let app = public_routes
         .merge(authorized_routes)
+        .finish_api(&mut api)
+        .route("/api/openapi.json", get(serve_openapi))
+        .layer(Extension(Arc::new(api)))
         .layer(common_middleware_stack)
         .fallback(|| async { StatusCode::NOT_FOUND })
         .with_state(state);
@@ -240,6 +273,10 @@ pub async fn run(
 #[allow(dead_code)]
 async fn todo_route() -> &'static str {
     "todo"
+}
+
+async fn serve_openapi(Extension(api): Extension<Arc<OpenApi>>) -> impl IntoResponse {
+    axum::Json(api)
 }
 
 async fn handle_mw_err_no_auth(err: BoxError) -> impl IntoResponse {

@@ -1,11 +1,10 @@
 use axum::{
     extract::{Extension, State},
-    response::IntoResponse,
     Json,
 };
 use chrono::{DateTime, Utc};
 use dbrokerapi::models::BrokerGuild;
-use stores::config::{PremiumSlot, PremiumSlotTier};
+use stores::config::{GuildMetaConfig, PremiumSlot, PremiumSlotTier};
 use twilight_model::{
     id::{
         marker::{GuildMarker, UserMarker},
@@ -21,21 +20,22 @@ use crate::{
 use serde::Serialize;
 use tracing::error;
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct GuildList {
     guilds: Vec<GuildListEntry>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct GuildListEntry {
     connected: bool,
+    #[schemars(with = "crate::discord_schemas::CurrentUserGuildSchema")]
     guild: CurrentUserGuild,
 }
 
 pub async fn list_user_guilds_route(
     State(state): State<AppState>,
     Extension(session): Extension<LoggedInSession>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<GuildList>> {
     let user_guilds = session
         .api_client
         .current_user_guilds()
@@ -73,7 +73,7 @@ pub async fn list_user_guilds_route(
 pub async fn get_guild_settings(
     State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<GuildMetaConfig>> {
     let settings = state
         .db
         .get_guild_meta_config_or_default(current_guild.id)
@@ -102,10 +102,14 @@ pub async fn get_guild_premium_slots(
     Ok(Json(slots.into_iter().map(Into::into).collect()))
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, schemars::JsonSchema)]
 pub struct FullGuild {
+    // broker/twilight types don't implement JsonSchema, exposed as untyped json
+    #[schemars(with = "serde_json::Value")]
     guild: BrokerGuild,
+    #[schemars(with = "Vec<serde_json::Value>")]
     channels: Vec<twilight_model::channel::Channel>,
+    #[schemars(with = "Vec<serde_json::Value>")]
     roles: Vec<twilight_model::guild::Role>,
 }
 
@@ -154,15 +158,17 @@ pub async fn get_full_guild(
     }))
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, schemars::JsonSchema)]
 pub struct GuildPremiumSlot {
     pub id: u64,
     pub title: String,
+    #[schemars(with = "Option<String>")]
     pub user_id: Option<Id<UserMarker>>,
     pub tier: PremiumSlotTier,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
+    #[schemars(with = "Option<String>")]
     pub attached_guild_id: Option<Id<GuildMarker>>,
 }
 

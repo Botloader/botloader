@@ -3,7 +3,6 @@ use std::io::Cursor;
 use axum::{
     extract::{Multipart, Path, State},
     http::{header::CONTENT_TYPE, HeaderMap, HeaderValue, StatusCode},
-    response::IntoResponse,
     Extension, Json,
 };
 use botrpc::BotServiceClient;
@@ -33,15 +32,16 @@ use crate::{
     ApiResult,
 };
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, schemars::JsonSchema)]
 pub struct DiscordUser {
+    #[schemars(with = "String")]
     id: Id<UserMarker>,
     username: String,
     discriminator: String,
     avatar: Option<String>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, schemars::JsonSchema)]
 pub struct User {
     #[serde(flatten)]
     inner: DiscordUser,
@@ -49,7 +49,7 @@ pub struct User {
     is_bl_trusted: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct PluginResponse {
     #[serde(flatten)]
     plugin: Plugin,
@@ -84,7 +84,7 @@ pub async fn get_published_public_plugins(
 pub async fn get_user_plugins(
     State(state): State<AppState>,
     Extension(session): Extension<LoggedInSession>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Vec<PluginResponse>>> {
     let plugins = state
         .db
         .get_user_plugins(session.session.user.id.get())
@@ -105,7 +105,7 @@ pub async fn get_plugin(
     Extension(plugin): Extension<Plugin>,
     Extension(maybe_session): Extension<OptionalSession>,
     State(state): State<AppState>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<PluginResponse>> {
     let plugin = fetch_plugin_author(
         &state.discord_config,
         maybe_session.as_ref().map(|v| &v.session.user),
@@ -117,7 +117,7 @@ pub async fn get_plugin(
 }
 
 // create plugin
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct CreatePluginBody {
     pub name: String,
     pub short_description: String,
@@ -128,7 +128,7 @@ pub async fn create_plugin(
     State(state): State<AppState>,
     Extension(session): Extension<LoggedInSession>,
     Json(body): Json<CreatePluginBody>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Plugin>> {
     let create = CreatePlugin {
         author_id: session.session.user.id.get(),
         name: body.name,
@@ -164,7 +164,7 @@ pub async fn create_plugin(
     Ok(Json(plugin))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct UpdatePluginMetaRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -184,7 +184,7 @@ pub async fn update_plugin_meta(
     Extension(session): Extension<LoggedInSession>,
     Extension(plugin): Extension<Plugin>,
     Json(body): Json<UpdatePluginMetaRequest>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Plugin>> {
     let update = UpdatePluginMeta {
         name: body.name,
         short_description: body.short_description,
@@ -216,7 +216,7 @@ pub async fn update_plugin_meta(
     Ok(Json(plugin))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct UpdatePluginDevSourceRequest {
     new_source: String,
 }
@@ -234,7 +234,7 @@ pub async fn update_plugin_dev_source(
     Extension(session): Extension<LoggedInSession>,
     Extension(plugin): Extension<Plugin>,
     Json(body): Json<UpdatePluginDevSourceRequest>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Plugin>> {
     if let Err(err) = validate(&body, &()) {
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
@@ -256,7 +256,7 @@ pub async fn update_plugin_dev_source(
 }
 
 // publish plugin version
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct PublishPluginVersionData {
     new_source: String,
 }
@@ -274,7 +274,7 @@ pub async fn publish_plugin_version(
     Extension(session): Extension<LoggedInSession>,
     Extension(plugin): Extension<Plugin>,
     Json(body): Json<PublishPluginVersionData>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<EmptyResponse> {
     if let Err(err) = validate(&body, &()) {
         return Err(ApiErrorResponse::ValidationFailed(err));
     }
@@ -307,7 +307,7 @@ pub async fn publish_plugin_version(
     Ok(EmptyResponse)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct GuildAddPluginData {
     plugin_id: u64,
     auto_update: bool,
@@ -318,7 +318,7 @@ pub async fn guild_add_plugin(
     Extension(session): Extension<LoggedInSession>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Json(body): Json<GuildAddPluginData>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<stores::config::Script>> {
     let plugin = fetch_plugin(&state.db, body.plugin_id).await?;
 
     if !plugin.is_public && plugin.author_id != session.session.user.id {
@@ -591,7 +591,7 @@ pub async fn add_plugin_image(
     Ok(EmptyResponse)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct ImageParam {
     pub image_id: Uuid,
 }

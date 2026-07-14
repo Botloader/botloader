@@ -22,7 +22,7 @@ pub struct AuthHandlers {
     csrf_store: InMemoryCsrfStore,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct ConfirmLoginQuery {
     code: String,
     state: String,
@@ -33,8 +33,9 @@ impl AuthHandlers {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct ConfirmLoginSuccess {
+    #[schemars(with = "crate::discord_schemas::CurrentUserSchema")]
     user: CurrentUser,
     token: String,
 }
@@ -69,7 +70,7 @@ impl AuthHandlers {
         auth_handler: extract::Extension<Arc<AuthHandlers>>,
         State(state): State<AppState>,
         Json(data): Json<ConfirmLoginQuery>,
-    ) -> ApiResult<impl IntoResponse> {
+    ) -> ApiResult<Json<ConfirmLoginSuccess>> {
         let valid_csrf_token = auth_handler.csrf_store.check_csrf_token(&data.state).await;
 
         if !valid_csrf_token {
@@ -126,7 +127,7 @@ impl AuthHandlers {
     pub async fn handle_logout(
         auth_handler: extract::Extension<Arc<AuthHandlers>>,
         session: extract::Extension<LoggedInSession>,
-    ) -> ApiResult<impl IntoResponse> {
+    ) -> ApiResult<Json<()>> {
         auth_handler
             .db
             .del_session(&session.session.token)

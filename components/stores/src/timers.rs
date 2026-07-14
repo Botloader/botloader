@@ -443,7 +443,7 @@ pub struct IntervalTimer {
     pub plugin_id: Option<u64>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, schemars::JsonSchema)]
 pub enum IntervalType {
     Minutes(u64),
     Cron(String),

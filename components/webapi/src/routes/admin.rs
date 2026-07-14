@@ -39,7 +39,7 @@ pub async fn get_worker_statuses(
     ))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct GuildIdParam {
     pub guild_id: u64,
 }
@@ -71,7 +71,7 @@ pub async fn get_guild_status(
     }))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct ApiVmWorkerStatus {
     pub worker_id: u32,
     pub currently_claimed_by_guild_id: Option<String>,
@@ -80,8 +80,9 @@ pub struct ApiVmWorkerStatus {
     pub returned_last_ms_ago: u64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct ApiGuildStatusResponse {
+    #[schemars(with = "String")]
     pub guild_id: Id<GuildMarker>,
     pub current_claimed_worker_id: Option<u32>,
     pub last_claimed_worker_id: Option<u32>,

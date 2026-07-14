@@ -38,7 +38,7 @@ impl Display for NotBigU64 {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Default, schemars::JsonSchema)]
 pub struct NotBigI64(pub i64);
 
 impl Display for NotBigI64 {

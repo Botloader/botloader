@@ -57,12 +57,13 @@ pub async fn update_premium_slot_guild(
     Ok(Json(res))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct UpdateSlotGuildBody {
+    #[schemars(with = "Option<String>")]
     guild_id: Option<Id<GuildMarker>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct UpdateSlotPathParams {
     slot_id: u64,
 }

@@ -31,6 +31,13 @@ tokio = { workspace = true }
 tower-http = { version = "0.5.1", features = ["trace", "set-header"] }
 tower = "0.4"
 axum = { workspace = true }
+aide = { version = "0.15", features = [
+    "axum",
+    "axum-json",
+    "axum-query",
+    "axum-multipart",
+] }
+schemars = { workspace = true }
 uuid = { workspace = true }
 image = { workspace = true }
 

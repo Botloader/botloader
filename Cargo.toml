@@ -1,6 +1,7 @@
 [workspace]
 members = ["components/*", "cmd/*"]
 exclude = [
+    "components/auto_api",
     "cmd/schedulerwithworker",
     "cmd/scheduler",
     "cmd/vmworker",
@@ -32,6 +33,7 @@ tracing-log = "0.2"
 uuid = { version = "1.7.0", features = ["v4", "serde"] }
 regex = "1.10"
 oauth2 = "4.4.2"
+schemars = { version = "0.9", features = ["chrono04", "uuid1"] }
 
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"

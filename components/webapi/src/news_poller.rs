@@ -130,17 +130,19 @@ impl NewsHandle {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct NewsItem {
     author: NewsAuthor,
+    #[schemars(with = "String")]
     message_id: Id<MessageMarker>,
+    #[schemars(with = "String")]
     channel_id: Id<ChannelMarker>,
     channel_name: String,
     content: String,
     posted_at: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct NewsAuthor {
     username: String,
     avatar_url: Option<String>,

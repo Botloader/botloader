@@ -1,6 +1,5 @@
 use axum::{
     extract::{Extension, State},
-    response::IntoResponse,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -13,7 +12,7 @@ use crate::{
 
 use tracing::error;
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct SessionMeta {
     kind: SessionType,
     created_at: chrono::DateTime<chrono::Utc>,
@@ -28,7 +27,7 @@ impl From<Session> for SessionMeta {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct SessionMetaWithKey {
     kind: SessionType,
     created_at: chrono::DateTime<chrono::Utc>,
@@ -77,7 +76,7 @@ pub async fn create_api_token(
     Ok(Json(session.into()))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct DelSessionPayload {
     token: String,
 }
@@ -86,7 +85,7 @@ pub async fn del_session(
     Extension(session): Extension<LoggedInSession>,
     State(state): State<AppState>,
     Json(payload): Json<DelSessionPayload>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<EmptyResponse> {
     let deleting = state.db.get_session(&payload.token).await.map_err(|err| {
         error!(%err, "failed fetching session");
         ApiErrorResponse::InternalError
@@ -115,7 +114,7 @@ pub async fn del_session(
 pub async fn del_all_sessions(
     Extension(session): Extension<LoggedInSession>,
     State(state): State<AppState>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<EmptyResponse> {
     state
         .db
         .del_all_sessions(session.session.user.id)

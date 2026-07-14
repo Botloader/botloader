@@ -1487,7 +1487,7 @@ impl From<DbPluginImage> for PluginImage {
 }
 
 /// Struct you get back from the store
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct Script {
     pub id: u64,
     pub name: String,
@@ -1524,13 +1524,15 @@ pub struct CreateScript {
 }
 
 /// Contribution points for a scripts, e.g triggers, commands etc
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ScriptContributes {
+    // twilight types don't implement JsonSchema, exposed as untyped json
+    #[schemars(with = "Vec<serde_json::Value>")]
     pub commands: Vec<twilight_model::application::command::Command>,
     pub interval_timers: Vec<IntervalTimerContrib>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct IntervalTimerContrib {
     pub name: String,
     pub interval: crate::timers::IntervalType,
@@ -1582,9 +1584,11 @@ pub fn hash_settings_values(values: &[SettingsOptionValue]) -> String {
 }
 
 /// A guilds config, for storing core botloader settings
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
 pub struct GuildMetaConfig {
+    #[schemars(with = "String")]
     pub guild_id: Id<GuildMarker>,
+    #[schemars(with = "Option<String>")]
     pub error_channel_id: Option<Id<ChannelMarker>>,
 }
 
@@ -1607,10 +1611,11 @@ pub struct JoinedGuild {
     pub left_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct PremiumSlot {
     pub id: u64,
     pub title: String,
+    #[schemars(with = "Option<String>")]
     pub user_id: Option<Id<UserMarker>>,
     pub message: String,
     pub source: String,
@@ -1621,6 +1626,7 @@ pub struct PremiumSlot {
     pub updated_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub manage_url: String,
+    #[schemars(with = "Option<String>")]
     pub attached_guild_id: Option<Id<GuildMarker>>,
 }
 
@@ -1637,7 +1643,7 @@ pub struct CreateUpdatePremiumSlotBySource {
     pub manage_url: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub enum PremiumSlotState {
     Active,
     Cancelling,
@@ -1645,7 +1651,7 @@ pub enum PremiumSlotState {
     PaymentFailed,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, schemars::JsonSchema)]
 pub enum PremiumSlotTier {
     Lite,
     Premium,

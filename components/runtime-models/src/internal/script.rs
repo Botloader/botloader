@@ -409,7 +409,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Deserialize, Serialize, TS, schemars::JsonSchema)]
 #[ts(export, rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/SettingsOptionType.ts")]
 #[serde(rename_all = "camelCase")]
@@ -470,7 +470,7 @@ pub enum SettingsOptionType {
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Deserialize, Serialize, TS, schemars::JsonSchema)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/SettingsStringSelectOption.ts")]
@@ -479,7 +479,7 @@ pub struct SettingsStringSelectOption {
     pub value: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Deserialize, Serialize, TS, schemars::JsonSchema)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/SettingsNumberSelectOption.ts")]
@@ -488,7 +488,7 @@ pub struct SettingsNumberSelectOption {
     pub value: f64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Deserialize, Serialize, TS, schemars::JsonSchema)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/SettingsOption.ts")]
@@ -502,7 +502,7 @@ pub struct SettingsOption {
     pub kind: SettingsOptionType,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Deserialize, Serialize, TS, schemars::JsonSchema)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "bindings/internal/SettingsOptionList.ts")]
@@ -516,7 +516,7 @@ pub struct SettingsOptionList {
     pub template: Vec<SettingsOption>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, TS)]
+#[derive(Clone, Debug, Deserialize, Serialize, TS, schemars::JsonSchema)]
 #[ts(export)]
 #[ts(export_to = "bindings/internal/SettingOptionDefinition.ts")]
 #[serde(tag = "kind", content = "data")]
@@ -547,7 +547,7 @@ impl SettingsOptionDefinition {
         }
     }
 }
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[ts(export)]
 #[ts(export_to = "bindings/internal/SettingsOptionValue.ts")]
 pub struct SettingsOptionValue {

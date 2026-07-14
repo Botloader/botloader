@@ -1,6 +1,5 @@
 use axum::{
     extract::{Extension, Path, State},
-    response::IntoResponse,
     Json,
 };
 use botrpc::{types::GuildSpecifier, BotServiceClient};
@@ -24,7 +23,7 @@ use crate::{
 pub async fn get_all_guild_scripts(
     Extension(current_guild): Extension<CurrentUserGuild>,
     State(state): State<AppState>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Vec<Script>>> {
     let scripts = state
         .db
         .list_scripts(current_guild.id)
@@ -37,7 +36,7 @@ pub async fn get_all_guild_scripts(
     Ok(Json(scripts))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 pub struct GetScriptsWithPluginsResponse {
     scripts: Vec<Script>,
     plugins: Vec<Plugin>,
@@ -46,7 +45,7 @@ pub struct GetScriptsWithPluginsResponse {
 pub async fn get_all_guild_scripts_with_plugins(
     State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<GetScriptsWithPluginsResponse>> {
     let scripts = state
         .db
         .list_scripts(current_guild.id)
@@ -73,12 +72,12 @@ pub async fn get_all_guild_scripts_with_plugins(
     Ok(Json(GetScriptsWithPluginsResponse { plugins, scripts }))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 pub struct GuildScriptPathParams {
     pub script_id: u64,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
 pub struct CreateRequestData {
     pub name: String,
     pub original_source: String,
@@ -89,7 +88,7 @@ pub async fn create_guild_script(
     State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Json(payload): Json<CreateRequestData>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Script>> {
     let cs = CreateScript {
         enabled: payload.enabled,
         original_source: payload.original_source,
@@ -127,7 +126,7 @@ pub async fn create_guild_script(
     Ok(Json(script))
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
 pub struct UpdateRequestData {
     #[serde(default)]
     pub name: Option<String>,
@@ -144,7 +143,7 @@ pub async fn update_guild_script(
     State(state): State<AppState>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
     Json(payload): Json<UpdateRequestData>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Script>> {
     let current_script = state
         .db
         .get_script_by_id(current_guild.id, script_id)
@@ -206,7 +205,7 @@ pub async fn validate_script_settings(
     Extension(current_guild): Extension<CurrentUserGuild>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
     Json(payload): Json<UpdateRequestData>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<EmptyResponse> {
     let current_script = state
         .db
         .get_script_by_id(current_guild.id, script_id)
@@ -245,7 +244,7 @@ pub async fn delete_guild_script(
     State(state): State<AppState>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Script>> {
     let script = state
         .db
         .get_script_by_id(current_guild.id, script_id)
@@ -272,7 +271,7 @@ pub async fn update_script_plugin(
     // Extension(session): Extension<LoggedInSession<CurrentSessionStore>>,
     Extension(current_guild): Extension<CurrentUserGuild>,
     Path(GuildScriptPathParams { script_id }): Path<GuildScriptPathParams>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<Json<Script>> {
     let script = state
         .db
         .get_script_by_id(current_guild.id, script_id)

@@ -6,10 +6,12 @@ use twilight_model::id::{
 };
 use uuid::Uuid;
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, schemars::JsonSchema)]
 pub struct Plugin {
     pub id: u64,
     pub created_at: DateTime<Utc>,
+    // twilight ids serialize as strings and don't implement JsonSchema
+    #[schemars(with = "String")]
     pub author_id: Id<UserMarker>,
     pub name: String,
     pub short_description: String,
@@ -23,6 +25,7 @@ pub struct Plugin {
 
     pub installed_guilds: Option<u32>,
     pub installed_guilds_updated_at: Option<DateTime<Utc>>,
+    #[schemars(with = "Option<String>")]
     pub discord_thread_id: Option<Id<GuildMarker>>,
 
     pub images: Vec<PluginImage>,
@@ -30,7 +33,7 @@ pub struct Plugin {
     pub data: PluginData,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, schemars::JsonSchema)]
 #[serde(tag = "plugin_type")]
 pub enum PluginData {
     ScriptPlugin(ScriptPluginData),
@@ -48,7 +51,7 @@ pub enum PluginType {
     Script = 0,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, schemars::JsonSchema)]
 pub struct ScriptPluginData {
     pub published_version: Option<String>,
     pub published_version_updated_at: Option<DateTime<Utc>>,
@@ -56,7 +59,7 @@ pub struct ScriptPluginData {
     pub dev_version_updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, schemars::JsonSchema)]
 pub enum PluginImageKind {
     Icon,
     Banner,
@@ -84,7 +87,7 @@ impl From<PluginImageKind> for i32 {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, schemars::JsonSchema)]
 pub struct PluginImage {
     pub plugin_id: u64,
     pub image_id: Uuid,

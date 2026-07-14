@@ -1,8 +1,5 @@
 use crate::{app_state::AppState, errors::ApiErrorResponse, util::EmptyResponse, ApiResult};
-use axum::{
-    extract::{Extension, State},
-    response::IntoResponse,
-};
+use axum::extract::{Extension, State};
 use botrpc::BotServiceClient;
 use tracing::error;
 use twilight_model::user::CurrentUserGuild;
@@ -10,7 +7,7 @@ use twilight_model::user::CurrentUserGuild;
 pub async fn reload_guild_vm(
     Extension(current_guild): Extension<CurrentUserGuild>,
     State(state): State<AppState>,
-) -> ApiResult<impl IntoResponse> {
+) -> ApiResult<EmptyResponse> {
     state
         .bot_rpc_client
         .reload_vm(botrpc::types::GuildSpecifier {

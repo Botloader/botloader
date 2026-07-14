@@ -15,7 +15,7 @@ const USER_API_KEY_LIMIT: i64 = 100;
 
 pub type OauthToken = StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>;
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize, schemars::JsonSchema)]
 pub enum SessionType {
     User,
     ApiKey,

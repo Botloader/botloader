@@ -12,7 +12,7 @@ use crate::{
     app_state::AppState, errors::ApiErrorResponse, middlewares::LoggedInSession, ApiResult,
 };
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, schemars::JsonSchema)]
 pub struct UrlResponse {
     url: String,
 }
@@ -39,7 +39,7 @@ pub async fn handle_create_customer_portal_session(
     Ok(Json(UrlResponse { url: session }))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, schemars::JsonSchema)]
 pub struct CreateCheckoutSessionBody {
     tier: PremiumSlotTier,
 }
