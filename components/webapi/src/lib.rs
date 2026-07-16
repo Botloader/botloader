@@ -89,11 +89,15 @@ pub async fn run(
     let authorized_admin_routes = ApiRouter::new()
         .api_route(
             "/vm_workers",
-            api_routing::get(routes::admin::get_worker_statuses),
+            api_routing::get_with(routes::admin::get_worker_statuses, |op| {
+                op.id("get_worker_statuses")
+            }),
         )
         .api_route(
             "/guild/{guild_id}/status",
-            api_routing::get(routes::admin::get_guild_status),
+            api_routing::get_with(routes::admin::get_guild_status, |op| {
+                op.id("get_guild_status")
+            }),
         )
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
@@ -101,39 +105,69 @@ pub async fn run(
         ));
 
     let authorized_api_guild_routes = ApiRouter::new()
-        .api_route("/reload_vm", api_routing::post(routes::vm::reload_guild_vm))
-        .api_route("/settings", api_routing::get(routes::guilds::get_guild_settings))
+        .api_route(
+            "/reload_vm",
+            api_routing::post_with(routes::vm::reload_guild_vm, |op| op.id("reload_guild_vm")),
+        )
+        .api_route(
+            "/settings",
+            api_routing::get_with(routes::guilds::get_guild_settings, |op| {
+                op.id("get_guild_settings")
+            }),
+        )
         .api_route(
             "/premium_slots",
-            api_routing::get(routes::guilds::get_guild_premium_slots),
+            api_routing::get_with(routes::guilds::get_guild_premium_slots, |op| {
+                op.id("get_guild_premium_slots")
+            }),
         )
         .api_route(
             "/scripts",
-            api_routing::get(routes::scripts::get_all_guild_scripts)
-                .put(routes::scripts::create_guild_script),
+            api_routing::get_with(routes::scripts::get_all_guild_scripts, |op| {
+                op.id("get_all_guild_scripts")
+            })
+            .put_with(routes::scripts::create_guild_script, |op| {
+                op.id("create_guild_script")
+            }),
         )
         .api_route(
             "/scripts_with_plugins",
-            api_routing::get(routes::scripts::get_all_guild_scripts_with_plugins),
+            api_routing::get_with(
+                routes::scripts::get_all_guild_scripts_with_plugins,
+                |op| op.id("get_all_guild_scripts_with_plugins"),
+            ),
         )
         .api_route(
             "/scripts/{script_id}",
-            api_routing::patch(routes::scripts::update_guild_script)
-                .delete(routes::scripts::delete_guild_script),
+            api_routing::patch_with(routes::scripts::update_guild_script, |op| {
+                op.id("update_guild_script")
+            })
+            .delete_with(routes::scripts::delete_guild_script, |op| {
+                op.id("delete_guild_script")
+            }),
         )
         .api_route(
             "/scripts/{script_id}/validate_settings",
-            api_routing::post(routes::scripts::validate_script_settings),
+            api_routing::post_with(routes::scripts::validate_script_settings, |op| {
+                op.id("validate_script_settings")
+            }),
         )
         .api_route(
             "/scripts/{script_id}/update_plugin",
-            api_routing::post(routes::scripts::update_script_plugin),
+            api_routing::post_with(routes::scripts::update_script_plugin, |op| {
+                op.id("update_script_plugin")
+            }),
         )
         .api_route(
             "/add_plugin",
-            api_routing::post(routes::plugins::guild_add_plugin),
+            api_routing::post_with(routes::plugins::guild_add_plugin, |op| {
+                op.id("guild_add_plugin")
+            }),
         )
-        .api_route("/full_guild", api_routing::get(routes::guilds::get_full_guild))
+        .api_route(
+            "/full_guild",
+            api_routing::get_with(routes::guilds::get_full_guild, |op| op.id("get_full_guild")),
+        )
         .layer(auth_guild_mw_stack);
 
     let authorized_api_routes =
@@ -142,73 +176,117 @@ pub async fn run(
             .nest("/admin", authorized_admin_routes)
             .api_route(
                 "/guilds",
-                api_routing::get(routes::guilds::list_user_guilds_route),
+                api_routing::get_with(routes::guilds::list_user_guilds_route, |op| {
+                    op.id("list_user_guilds")
+                }),
             )
             .api_route(
                 "/premium_slots/{slot_id}/update_guild",
-                api_routing::post(routes::premium::update_premium_slot_guild),
+                api_routing::post_with(routes::premium::update_premium_slot_guild, |op| {
+                    op.id("update_premium_slot_guild")
+                }),
             )
             .api_route(
                 "/premium_slots",
-                api_routing::get(routes::premium::list_user_premium_slots),
+                api_routing::get_with(routes::premium::list_user_premium_slots, |op| {
+                    op.id("list_user_premium_slots")
+                }),
             )
             .api_route(
                 "/sessions",
-                api_routing::get(routes::sessions::get_all_sessions)
-                    .delete(routes::sessions::del_session)
-                    .put(routes::sessions::create_api_token),
+                api_routing::get_with(routes::sessions::get_all_sessions, |op| {
+                    op.id("get_all_sessions")
+                })
+                .delete_with(routes::sessions::del_session, |op| op.id("del_session"))
+                .put_with(routes::sessions::create_api_token, |op| {
+                    op.id("create_api_token")
+                }),
             )
             .api_route(
                 "/sessions/all",
-                api_routing::delete(routes::sessions::del_all_sessions),
+                api_routing::delete_with(routes::sessions::del_all_sessions, |op| {
+                    op.id("del_all_sessions")
+                }),
             )
             .api_route(
                 "/current_user",
-                api_routing::get(routes::general::get_current_user),
+                api_routing::get_with(routes::general::get_current_user, |op| {
+                    op.id("get_current_user")
+                }),
             )
             .api_route(
                 "/user/plugins",
-                api_routing::get(routes::plugins::get_user_plugins)
-                    .put(routes::plugins::create_plugin),
+                api_routing::get_with(routes::plugins::get_user_plugins, |op| {
+                    op.id("get_user_plugins")
+                })
+                .put_with(routes::plugins::create_plugin, |op| op.id("create_plugin")),
             )
             .api_route(
                 "/user/plugins/{plugin_id}",
-                api_routing::patch(routes::plugins::update_plugin_meta).layer(
-                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
-                ),
+                api_routing::patch_with(routes::plugins::update_plugin_meta, |op| {
+                    op.id("update_plugin_meta")
+                })
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    plugin_middleware,
+                )),
             )
             .api_route(
                 "/user/plugins/{plugin_id}/dev_version",
-                api_routing::patch(routes::plugins::update_plugin_dev_source).layer(
-                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
-                ),
+                api_routing::patch_with(routes::plugins::update_plugin_dev_source, |op| {
+                    op.id("update_plugin_dev_source")
+                })
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    plugin_middleware,
+                )),
             )
             .api_route(
                 "/user/plugins/{plugin_id}/publish_script_version",
-                api_routing::post(routes::plugins::publish_plugin_version).layer(
-                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
-                ),
+                api_routing::post_with(routes::plugins::publish_plugin_version, |op| {
+                    op.id("publish_plugin_version")
+                })
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    plugin_middleware,
+                )),
             )
             .api_route(
                 "/user/plugins/{plugin_id}/images",
-                api_routing::post(routes::plugins::add_plugin_image).layer(
-                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
-                ),
+                api_routing::post_with(routes::plugins::add_plugin_image, |op| {
+                    op.id("add_plugin_image")
+                })
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    plugin_middleware,
+                )),
             )
             .api_route(
                 "/user/plugins/{plugin_id}/images/{image_id}",
-                api_routing::delete(routes::plugins::delete_plugin_image).layer(
-                    axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
-                ),
+                api_routing::delete_with(routes::plugins::delete_plugin_image, |op| {
+                    op.id("delete_plugin_image")
+                })
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    plugin_middleware,
+                )),
             )
-            .api_route("/logout", api_routing::post(AuthHandlers::handle_logout))
+            .api_route(
+                "/logout",
+                api_routing::post_with(AuthHandlers::handle_logout, |op| op.id("logout")),
+            )
             .api_route(
                 "/stripe/customer_portal",
-                api_routing::post(routes::stripe::handle_create_customer_portal_session),
+                api_routing::post_with(
+                    routes::stripe::handle_create_customer_portal_session,
+                    |op| op.id("create_customer_portal_session"),
+                ),
             )
             .api_route(
                 "/stripe/create_checkout_session",
-                api_routing::post(routes::stripe::handle_create_checkout_session),
+                api_routing::post_with(routes::stripe::handle_create_checkout_session, |op| {
+                    op.id("create_checkout_session")
+                }),
             );
 
     let auth_routes_mw_stack = ServiceBuilder::new()
@@ -228,19 +306,26 @@ pub async fn run(
         )
         .api_route(
             "/api/plugins",
-            api_routing::get(routes::plugins::get_published_public_plugins),
+            api_routing::get_with(routes::plugins::get_published_public_plugins, |op| {
+                op.id("get_published_public_plugins")
+            }),
         )
         .api_route(
             "/api/plugins/{plugin_id}",
-            api_routing::get(routes::plugins::get_plugin).layer(
+            api_routing::get_with(routes::plugins::get_plugin, |op| op.id("get_plugin")).layer(
                 axum::middleware::from_fn_with_state(state.clone(), plugin_middleware),
             ),
         )
-        .api_route("/api/news", api_routing::get(routes::general::get_news))
+        .api_route(
+            "/api/news",
+            api_routing::get_with(routes::general::get_news, |op| op.id("get_news")),
+        )
         .route("/api/ws", get(routes::ws::ws_handler))
         .api_route(
             "/api/confirm_login",
-            api_routing::post(AuthHandlers::handle_confirm_login),
+            api_routing::post_with(AuthHandlers::handle_confirm_login, |op| {
+                op.id("confirm_login")
+            }),
         )
         .route("/api/stripe/webhook", post(routes::stripe::handle_webhook));
 
@@ -256,7 +341,11 @@ pub async fn run(
     let app = public_routes
         .merge(authorized_routes)
         .finish_api(&mut api)
-        .route("/api/openapi.json", get(serve_openapi))
+        .route("/api/openapi.json", get(serve_openapi));
+
+    document_missing_path_params(&mut api);
+
+    let app = app
         .layer(Extension(Arc::new(api)))
         .layer(common_middleware_stack)
         .fallback(|| async { StatusCode::NOT_FOUND })
@@ -277,6 +366,80 @@ async fn todo_route() -> &'static str {
 
 async fn serve_openapi(Extension(api): Extension<Arc<OpenApi>>) -> impl IntoResponse {
     axum::Json(api)
+}
+
+/// Path params extracted outside the handlers (the nested {guild} prefix, {plugin_id}
+/// consumed by plugin_middleware) never show up in the generated operations, so add
+/// any undeclared {param} in a path template as a required string parameter.
+fn document_missing_path_params(api: &mut OpenApi) {
+    let Some(paths) = api.paths.as_mut() else {
+        return;
+    };
+
+    for (path, item) in paths.paths.iter_mut() {
+        let aide::openapi::ReferenceOr::Item(item) = item else {
+            continue;
+        };
+
+        let template_params = path
+            .split('/')
+            .filter_map(|seg| seg.strip_prefix('{').and_then(|s| s.strip_suffix('}')));
+
+        for param_name in template_params {
+            let operations = [
+                item.get.as_mut(),
+                item.put.as_mut(),
+                item.post.as_mut(),
+                item.delete.as_mut(),
+                item.patch.as_mut(),
+            ];
+
+            for operation in operations.into_iter().flatten() {
+                let already_declared = operation.parameters.iter().any(|p| match p {
+                    aide::openapi::ReferenceOr::Item(aide::openapi::Parameter::Path {
+                        parameter_data,
+                        ..
+                    }) => parameter_data.name == param_name,
+                    _ => false,
+                });
+
+                if already_declared {
+                    continue;
+                }
+
+                // guild is a snowflake (u64, too big for a JS number); plugin ids fit
+                let json_schema = match param_name {
+                    "plugin_id" => {
+                        schemars::json_schema!({"type": "integer", "format": "uint64"})
+                    }
+                    _ => schemars::json_schema!({"type": "string"}),
+                };
+
+                operation.parameters.push(aide::openapi::ReferenceOr::Item(
+                    aide::openapi::Parameter::Path {
+                        parameter_data: aide::openapi::ParameterData {
+                            name: param_name.to_string(),
+                            description: None,
+                            required: true,
+                            deprecated: None,
+                            format: aide::openapi::ParameterSchemaOrContent::Schema(
+                                aide::openapi::SchemaObject {
+                                    json_schema,
+                                    external_docs: None,
+                                    example: None,
+                                },
+                            ),
+                            example: None,
+                            examples: Default::default(),
+                            explode: None,
+                            extensions: Default::default(),
+                        },
+                        style: aide::openapi::PathStyle::Simple,
+                    },
+                ));
+            }
+        }
+    }
 }
 
 async fn handle_mw_err_no_auth(err: BoxError) -> impl IntoResponse {

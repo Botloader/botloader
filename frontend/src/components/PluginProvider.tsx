@@ -14,7 +14,7 @@ export function MaybePluginProvider({ pluginId, children }: { pluginId?: number,
             throw new Error("No plugin id")
         }
 
-        let scripts = await session.apiClient.getPlugin(pluginId!);
+        let scripts = await session.apiClient.operations.get_plugin({ plugin_id: pluginId! });
         return scripts;
     }, [pluginId, session])
 

@@ -105,7 +105,7 @@ function LatestNewsItem() {
 
     useEffect(() => {
         async function fetchNews() {
-            let resp = await session.apiClient.getNews();
+            let resp = await session.apiClient.operations.get_news();
             if (isErrorResponse(resp)) {
                 setNews(null);
             } else {

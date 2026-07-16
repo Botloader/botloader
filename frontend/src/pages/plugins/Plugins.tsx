@@ -32,7 +32,7 @@ export function ViewPlugins() {
 
     return <Container maxWidth={false}>
         <FetchDataGuarded
-            loader={async () => await session.apiClient.getPublishedPublicPlugins()}
+            loader={async () => await session.apiClient.operations.get_published_public_plugins()}
             context={context}>
             <InnerPage />
         </FetchDataGuarded>

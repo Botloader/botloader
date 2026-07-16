@@ -7,6 +7,7 @@
   "paths": {
     "/api/plugins": {
       "get": {
+        "operationId": "get_published_public_plugins",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -36,6 +37,19 @@
     },
     "/api/plugins/{plugin_id}": {
       "get": {
+        "operationId": "get_plugin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plugin_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64"
+            },
+            "style": "simple"
+          }
+        ],
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -62,6 +76,7 @@
     },
     "/api/news": {
       "get": {
+        "operationId": "get_news",
         "responses": {
           "200": {
             "description": "",
@@ -81,6 +96,7 @@
     },
     "/api/confirm_login": {
       "post": {
+        "operationId": "confirm_login",
         "requestBody": {
           "content": {
             "application/json": {
@@ -117,6 +133,18 @@
     },
     "/api/guilds/{guild}/reload_vm": {
       "post": {
+        "operationId": "reload_guild_vm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -136,6 +164,18 @@
     },
     "/api/guilds/{guild}/settings": {
       "get": {
+        "operationId": "get_guild_settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -162,6 +202,18 @@
     },
     "/api/guilds/{guild}/premium_slots": {
       "get": {
+        "operationId": "get_guild_premium_slots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -191,6 +243,18 @@
     },
     "/api/guilds/{guild}/scripts": {
       "get": {
+        "operationId": "get_all_guild_scripts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -218,6 +282,18 @@
         }
       },
       "put": {
+        "operationId": "create_guild_script",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -254,6 +330,18 @@
     },
     "/api/guilds/{guild}/scripts_with_plugins": {
       "get": {
+        "operationId": "get_all_guild_scripts_with_plugins",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -280,6 +368,7 @@
     },
     "/api/guilds/{guild}/scripts/{script_id}": {
       "delete": {
+        "operationId": "delete_guild_script",
         "parameters": [
           {
             "in": "path",
@@ -289,6 +378,15 @@
               "type": "integer",
               "format": "uint64",
               "minimum": 0
+            },
+            "style": "simple"
+          },
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
             },
             "style": "simple"
           }
@@ -317,6 +415,7 @@
         }
       },
       "patch": {
+        "operationId": "update_guild_script",
         "parameters": [
           {
             "in": "path",
@@ -326,6 +425,15 @@
               "type": "integer",
               "format": "uint64",
               "minimum": 0
+            },
+            "style": "simple"
+          },
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
             },
             "style": "simple"
           }
@@ -366,6 +474,7 @@
     },
     "/api/guilds/{guild}/scripts/{script_id}/validate_settings": {
       "post": {
+        "operationId": "validate_script_settings",
         "parameters": [
           {
             "in": "path",
@@ -375,6 +484,15 @@
               "type": "integer",
               "format": "uint64",
               "minimum": 0
+            },
+            "style": "simple"
+          },
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
             },
             "style": "simple"
           }
@@ -408,6 +526,7 @@
     },
     "/api/guilds/{guild}/scripts/{script_id}/update_plugin": {
       "post": {
+        "operationId": "update_script_plugin",
         "parameters": [
           {
             "in": "path",
@@ -417,6 +536,15 @@
               "type": "integer",
               "format": "uint64",
               "minimum": 0
+            },
+            "style": "simple"
+          },
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
             },
             "style": "simple"
           }
@@ -447,6 +575,18 @@
     },
     "/api/guilds/{guild}/add_plugin": {
       "post": {
+        "operationId": "guild_add_plugin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -483,6 +623,18 @@
     },
     "/api/guilds/{guild}/full_guild": {
       "get": {
+        "operationId": "get_full_guild",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -509,6 +661,7 @@
     },
     "/api/admin/vm_workers": {
       "get": {
+        "operationId": "get_worker_statuses",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -538,6 +691,7 @@
     },
     "/api/admin/guild/{guild_id}/status": {
       "get": {
+        "operationId": "get_guild_status",
         "parameters": [
           {
             "in": "path",
@@ -577,6 +731,7 @@
     },
     "/api/guilds": {
       "get": {
+        "operationId": "list_user_guilds",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -603,6 +758,7 @@
     },
     "/api/premium_slots/{slot_id}/update_guild": {
       "post": {
+        "operationId": "update_premium_slot_guild",
         "parameters": [
           {
             "in": "path",
@@ -652,6 +808,7 @@
     },
     "/api/premium_slots": {
       "get": {
+        "operationId": "list_user_premium_slots",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -681,6 +838,7 @@
     },
     "/api/sessions": {
       "get": {
+        "operationId": "get_all_sessions",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -708,6 +866,7 @@
         }
       },
       "put": {
+        "operationId": "create_api_token",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -732,6 +891,7 @@
         }
       },
       "delete": {
+        "operationId": "del_session",
         "requestBody": {
           "content": {
             "application/json": {
@@ -761,6 +921,7 @@
     },
     "/api/sessions/all": {
       "delete": {
+        "operationId": "del_all_sessions",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -780,6 +941,7 @@
     },
     "/api/current_user": {
       "get": {
+        "operationId": "get_current_user",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -806,6 +968,7 @@
     },
     "/api/user/plugins": {
       "get": {
+        "operationId": "get_user_plugins",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -833,6 +996,7 @@
         }
       },
       "put": {
+        "operationId": "create_plugin",
         "requestBody": {
           "content": {
             "application/json": {
@@ -869,6 +1033,19 @@
     },
     "/api/user/plugins/{plugin_id}": {
       "patch": {
+        "operationId": "update_plugin_meta",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plugin_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64"
+            },
+            "style": "simple"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -905,6 +1082,19 @@
     },
     "/api/user/plugins/{plugin_id}/dev_version": {
       "patch": {
+        "operationId": "update_plugin_dev_source",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plugin_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64"
+            },
+            "style": "simple"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -941,6 +1131,19 @@
     },
     "/api/user/plugins/{plugin_id}/publish_script_version": {
       "post": {
+        "operationId": "publish_plugin_version",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plugin_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64"
+            },
+            "style": "simple"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -970,6 +1173,19 @@
     },
     "/api/user/plugins/{plugin_id}/images": {
       "post": {
+        "operationId": "add_plugin_image",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plugin_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64"
+            },
+            "style": "simple"
+          }
+        ],
         "requestBody": {
           "description": "multipart form data",
           "content": {
@@ -1000,6 +1216,7 @@
     },
     "/api/user/plugins/{plugin_id}/images/{image_id}": {
       "delete": {
+        "operationId": "delete_plugin_image",
         "parameters": [
           {
             "in": "path",
@@ -1008,6 +1225,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            },
+            "style": "simple"
+          },
+          {
+            "in": "path",
+            "name": "plugin_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64"
             },
             "style": "simple"
           }
@@ -1031,6 +1258,7 @@
     },
     "/api/logout": {
       "post": {
+        "operationId": "logout",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -1057,6 +1285,7 @@
     },
     "/api/stripe/customer_portal": {
       "post": {
+        "operationId": "create_customer_portal_session",
         "responses": {
           "default": {
             "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
@@ -1083,6 +1312,7 @@
     },
     "/api/stripe/create_checkout_session": {
       "post": {
+        "operationId": "create_checkout_session",
         "requestBody": {
           "content": {
             "application/json": {

@@ -1,4 +1,6 @@
-import { ConfirmLoginSuccess, CreateRequestData, CurrentUser, GetScriptsWithPluginsResponse, GuildList, GuildMetaConfig, GuildPremiumSlot, NewsItem, Plugin, PluginResponse, PremiumSlot, PremiumSlotTier, Script, SessionMeta, SessionMetaWithKey, UpdateRequestData, UrlResponse } from "./generated/api";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { operations, operationsMap } from "./generated/api";
 import { FullGuild } from "./discord_models";
 
 export interface EmptyResponse { }
@@ -8,16 +10,100 @@ export type Body = {
     kind: "json" | "custom"
 }
 
+// Typed wrappers over the generated operations: one method per operationId,
+// e.g. client.operations.get_all_guild_scripts({ guild: "..." }).
+type ClientOperations = {
+    [K in keyof operations]: OperationFunc<K>;
+}
+
+type OperationFunc<K extends keyof operations> =
+    OperationArgs<K> extends { __NO_BODY: true, __NO_PARAMS: true }
+    ? () => Promise<ApiResult<OperationResponse<K>>>
+    : (args: Omit<OperationArgs<K>, '__NO_BODY' | '__NO_PARAMS'>) => Promise<ApiResult<OperationResponse<K>>>;
+
+type OperationArgs<K extends keyof operations> = OperationBody<K> & OperationParams<K>;
+
+type OperationBody<K extends keyof operations> = operations[K]['requestBody'] extends { content: { "application/json": any } }
+    ? {
+        data: operations[K]['requestBody']['content']["application/json"]
+    }
+    : {
+        __NO_BODY: true
+    };
+
+type OperationParams<K extends keyof operations> = Exclude<operations[K]['parameters']['query' | 'path'], undefined> extends never
+    ? {
+        __NO_PARAMS: true
+    }
+    : Exclude<operations[K]['parameters']['query' | 'path'], undefined>;
+
+type InnerResponseContent<T> =
+    T extends { content: { [contentType: string]: infer R } }
+    ? R
+    : EmptyResponse;
+
+// The success (200) content of an operation; operations that only produce
+// 204 get EmptyResponse. Error statuses become ApiError at runtime instead.
+type OperationResponse<K extends keyof operations> =
+    operations[K]['responses'] extends { 200: infer R }
+    ? InnerResponseContent<R>
+    : EmptyResponse;
+
 export class ApiClient {
     token?: string;
     base: string;
     fetcher: ApiFetcher;
+    operations: ClientOperations;
 
     // plug in either node-fetch or window.fetch depending on use context
     constructor(fetcher: ApiFetcher, base: string, token?: string) {
         this.token = token;
         this.base = base;
         this.fetcher = fetcher;
+        this.operations = new Proxy({} as ClientOperations, {
+            get: this.getOpMethod.bind(this),
+        });
+    }
+
+    private getOpMethod(_target: any, prop: string | symbol): any {
+        if (typeof prop === "symbol") {
+            throw new Error("Symbol properties are not supported");
+        }
+
+        const op = operationsMap.find(op => op.name === prop);
+        if (!op) {
+            throw new Error(`Operation ${String(prop)} not found`);
+        }
+
+        return (args?: any) => this.opRequest(op.method, op.path, args);
+    }
+
+    private async opRequest(method: string, pathTemplate: string, args?: Record<string, any>): Promise<any> {
+        const takenParams = new Set<string>();
+        takenParams.add("data"); // 'data' is reserved for the request body
+
+        const finalPath = pathTemplate.replace(/{(\w+)}/g, (_, paramName) => {
+            const value = args?.[paramName];
+            if (value === undefined) {
+                throw new Error(`Missing value for path parameter: ${paramName}`);
+            }
+            takenParams.add(paramName);
+            return encodeURIComponent(value);
+        });
+
+        // the rest of the args are query parameters
+        const queryParams = Object.keys(args || {})
+            .filter(key => !takenParams.has(key))
+            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(args?.[key])}`)
+            .join('&');
+
+        const url = queryParams ? `${finalPath}?${queryParams}` : finalPath;
+
+        const body: Body | undefined = args && "data" in args
+            ? { kind: "json", body: args.data }
+            : undefined;
+
+        return await this.do(method.toUpperCase(), url, body);
     }
 
     async do<T>(method: string, path: string, body?: Body): Promise<ApiResult<T>> {
@@ -59,225 +145,19 @@ export class ApiClient {
         return await response.json() as ApiResult<T>;
     }
 
-    async get<T>(path: string,): Promise<ApiResult<T>> {
-        return await this.do("GET", path);
-    }
-
-    async post<T>(path: string, body?: Body): Promise<ApiResult<T>> {
-        return await this.do("POST", path, body);
-    }
-
-    async delete<T>(path: string, body?: Body): Promise<ApiResult<T>> {
-        return await this.do("DELETE", path, body);
-    }
-
-    async put<T>(path: string, body?: Body): Promise<ApiResult<T>> {
-        return await this.do("PUT", path, body);
-    }
-
-    async patch<T>(path: string, body?: Body): Promise<ApiResult<T>> {
-        return await this.do("PATCH", path, body);
-    }
-
-    async getCurrentUser(): Promise<ApiResult<CurrentUser>> {
-        return await this.get("/api/current_user");
-    }
-
-    async getCurrentUserGuilds(): Promise<ApiResult<GuildList>> {
-        return await this.get("/api/guilds");
-    }
-
-    async getAllSessions(): Promise<ApiResult<SessionMeta[]>> {
-        return await this.get("/api/sessions");
-    }
-
-    async logout(): Promise<ApiResult<{}>> {
-        return await this.post("/api/logout");
-    }
-
-    async deleteSession(token: string): Promise<ApiResult<{}>> {
-        return await this.delete("/api/sessions", {
-            kind: "json",
-            body: {
-                token: token,
-            }
-        });
-    }
-
-    async deleteAllSessions(): Promise<ApiResult<{}>> {
-        return await this.delete("/api/sessions/all");
-    }
-
-    async createApiToken(): Promise<ApiResult<SessionMetaWithKey>> {
-        return await this.put("/api/sessions");
-    }
-
-    async confirmLogin(code: string, state: string): Promise<ApiResult<ConfirmLoginSuccess>> {
-        return await this.post("/api/confirm_login", {
-            kind: "json",
-            body: {
-                code: code,
-                state: state,
-            }
-        });
-    }
-
-    async getUserPremiumSlots(): Promise<ApiResult<PremiumSlot[]>> {
-        return await this.get("/api/premium_slots");
-    }
-    async updatePremiumSlotGuild(slotId: string, guildId: string | null): Promise<ApiResult<PremiumSlot>> {
-        return await this.post(`/api/premium_slots/${slotId}/update_guild`, {
-            kind: "json",
-            body: { guild_id: guildId }
-        });
-    }
-
+    // hand-written: the generated FullGuild exposes channels/roles as untyped
+    // json, this narrows it to the fields we actually use (see discord_models.ts)
     async getFullDiscordGuild(guildId: string): Promise<ApiResult<FullGuild>> {
-        return await this.get(`/api/guilds/${guildId}/full_guild`);
+        return await this.operations.get_full_guild({ guild: guildId }) as ApiResult<FullGuild>;
     }
 
-    async getAllScripts(guildId: string): Promise<ApiResult<Script[]>> {
-        return await this.get(`/api/guilds/${guildId}/scripts`);
-    }
-
-    async getAllScriptsWithPlugins(guildId: string): Promise<ApiResult<GetScriptsWithPluginsResponse>> {
-        return await this.get(`/api/guilds/${guildId}/scripts_with_plugins`);
-    }
-
-    async createScript(guildId: string, data: CreateRequestData): Promise<ApiResult<Script>> {
-        return await this.put(`/api/guilds/${guildId}/scripts`, {
-            kind: "json",
-            body: data
-        });
-    }
-
-    async updateScript(guildId: string, id: number, data: UpdateRequestData): Promise<ApiResult<Script>> {
-        return await this.patch(`/api/guilds/${guildId}/scripts/${id}`, {
-            kind: "json",
-            body: data
-        });
-    }
-
-    async validateScript(guildId: string, id: number, data: UpdateRequestData): Promise<ApiResult<void>> {
-        return await this.post(`/api/guilds/${guildId}/scripts/${id}/validate_settings`, {
-            kind: "json",
-            body: data
-        });
-    }
-
-    async delScript(guildId: string, id: number): Promise<ApiResult<EmptyResponse>> {
-        return await this.delete(`/api/guilds/${guildId}/scripts/${id}`);
-    }
-
-    async reloadGuildVm(guildId: string): Promise<ApiResult<EmptyResponse>> {
-        return await this.post(`/api/guilds/${guildId}/reload_vm`);
-    }
-
-    async getGuildMetaConfig(guildId: string): Promise<ApiResult<GuildMetaConfig>> {
-        return await this.get(`/api/guilds/${guildId}/settings`);
-    }
-
-    async getNews(): Promise<ApiResult<NewsItem[]>> {
-        return await this.get(`/api/news`);
-    }
-
-    async getGuildPremiumSlots(guildId: string): Promise<ApiResult<GuildPremiumSlot[]>> {
-        return await this.get(`/api/guilds/${guildId}/premium_slots`);
-    }
-
-    async getPublishedPublicPlugins(): Promise<ApiResult<PluginResponse[]>> {
-        return await this.get(`/api/plugins`);
-    }
-
-    async getCurrentUserPlugins(): Promise<ApiResult<PluginResponse[]>> {
-        return await this.get(`/api/user/plugins`);
-    }
-
-    async getPlugin(scriptId: number): Promise<ApiResult<PluginResponse>> {
-        return await this.get(`/api/plugins/${scriptId}`);
-    }
-
-    async createPlugin(params: {
-        name: string,
-        short_description?: string,
-        long_description?: string,
-    }): Promise<ApiResult<Plugin>> {
-        return await this.put(`/api/user/plugins`, {
-            kind: "json",
-            body: params
-        });
-    }
-
-    async updatePluginMeta(pluginId: number, params: {
-        name?: string,
-        short_description?: string,
-        long_description?: string,
-        is_public?: boolean,
-        is_published?: boolean,
-    }): Promise<ApiResult<Plugin>> {
-        return await this.patch(`/api/user/plugins/${pluginId}`, {
-            kind: "json",
-            body: params
-        });
-    }
-
-    async updateScriptPluginDevVersion(pluginId: number, params: {
-        source: string,
-    }): Promise<ApiResult<Plugin>> {
-        return await this.patch(`/api/user/plugins/${pluginId}/dev_version`, {
-            kind: "json",
-            body: { new_source: params.source }
-        });
-    }
-
-    async publishScriptPluginVersion(pluginId: number, params: {
-        source: string,
-    }): Promise<ApiResult<{}>> {
-        return await this.post(`/api/user/plugins/${pluginId}/publish_script_version`, {
-            kind: "json",
-            body: { new_source: params.source }
-        });
-    }
-
-    async addPluginToGuild(pluginId: number, guildId: string, params: {
-        auto_update: boolean,
-    }): Promise<ApiResult<Script>> {
-        return await this.post(`/api/guilds/${guildId}/add_plugin`, {
-            kind: "json",
-            body: {
-                plugin_id: pluginId,
-                auto_update: params.auto_update,
-            }
-        });
-    }
-
-    async updateScriptPlugin(guildId: string, scriptId: number): Promise<ApiResult<Script>> {
-        return await this.post(`/api/guilds/${guildId}/scripts/${scriptId}/update_plugin`);
-    }
-
-    // data should be a FormData, but this wrapper don't have DOM libs
+    // hand-written: multipart upload, data should be a FormData but this
+    // wrapper doesn't have DOM libs
     async addPluginImage(pluginId: number, data: any) {
-        return await this.post(`/api/user/plugins/${pluginId}/images`, {
+        return await this.do(`POST`, `/api/user/plugins/${pluginId}/images`, {
             kind: "custom",
             body: data
         })
-    }
-
-    async deletePluginImage(pluginId: number, imageId: string) {
-        return await this.delete(`/api/user/plugins/${pluginId}/images/${imageId}`)
-    }
-
-    async createStripeCheckoutSession(tier: PremiumSlotTier): Promise<ApiResult<UrlResponse>> {
-        return await this.post(`/api/stripe/create_checkout_session`, {
-            kind: "json",
-            body: {
-                tier,
-            }
-        })
-    }
-
-    async createStripeCustomerPortalSession(): Promise<ApiResult<UrlResponse>> {
-        return await this.post(`/api/stripe/customer_portal`)
     }
 }
 

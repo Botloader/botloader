@@ -12,7 +12,7 @@ export function UserGeneralPage() {
 
     useEffect(() => {
         async function fetchSessions() {
-            const resp = await session.apiClient.getAllSessions();
+            const resp = await session.apiClient.operations.get_all_sessions();
             if (isErrorResponse(resp)) {
                 setAllSessions(null);
             } else {
@@ -59,7 +59,7 @@ function CreateApiKeyComponent(props: CreateApiTokenProps) {
 
     async function doCreateApiToken() {
         setStatus({ creating: true })
-        let resp = await session.apiClient.createApiToken();
+        let resp = await session.apiClient.operations.create_api_token();
         if (isErrorResponse(resp)) {
             setStatus({
                 creating: false,

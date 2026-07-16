@@ -13,7 +13,7 @@ export function GuildsProvider({ children }: { children: React.ReactNode }) {
             return undefined
         }
 
-        const resp = await session.apiClient.getCurrentUserGuilds();
+        const resp = await session.apiClient.operations.list_user_guilds();
         if (isErrorResponse(resp)) {
             return resp
         }

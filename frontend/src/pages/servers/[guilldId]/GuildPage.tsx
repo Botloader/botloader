@@ -51,7 +51,7 @@ function PremiumPanel(props: { guildId: string }) {
 
 
     async function loadConfig(guildId: string) {
-        let resp = await session.apiClient.getGuildPremiumSlots(guildId);
+        let resp = await session.apiClient.operations.get_guild_premium_slots({ guild: guildId });
         if (isErrorResponse(resp)) {
             setSlots(null);
         } else {
@@ -94,7 +94,7 @@ function GuildSettings(props: { guild: GuildListEntry }) {
     }, [props, session])
 
     async function loadConfig() {
-        let conf = await session.apiClient.getGuildMetaConfig(props.guild.guild.id);
+        let conf = await session.apiClient.operations.get_guild_settings({ guild: props.guild.guild.id });
         if (isErrorResponse(conf)) {
             setConfig(null);
         } else {
@@ -211,7 +211,7 @@ function ScriptItem({ script, guildId, toggleScript, deleteScript, plugin }: {
     }
 
     async function updatePluginVersion() {
-        const resp = await session.apiClient.updateScriptPlugin(guildId, script.id);
+        const resp = await session.apiClient.operations.update_script_plugin({ guild: guildId, script_id: script.id });
         if (isErrorResponse(resp)) {
             notifications.push({ class: "error", message: "failed updating plugin: " + resp.response?.description });
         } else {

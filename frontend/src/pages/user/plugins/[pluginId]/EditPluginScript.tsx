@@ -47,7 +47,7 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
             message: "Setting up testing session on " + selection.guild.name,
         })
 
-        const resp = await session.apiClient.addPluginToGuild(plugin.id, selection.guild.id, { auto_update: true });
+        const resp = await session.apiClient.operations.guild_add_plugin({ guild: selection.guild.id, data: { plugin_id: plugin.id, auto_update: true } });
         if (isErrorResponse(resp)) {
             if (resp.response?.code === ErrorCode.GuildAlreadyHasPlugin) {
                 debugMessageStore.pushMessage({
@@ -68,7 +68,7 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
             })
         }
 
-        const scriptsResp = await session.apiClient.getAllScripts(selection.guild.id);
+        const scriptsResp = await session.apiClient.operations.get_all_guild_scripts({ guild: selection.guild.id });
         if (isErrorResponse(scriptsResp)) {
             debugMessageStore.pushMessage({
                 level: "Client",
@@ -102,9 +102,9 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
 
     async function updateGuildTesting(content: string, guildId: string, scriptId: number) {
 
-        let resp = await session.apiClient.updateScript(guildId, scriptId, {
+        let resp = await session.apiClient.operations.update_guild_script({ guild: guildId, script_id: scriptId, data: {
             original_source: content,
-        });
+        } });
         if (isErrorResponse(resp)) {
             debugMessageStore.pushMessage({
                 level: "Client",
@@ -124,7 +124,7 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
             level: "Client",
             message: "Saving...",
         })
-        const resp = await session.apiClient.updateScriptPluginDevVersion(plugin.id, { source: content });
+        const resp = await session.apiClient.operations.update_plugin_dev_source({ plugin_id: plugin.id, data: { new_source: content } });
         if (!isErrorResponse(resp)) {
             // the update endpoint returns the plugin without the author field
             setData({ ...resp, author: plugin.author });

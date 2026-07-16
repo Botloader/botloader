@@ -220,9 +220,9 @@ function ScriptSettings({ script }: { script: Script }) {
     }
 
     async function save() {
-        const response = await session.apiClient.updateScript(currentGuildId, script.id, {
+        const response = await session.apiClient.operations.update_guild_script({ guild: currentGuildId, script_id: script.id, data: {
             settings_values: newValues
-        })
+        } })
 
         if (isErrorResponse(response)) {
             notifications.push({
@@ -243,9 +243,9 @@ function ScriptSettings({ script }: { script: Script }) {
         async function validateScript() {
             setApiErrorResponse(null)
 
-            const response = await session.apiClient.validateScript(currentGuildId, script.id, {
+            const response = await session.apiClient.operations.validate_script_settings({ guild: currentGuildId, script_id: script.id, data: {
                 settings_values: newValues
-            })
+            } })
 
             if (isErrorResponse(response)) {
                 setApiErrorResponse(response)
@@ -836,7 +836,7 @@ function ScriptDetails({ script, guildId, plugin }: {
     }
 
     async function updatePluginVersion() {
-        const resp = await session.apiClient.updateScriptPlugin(guildId, script.id);
+        const resp = await session.apiClient.operations.update_script_plugin({ guild: guildId, script_id: script.id });
         if (isErrorResponse(resp)) {
             notifications.push({ class: "error", message: "failed updating plugin: " + resp.response?.description });
         } else {

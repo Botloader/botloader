@@ -24,7 +24,7 @@ export function UserPremiumPage() {
     const session = useSession();
 
     async function fetchSlots() {
-        const resp = await session.apiClient.getUserPremiumSlots();
+        const resp = await session.apiClient.operations.list_user_premium_slots();
         if (!isErrorResponse(resp)) {
             resp.sort((a, b) => a.id - b.id);
         }
@@ -43,7 +43,7 @@ export function InnerPage() {
     const notifications = UseNotifications()
 
     async function startCheckout(tier: PremiumSlotTier) {
-        let resp = await session.apiClient.createStripeCheckoutSession(tier)
+        let resp = await session.apiClient.operations.create_checkout_session({ data: { tier: tier } })
         if (isErrorResponse(resp)) {
             notifications.push({
                 class: "error",
@@ -55,7 +55,7 @@ export function InnerPage() {
     }
 
     async function customerPortal() {
-        let resp = await session.apiClient.createStripeCustomerPortalSession()
+        let resp = await session.apiClient.operations.create_customer_portal_session()
         if (isErrorResponse(resp)) {
             notifications.push({
                 class: "error",
@@ -178,7 +178,7 @@ function PremiumSlotComponent(props: { slot: PremiumSlot }) {
         }
 
         console.log(changeGuildRef.current?.value);
-        let resp = await session.apiClient.updatePremiumSlotGuild(props.slot.id + "", newGuild);
+        let resp = await session.apiClient.operations.update_premium_slot_guild({ slot_id: props.slot.id, data: { guild_id: newGuild } });
         reload();
         if (isErrorResponse(resp)) {
             notifications.push({

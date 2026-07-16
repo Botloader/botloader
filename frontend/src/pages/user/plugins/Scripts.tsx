@@ -13,7 +13,7 @@ export function UserScriptsPage() {
     let session = useSession();
 
     async function fetchScripts() {
-        let scripts = await session.apiClient.getCurrentUserPlugins();
+        let scripts = await session.apiClient.operations.get_user_plugins();
         return scripts;
     }
 
@@ -74,11 +74,11 @@ function NewPluginForm() {
         setIsCreating(true);
         setErrors({});
 
-        let result = await session.apiClient.createPlugin({
+        let result = await session.apiClient.operations.create_plugin({ data: {
             name: name,
             short_description: shortDescription,
             long_description: longDescription,
-        })
+        } })
 
         if (isErrorResponse(result)) {
             setErrors({

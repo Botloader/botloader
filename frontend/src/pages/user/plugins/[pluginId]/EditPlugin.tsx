@@ -101,13 +101,13 @@ function EditPluginMetaForm() {
         setSaving(true);
         setErrors({});
 
-        let result = await session.apiClient.updatePluginMeta(plugin.id, {
+        let result = await session.apiClient.operations.update_plugin_meta({ plugin_id: plugin.id, data: {
             name: name,
             short_description: shortDescription,
             long_description: longDescription,
             is_public: isPublic,
             is_published: isPublished
-        })
+        } })
 
         if (isErrorResponse(result)) {
             setErrors({
@@ -152,7 +152,7 @@ function ScriptPluginSettings() {
     const cast = plugin as PluginResponse;
 
     async function publish() {
-        await session.apiClient.publishScriptPluginVersion(plugin.id, { source: cast.data.dev_version ?? "" });
+        await session.apiClient.operations.publish_plugin_version({ plugin_id: plugin.id, data: { new_source: cast.data.dev_version ?? "" } });
         reload();
     }
 
@@ -191,7 +191,7 @@ function IconDialog({ isOpen, close }: { isOpen: boolean, close: () => any }) {
 
     async function deleteExisting() {
         if (currentImage) {
-            let resp = await session.apiClient.deletePluginImage(plugin.id, currentImage.image_id)
+            let resp = await session.apiClient.operations.delete_plugin_image({ plugin_id: plugin.id, image_id: currentImage.image_id })
             if (isErrorResponse(resp)) {
                 notifications.push({
                     class: "error",
@@ -236,7 +236,7 @@ function ShowcaseImages() {
     const notifications = UseNotifications()
 
     async function deleteImage(id: string) {
-        let resp = await session.apiClient.deletePluginImage(plugin.id, id)
+        let resp = await session.apiClient.operations.delete_plugin_image({ plugin_id: plugin.id, image_id: id })
         if (isErrorResponse(resp)) {
             notifications.push({
                 class: "error",
@@ -372,7 +372,7 @@ function BannerImage() {
             return
         }
 
-        let resp = await session.apiClient.deletePluginImage(plugin.id, currentImage.image_id)
+        let resp = await session.apiClient.operations.delete_plugin_image({ plugin_id: plugin.id, image_id: currentImage.image_id })
         if (isErrorResponse(resp)) {
             notifications.push({
                 class: "error",

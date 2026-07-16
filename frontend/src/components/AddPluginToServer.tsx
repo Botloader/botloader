@@ -30,7 +30,7 @@ export function AddPluginToServerButton({ plugin, buttonProps }: { plugin: Plugi
     };
 
     async function addToServer(guild: GuildListEntry) {
-        const resp = await session.apiClient.addPluginToGuild(plugin!.id, guild.guild.id, { auto_update: true });
+        const resp = await session.apiClient.operations.guild_add_plugin({ guild: guild.guild.id, data: { plugin_id: plugin!.id, auto_update: true } });
         setAddingToServer(null);
         if (isErrorResponse(resp)) {
             setAddError(resp.response?.description ?? "unknown error");

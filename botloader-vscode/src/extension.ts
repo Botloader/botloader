@@ -41,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('botloader-vscode.setup-workspace', async () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		let resp = await apiClient.getCurrentUserGuilds();
+		let resp = await apiClient.operations.list_user_guilds();
 		if (isErrorResponse(resp)) {
 			vscode.window.showErrorMessage("Invalid token:" + JSON.stringify(resp));
 			return;
@@ -99,7 +99,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		let newClient = new ApiClient(createFetcher(), httpApiBase, key);
-		let resp = await newClient.getCurrentUser();
+		let resp = await newClient.operations.get_current_user();
 
 		if (isErrorResponse(resp)) {
 			vscode.window.showErrorMessage("Invalid token:" + JSON.stringify(resp));

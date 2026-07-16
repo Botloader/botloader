@@ -248,7 +248,7 @@ export class GuildScriptWorkspace implements vscode.Disposable, vscode.FileDecor
             await this.pushSingleChange(uri, index);
 
             await this.syncWorkspace();
-            await this.apiClient.reloadGuildVm(index.guild.id);
+            await this.apiClient.operations.reload_guild_vm({ guild: index.guild.id });
         });
     }
 
@@ -261,7 +261,7 @@ export class GuildScriptWorkspace implements vscode.Disposable, vscode.FileDecor
             }
 
             await this.syncWorkspace();
-            await this.apiClient.reloadGuildVm(index.guild.id);
+            await this.apiClient.operations.reload_guild_vm({ guild: index.guild.id });
         });
     }
 
@@ -274,7 +274,7 @@ export class GuildScriptWorkspace implements vscode.Disposable, vscode.FileDecor
             }
 
             await this.syncWorkspace();
-            await this.apiClient.reloadGuildVm(index.guild.id);
+            await this.apiClient.operations.reload_guild_vm({ guild: index.guild.id });
         });
     }
 
@@ -293,19 +293,19 @@ export class GuildScriptWorkspace implements vscode.Disposable, vscode.FileDecor
         switch (resState.state) {
             case ChangeState.created:
                 let contentsCreate = await vscode.workspace.fs.readFile(uri);
-                resp = await this.apiClient.createScript(index.guild.id, {
+                resp = await this.apiClient.operations.create_guild_script({ guild: index.guild.id, data: {
                     enabled: true,
                     name: nameNoTs,
                     // eslint-disable-next-line @typescript-eslint/naming-convention
                     original_source: contentsCreate.toString(),
-                });
+                } });
                 break;
             case ChangeState.deleted:
                 if (!indexScript) {
                     return;
                 }
 
-                resp = await this.apiClient.delScript(index.guild.id, indexScript.id);
+                resp = await this.apiClient.operations.delete_guild_script({ guild: index.guild.id, script_id: indexScript.id });
                 break;
             case ChangeState.modified:
                 if (!indexScript) {
@@ -313,12 +313,12 @@ export class GuildScriptWorkspace implements vscode.Disposable, vscode.FileDecor
                 }
 
                 let contentsModify = await vscode.workspace.fs.readFile(uri);
-                resp = await this.apiClient.updateScript(index.guild.id, indexScript.id, {
+                resp = await this.apiClient.operations.update_guild_script({ guild: index.guild.id, script_id: indexScript.id, data: {
                     enabled: true,
                     name: nameNoTs,
                     // eslint-disable-next-line @typescript-eslint/naming-convention
                     original_source: contentsModify.toString(),
-                });
+                } });
                 break;
         }
 
@@ -352,7 +352,7 @@ export class GuildScriptWorkspace implements vscode.Disposable, vscode.FileDecor
         // strip .ts suffix for convenience
         let identicalIndexNames = identicalIndexFiles.map(e => e.slice(0, e.length - 3));
 
-        let resp = await this.apiClient.getAllScripts(index.guild.id);
+        let resp = await this.apiClient.operations.get_all_guild_scripts({ guild: index.guild.id });
         if (isErrorResponse(resp)) {
             throw new Error("failed fetching scripts");
         }

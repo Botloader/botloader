@@ -5,13 +5,12 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "devDependencies": {
-        "openapi-typescript": "^7.13.0",
         "typescript": "^5.3.3"
     },
     "scripts": {
         "build": "npx tsc",
-        "generate": "openapi-typescript openapi.json -o src/generated/api.ts --default-non-nullable=false --root-types --root-types-no-schema-prefix",
-        "update-spec": "curl -sf ${BL_API_BASE:-http://localhost:7447}/api/openapi.json -o openapi.json && npm run generate"
+        "generate": "../scripts/generate-webapi.sh",
+        "update-spec": "../scripts/generate-webapi.sh --update-spec"
     },
     "files": [
         "/dist"

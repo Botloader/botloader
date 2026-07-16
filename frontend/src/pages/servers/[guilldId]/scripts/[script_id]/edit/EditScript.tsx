@@ -20,7 +20,7 @@ export function EditScriptPage(props: { guild: GuildListEntry, scriptId: number 
 
     const guildId = props.guild.guild.id
     const fetchScripts = useCallback(async () => {
-        let resp = await session.apiClient.getAllScriptsWithPlugins(guildId);
+        let resp = await session.apiClient.operations.get_all_guild_scripts_with_plugins({ guild: guildId });
         return resp;
     }, [guildId, session.apiClient])
 
@@ -73,9 +73,9 @@ function LoadedNew(props: { guild: GuildListEntry, script: Script, plugin?: Plug
     }
 
     async function toggleScript(scriptId: number, enabled: boolean) {
-        let newScript = await session.apiClient.updateScript(props.guild.guild.id, scriptId, {
+        let newScript = await session.apiClient.operations.update_guild_script({ guild: props.guild.guild.id, script_id: scriptId, data: {
             enabled,
-        });
+        } });
         if (!isErrorResponse(newScript)) {
             setScript(newScript);
         }
@@ -90,9 +90,9 @@ function LoadedNew(props: { guild: GuildListEntry, script: Script, plugin?: Plug
 
         console.log("Saving!");
 
-        let updated = await session.apiClient.updateScript(props.guild.guild.id, props.script.id, {
+        let updated = await session.apiClient.operations.update_guild_script({ guild: props.guild.guild.id, script_id: props.script.id, data: {
             original_source: content,
-        });
+        } });
         if (!isErrorResponse(updated)) {
             setScript(updated);
         }

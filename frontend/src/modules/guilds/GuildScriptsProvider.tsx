@@ -20,7 +20,7 @@ export function GuildScriptsProvider({ children, guildId }: { guildId?: string, 
             throw new Error("guildId not set")
         }
 
-        return await session.apiClient.getAllScriptsWithPlugins(guildId);
+        return await session.apiClient.operations.get_all_guild_scripts_with_plugins({ guild: guildId });
     }, [session, guildId])
 
     if (!guildId || !session.user) {
@@ -47,29 +47,29 @@ export function useCurrentGuildScripts(): GuildScriptsHook {
     const safeGuildId = guildId
 
     async function delScript(scriptId: number) {
-        let resp = await session.apiClient.delScript(safeGuildId, scriptId);
+        let resp = await session.apiClient.operations.delete_guild_script({ guild: safeGuildId, script_id: scriptId });
         if (!isErrorResponse(resp)) {
             fetchedData.reload();
         }
 
-        await session.apiClient.reloadGuildVm(safeGuildId);
+        await session.apiClient.operations.reload_guild_vm({ guild: safeGuildId });
     }
 
     async function toggleScript(scriptId: number, enabled: boolean) {
-        let resp = await session.apiClient.updateScript(safeGuildId, scriptId, {
+        let resp = await session.apiClient.operations.update_guild_script({ guild: safeGuildId, script_id: scriptId, data: {
             enabled,
-        });
+        } });
         if (!isErrorResponse(resp)) {
             fetchedData.reload();
         }
     }
 
     async function createScript(name: string) {
-        let resp = await session.apiClient.createScript(safeGuildId, {
+        let resp = await session.apiClient.operations.create_guild_script({ guild: safeGuildId, data: {
             enabled: false,
             name: name,
             original_source: "",
-        })
+        } })
 
         if (!isErrorResponse(resp)) {
             fetchedData.reload()

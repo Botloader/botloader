@@ -31,7 +31,7 @@ export function ConfirmLoginPage() {
 
         async function completeLogin() {
             let client = new ApiClient(CreateFetcher(), BuildConfig.botloaderApiBase);
-            let resp = await client.confirmLogin(query.get("code") as string, query.get("state") as string)
+            let resp = await client.operations.confirm_login({ data: { code: query.get("code") as string, state: query.get("state") as string } })
             if (!isErrorResponse(resp)) {
                 localStorage.setItem("botloader_token", resp.token);
                 setStatus({

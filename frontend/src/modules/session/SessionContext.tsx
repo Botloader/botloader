@@ -32,7 +32,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     });
 
     async function validateAndUpdateSession(apiClient: ApiClient) {
-        let user = await apiClient.getCurrentUser();
+        let user = await apiClient.operations.get_current_user();
         if (!isErrorResponse(user)) {
 
             setSessionData({
@@ -71,7 +71,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function logout() {
-        await sessionData.apiClient.logout();
+        await sessionData.apiClient.operations.logout();
         setSessionData({
             apiClient: anonApiClient,
             signingIn: false,
@@ -80,7 +80,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function logoutAllSessions() {
-        await sessionData.apiClient.deleteAllSessions();
+        await sessionData.apiClient.operations.del_all_sessions();
         setSessionData({
             apiClient: anonApiClient,
             signingIn: false,
