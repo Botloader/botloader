@@ -6,15 +6,15 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
-import { BotGuild } from 'botloader-common';
+import { GuildListEntry } from 'botloader-common';
 import { GuildIcon } from './GuildIcon';
 
 
 export interface GuildSelectionDialogProps {
     open: boolean;
     selectedValue?: string;
-    guilds: BotGuild[],
-    onClose: (value: BotGuild | null) => void;
+    guilds: GuildListEntry[],
+    onClose: (value: GuildListEntry | null) => void;
 }
 
 
@@ -25,7 +25,7 @@ export function GuildSelectionDialog(props: GuildSelectionDialogProps) {
         onClose(null);
     };
 
-    const handleListItemClick = (value: BotGuild) => {
+    const handleListItemClick = (value: GuildListEntry) => {
         onClose(value);
     };
 

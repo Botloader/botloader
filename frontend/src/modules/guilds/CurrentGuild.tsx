@@ -1,9 +1,9 @@
 import { createContext, useContext } from "react";
 import { useGuilds } from "./GuildsProvider";
-import { BotGuild } from "botloader-common";
+import { GuildListEntry } from "botloader-common";
 import { FetchDataHookNotBehindGuard } from "../../components/FetchData";
 
-export const CurrentGuildContext = createContext<Omit<FetchDataHookNotBehindGuard<BotGuild>, "setData"> | undefined>(undefined);
+export const CurrentGuildContext = createContext<Omit<FetchDataHookNotBehindGuard<GuildListEntry>, "setData"> | undefined>(undefined);
 export const CurrentGuildIdContext = createContext<string | null>(null);
 
 export function CurrentGuildProvider(props: { guildId?: string, children: React.ReactNode }) {

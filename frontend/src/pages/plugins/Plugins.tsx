@@ -11,7 +11,7 @@ import {
     Typography
 } from "@mui/material";
 import { Stack } from "@mui/system";
-import { Plugin } from "botloader-common";
+import { PluginResponse } from "botloader-common";
 import { BlLink } from "../../components/BLLink";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../components/FetchData";
 import { userAvatarUrl } from "../../components/Util";
@@ -25,7 +25,7 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import { DisplayRelativeDateTime } from "../../components/DateTime";
 import { AddPluginToServerButton } from "../../components/AddPluginToServer";
 
-let context = createFetchDataContext<Plugin[]>();
+let context = createFetchDataContext<PluginResponse[]>();
 
 export function ViewPlugins() {
     const session = useSession();
@@ -51,7 +51,7 @@ function InnerPage() {
     </Grid2>
 }
 
-function PluginItem({ plugin }: { plugin: Plugin }) {
+function PluginItem({ plugin }: { plugin: PluginResponse }) {
     const bannerImage = plugin.images.find(v => v.kind === "Banner")
 
     return <Paper

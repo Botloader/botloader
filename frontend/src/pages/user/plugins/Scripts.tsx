@@ -1,5 +1,5 @@
 import { Box, Button, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Paper, Stack, TextField, Typography } from "@mui/material";
-import { isErrorResponse, ScriptPlugin } from "botloader-common";
+import { isErrorResponse, PluginResponse } from "botloader-common";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createFetchDataContext, FetchDataGuarded, useFetchedDataBehindGuard } from "../../../components/FetchData";
@@ -7,7 +7,7 @@ import { useSession } from "../../../modules/session/useSession";
 import { PluginIcon } from "../../../components/PluginIcon";
 import { Link } from "react-router-dom";
 
-let scriptsContext = createFetchDataContext<ScriptPlugin[]>();
+let scriptsContext = createFetchDataContext<PluginResponse[]>();
 
 export function UserScriptsPage() {
     let session = useSession();
@@ -44,7 +44,7 @@ function ListScripts() {
 
 
 function ScriptItem({ script }: {
-    script: ScriptPlugin,
+    script: PluginResponse,
 }) {
     const manageUrl = `/user/plugins/${script.id}/`
 

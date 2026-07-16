@@ -1,5 +1,5 @@
 import { Box, Button, Chip, Divider, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import { BotGuild, ErrorCode, isErrorResponse, ScriptPlugin } from "botloader-common";
+import { GuildListEntry, ErrorCode, isErrorResponse, PluginResponse } from "botloader-common";
 import { useContext, useEffect, useState } from "react";
 import { BlLink } from "../../../../components/BLLink";
 import { useFetchedDataBehindGuard } from "../../../../components/FetchData";
@@ -16,7 +16,7 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
     const session = useSession();
     const { value: plugin, setData } = useFetchedDataBehindGuard(pluginContext);
     const [diffSource, setDiffSource] = useState<"published" | "dev" | null>(initialDiff ? "published" : null)
-    const cast = plugin as ScriptPlugin;
+    const cast = plugin as PluginResponse;
     const [selectedTestGuild, setSelectedTestGuild] = useState<{
         guildId: string,
         guildName: string,
@@ -34,7 +34,7 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
         }
     })
 
-    async function selectTestGuild(selection: BotGuild | null) {
+    async function selectTestGuild(selection: GuildListEntry | null) {
         setTestGuildSelectionOpen(false);
 
         if (!selection) {
@@ -126,7 +126,8 @@ export function EditPluginScriptPage({ initialDiff }: { initialDiff: boolean }) 
         })
         const resp = await session.apiClient.updateScriptPluginDevVersion(plugin.id, { source: content });
         if (!isErrorResponse(resp)) {
-            setData(resp);
+            // the update endpoint returns the plugin without the author field
+            setData({ ...resp, author: plugin.author });
             debugMessageStore.pushMessage({
                 level: "Client",
                 message: "Saved",

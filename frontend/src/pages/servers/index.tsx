@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { SelectServerPage } from "./SelectServer";
 import { routes as serverIdRoutes } from "./[guilldId]";
-import { BotGuild } from "botloader-common";
+import { GuildListEntry } from "botloader-common";
 import { BuildConfig } from "../../BuildConfig";
 import { OurRouteObject } from "../../misc/ourRoute";
 import { RequireLoggedInSession } from "../../modules/session/RequireLoggedInSession";
@@ -77,7 +77,7 @@ export function GuildPagesWrapper({ children }: { children: React.ReactNode }) {
 }
 
 
-function InviteGuildPage(props: { guild: BotGuild }) {
+function InviteGuildPage(props: { guild: GuildListEntry }) {
     const baseUrl = window.location.origin
     const redirectUrl = encodeURIComponent(baseUrl + "/servers/")
     const addBotUrl = `https://discord.com/api/oauth2/authorize?client_id=${BuildConfig.botloaderClientId}&permissions=515463572672&scope=bot%20applications.commands&guild_id=${props.guild.guild.id}&redirect_uri=${redirectUrl}&response_type=code`

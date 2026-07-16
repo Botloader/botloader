@@ -1,5 +1,5 @@
 import { Alert, Button, ButtonProps, CircularProgress, Snackbar, Tooltip, Typography } from "@mui/material";
-import { BotGuild, Plugin, isErrorResponse } from "botloader-common";
+import { GuildListEntry, Plugin, isErrorResponse } from "botloader-common";
 import React from "react";
 // import { useFetchedDataBehindGuard } from "./FetchData";
 import { GuildSelectionDialog } from "./GuildSelectionDialog";
@@ -9,8 +9,8 @@ import { useSession } from "../modules/session/useSession";
 
 export function AddPluginToServerButton({ plugin, buttonProps }: { plugin: Plugin, buttonProps?: ButtonProps }) {
     const [open, setOpen] = React.useState(false);
-    const [addingToServer, setAddingToServer] = React.useState<BotGuild | null>(null);
-    const [addedToServer, setAddedToServer] = React.useState<BotGuild | null>(null);
+    const [addingToServer, setAddingToServer] = React.useState<GuildListEntry | null>(null);
+    const [addedToServer, setAddedToServer] = React.useState<GuildListEntry | null>(null);
     const [addError, setAddError] = React.useState<string | null>(null);
     const session = useSession();
     const guilds = useGuilds();
@@ -21,7 +21,7 @@ export function AddPluginToServerButton({ plugin, buttonProps }: { plugin: Plugi
         setOpen(true);
     };
 
-    const handleClose = (value: BotGuild | null) => {
+    const handleClose = (value: GuildListEntry | null) => {
         if (value) {
             setAddingToServer(value);
             addToServer(value);
@@ -29,7 +29,7 @@ export function AddPluginToServerButton({ plugin, buttonProps }: { plugin: Plugi
         setOpen(false);
     };
 
-    async function addToServer(guild: BotGuild) {
+    async function addToServer(guild: GuildListEntry) {
         const resp = await session.apiClient.addPluginToGuild(plugin!.id, guild.guild.id, { auto_update: true });
         setAddingToServer(null);
         if (isErrorResponse(resp)) {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { BotGuild } from "botloader-common";
+import { GuildListEntry } from "botloader-common";
 import { GuildsGuard, useGuilds } from "../../modules/guilds/GuildsProvider"
 import "./SelectServer.css"
 import { Alert, Button, Container, } from "@mui/material";
@@ -72,7 +72,7 @@ function InnerPage() {
     </Container>
 }
 
-function GuildListItem({ guild: g }: { guild: BotGuild }) {
+function GuildListItem({ guild: g }: { guild: GuildListEntry }) {
     return <Grid2>
         <BlLink to={`/servers/${g.guild.id}`}><Button variant="outlined" startIcon={<GuildIcon guild={g.guild} size={64}></GuildIcon>}>{g.guild.name}</Button></BlLink>
     </Grid2>

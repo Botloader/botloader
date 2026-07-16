@@ -1,16 +1,16 @@
-import { ApiResult, Script, ScriptsWithPlugins, isErrorResponse } from "botloader-common";
+import { ApiResult, Script, GetScriptsWithPluginsResponse, isErrorResponse } from "botloader-common";
 import { FetchData, FetchDataHookNotBehindGuard, createFetchDataContext, useFetchedData } from "../../components/FetchData";
 import { useSession } from "../session/useSession";
 import { useParams } from "react-router-dom";
 import { useCallback } from "react";
 
-export const guildScriptsContext = createFetchDataContext<ScriptsWithPlugins>();
+export const guildScriptsContext = createFetchDataContext<GetScriptsWithPluginsResponse>();
 
 type GuildScriptsHook = {
     delScript: (scriptId: number) => Promise<void>,
     toggleScript: (scriptId: number, enabled: boolean) => Promise<void>,
     createScript: (name: string) => Promise<ApiResult<Script>>,
-} & FetchDataHookNotBehindGuard<ScriptsWithPlugins>
+} & FetchDataHookNotBehindGuard<GetScriptsWithPluginsResponse>
 
 export function GuildScriptsProvider({ children, guildId }: { guildId?: string, children: React.ReactNode }) {
     const session = useSession()

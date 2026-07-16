@@ -1,12 +1,12 @@
 import React, { createContext, useEffect, useState } from "react";
-import { ApiClient, User, isErrorResponse } from "botloader-common";
+import { ApiClient, CurrentUser, isErrorResponse } from "botloader-common";
 import { CreateFetcher } from "../../Util";
 import { BuildConfig } from "../../BuildConfig";
 
 const anonApiClient = new ApiClient(CreateFetcher(), BuildConfig.botloaderApiBase);
 
 export type Session = {
-    user?: User,
+    user?: CurrentUser,
     apiClient: ApiClient,
     signingIn: boolean,
     initialized: boolean
@@ -109,7 +109,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 }
 
 type SessionStateData = {
-    user?: User,
+    user?: CurrentUser,
     apiClient: ApiClient,
     signingIn: boolean,
     initialized: boolean,

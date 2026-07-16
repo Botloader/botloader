@@ -1,7 +1,7 @@
-import { UserGuild } from "botloader-common";
+import { CurrentUserGuild } from "botloader-common";
 
 export interface IndexFile {
-    guild: UserGuild,
+    guild: CurrentUserGuild,
     openScripts: IndexScript[],
 }
 

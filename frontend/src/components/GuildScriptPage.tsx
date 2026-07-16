@@ -760,7 +760,7 @@ function EditOptionSelectSingle({ option }: { option: SettingsOption }) {
 function EditOptionSelectMultiple({ option }: { option: SettingsOption }) {
     const { value: rawValue, setValue, error } = useSettingsField(option.name)
 
-    const defaultValue = option.defaultValue ?? []
+    const defaultValue = Array.isArray(option.defaultValue) ? option.defaultValue : []
     const value = rawValue?.value
         ? Array.isArray(rawValue?.value)
             ? rawValue.value

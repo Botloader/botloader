@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { ApiClient, isErrorResponse, UserGuild } from 'botloader-common';
+import { ApiClient, isErrorResponse, CurrentUserGuild } from 'botloader-common';
 
 import { tmpdir } from 'os';
 import { mkdtemp } from 'fs/promises';
@@ -141,7 +141,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.commands.executeCommand("typescript.reloadProjects");
 	}));
 
-	async function setupWorkspace(guild: UserGuild, dirUri: vscode.Uri) {
+	async function setupWorkspace(guild: CurrentUserGuild, dirUri: vscode.Uri) {
 		await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(dirUri, "/.botloader"));
 		await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(dirUri, "/.botloader/scripts"));
 
@@ -220,7 +220,7 @@ export function deactivate() { }
 const permAdmin = BigInt("0x0000000008");
 const permManageServer = BigInt("0x0000000020");
 
-function hasAdmin(g: UserGuild): boolean {
+function hasAdmin(g: CurrentUserGuild): boolean {
 	if (g.owner) {
 		return true;
 	}
@@ -239,7 +239,7 @@ function hasAdmin(g: UserGuild): boolean {
 }
 
 interface BotloaderJson {
-	guild: UserGuild,
+	guild: CurrentUserGuild,
 	openScripts: number[],
 }
 

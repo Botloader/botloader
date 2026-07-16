@@ -1,4 +1,4 @@
-import { BotGuild, Plugin, ScriptPluginData, ScriptsWithPlugins } from "botloader-common";
+import { GuildListEntry, PluginResponse, GetScriptsWithPluginsResponse } from "botloader-common";
 import { IndexRouteObject, NonIndexRouteObject } from "react-router-dom";
 
 type OurIndexRouteObject = Omit<IndexRouteObject, "handle" | "children">
@@ -23,7 +23,7 @@ export type BreadCrumbParams = {
 }
 
 export type BreadCrumbData = {
-    userGuilds?: BotGuild[],
-    currentGuildScripts?: ScriptsWithPlugins,
-    currentPlugin?: Plugin<ScriptPluginData>
+    userGuilds?: GuildListEntry[],
+    currentGuildScripts?: GetScriptsWithPluginsResponse,
+    currentPlugin?: PluginResponse
 }

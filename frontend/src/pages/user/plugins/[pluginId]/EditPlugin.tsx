@@ -15,7 +15,7 @@ import {
     TextField
 } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
-import { isErrorResponse, PluginImageKind, ScriptPlugin } from "botloader-common";
+import { isErrorResponse, PluginImageKind, PluginResponse } from "botloader-common";
 import { useState } from "react";
 import { DisplayDateTime } from "../../../../components/DateTime";
 import { useFetchedDataBehindGuard } from "../../../../components/FetchData";
@@ -149,7 +149,7 @@ function EditPluginMetaForm() {
 function ScriptPluginSettings() {
     const { value: plugin, reload } = useFetchedDataBehindGuard(pluginContext);
     const session = useSession();
-    const cast = plugin as ScriptPlugin;
+    const cast = plugin as PluginResponse;
 
     async function publish() {
         await session.apiClient.publishScriptPluginVersion(plugin.id, { source: cast.data.dev_version ?? "" });

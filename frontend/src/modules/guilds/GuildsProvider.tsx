@@ -1,4 +1,4 @@
-import { BotGuild, isErrorResponse, UserGuild } from "botloader-common";
+import { GuildListEntry, isErrorResponse, CurrentUserGuild } from "botloader-common";
 import { createFetchDataContext, FetchData, FetchDataGuard, useFetchedData } from "../../components/FetchData";
 import { useSession } from "../session/useSession";
 import { useCallback } from "react";
@@ -40,14 +40,14 @@ export function useGuilds() {
 }
 
 interface LoadedGuilds {
-    all: BotGuild[],
-    hasAdmin: BotGuild[],
+    all: GuildListEntry[],
+    hasAdmin: GuildListEntry[],
 }
 
 const permAdmin = BigInt("0x0000000008");
 const permManageServer = BigInt("0x0000000020");
 
-function userGuildHasAdmin(g: UserGuild): boolean {
+function userGuildHasAdmin(g: CurrentUserGuild): boolean {
     if (g.owner) {
         return true
     }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BotGuild, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, Script } from "botloader-common";
+import { GuildListEntry, GuildMetaConfig, GuildPremiumSlot, isErrorResponse, Plugin, Script } from "botloader-common";
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { useNavigate, useParams } from "react-router-dom";
 import { Panel } from "../../../components/Panel";
@@ -84,7 +84,7 @@ function PremiumBy({ slot }: { slot: GuildPremiumSlot }) {
     </Alert>
 }
 
-function GuildSettings(props: { guild: BotGuild }) {
+function GuildSettings(props: { guild: GuildListEntry }) {
     const [config, setConfig] = useState<GuildMetaConfig | undefined | null>(undefined);
     const session = useSession();
 
@@ -111,13 +111,13 @@ function GuildSettings(props: { guild: BotGuild }) {
     }
 }
 
-function InnerGuildSettings(props: { guild: BotGuild, settings: GuildMetaConfig }) {
+function InnerGuildSettings(props: { guild: GuildListEntry, settings: GuildMetaConfig }) {
     return <Panel>
         <p>Error channel: <code>{props.settings.error_channel_id || "not set"}</code></p>
     </Panel>
 }
 
-function GuildScripts(props: { guild: BotGuild }) {
+function GuildScripts(props: { guild: GuildListEntry }) {
     const createScriptInput = useRef<HTMLInputElement>(null);
     const [createError, setCreateError] = useState("");
     const [isCreating, setCreating] = useState<boolean>(false)

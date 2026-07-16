@@ -1,5 +1,7 @@
-import { GuildMetaConfig } from ".";
-import { CreateScript, CurrentGuildsResponse, EmptyResponse, FullGuild, LoginResponse, Plugin, Script, ScriptPlugin, ScriptsWithPlugins, SessionMeta, UpdateScript, User } from "./api_models";
+import { ConfirmLoginSuccess, CreateRequestData, CurrentUser, GetScriptsWithPluginsResponse, GuildList, GuildMetaConfig, GuildPremiumSlot, NewsItem, Plugin, PluginResponse, PremiumSlot, PremiumSlotTier, Script, SessionMeta, SessionMetaWithKey, UpdateRequestData, UrlResponse } from "./generated/api";
+import { FullGuild } from "./discord_models";
+
+export interface EmptyResponse { }
 
 export type Body = {
     body: any,
@@ -77,11 +79,11 @@ export class ApiClient {
         return await this.do("PATCH", path, body);
     }
 
-    async getCurrentUser(): Promise<ApiResult<User>> {
+    async getCurrentUser(): Promise<ApiResult<CurrentUser>> {
         return await this.get("/api/current_user");
     }
 
-    async getCurrentUserGuilds(): Promise<ApiResult<CurrentGuildsResponse>> {
+    async getCurrentUserGuilds(): Promise<ApiResult<GuildList>> {
         return await this.get("/api/guilds");
     }
 
@@ -106,11 +108,11 @@ export class ApiClient {
         return await this.delete("/api/sessions/all");
     }
 
-    async createApiToken(): Promise<ApiResult<SessionMeta>> {
+    async createApiToken(): Promise<ApiResult<SessionMetaWithKey>> {
         return await this.put("/api/sessions");
     }
 
-    async confirmLogin(code: string, state: string): Promise<ApiResult<LoginResponse>> {
+    async confirmLogin(code: string, state: string): Promise<ApiResult<ConfirmLoginSuccess>> {
         return await this.post("/api/confirm_login", {
             kind: "json",
             body: {
@@ -138,25 +140,25 @@ export class ApiClient {
         return await this.get(`/api/guilds/${guildId}/scripts`);
     }
 
-    async getAllScriptsWithPlugins(guildId: string): Promise<ApiResult<ScriptsWithPlugins>> {
+    async getAllScriptsWithPlugins(guildId: string): Promise<ApiResult<GetScriptsWithPluginsResponse>> {
         return await this.get(`/api/guilds/${guildId}/scripts_with_plugins`);
     }
 
-    async createScript(guildId: string, data: CreateScript): Promise<ApiResult<Script>> {
+    async createScript(guildId: string, data: CreateRequestData): Promise<ApiResult<Script>> {
         return await this.put(`/api/guilds/${guildId}/scripts`, {
             kind: "json",
             body: data
         });
     }
 
-    async updateScript(guildId: string, id: number, data: UpdateScript): Promise<ApiResult<Script>> {
+    async updateScript(guildId: string, id: number, data: UpdateRequestData): Promise<ApiResult<Script>> {
         return await this.patch(`/api/guilds/${guildId}/scripts/${id}`, {
             kind: "json",
             body: data
         });
     }
 
-    async validateScript(guildId: string, id: number, data: UpdateScript): Promise<ApiResult<void>> {
+    async validateScript(guildId: string, id: number, data: UpdateRequestData): Promise<ApiResult<void>> {
         return await this.post(`/api/guilds/${guildId}/scripts/${id}/validate_settings`, {
             kind: "json",
             body: data
@@ -183,15 +185,15 @@ export class ApiClient {
         return await this.get(`/api/guilds/${guildId}/premium_slots`);
     }
 
-    async getPublishedPublicPlugins(): Promise<ApiResult<Plugin[]>> {
+    async getPublishedPublicPlugins(): Promise<ApiResult<PluginResponse[]>> {
         return await this.get(`/api/plugins`);
     }
 
-    async getCurrentUserPlugins(): Promise<ApiResult<Plugin[]>> {
+    async getCurrentUserPlugins(): Promise<ApiResult<PluginResponse[]>> {
         return await this.get(`/api/user/plugins`);
     }
 
-    async getPlugin(scriptId: number): Promise<ApiResult<Plugin>> {
+    async getPlugin(scriptId: number): Promise<ApiResult<PluginResponse>> {
         return await this.get(`/api/plugins/${scriptId}`);
     }
 
@@ -221,7 +223,7 @@ export class ApiClient {
 
     async updateScriptPluginDevVersion(pluginId: number, params: {
         source: string,
-    }): Promise<ApiResult<ScriptPlugin>> {
+    }): Promise<ApiResult<Plugin>> {
         return await this.patch(`/api/user/plugins/${pluginId}/dev_version`, {
             kind: "json",
             body: { new_source: params.source }
@@ -239,7 +241,7 @@ export class ApiClient {
 
     async addPluginToGuild(pluginId: number, guildId: string, params: {
         auto_update: boolean,
-    }): Promise<ApiResult<ScriptPlugin>> {
+    }): Promise<ApiResult<Script>> {
         return await this.post(`/api/guilds/${guildId}/add_plugin`, {
             kind: "json",
             body: {
@@ -249,7 +251,7 @@ export class ApiClient {
         });
     }
 
-    async updateScriptPlugin(guildId: string, scriptId: number): Promise<ApiResult<ScriptPlugin>> {
+    async updateScriptPlugin(guildId: string, scriptId: number): Promise<ApiResult<Script>> {
         return await this.post(`/api/guilds/${guildId}/scripts/${scriptId}/update_plugin`);
     }
 
@@ -335,56 +337,6 @@ export interface FetchResponse {
     status: number,
 }
 
-export interface PremiumSlot {
-    id: number,
-    title: string,
-    user_id: string | null,
-    message: string,
-    source: string,
-    source_id: string,
-    tier: PremiumSlotTier,
-    state: PremiumSlotState,
-    created_at: string,
-    updated_at: string,
-    expires_at: string,
-    manage_url: string,
-    attached_guild_id: string | null,
-}
-
-export type PremiumSlotState =
-    "Active" |
-    "Cancelling" |
-    "Cancelled" |
-    "PaymentFailed";
-
-export type PremiumSlotTier = "Lite" | "Premium";
-
-
-export interface NewsItem {
-    author: NewsAuthor,
-    message_id: string,
-    channel_id: string,
-    channel_name: string,
-    content: string,
-    posted_at: number,
-}
-
-export interface NewsAuthor {
-    username: string,
-    avatar_url: string | null,
-}
-
-export interface GuildPremiumSlot {
-    id: number,
-    title: String,
-    user_id: string | null,
-    tier: PremiumSlotTier,
-    created_at: string,
-    updated_at: string,
-    expires_at: string,
-    attached_guild_id: string | null,
-}
-
 export enum ErrorCode {
     SessionExpired = 1,
     BadCsrfToken = 2,
@@ -396,8 +348,4 @@ export enum ErrorCode {
     UserPluginLimitReached = 8,
     PluginNotFound = 9,
     GuildAlreadyHasPlugin = 10,
-}
-
-export interface UrlResponse {
-    url: string
 }

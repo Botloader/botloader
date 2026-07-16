@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { setTimeout } from "timers";
-import { User } from "botloader-common";
+import { CurrentUser } from "botloader-common";
 import { WebSocket, CloseEvent, MessageEvent } from 'ws';
 
 export class BotloaderWS {
@@ -130,7 +130,7 @@ type WsEvent = WsEventAuthorized | WsEventSubscriptionsUpdated | WsEventScriptLo
 
 interface WsEventAuthorized {
     t: "AuthSuccess",
-    d: User,
+    d: CurrentUser,
 }
 
 interface WsEventSubscriptionsUpdated {

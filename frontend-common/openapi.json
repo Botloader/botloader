@@ -1,0 +1,2911 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Botloader HTTP API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/plugins": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PluginResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{plugin_id}": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/news": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewsItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/confirm_login": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmLoginQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmLoginSuccess"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/reload_vm": {
+      "post": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/settings": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "A guilds config, for storing core botloader settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuildMetaConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/premium_slots": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuildPremiumSlot"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/scripts": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Script"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequestData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Struct you get back from the store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Script"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/scripts_with_plugins": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetScriptsWithPluginsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/scripts/{script_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "script_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Struct you get back from the store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Script"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "script_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Struct you get back from the store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Script"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/scripts/{script_id}/validate_settings": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "script_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/scripts/{script_id}/update_plugin": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "script_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Struct you get back from the store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Script"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/add_plugin": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuildAddPluginData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Struct you get back from the store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Script"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds/{guild}/full_guild": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullGuild"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/vm_workers": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiVmWorkerStatus"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/guild/{guild_id}/status": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guild_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiGuildStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guilds": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuildList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/premium_slots/{slot_id}/update_guild": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slot_id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSlotGuildBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PremiumSlot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/premium_slots": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PremiumSlot"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionMeta"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionMetaWithKey"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DelSessionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/api/sessions/all": {
+      "delete": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/api/current_user": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Mirror of [twilight_model::user::CurrentUser]",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/plugins": {
+      "get": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PluginResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePluginBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/plugins/{plugin_id}": {
+      "patch": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePluginMetaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/plugins/{plugin_id}/dev_version": {
+      "patch": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePluginDevSourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/plugins/{plugin_id}/publish_script_version": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPluginVersionData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/api/user/plugins/{plugin_id}/images": {
+      "post": {
+        "requestBody": {
+          "description": "multipart form data",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "array"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/api/user/plugins/{plugin_id}/images/{image_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "image_id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/api/logout": {
+      "post": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stripe/customer_portal": {
+      "post": {
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stripe/create_checkout_session": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutSessionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiVmWorkerStatus": {
+        "type": "object",
+        "properties": {
+          "worker_id": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "currently_claimed_by_guild_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_claimed_by_guild_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "claimed_last_ms_ago": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "returned_last_ms_ago": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "worker_id",
+          "claimed_last_ms_ago",
+          "returned_last_ms_ago"
+        ]
+      },
+      "ApiErrorBody": {
+        "description": "Shape of the json body produced by [ApiErrorResponse::into_response], for schema generation",
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "extra_data": true
+        },
+        "required": [
+          "code",
+          "description"
+        ]
+      },
+      "GuildIdParam": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "guild_id"
+        ]
+      },
+      "ApiGuildStatusResponse": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string"
+          },
+          "current_claimed_worker_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "last_claimed_worker_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "claimed_last_since_ms": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "returned_last_since_ms": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "pending_acks": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "guild_id",
+          "claimed_last_since_ms",
+          "returned_last_since_ms",
+          "pending_acks"
+        ]
+      },
+      "GuildMetaConfig": {
+        "description": "A guilds config, for storing core botloader settings",
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string"
+          },
+          "error_channel_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "guild_id"
+        ]
+      },
+      "GuildPremiumSlot": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tier": {
+            "$ref": "#/components/schemas/PremiumSlotTier"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attached_guild_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "tier",
+          "created_at",
+          "updated_at",
+          "expires_at"
+        ]
+      },
+      "PremiumSlotTier": {
+        "type": "string",
+        "enum": [
+          "Lite",
+          "Premium"
+        ]
+      },
+      "Script": {
+        "description": "Struct you get back from the store",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "original_source": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "contributes": {
+            "$ref": "#/components/schemas/ScriptContributes"
+          },
+          "plugin_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0
+          },
+          "plugin_auto_update": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "plugin_version_number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "settings_definitions": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SettingsOptionDefinition"
+            }
+          },
+          "settings_values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettingsOptionValue"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "original_source",
+          "enabled",
+          "contributes",
+          "settings_values"
+        ]
+      },
+      "ScriptContributes": {
+        "description": "Contribution points for a scripts, e.g triggers, commands etc",
+        "type": "object",
+        "properties": {
+          "commands": {
+            "type": "array",
+            "items": true
+          },
+          "interval_timers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntervalTimerContrib"
+            }
+          }
+        },
+        "required": [
+          "commands",
+          "interval_timers"
+        ]
+      },
+      "IntervalTimerContrib": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/IntervalType"
+          },
+          "plugin_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "interval"
+        ]
+      },
+      "IntervalType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "Minutes": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "Minutes"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "Cron": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "Cron"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SettingsOptionDefinition": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "Option"
+              },
+              "data": {
+                "$ref": "#/components/schemas/SettingsOption"
+              }
+            },
+            "required": [
+              "kind",
+              "data"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "List"
+              },
+              "data": {
+                "$ref": "#/components/schemas/SettingsOptionList"
+              }
+            },
+            "required": [
+              "kind",
+              "data"
+            ]
+          }
+        ]
+      },
+      "SettingsOption": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "defaultValue": true,
+          "kind": {
+            "$ref": "#/components/schemas/SettingsOptionType"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "description",
+          "required",
+          "kind"
+        ]
+      },
+      "SettingsOptionType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "max_length": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "min_length": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "kind": {
+                "type": "string",
+                "const": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "format": "double"
+              },
+              "max": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "format": "double"
+              },
+              "kind": {
+                "type": "string",
+                "const": "float"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "min": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/NotBigI64"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "max": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/NotBigI64"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "const": "integer"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "max": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "const": "integer64"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "boolean"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SettingsStringSelectOption"
+                }
+              },
+              "kind": {
+                "type": "string",
+                "const": "customStringSelect"
+              }
+            },
+            "required": [
+              "kind",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SettingsStringSelectOption"
+                }
+              },
+              "max_selected": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "min_selected": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "kind": {
+                "type": "string",
+                "const": "customStringMultiSelect"
+              }
+            },
+            "required": [
+              "kind",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SettingsNumberSelectOption"
+                }
+              },
+              "kind": {
+                "type": "string",
+                "const": "customNumberSelect"
+              }
+            },
+            "required": [
+              "kind",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SettingsNumberSelectOption"
+                }
+              },
+              "max_selected": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "min_selected": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "kind": {
+                "type": "string",
+                "const": "customNumberMultiSelect"
+              }
+            },
+            "required": [
+              "kind",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "types": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "$ref": "#/components/schemas/ChannelType"
+                }
+              },
+              "kind": {
+                "type": "string",
+                "const": "channel"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "types": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "$ref": "#/components/schemas/ChannelType"
+                }
+              },
+              "max_length": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "min_length": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "kind": {
+                "type": "string",
+                "const": "channels"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "assignable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "const": "role"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "assignable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "max_length": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "min_length": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0
+              },
+              "kind": {
+                "type": "string",
+                "const": "roles"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        ]
+      },
+      "NotBigI64": {
+        "type": "integer",
+        "format": "int64"
+      },
+      "SettingsStringSelectOption": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ]
+      },
+      "SettingsNumberSelectOption": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ]
+      },
+      "ChannelType": {
+        "type": "string",
+        "enum": [
+          "Text",
+          "Voice",
+          "Category",
+          "News",
+          "Store",
+          "StageVoice",
+          "NewsThread",
+          "PublicThread",
+          "PrivateThread",
+          "GuildDirectory",
+          "Forum",
+          "Media"
+        ]
+      },
+      "SettingsOptionList": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "defaultValue": true,
+          "template": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettingsOption"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "description",
+          "required",
+          "template"
+        ]
+      },
+      "SettingsOptionValue": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": true
+        },
+        "required": [
+          "name",
+          "value"
+        ]
+      },
+      "CreateRequestData": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "original_source": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "original_source",
+          "enabled"
+        ]
+      },
+      "GetScriptsWithPluginsResponse": {
+        "type": "object",
+        "properties": {
+          "scripts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Script"
+            }
+          },
+          "plugins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Plugin"
+            }
+          }
+        },
+        "required": [
+          "scripts",
+          "plugins"
+        ]
+      },
+      "Plugin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "author_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "short_description": {
+            "type": "string"
+          },
+          "long_description": {
+            "type": "string"
+          },
+          "is_public": {
+            "type": "boolean"
+          },
+          "is_official": {
+            "type": "boolean"
+          },
+          "is_published": {
+            "type": "boolean"
+          },
+          "current_version": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "published_version_updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "installed_guilds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "installed_guilds_updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "discord_thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PluginImage"
+            }
+          },
+          "data": {
+            "$ref": "#/components/schemas/PluginData"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "author_id",
+          "name",
+          "short_description",
+          "long_description",
+          "is_public",
+          "is_official",
+          "is_published",
+          "current_version",
+          "images",
+          "data"
+        ]
+      },
+      "PluginImage": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "plugin_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "image_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PluginImageKind"
+          },
+          "width": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "plugin_id",
+          "image_id",
+          "created_at",
+          "description",
+          "position",
+          "kind",
+          "width",
+          "height"
+        ]
+      },
+      "PluginImageKind": {
+        "type": "string",
+        "enum": [
+          "Icon",
+          "Banner",
+          "Showcase"
+        ]
+      },
+      "PluginData": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "plugin_type": {
+                "type": "string",
+                "const": "ScriptPlugin"
+              }
+            },
+            "required": [
+              "plugin_type"
+            ],
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScriptPluginData"
+              }
+            ]
+          }
+        ]
+      },
+      "ScriptPluginData": {
+        "type": "object",
+        "properties": {
+          "published_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "published_version_updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "dev_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dev_version_updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "GuildScriptPathParams": {
+        "type": "object",
+        "properties": {
+          "script_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "script_id"
+        ]
+      },
+      "UpdateRequestData": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "original_source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "default": null
+          },
+          "settings_values": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SettingsOptionValue"
+            },
+            "default": null
+          }
+        }
+      },
+      "GuildAddPluginData": {
+        "type": "object",
+        "properties": {
+          "plugin_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "auto_update": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "plugin_id",
+          "auto_update"
+        ]
+      },
+      "FullGuild": {
+        "type": "object",
+        "properties": {
+          "guild": true,
+          "channels": {
+            "type": "array",
+            "items": true
+          },
+          "roles": {
+            "type": "array",
+            "items": true
+          }
+        },
+        "required": [
+          "guild",
+          "channels",
+          "roles"
+        ]
+      },
+      "GuildList": {
+        "type": "object",
+        "properties": {
+          "guilds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuildListEntry"
+            }
+          }
+        },
+        "required": [
+          "guilds"
+        ]
+      },
+      "GuildListEntry": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "boolean"
+          },
+          "guild": {
+            "$ref": "#/components/schemas/CurrentUserGuild"
+          }
+        },
+        "required": [
+          "connected",
+          "guild"
+        ]
+      },
+      "CurrentUserGuild": {
+        "description": "Mirror of [twilight_model::user::CurrentUserGuild]",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "description": "Permissions bitflags serialized as a string",
+            "type": "string"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "owner",
+          "permissions",
+          "features"
+        ]
+      },
+      "UpdateSlotPathParams": {
+        "type": "object",
+        "properties": {
+          "slot_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "slot_id"
+        ]
+      },
+      "UpdateSlotGuildBody": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PremiumSlot": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/PremiumSlotTier"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PremiumSlotState"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "manage_url": {
+            "type": "string"
+          },
+          "attached_guild_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "message",
+          "source",
+          "source_id",
+          "tier",
+          "state",
+          "created_at",
+          "updated_at",
+          "expires_at",
+          "manage_url"
+        ]
+      },
+      "PremiumSlotState": {
+        "type": "string",
+        "enum": [
+          "Active",
+          "Cancelling",
+          "Cancelled",
+          "PaymentFailed"
+        ]
+      },
+      "SessionMeta": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SessionType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "kind",
+          "created_at"
+        ]
+      },
+      "SessionType": {
+        "type": "string",
+        "enum": [
+          "User",
+          "ApiKey"
+        ]
+      },
+      "DelSessionPayload": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "SessionMetaWithKey": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SessionType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "created_at",
+          "token"
+        ]
+      },
+      "CurrentUser": {
+        "description": "Mirror of [twilight_model::user::CurrentUser]",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "discriminator": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bot": {
+            "type": "boolean"
+          },
+          "mfa_enabled": {
+            "type": "boolean"
+          },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verified": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "flags": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0
+          },
+          "premium_type": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "public_flags": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0
+          },
+          "accent_color": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "banner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "discriminator",
+          "bot",
+          "mfa_enabled"
+        ]
+      },
+      "PluginResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "author_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "short_description": {
+            "type": "string"
+          },
+          "long_description": {
+            "type": "string"
+          },
+          "is_public": {
+            "type": "boolean"
+          },
+          "is_official": {
+            "type": "boolean"
+          },
+          "is_published": {
+            "type": "boolean"
+          },
+          "current_version": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "published_version_updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "installed_guilds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0
+          },
+          "installed_guilds_updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "discord_thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PluginImage"
+            }
+          },
+          "data": {
+            "$ref": "#/components/schemas/PluginData"
+          },
+          "author": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "author_id",
+          "name",
+          "short_description",
+          "long_description",
+          "is_public",
+          "is_official",
+          "is_published",
+          "current_version",
+          "images",
+          "data",
+          "author"
+        ]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "discriminator": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_bl_staff": {
+            "type": "boolean"
+          },
+          "is_bl_trusted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "discriminator",
+          "is_bl_staff",
+          "is_bl_trusted"
+        ]
+      },
+      "CreatePluginBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "short_description": {
+            "type": "string"
+          },
+          "long_description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "short_description",
+          "long_description"
+        ]
+      },
+      "UpdatePluginMetaRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "short_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "long_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_public": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "is_published": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdatePluginDevSourceRequest": {
+        "type": "object",
+        "properties": {
+          "new_source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_source"
+        ]
+      },
+      "PublishPluginVersionData": {
+        "type": "object",
+        "properties": {
+          "new_source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_source"
+        ]
+      },
+      "ImageParam": {
+        "type": "object",
+        "properties": {
+          "image_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "image_id"
+        ]
+      },
+      "UrlResponse": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "CreateCheckoutSessionBody": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "$ref": "#/components/schemas/PremiumSlotTier"
+          }
+        },
+        "required": [
+          "tier"
+        ]
+      },
+      "NewsItem": {
+        "type": "object",
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/NewsAuthor"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "channel_name": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "posted_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "author",
+          "message_id",
+          "channel_id",
+          "channel_name",
+          "content",
+          "posted_at"
+        ]
+      },
+      "NewsAuthor": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "ConfirmLoginQuery": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "state"
+        ]
+      },
+      "ConfirmLoginSuccess": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/CurrentUser"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "user",
+          "token"
+        ]
+      }
+    }
+  }
+}

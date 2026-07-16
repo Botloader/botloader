@@ -1,9 +1,9 @@
-import { Plugin } from "botloader-common";
+import { PluginResponse } from "botloader-common";
 import { createFetchDataContext, FetchData } from "./FetchData";
 import { useSession } from "../modules/session/useSession";
 import { useCallback } from "react";
 
-export const pluginContext = createFetchDataContext<Plugin>();
+export const pluginContext = createFetchDataContext<PluginResponse>();
 
 
 export function MaybePluginProvider({ pluginId, children }: { pluginId?: number, children: React.ReactNode }) {

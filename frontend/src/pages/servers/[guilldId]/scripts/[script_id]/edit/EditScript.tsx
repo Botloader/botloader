@@ -1,4 +1,4 @@
-import { BotGuild, isErrorResponse, Plugin, Script, ScriptsWithPlugins } from "botloader-common";
+import { GuildListEntry, isErrorResponse, Plugin, Script, GetScriptsWithPluginsResponse } from "botloader-common";
 import { useCallback, useMemo, useRef, useState } from "react";
 import "./EditScript.css";
 import { AsyncOpButton } from "../../../../../../components/AsyncOpButton";
@@ -13,9 +13,9 @@ import { ScriptEnabledIndicator } from "../../../../../../components/GuildSideNa
 import { useNavigate } from "react-router-dom";
 import { useCurrentGuildId } from "../../../../../../modules/guilds/CurrentGuild";
 
-export const scriptsContext = createFetchDataContext<ScriptsWithPlugins>();
+export const scriptsContext = createFetchDataContext<GetScriptsWithPluginsResponse>();
 
-export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
+export function EditScriptPage(props: { guild: GuildListEntry, scriptId: number }) {
     const session = useSession();
 
     const guildId = props.guild.guild.id
@@ -29,7 +29,7 @@ export function EditScriptPage(props: { guild: BotGuild, scriptId: number }) {
     </FetchDataGuarded>
 }
 
-export function InnerPage(props: { guild: BotGuild, scriptId: number }) {
+export function InnerPage(props: { guild: GuildListEntry, scriptId: number }) {
     const { value: scripts } = useFetchedDataBehindGuard(scriptsContext);
     const script = scripts.scripts.find((v) => v.id === props.scriptId);
     const plugin = script?.plugin_id !== null ? scripts.plugins.find((v) => v.id === script?.plugin_id) : undefined;
@@ -43,7 +43,7 @@ export function InnerPage(props: { guild: BotGuild, scriptId: number }) {
     }
 }
 
-function LoadedNew(props: { guild: BotGuild, script: Script, plugin?: Plugin }) {
+function LoadedNew(props: { guild: GuildListEntry, script: Script, plugin?: Plugin }) {
     const { value: scripts, setData } = useFetchedDataBehindGuard(scriptsContext);
     const session = useSession();
 

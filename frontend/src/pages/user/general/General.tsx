@@ -1,6 +1,6 @@
 import { Alert, Button, Card, CardActions, CardContent, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
 import { Stack } from "@mui/system";
-import { isErrorResponse, SessionMeta } from "botloader-common";
+import { isErrorResponse, SessionMeta, SessionMetaWithKey } from "botloader-common";
 import { useEffect, useState } from "react";
 import { AsyncOpButton } from "../../../components/AsyncOpButton";
 import { DisplayDateTime } from "../../../components/DateTime";
@@ -46,7 +46,7 @@ type CreateApiTokenProps = {
 interface TokenStatus {
     creating: boolean,
 
-    success?: SessionMeta,
+    success?: SessionMetaWithKey,
     error?: string,
 }
 
