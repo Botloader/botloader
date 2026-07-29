@@ -1,19 +1,19 @@
 import { Member } from "./member";
 
-import type { IPermissionOverwrite } from "../generated/discord/IPermissionOverwrite";
-import type { ThreadMetadata } from "../generated/discord/ThreadMetadata";
-import type { VideoQualityMode } from "../generated/discord/VideoQualityMode";
-import type { ChannelType } from "../generated/discord/ChannelType";
+import type { IPermissionOverwrite } from "../generated/discord";
+import type { ThreadMetadata } from "../generated/discord";
+import type { VideoQualityMode } from "../generated/discord";
+import type { ChannelType } from "../generated/discord";
 
-import type { InternalGuildChannel } from "../generated/internal/GuildChannel";
-import type { IPrivateThread } from "../generated/internal/PrivateThread";
-import type { IThreadMember } from "../generated/internal/ThreadMember";
-import type { IPublicThread } from "../generated/internal/PublicThread";
-import type { ICategoryChannel } from "../generated/internal/CategoryChannel";
-import type { INewsThread } from "../generated/internal/NewsThread";
-import type { ITextChannel } from "../generated/internal/TextChannel";
-import type { IVoiceChannel } from "../generated/internal/VoiceChannel";
-import type { ISelfThreadMember } from "../generated/internal/ISelfThreadMember";
+import type { InternalGuildChannel } from "../generated/internal";
+import type { IPrivateThread } from "../generated/internal";
+import type { IThreadMember } from "../generated/internal";
+import type { IPublicThread } from "../generated/internal";
+import type { ICategoryChannel } from "../generated/internal";
+import type { INewsThread } from "../generated/internal";
+import type { ITextChannel } from "../generated/internal";
+import type { IVoiceChannel } from "../generated/internal";
+import type { ISelfThreadMember } from "../generated/internal";
 import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, addThreadMember, createForumThread, createStandaloneThread, createThreadFromMessage, createTypingTrigger, editChannel, editThread, getPins, removeThreadMember } from "./dapi";
 
 export type GuildChannel =

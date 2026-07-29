@@ -1,7 +1,7 @@
-import type { IInviteChannel } from "../generated/discord/IInviteChannel";
-import type { IInviteGuild } from "../generated/discord/IInviteGuild";
-import type { InviteTargetType } from "../generated/discord/InviteTargetType";
-import type { IInvite } from "../generated/internal/IInvite";
+import type { IInviteChannel } from "../generated/discord";
+import type { IInviteGuild } from "../generated/discord";
+import type { InviteTargetType } from "../generated/discord";
+import type { IInvite } from "../generated/internal";
 import { User } from "./user";
 
 export class Invite {

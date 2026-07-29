@@ -1,5 +1,5 @@
 import { PermissionsError } from './error';
-import { IPermissionOverwrite, PermissionOverwriteType } from '../generated/discord/index';
+import { IPermissionOverwrite, PermissionOverwriteType } from '../generated/discord';
 import { getCurrentGuildId } from './dapi';
 
 export type PermissionResolvable = string | number | bigint | Permissions;

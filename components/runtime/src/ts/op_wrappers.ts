@@ -1,8 +1,8 @@
-import * as Internal from "./generated/internal/index";
-import * as Discord from './generated/discord/index';
+import * as Internal from "./generated/internal";
+import * as Discord from './generated/discord';
 import { VoiceState } from "./discord/events";
-import { SupportedImageFormat } from "./generated/image/SupportedImageFormat";
-import { SupportedEncodeImageFormat } from "./generated/image/SupportedEncodeImageFormat";
+import { SupportedImageFormat } from "./generated/image";
+import { SupportedEncodeImageFormat } from "./generated/image";
 
 // This file contains op wrappers
 // They are used internally and you should NEVER use them in your own scripts

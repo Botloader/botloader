@@ -1,4 +1,4 @@
-import * as Internal from "./generated/internal/index";
+import * as Internal from "./generated/internal";
 import {
     ChannelType,
     Interaction,

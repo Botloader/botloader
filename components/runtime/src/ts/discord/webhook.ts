@@ -1,6 +1,6 @@
 import { ExractClassProperties } from "../core_util";
 import { User, UserFields } from "./user";
-import type * as Internal from "../generated/internal/index"
+import type * as Internal from "../generated/internal"
 import { EditWebhookFields, deleteWebhook, editWebhook, editWebhookWithToken, executeWebhook, getCurrentGuildId, type CreateMessageFields } from "./dapi";
 
 export type WebhookFields = ExractClassProperties<Omit<Webhook, "user">> & { user: UserFields | null }

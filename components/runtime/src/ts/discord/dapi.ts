@@ -1,6 +1,6 @@
 import { base64Encode, encodeText } from '../core_util';
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType, RoleColors } from '../generated/discord/index';
-import * as Internal from '../generated/internal/index';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType, RoleColors } from '../generated/discord';
+import * as Internal from '../generated/internal';
 import { Image } from '../image';
 import { OpWrappers } from '../op_wrappers';
 import { GuildChannel, Thread, ThreadMember, guildChannelFromInternal, threadChannelFromInternal } from './channel';

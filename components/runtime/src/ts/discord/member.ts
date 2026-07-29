@@ -1,5 +1,5 @@
-import { IMember } from "../generated/internal/Member";
-import { IBan } from "../generated/internal/Ban";
+import { IMember } from "../generated/internal";
+import { IBan } from "../generated/internal";
 import { User } from "./user";
 
 export class Member {

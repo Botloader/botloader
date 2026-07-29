@@ -1,5 +1,5 @@
 import { OpWrappers } from "./op_wrappers"
-import * as Internal from "./generated/internal/index";
+import * as Internal from "./generated/internal";
 import { ChannelType } from "./discord/index";
 
 export type DefaultValue<TDefault> = TDefault extends undefined

@@ -3,7 +3,7 @@ import "./core_util";
 
 
 import { Commands } from "./commands";
-import * as Internal from "./generated/internal/index";
+import * as Internal from "./generated/internal";
 import { EventSystem } from "./eventsystem";
 import { OpWrappers } from "./op_wrappers";
 import { Storage } from "./storage";

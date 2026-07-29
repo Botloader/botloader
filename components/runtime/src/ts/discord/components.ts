@@ -1,9 +1,9 @@
-import type { ButtonStyle } from '../generated/discord/ButtonStyle';
-import type { TextInputStyle } from '../generated/discord/TextInputStyle';
-import type { ComponentType } from '../generated/discord/ComponentType';
-import type { ISelectMenuOption } from '../generated/discord/ISelectMenuOption';
-import type {ICheckboxGroupOption} from '../generated/discord/ICheckboxGroupOption';
-import { ReactionType } from '../generated/discord/ReactionType';
+import type { ButtonStyle } from '../generated/discord';
+import type { TextInputStyle } from '../generated/discord';
+import type { ComponentType } from '../generated/discord';
+import type { ISelectMenuOption } from '../generated/discord';
+import type {ICheckboxGroupOption} from '../generated/discord';
+import { ReactionType } from '../generated/discord';
 import {
     ChannelType,
     IActionRow,
@@ -29,8 +29,8 @@ import {
     ICheckboxGroup,
 } from './index';
 import { encodeInteractionCustomId } from './interaction';
-import { type SelectMenuType } from '../generated/discord/SelectMenuType';
-import { SelectDefaultValue } from '../generated/discord/SelectDefaultValue';
+import { type SelectMenuType } from '../generated/discord';
+import { SelectDefaultValue } from '../generated/discord';
 
 export type AnyComponent = 
     | ActionRow

@@ -1,5 +1,5 @@
 import { OpWrappers } from "./op_wrappers";
-import type { ScheduledTask as InternalTask, GetGuildTasksFilter } from "./generated/internal/index";
+import type { ScheduledTask as InternalTask, GetGuildTasksFilter } from "./generated/internal";
 
 /**
  * Tasks or "Scheduled" Tasks are tasks that will execute at some point in the future

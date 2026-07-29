@@ -1,14 +1,14 @@
 import { getCurrentGuildId } from "./dapi";
 import { UserMention } from "./user";
 
-import { Attachment } from "../generated/discord/Attachment";
-import { IComponent } from "../generated/discord/IComponent";
-import type { Embed } from "../generated/discord/Embed";
-import type { MessageFlags } from "../generated/discord/MessageFlags";
-import type { MessageType } from "../generated/discord/MessageType";
+import { Attachment } from "../generated/discord";
+import { IComponent } from "../generated/discord";
+import type { Embed } from "../generated/discord";
+import type { MessageFlags } from "../generated/discord";
+import type { MessageType } from "../generated/discord";
 
-import type { IMessageSnapshot } from "../generated/internal/IMessageSnapshot";
-import type { IMessageSnapshotFields } from "../generated/internal/IMessageSnapshotFields";
+import type { IMessageSnapshot } from "../generated/internal";
+import type { IMessageSnapshotFields } from "../generated/internal";
 
 export class MessageSnapshot {
     message: MessageSnapshotFields;

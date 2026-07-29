@@ -11,4 +11,4 @@ export * from './components';
 export * from './permissions';
 export * from './snowflake';
 export * from './webhook';
-export * from '../generated/discord/index';
+export * from '../generated/discord';

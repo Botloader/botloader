@@ -1,5 +1,5 @@
 import { type ExractClassProperties } from '../core_util';
-import * as Internal from '../generated/internal/index';
+import * as Internal from '../generated/internal';
 
 export type CustomEmojiFields = ExractClassProperties<CustomEmoji>
 

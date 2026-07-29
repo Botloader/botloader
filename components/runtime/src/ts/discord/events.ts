@@ -1,23 +1,23 @@
 import { Member } from "./member";
 import { User, UserMention } from "./user";
 
-import type { ReactionType } from "../generated/discord/ReactionType";
-import type { Attachment } from "../generated/discord/Attachment";
-import type { Embed } from "../generated/discord/Embed";
-import type { MessageType } from "../generated/discord/MessageType";
+import type { ReactionType } from "../generated/discord";
+import type { Attachment } from "../generated/discord";
+import type { Embed } from "../generated/discord";
+import type { MessageType } from "../generated/discord";
 
-import type { IEventMessageUpdate } from "../generated/internal/EventMessageUpdate";
-import type { IEventMessageReactionAdd } from "../generated/internal/EventMessageReactionAdd";
-import type { IEventMemberRemove } from "../generated/internal/EventMemberRemove";
-import type { IEventInviteCreate } from "../generated/internal/IEventInviteCreate";
-import type { IEventInviteDelete } from "../generated/internal/IEventInviteDelete";
-import type { IInviteTargetUser } from "../generated/discord/IInviteTargetUser";
-import type { InviteTargetType } from "../generated/discord/InviteTargetType";
-import type { IEventVoiceStateUpdate } from "../generated/internal/IEventVoiceStateUpdate";
-import type { IVoiceState } from "../generated/internal/IVoiceState";
-import { IEventThreadListSync } from "../generated/internal/IEventThreadListSync";
+import type { IEventMessageUpdate } from "../generated/internal";
+import type { IEventMessageReactionAdd } from "../generated/internal";
+import type { IEventMemberRemove } from "../generated/internal";
+import type { IEventInviteCreate } from "../generated/internal";
+import type { IEventInviteDelete } from "../generated/internal";
+import type { IInviteTargetUser } from "../generated/discord";
+import type { InviteTargetType } from "../generated/discord";
+import type { IEventVoiceStateUpdate } from "../generated/internal";
+import type { IVoiceState } from "../generated/internal";
+import { IEventThreadListSync } from "../generated/internal";
 import { Thread, ThreadMember, threadChannelFromInternal } from "./channel";
-import { IEventThreadMembersUpdate } from "../generated/internal/IEventThreadMembersUpdate";
+import { IEventThreadMembersUpdate } from "../generated/internal";
 
 export class EventMessageReactionAdd {
     channelId: string;

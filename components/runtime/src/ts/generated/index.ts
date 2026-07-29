@@ -1,1 +1,1 @@
-// generated index file using gen-index.bash
+// generated index file using merge-types.mjs

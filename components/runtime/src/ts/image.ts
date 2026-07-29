@@ -1,6 +1,6 @@
 import { base64Encode } from "./core_util";
-import { SupportedEncodeImageFormat } from "./generated/image/SupportedEncodeImageFormat";
-import { SupportedImageFormat } from "./generated/image/SupportedImageFormat";
+import { SupportedEncodeImageFormat } from "./generated/image";
+import { SupportedImageFormat } from "./generated/image";
 import { HttpClient } from "./httpclient"
 import { OpWrappers } from "./op_wrappers";
 

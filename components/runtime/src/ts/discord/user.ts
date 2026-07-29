@@ -1,11 +1,11 @@
-import type { IUser } from "../generated/internal/IUser";
+import type { IUser } from "../generated/internal";
 import type { CdnImageSize } from "./common";
-import type { PremiumType } from "../generated/internal/PremiumType";
-import type { IPrimaryGuild } from "../generated/internal/IPrimaryGuild";
+import type { PremiumType } from "../generated/internal";
+import type { IPrimaryGuild } from "../generated/internal";
 import { ExractClassProperties } from "../core_util";
-import { PartialMember } from "../generated/discord/PartialMember";
-import { IUserMention } from "../generated/internal/UserMention";
-export type { PremiumType } from "../generated/internal/PremiumType";
+import { PartialMember } from "../generated/discord";
+import { IUserMention } from "../generated/internal";
+export type { PremiumType } from "../generated/internal";
 
 export type UserFields = ExractClassProperties<Omit<User, "primaryGuild">> & {primaryGuild: ExractClassProperties<PrimaryGuild> | null};
 

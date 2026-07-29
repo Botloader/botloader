@@ -1,5 +1,5 @@
-import { ChannelType, ComponentType, IComponent, Role, ThreadMetadata, Attachment } from '../generated/discord/index';
-import * as Internal from '../generated/internal/index';
+import { ChannelType, ComponentType, IComponent, Role, ThreadMetadata, Attachment } from '../generated/discord';
+import * as Internal from '../generated/internal';
 import {
     CreateMessageFields,
     InteractionMessageFlags,

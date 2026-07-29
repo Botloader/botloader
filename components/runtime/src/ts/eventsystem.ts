@@ -33,7 +33,7 @@ import {
     RoleSelectMenuInteraction,
     MentionableSelectMenuInteraction
 } from './discord/index';
-import * as Internal from './generated/internal/index';
+import * as Internal from './generated/internal';
 
 export namespace EventSystem {
 

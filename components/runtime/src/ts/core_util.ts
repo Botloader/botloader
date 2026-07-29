@@ -1,5 +1,5 @@
 import { OpWrappers } from "./op_wrappers";
-import * as Internal from "./generated/internal/index";
+import * as Internal from "./generated/internal";
 
 const non_json = ["boolean", "number", "string"];
 
