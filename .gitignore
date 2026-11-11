@@ -27,3 +27,4 @@ components/runtime/src/ts/typings
 **/tsconfig.tsbuildinfo
 
 **/node_modules
+.claude/settings.local.json
