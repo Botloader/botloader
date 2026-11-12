@@ -18,6 +18,10 @@ pub struct InviteChannel {
     pub name: Option<String>,
     #[serde(rename = "type")]
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
 }
 
 impl TryFrom<twilight_model::guild::invite::InviteChannel> for InviteChannel {
@@ -29,7 +33,8 @@ impl TryFrom<twilight_model::guild::invite::InviteChannel> for InviteChannel {
         Ok(Self {
             id: value.id.to_string(),
             name: value.name,
-            kind: value.kind.try_into()?,
+            kind: value.kind.into(),
+            kind_id: value.kind.into(),
         })
     }
 }

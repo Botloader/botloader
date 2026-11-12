@@ -752,13 +752,13 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
     ) -> Result<GuildChannel, anyhow::Error> {
         let rt_ctx = get_rt_ctx(&self.state);
         let channel = parse_get_guild_channel(&self.state, &rt_ctx, &arg.channel_id).await?;
+        let kind = arg.kind.try_into()?;
 
         Ok(discord_request_with_extra_error(&self.state, async move {
-            let mut req =
-                rt_ctx
-                    .discord_config
-                    .client
-                    .create_thread(channel.id, &arg.name, arg.kind.into());
+            let mut req = rt_ctx
+                .discord_config
+                .client
+                .create_thread(channel.id, &arg.name, kind);
 
             if let Some(auto_archive) = arg.auto_archive_duration_minutes {
                 req = req.auto_archive_duration(

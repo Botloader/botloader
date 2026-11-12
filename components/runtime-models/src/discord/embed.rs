@@ -84,6 +84,7 @@ impl From<Embed> for twilight_model::channel::message::embed::Embed {
             title: v.title,
             url: v.url,
             video: v.video.map(From::from),
+            flags: None,
         }
     }
 }
@@ -249,6 +250,10 @@ impl From<EmbedImage> for twilight_model::channel::message::embed::EmbedImage {
             proxy_url: v.proxy_url,
             url: v.url,
             width: v.width.map(|v| v as u64),
+            content_type: None,
+            placeholder: None,
+            placeholder_version: None,
+            flags: None,
         }
     }
 }
@@ -371,6 +376,10 @@ impl From<EmbedVideo> for twilight_model::channel::message::embed::EmbedVideo {
             proxy_url: v.proxy_url,
             url: v.url,
             width: v.width.map(|v| v as u64),
+            content_type: None,
+            placeholder: None,
+            placeholder_version: None,
+            flags: None,
         }
     }
 }

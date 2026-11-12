@@ -100,6 +100,10 @@ pub struct EventThreadDelete {
     pub guild_id: String,
     pub id: String,
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub parent_id: String,
 }
 
@@ -112,7 +116,8 @@ impl TryFrom<twilight_model::gateway::payload::incoming::ThreadDelete> for Event
         Ok(Self {
             id: td.id.to_string(),
             guild_id: td.guild_id.to_string(),
-            kind: TryInto::try_into(td.kind)?,
+            kind: td.kind.into(),
+            kind_id: td.kind.into(),
             parent_id: td.parent_id.to_string(),
         })
     }

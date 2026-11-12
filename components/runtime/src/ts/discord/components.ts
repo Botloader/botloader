@@ -5,7 +5,7 @@ import type { ISelectMenuOption } from '../generated/discord';
 import type {ICheckboxGroupOption} from '../generated/discord';
 import { ReactionType } from '../generated/discord';
 import {
-    ChannelType,
+    AnyChannelType,
     IActionRow,
     IButton,
     ISelectMenu,
@@ -225,7 +225,7 @@ export class UserSelectMenu extends BaseSelectMenu {
 
 export class ChannelSelectMenu extends BaseSelectMenu {
     defaultValues?: SelectDefaultValue[];
-    channelTypes?: ChannelType[];
+    channelTypes?: AnyChannelType[];
 
     constructor(name: string, data?: any) {
         super("Channel", name, data);
@@ -236,7 +236,7 @@ export class ChannelSelectMenu extends BaseSelectMenu {
         return this
     }
 
-    setChannelTypes(types: ChannelType[]) {
+    setChannelTypes(types: AnyChannelType[]) {
         this.channelTypes = types
         return this
     }

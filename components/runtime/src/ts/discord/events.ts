@@ -48,6 +48,12 @@ export class EventMessageUpdate {
     guildId?: string;
     id: string;
     kind?: MessageType;
+    /**
+     * The raw discord message type id, compare against {@link MessageTypes}.
+     *
+     * Unlike {@link kind} this is also meaningful for message types botloader doesn't have a name for yet.
+     */
+    kindId?: number;
     mentionEveryone?: boolean;
     mentionRoles?: string[];
     mentions?: UserMention[];
@@ -69,6 +75,7 @@ export class EventMessageUpdate {
         this.guildId = json.guildId;
         this.id = json.id;
         this.kind = json.kind;
+        this.kindId = json.kindId;
         this.mentionEveryone = json.mentionEveryone;
         this.mentionRoles = json.mentionRoles;
         this.mentions = json.mentions?.map(v => new UserMention(v));

@@ -657,11 +657,11 @@ export interface components {
             /** @constant */
             kind: "customNumberMultiSelect";
         } | {
-            types?: components["schemas"]["ChannelType"][] | null;
+            types?: components["schemas"]["AnyChannelType"][] | null;
             /** @constant */
             kind: "channel";
         } | {
-            types?: components["schemas"]["ChannelType"][] | null;
+            types?: components["schemas"]["AnyChannelType"][] | null;
             /** Format: uint32 */
             max_length?: number | null;
             /** Format: uint32 */
@@ -692,6 +692,13 @@ export interface components {
             /** Format: double */
             value: number;
         };
+        /**
+         * @description A channel type given either by name (`"Text"`) or by its raw discord channel type id (`0`).
+         *
+         *     Used where scripts pass channel types to botloader, so that channel types botloader has no name
+         *     for yet can still be used.
+         */
+        AnyChannelType: components["schemas"]["ChannelType"] | number;
         /** @enum {string} */
         ChannelType: "Text" | "Voice" | "Category" | "News" | "Store" | "StageVoice" | "NewsThread" | "PublicThread" | "PrivateThread" | "GuildDirectory" | "Forum" | "Media";
         SettingsOptionList: {
@@ -981,6 +988,7 @@ export type SettingsOptionType = components['schemas']['SettingsOptionType'];
 export type NotBigI64 = components['schemas']['NotBigI64'];
 export type SettingsStringSelectOption = components['schemas']['SettingsStringSelectOption'];
 export type SettingsNumberSelectOption = components['schemas']['SettingsNumberSelectOption'];
+export type AnyChannelType = components['schemas']['AnyChannelType'];
 export type ChannelType = components['schemas']['ChannelType'];
 export type SettingsOptionList = components['schemas']['SettingsOptionList'];
 export type SettingsOptionValue = components['schemas']['SettingsOptionValue'];

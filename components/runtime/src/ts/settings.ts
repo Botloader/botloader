@@ -1,6 +1,6 @@
 import { OpWrappers } from "./op_wrappers"
 import * as Internal from "./generated/internal";
-import { ChannelType } from "./discord/index";
+import type { AnyChannelType } from "./discord/index";
 
 export type DefaultValue<TDefault> = TDefault extends undefined
     ? { defaultValue?: TDefault }
@@ -75,14 +75,14 @@ export type ChannelOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefaul
     /**
      * What channel types to allow
      */
-    types?: ChannelType[]
+    types?: AnyChannelType[]
 }
 
 export type ChannelsOptions<TRequired, TDefault> = BaseOptions<TRequired, TDefault> & {
     /**
      * What channel types to allow
      */
-    types?: ChannelType[]
+    types?: AnyChannelType[]
 
     /**
      * Maximum number of channels

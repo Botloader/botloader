@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use twilight_model::id::Id;
 
-use super::channel::ChannelType;
+use super::channel::AnyChannelType;
 use super::message::ReactionType;
 
 #[derive(Clone, Debug, Deserialize, Serialize, TS)]
@@ -322,7 +322,7 @@ pub struct SelectMenu {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    pub channel_types: Option<Vec<ChannelType>>,
+    pub channel_types: Option<Vec<AnyChannelType>>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -386,7 +386,12 @@ impl TryFrom<SelectMenu> for TwilightSelectMenu {
             placeholder: v.placeholder,
             channel_types: v
                 .channel_types
-                .map(|v| v.into_iter().map(Into::into).collect()),
+                .map(|v| {
+                    v.into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<_, _>>()
+                })
+                .transpose()?,
             default_values: v
                 .default_values
                 .map(|v| {
@@ -832,6 +837,7 @@ impl From<UnfurledMediaItem> for TwilightUnfurledMediaItem {
             height: Some(v.height),
             width: Some(v.width),
             content_type: v.content_type,
+            content_scan_metadata: None,
         }
     }
 }
@@ -1173,6 +1179,7 @@ impl From<FileUpload> for TwilightFileUpload {
             max_values: v.max_values,
             min_values: v.min_values,
             required: v.required,
+            file_types: None,
         }
     }
 }

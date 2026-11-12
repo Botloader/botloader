@@ -1983,7 +1983,7 @@
                   "null"
                 ],
                 "items": {
-                  "$ref": "#/components/schemas/ChannelType"
+                  "$ref": "#/components/schemas/AnyChannelType"
                 }
               },
               "kind": {
@@ -2004,7 +2004,7 @@
                   "null"
                 ],
                 "items": {
-                  "$ref": "#/components/schemas/ChannelType"
+                  "$ref": "#/components/schemas/AnyChannelType"
                 }
               },
               "max_length": {
@@ -2119,6 +2119,20 @@
         "required": [
           "label",
           "value"
+        ]
+      },
+      "AnyChannelType": {
+        "description": "A channel type given either by name (`\"Text\"`) or by its raw discord channel type id (`0`).\n\nUsed where scripts pass channel types to botloader, so that channel types botloader has no name\nfor yet can still be used.",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ChannelType"
+          },
+          {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          }
         ]
       },
       "ChannelType": {

@@ -17,6 +17,49 @@ import type { PartialMember } from "../generated/discord";
 
 import type { IMessage } from "../generated/internal";
 
+/**
+ * Raw discord message type ids, for use with `kindId` fields.
+ */
+export const MessageTypes = {
+    Regular: 0,
+    RecipientAdd: 1,
+    RecipientRemove: 2,
+    Call: 3,
+    ChannelNameChange: 4,
+    ChannelIconChange: 5,
+    ChannelMessagePinned: 6,
+    GuildMemberJoin: 7,
+    UserPremiumSub: 8,
+    UserPremiumSubTier1: 9,
+    UserPremiumSubTier2: 10,
+    UserPremiumSubTier3: 11,
+    ChannelFollowAdd: 12,
+    GuildDiscoveryDisqualified: 14,
+    GuildDiscoveryRequalified: 15,
+    GuildDiscoveryGracePeriodInitialWarning: 16,
+    GuildDiscoveryGracePeriodFinalWarning: 17,
+    ThreadCreated: 18,
+    Reply: 19,
+    ChatInputCommand: 20,
+    ThreadStarterMessage: 21,
+    GuildInviteReminder: 22,
+    ContextMenuCommand: 23,
+    AutoModerationAction: 24,
+    RoleSubscriptionPurchase: 25,
+    InteractionPremiumUpsell: 26,
+    StageStart: 27,
+    StageEnd: 28,
+    StageSpeaker: 29,
+    StageTopic: 31,
+    GuildApplicationPremiumSubscription: 32,
+    GuildIncidentAlertModeEnabled: 36,
+    GuildIncidentAlertModeDisabled: 37,
+    GuildIncidentReportRaid: 38,
+    GuildIncidentReportRaidFalseAlarm: 39,
+    PurchaseNotification: 44,
+    PollResult: 46,
+} as const satisfies Record<Exclude<MessageType, "Unknown">, number>;
+
 export class Message {
     activity: MessageActivity | null;
     application: MessageApplication | null;
@@ -32,6 +75,12 @@ export class Message {
     id: string;
     interactionMetadata: InteractionMetadata | null;
     kind: MessageType;
+    /**
+     * The raw discord message type id, compare against {@link MessageTypes}.
+     *
+     * Unlike {@link kind} this is also meaningful for message types botloader doesn't have a name for yet.
+     */
+    kindId: number;
     member: PartialMember | null;
     mentionChannels: ChannelMention[];
     mentionEveryone: boolean;
@@ -64,6 +113,7 @@ export class Message {
         this.id = json.id;
         this.interactionMetadata = json.interactionMetadata ? new InteractionMetadata(json.interactionMetadata) : null;
         this.kind = json.kind;
+        this.kindId = json.kindId;
         this.member = json.member;
         this.mentionChannels = json.mentionChannels;
         this.mentionEveryone = json.mentionEveryone;

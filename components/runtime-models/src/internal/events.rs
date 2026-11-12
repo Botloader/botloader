@@ -87,6 +87,12 @@ pub struct EventMessageUpdate {
     pub kind: Option<MessageType>,
     #[serde(default,skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
+    /// The raw discord message type id, see `MessageTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for message types botloader doesn't know about yet.
+    pub kind_id: Option<u8>,
+    #[serde(default,skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub mention_everyone: Option<bool>,
     #[serde(default,skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -122,7 +128,8 @@ impl TryFrom<twilight_model::gateway::payload::incoming::MessageUpdate> for Even
             embeds: Some(v.embeds.drain(..).map(From::from).collect()),
             guild_id: v.guild_id.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
-            kind: Some(TryFrom::try_from(v.kind)?),
+            kind: Some(v.kind.into()),
+            kind_id: Some(v.kind.into()),
             mention_everyone: Some(v.mention_everyone),
             mention_roles: Some(v.mention_roles.iter().map(ToString::to_string).collect()),
             mentions: Some(v.mentions.drain(..).map(From::from).collect()),

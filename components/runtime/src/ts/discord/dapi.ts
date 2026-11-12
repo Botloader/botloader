@@ -1,5 +1,5 @@
 import { base64Encode, encodeText } from '../core_util';
-import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, ChannelType, PermissionOverwriteType, InviteTargetType, RoleColors } from '../generated/discord';
+import { Guild, Role, Embed, IComponent, AuditLogExtras, SendEmoji, IPermissionOverwrite, VideoQualityMode, AnyChannelType, PermissionOverwriteType, InviteTargetType, RoleColors } from '../generated/discord';
 import * as Internal from '../generated/internal';
 import { Image } from '../image';
 import { OpWrappers } from '../op_wrappers';
@@ -414,7 +414,7 @@ export async function getChannels(): Promise<GuildChannel[]> {
 
 export interface ICreateChannel {
     name: string;
-    kind?: ChannelType;
+    kind?: AnyChannelType;
     bitrate?: number;
     nsfw?: boolean;
     parentId?: string;

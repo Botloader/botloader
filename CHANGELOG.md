@@ -32,6 +32,35 @@ using a `YEAR.MAJOR.MINOR` version scheme (e.g. `2026.5.1`):
 
 ## [Unreleased]
 
+### Added
+
+- `MessageFlags.hasSnapshot` for forwarded messages.
+- Numeric channel and message types: channels, channel mentions, invite
+  channels, interaction channels, thread delete events, messages, message
+  snapshots and message update events now have a `kindId` field with the raw
+  discord type id, alongside the existing `kind` name. Use the new
+  `ChannelTypes` and `MessageTypes` constants to compare against them.
+- Everywhere a channel type is accepted (settings channel options, command
+  channel options, channel select menus, `createChannel`) a raw discord channel
+  type id can now be passed instead of a name, e.g `ChannelTypes.Forum` or `20`.
+- Channel and message types botloader doesn't know yet no longer cause errors
+  (e.g "Unimplemented channel type 20" from `getChannels()`). They get
+  `kind: "Unknown"` and channels become an `UnknownChannel`, use `kindId` to
+  tell them apart.
+
+### Changed
+
+- Updated twilight to 0.18.
+- `Webhook.channelId` is now `string | null`, since Discord can return webhooks
+  without a channel.
+
+### Fixed
+
+- `MessageFlags.isComponentsV2` on received messages reflected the
+  `suppressNotifications` flag instead of the components v2 flag.
+- Media channels are now `TextChannel`s in scripts (they were `UnknownChannel`),
+  and can be used as a channel type filter in settings channel pickers.
+
 ## [2026.1.0] - 2026-07-05
 
 ### Added

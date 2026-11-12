@@ -6,7 +6,7 @@ use twilight_model::id::{marker::ChannelMarker, Id};
 use twilight_validate::channel::ChannelValidationError;
 
 use crate::{
-    discord::channel::{ChannelType, PermissionOverwrite, ThreadMetadata, VideoQualityMode},
+    discord::channel::{AnyChannelType, ChannelType, PermissionOverwrite, ThreadMetadata, VideoQualityMode},
     internal::member::Member,
     util::NotBigU64,
 };
@@ -27,6 +27,7 @@ pub enum GuildChannel {
     Stage(VoiceChannel),
     GuildDirectory(TextChannel),
     Forum(TextChannel),
+    Unknown(UnknownChannel),
 }
 
 impl TryFrom<twilight_model::channel::Channel> for GuildChannel {
@@ -48,20 +49,11 @@ impl TryFrom<twilight_model::channel::Channel> for GuildChannel {
             TwilightChannelType::GuildVoice => Ok(Self::Voice(v.try_into()?)),
             TwilightChannelType::GuildStageVoice => Ok(Self::Stage(v.try_into()?)),
 
-            TwilightChannelType::Private => {
-                panic!("Bot does not support private channels, we should never reach this path")
-            }
-            TwilightChannelType::Group => {
-                panic!("Bot does not support private channels, we should never reach this path")
-            }
             TwilightChannelType::GuildDirectory => Ok(Self::GuildDirectory(v.try_into()?)),
             TwilightChannelType::GuildMedia | TwilightChannelType::GuildForum => {
                 Ok(Self::Forum(v.try_into()?))
             }
-            other => Err(anyhow::anyhow!(
-                "Unimplemented channel type {}",
-                u8::from(other)
-            )),
+            _ => Ok(Self::Unknown(v.into())),
         }
     }
 }
@@ -72,9 +64,35 @@ impl TryFrom<twilight_model::channel::Channel> for GuildChannel {
 #[serde(rename_all = "camelCase")]
 pub struct UnknownChannel {
     pub id: String,
-    #[ts(type = "{Unknown: number}")]
+    #[ts(type = "'Unknown'")]
     pub kind: ChannelType,
-    pub unknown_kind_id: u8,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
+    pub name: String,
+    pub parent_id: Option<String>,
+    pub position: Option<i32>,
+    pub permission_overwrites: Vec<PermissionOverwrite>,
+}
+
+impl From<twilight_model::channel::Channel> for UnknownChannel {
+    fn from(v: twilight_model::channel::Channel) -> Self {
+        Self {
+            id: v.id.to_string(),
+            kind: ChannelType::Unknown,
+            kind_id: v.kind.into(),
+            name: v.name.unwrap_or_default(),
+            parent_id: v.parent_id.as_ref().map(ToString::to_string),
+            position: v.position,
+            permission_overwrites: v
+                .permission_overwrites
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, TS)]
@@ -86,6 +104,10 @@ pub struct VoiceChannel {
     pub id: String,
     #[ts(type = "'Voice'|'StageVoice'")]
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub name: String,
     pub parent_id: Option<String>,
     pub permission_overwrites: Vec<PermissionOverwrite>,
@@ -102,7 +124,8 @@ impl TryFrom<twilight_model::channel::Channel> for VoiceChannel {
         Ok(Self {
             bitrate: v.bitrate.unwrap_or_default(),
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             name: v.name.unwrap_or_default(),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             permission_overwrites: v
@@ -125,8 +148,12 @@ impl TryFrom<twilight_model::channel::Channel> for VoiceChannel {
 #[serde(rename_all = "camelCase")]
 pub struct TextChannel {
     pub id: String,
-    #[ts(type = "'Text'|'News'|'Forum'|'GuildDirectory'")]
+    #[ts(type = "'Text'|'News'|'Forum'|'Media'|'GuildDirectory'")]
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub last_pin_timestamp: Option<NotBigU64>,
     pub name: String,
     pub nsfw: bool,
@@ -143,7 +170,8 @@ impl TryFrom<twilight_model::channel::Channel> for TextChannel {
     fn try_from(v: twilight_model::channel::Channel) -> Result<Self, anyhow::Error> {
         Ok(Self {
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             last_pin_timestamp: v
                 .last_pin_timestamp
                 .map(|e| NotBigU64(e.as_micros() as u64 / 1000)),
@@ -172,6 +200,10 @@ pub struct PublicThread {
     pub id: String,
     #[ts(type = "'PublicThread'")]
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub member: Option<SelfThreadMember>,
     pub member_count: i8,
     pub message_count: u32,
@@ -191,7 +223,8 @@ impl TryFrom<twilight_model::channel::Channel> for PublicThread {
                 .default_auto_archive_duration
                 .map(|v| v.number() as u32),
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -214,6 +247,10 @@ pub struct PrivateThread {
     pub invitable: Option<bool>,
     #[ts(type = "'PrivateThread'")]
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub member: Option<SelfThreadMember>,
     pub member_count: i8,
     pub message_count: u32,
@@ -234,7 +271,8 @@ impl TryFrom<twilight_model::channel::Channel> for PrivateThread {
                 .default_auto_archive_duration
                 .map(|v| v.number() as u32),
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -263,6 +301,10 @@ pub struct NewsThread {
     pub id: String,
     #[ts(type = "'NewsThread'")]
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub member: Option<SelfThreadMember>,
     pub member_count: i8,
     pub message_count: u32,
@@ -282,7 +324,8 @@ impl TryFrom<twilight_model::channel::Channel> for NewsThread {
                 .default_auto_archive_duration
                 .map(|v| v.number() as u32),
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -352,6 +395,10 @@ pub struct CategoryChannel {
     pub id: String,
     #[ts(type = "'Category'")]
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub name: String,
     pub permission_overwrites: Vec<PermissionOverwrite>,
     pub position: i32,
@@ -362,7 +409,8 @@ impl TryFrom<twilight_model::channel::Channel> for CategoryChannel {
 
     fn try_from(v: twilight_model::channel::Channel) -> Result<CategoryChannel, anyhow::Error> {
         Ok(Self {
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             id: v.id.to_string(),
             name: v.name.unwrap_or_default(),
             position: v.position.unwrap_or_default(),
@@ -557,7 +605,7 @@ pub struct CreateChannel {
 
     #[ts(optional)]
     #[serde(default)]
-    pub kind: Option<ChannelType>,
+    pub kind: Option<AnyChannelType>,
 
     #[ts(optional)]
     #[serde(default)]
@@ -647,8 +695,9 @@ impl CreateChannel {
             req = req.user_limit(*user_limit);
         }
 
-        if let Some(kind) = self.kind {
-            req = req.kind(kind.into())
+        // conversion only fails for the "Unknown" name, which can't be deserialized
+        if let Some(Ok(kind)) = self.kind.map(TryInto::try_into) {
+            req = req.kind(kind)
         }
 
         Ok(req)
@@ -671,7 +720,7 @@ pub struct CreateThread {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub invitable: Option<bool>,
-    pub kind: ChannelType,
+    pub kind: AnyChannelType,
     pub name: String,
 }
 

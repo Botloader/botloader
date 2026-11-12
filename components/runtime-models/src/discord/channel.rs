@@ -55,6 +55,10 @@ impl From<twilight_model::channel::thread::ThreadMetadata> for ThreadMetadata {
     }
 }
 
+/// Named channel type.
+///
+/// Channel types botloader doesn't know about (yet) are represented as `Unknown`, scripts can use
+/// the accompanying `kindId` field (the raw discord channel type id) to tell them apart.
 #[derive(Clone, Debug, Serialize, Deserialize, TS, Copy, PartialEq, Eq, schemars::JsonSchema)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ChannelType.ts")]
@@ -73,39 +77,36 @@ pub enum ChannelType {
     GuildDirectory,
     Forum,
     Media,
+    #[schemars(skip)]
+    #[serde(skip_deserializing)]
+    Unknown,
 }
 
-impl TryFrom<twilight_model::channel::ChannelType> for ChannelType {
-    type Error = anyhow::Error;
-
-    fn try_from(v: twilight_model::channel::ChannelType) -> Result<ChannelType, anyhow::Error> {
+impl From<twilight_model::channel::ChannelType> for ChannelType {
+    fn from(v: twilight_model::channel::ChannelType) -> ChannelType {
+        use twilight_model::channel::ChannelType as T;
         match v {
-            twilight_model::channel::ChannelType::GuildText => Ok(Self::Text),
-            twilight_model::channel::ChannelType::GuildVoice => Ok(Self::Voice),
-            twilight_model::channel::ChannelType::GuildCategory => Ok(Self::Category),
-            twilight_model::channel::ChannelType::GuildAnnouncement => Ok(Self::News),
-            twilight_model::channel::ChannelType::GuildStageVoice => Ok(Self::StageVoice),
-            twilight_model::channel::ChannelType::AnnouncementThread => Ok(Self::NewsThread),
-            twilight_model::channel::ChannelType::PublicThread => Ok(Self::PublicThread),
-            twilight_model::channel::ChannelType::PrivateThread => Ok(Self::PrivateThread),
-            twilight_model::channel::ChannelType::Group => panic!("unspported channel type: group"),
-            twilight_model::channel::ChannelType::Private => {
-                panic!("unspported channel type: private")
-            }
-            twilight_model::channel::ChannelType::GuildDirectory => Ok(Self::GuildDirectory),
-            twilight_model::channel::ChannelType::GuildForum => Ok(Self::Forum),
-            twilight_model::channel::ChannelType::GuildMedia => Ok(Self::Media),
-            other => Err(anyhow::anyhow!(
-                "Unimplemented channel type {}",
-                u8::from(other)
-            )),
+            T::GuildText => Self::Text,
+            T::GuildVoice => Self::Voice,
+            T::GuildCategory => Self::Category,
+            T::GuildAnnouncement => Self::News,
+            T::GuildStageVoice => Self::StageVoice,
+            T::AnnouncementThread => Self::NewsThread,
+            T::PublicThread => Self::PublicThread,
+            T::PrivateThread => Self::PrivateThread,
+            T::GuildDirectory => Self::GuildDirectory,
+            T::GuildForum => Self::Forum,
+            T::GuildMedia => Self::Media,
+            _ => Self::Unknown,
         }
     }
 }
 
-impl From<ChannelType> for twilight_model::channel::ChannelType {
-    fn from(v: ChannelType) -> Self {
-        match v {
+impl TryFrom<ChannelType> for twilight_model::channel::ChannelType {
+    type Error = anyhow::Error;
+
+    fn try_from(v: ChannelType) -> Result<Self, Self::Error> {
+        Ok(match v {
             ChannelType::Text => Self::GuildText,
             ChannelType::Voice => Self::GuildVoice,
             ChannelType::Category => Self::GuildCategory,
@@ -118,6 +119,44 @@ impl From<ChannelType> for twilight_model::channel::ChannelType {
             ChannelType::Forum => Self::GuildForum,
             ChannelType::Store => Self::GuildText,
             ChannelType::Media => Self::GuildMedia,
+            ChannelType::Unknown => {
+                return Err(anyhow::anyhow!(
+                    "channel type \"Unknown\" can't be used here, use the numeric channel type id instead"
+                ))
+            }
+        })
+    }
+}
+
+/// A channel type given either by name (`"Text"`) or by its raw discord channel type id (`0`).
+///
+/// Used where scripts pass channel types to botloader, so that channel types botloader has no name
+/// for yet can still be used.
+#[derive(Clone, Debug, Serialize, Deserialize, TS, Copy, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(untagged)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/AnyChannelType.ts")]
+pub enum AnyChannelType {
+    Named(ChannelType),
+    Id(u8),
+}
+
+impl From<twilight_model::channel::ChannelType> for AnyChannelType {
+    fn from(v: twilight_model::channel::ChannelType) -> Self {
+        match ChannelType::from(v) {
+            ChannelType::Unknown => Self::Id(v.into()),
+            named => Self::Named(named),
+        }
+    }
+}
+
+impl TryFrom<AnyChannelType> for twilight_model::channel::ChannelType {
+    type Error = anyhow::Error;
+
+    fn try_from(v: AnyChannelType) -> Result<Self, Self::Error> {
+        match v {
+            AnyChannelType::Named(named) => named.try_into(),
+            AnyChannelType::Id(id) => Ok(id.into()),
         }
     }
 }
@@ -226,5 +265,58 @@ impl From<PermissionOverwriteType>
             PermissionOverwriteType::Member => Self::Member,
             PermissionOverwriteType::Role => Self::Role,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AnyChannelType, ChannelType};
+    use twilight_model::channel::ChannelType as TwilightChannelType;
+
+    #[test]
+    fn any_channel_type_accepts_names_and_ids() {
+        let parsed: Vec<AnyChannelType> = serde_json::from_str(r#"["Forum", 20]"#).unwrap();
+        assert_eq!(
+            parsed,
+            vec![
+                AnyChannelType::Named(ChannelType::Forum),
+                AnyChannelType::Id(20)
+            ]
+        );
+
+        let twilight = parsed
+            .into_iter()
+            .map(TwilightChannelType::try_from)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(
+            twilight,
+            vec![TwilightChannelType::GuildForum, TwilightChannelType::Unknown(20)]
+        );
+    }
+
+    #[test]
+    fn unknown_name_is_not_accepted_as_input() {
+        assert!(serde_json::from_str::<AnyChannelType>(r#""Unknown""#).is_err());
+    }
+
+    #[test]
+    fn unknown_channel_types_map_to_unknown() {
+        assert_eq!(
+            ChannelType::from(TwilightChannelType::Unknown(20)),
+            ChannelType::Unknown
+        );
+        assert_eq!(
+            serde_json::to_string(&ChannelType::Unknown).unwrap(),
+            r#""Unknown""#
+        );
+        assert_eq!(
+            AnyChannelType::from(TwilightChannelType::Unknown(20)),
+            AnyChannelType::Id(20)
+        );
+        assert_eq!(
+            AnyChannelType::from(TwilightChannelType::GuildText),
+            AnyChannelType::Named(ChannelType::Text)
+        );
     }
 }

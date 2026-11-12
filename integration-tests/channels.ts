@@ -23,6 +23,7 @@ script.on("CHANNEL_CREATE", async (channel) => {
         }
     } else if (channel.name === "bl-chtest-2") {
         assertExpected("Voice", channel.kind)
+        assertExpected(Discord.ChannelTypes.Voice, channel.kindId)
         await Discord.deleteChannel(channel.id)
     }
 })

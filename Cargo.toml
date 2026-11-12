@@ -38,16 +38,16 @@ schemars = { version = "0.9", features = ["chrono04", "uuid1"] }
 image = { version = "0.25.1", git = "https://github.com/image-rs/image.git", rev = "6e73a1780b659987acff81849b22a0257da47069" }
 base64-simd = "0.8.0"
 
-twilight-model = { version = "0.17.1", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-http = { version = "0.17.1", features = [
+twilight-model = { version = "0.18.0", git = "https://github.com/jonastar/twilight.git", rev = "01d69f4d28b203b45c569f7d2764e96cbd79dcbc" }
+twilight-http = { version = "0.18.0", features = [
     "rustls-platform-verifier",
-], git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-gateway = { version = "0.17.1", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-cache-inmemory = { version = "0.17.1", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-util = { version = "0.17.0", features = [
+], git = "https://github.com/jonastar/twilight.git", rev = "01d69f4d28b203b45c569f7d2764e96cbd79dcbc" }
+twilight-gateway = { version = "0.18.0", git = "https://github.com/jonastar/twilight.git", rev = "01d69f4d28b203b45c569f7d2764e96cbd79dcbc" }
+twilight-cache-inmemory = { version = "0.18.0", git = "https://github.com/jonastar/twilight.git", rev = "01d69f4d28b203b45c569f7d2764e96cbd79dcbc" }
+twilight-util = { version = "0.18.0", features = [
     "permission-calculator",
-], git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
-twilight-validate = { version = "0.17.0", git = "https://github.com/LittleEngineer/twilight.git", rev = "6d1586d3b77f3c01471765e29ca29224829fed81" }
+], git = "https://github.com/jonastar/twilight.git", rev = "01d69f4d28b203b45c569f7d2764e96cbd79dcbc" }
+twilight-validate = { version = "0.18.0", git = "https://github.com/jonastar/twilight.git", rev = "01d69f4d28b203b45c569f7d2764e96cbd79dcbc" }
 
 # twilight-model = { version = "0.16.0", path = "../forklight/twilight-model" }
 # twilight-http = { version = "0.16.0", path = "../forklight/twilight-http" }

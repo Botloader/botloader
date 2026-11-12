@@ -1,6 +1,6 @@
 import * as Internal from "./generated/internal";
 import {
-    ChannelType,
+    AnyChannelType,
     Interaction,
     Message,
     Role,
@@ -451,7 +451,7 @@ export namespace Commands {
     }
 
     export interface ChannelOption {
-        channelTypes?: ChannelType[],
+        channelTypes?: AnyChannelType[],
     }
 
     export interface RoleOption {

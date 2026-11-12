@@ -31,6 +31,12 @@ export class MessageSnapshotFields {
     embeds: Embed[];
     flags?: MessageFlags;
     kind: MessageType;
+    /**
+     * The raw discord message type id, compare against {@link MessageTypes}.
+     *
+     * Unlike {@link kind} this is also meaningful for message types botloader doesn't have a name for yet.
+     */
+    kindId: number;
     mentions: UserMention[];
     mentionRoles: string[];
     timestamp: number;
@@ -47,6 +53,7 @@ export class MessageSnapshotFields {
         this.embeds = json.embeds;
         this.flags = json.flags;
         this.kind = json.kind;
+        this.kindId = json.kindId;
         this.mentionRoles = json.mentionRoles;
         this.mentions = json.mentions.map(v => new UserMention(v));
         this.timestamp = json.timestamp;

@@ -2,7 +2,7 @@ import { Box, Checkbox, Chip, ListItemText, MenuItem, OutlinedInput, Select } fr
 import { useCurrentFullGuild } from "../modules/guilds/FullGuildProvider";
 import { Loading } from "./Loading";
 import { useMemo } from "react";
-import { ChannelType, DiscordChannel, DiscordNumberedChannelTypes, DiscordRole } from "botloader-common";
+import { AnyChannelType, DiscordChannel, DiscordNumberedChannelTypes, DiscordRole } from "botloader-common";
 
 type OptionsValue<TMultiple extends boolean> = TMultiple extends true ? string[] : string
 
@@ -112,7 +112,7 @@ export function SelectChannel<
     label: string
     error?: string | null
     allowEmpty?: boolean
-    types?: ChannelType[]
+    types?: AnyChannelType[]
     onChange: (value: OptionsValue<TMultiple>) => any,
 }) {
     const guild = useCurrentFullGuild()
@@ -253,7 +253,12 @@ function SelectedChannel({ allChannels, channelId }: { allChannels: DiscordChann
     />
 }
 
-function ChannelTypeToNumber(inputKind: ChannelType): DiscordNumberedChannelTypes {
+function ChannelTypeToNumber(inputKind: AnyChannelType): DiscordNumberedChannelTypes {
+    if (typeof inputKind === "number") {
+        // raw discord channel type id
+        return inputKind
+    }
+
     switch (inputKind) {
         case "Text":
             return DiscordNumberedChannelTypes.GuildText
@@ -284,6 +289,9 @@ function ChannelTypeToNumber(inputKind: ChannelType): DiscordNumberedChannelType
 
         case "Forum":
             return DiscordNumberedChannelTypes.GuildForum
+
+        case "Media":
+            return DiscordNumberedChannelTypes.GuildMedia
     }
 
     throw new Error("unsupported channel type: " + inputKind)

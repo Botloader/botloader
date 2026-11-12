@@ -2,7 +2,7 @@
 set -e
 cd "${0%/*}"
 
-export DATABASE_URL=postgres://postgres@localhost/botloader-integration-testing
+export DATABASE_URL=postgres://postgres:jonaspg@localhost/botloader-integration-testing
 
 # init db 
 cd ../components/stores

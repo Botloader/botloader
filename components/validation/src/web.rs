@@ -210,13 +210,7 @@ pub(crate) fn validate_settings_option_value_option(
                 };
 
                 if let Some(types) = types {
-                    let rt_type =
-                        runtime_models::discord::channel::ChannelType::try_from(channel.kind);
-                    if let Ok(rt_type) = rt_type {
-                        if !types.contains(&rt_type) {
-                            ctx.push_error(format!("channel type not allowed: {:?}", channel.kind));
-                        }
-                    } else {
+                    if !channel_type_allowed(types, channel.kind) {
                         ctx.push_error(format!("channel type not allowed: {:?}", channel.kind));
                     }
                 }
@@ -273,16 +267,7 @@ pub(crate) fn validate_settings_option_value_option(
                     };
 
                     if let Some(types) = types {
-                        let rt_type =
-                            runtime_models::discord::channel::ChannelType::try_from(channel.kind);
-                        if let Ok(rt_type) = rt_type {
-                            if !types.contains(&rt_type) {
-                                ctx.push_error(format!(
-                                    "channel type not allowed: {:?}",
-                                    channel.kind
-                                ));
-                            }
-                        } else {
+                        if !channel_type_allowed(types, channel.kind) {
                             ctx.push_error(format!("channel type not allowed: {:?}", channel.kind));
                         }
                     }
@@ -656,4 +641,13 @@ pub fn check_script_source(ctx: &mut ValidationContext, field_name: &str, source
     if source.len() > 100_000 {
         ctx.push_field_error(field_name, "source can be max 100KiB".to_string());
     }
+}
+
+fn channel_type_allowed(
+    allowed: &[runtime_models::discord::channel::AnyChannelType],
+    kind: twilight_model::channel::ChannelType,
+) -> bool {
+    allowed
+        .iter()
+        .any(|t| twilight_model::channel::ChannelType::try_from(*t).ok() == Some(kind))
 }

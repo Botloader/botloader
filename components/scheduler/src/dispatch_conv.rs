@@ -11,7 +11,7 @@ pub fn discord_event_to_dispatch(
             name: "MESSAGE_CREATE",
             guild_id: evt.guild_id,
             data: serde_json::to_value(&runtime_models::internal::messages::Message::try_from(
-                m.0,
+                m.message,
             )?)
             .unwrap(),
         }),

@@ -63,6 +63,10 @@ pub struct MessageSnapshotFields {
 	pub flags: Option<MessageFlags>,
 
 	pub kind: MessageType,
+    /// The raw discord message type id, see `MessageTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for message types botloader doesn't know about yet.
+	pub kind_id: u8,
 	
 	pub mentions: Vec<UserMention>,
 	pub mention_roles: Vec<String>,
@@ -83,7 +87,8 @@ impl TryFrom<twilight_model::channel::message::MessageSnapshot> for MessageSnaps
                 .map(|ts| NotBigU64(ts.as_micros() as u64 / 1000)),
 			embeds: m.embeds.into_iter().map(From::from).collect(),
 			flags: m.flags.map(From::from),
-			kind: m.kind.try_into()?,
+			kind: m.kind.into(),
+			kind_id: m.kind.into(),
 			mentions: m.mentions.into_iter().map(From::from).collect(),
 			mention_roles: m.mention_roles.iter().map(ToString::to_string).collect(),
 			timestamp: NotBigU64(m.timestamp.as_micros() as u64 / 1000),

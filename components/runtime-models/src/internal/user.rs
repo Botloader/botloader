@@ -124,7 +124,7 @@ impl From<twilight_model::user::UserFlags> for UserFlags {
             verified_bot: uf.contains(twilight_model::user::UserFlags::VERIFIED_BOT),
             verified_developer: uf.contains(twilight_model::user::UserFlags::VERIFIED_DEVELOPER),
             certified_moderator: uf
-                .contains(twilight_model::user::UserFlags::MODERATOR_PROGRAMS_ALUMNI),
+                .contains(twilight_model::user::UserFlags::CERTIFIED_MODERATOR),
             bot_http_interactions: uf
                 .contains(twilight_model::user::UserFlags::BOT_HTTP_INTERACTIONS),
         }

@@ -766,6 +766,10 @@ export class SelectMenuInteraction extends ComponentInteraction {
 export interface InteractionChannel {
     id: string;
     kind: ChannelType;
+    /**
+     * The raw discord channel type id, compare against {@link ChannelTypes}.
+     */
+    kindId: number;
     name: string;
     parentId?: string;
     permissionsRaw: string;

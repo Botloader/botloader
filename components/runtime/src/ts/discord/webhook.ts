@@ -9,7 +9,7 @@ export class Webhook {
     id: string;
     applicationId: string | null;
     avatar: string | null;
-    channelId: string;
+    channelId: string | null;
     guildId: string | null;
     kind: WebhookType;
     name: string | null;

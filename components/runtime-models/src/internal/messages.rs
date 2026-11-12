@@ -122,6 +122,10 @@ pub fn convert_attachments(
                 file: decoded,
                 filename: v.filename,
                 id: v.id.0,
+                title: None,
+                duration_secs: None,
+                waveform: None,
+                is_spoiler: None,
             })
         })
         .collect::<Result<Vec<_>, _>>()?)
@@ -240,6 +244,10 @@ pub struct Message {
     pub guild_id: Option<String>,
     pub id: String,
     pub kind: MessageType,
+    /// The raw discord message type id, see `MessageTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for message types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub member: Option<PartialMember>,
     pub mention_channels: Vec<ChannelMention>,
     pub mention_everyone: bool,
@@ -275,7 +283,8 @@ impl TryFrom<twilight_model::channel::Message> for Message {
             flags: v.flags.map(From::from),
             guild_id: v.guild_id.as_ref().map(ToString::to_string),
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             member: v.member.map(From::from),
             mention_channels: v
                 .mention_channels

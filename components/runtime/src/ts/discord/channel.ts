@@ -13,8 +13,28 @@ import type { ICategoryChannel } from "../generated/internal";
 import type { INewsThread } from "../generated/internal";
 import type { ITextChannel } from "../generated/internal";
 import type { IVoiceChannel } from "../generated/internal";
+import type { IUnknownChannel } from "../generated/internal";
 import type { ISelfThreadMember } from "../generated/internal";
 import { ICreateForumThread, ICreateStandaloneThread, ICreateThreadFromMessage, IEditThread, addThreadMember, createForumThread, createStandaloneThread, createThreadFromMessage, createTypingTrigger, editChannel, editThread, getPins, removeThreadMember } from "./dapi";
+
+/**
+ * Raw discord channel type ids, for use with `kindId` fields and anywhere a channel type is accepted.
+ *
+ * Channel types not listed here can still be used by passing the raw number.
+ */
+export const ChannelTypes = {
+    Text: 0,
+    Voice: 2,
+    Category: 4,
+    News: 5,
+    NewsThread: 10,
+    PublicThread: 11,
+    PrivateThread: 12,
+    StageVoice: 13,
+    GuildDirectory: 14,
+    Forum: 15,
+    Media: 16,
+} as const satisfies Record<Exclude<ChannelType, "Unknown">, number>;
 
 export type GuildChannel =
     | CategoryChannel
@@ -32,7 +52,7 @@ export type GuildChannel =
 export function guildChannelFromInternal(json: InternalGuildChannel): GuildChannel {
     if (json.kind === "Voice" || json.kind === "StageVoice") {
         return new VoiceChannel(json);
-    } else if (json.kind === "Text" || json.kind === "News" || json.kind === "Forum" || json.kind === "GuildDirectory") {
+    } else if (json.kind === "Text" || json.kind === "News" || json.kind === "Forum" || json.kind === "Media" || json.kind === "GuildDirectory") {
         return new TextChannel(json);
     } else if (json.kind === "Category") {
         return new CategoryChannel(json);
@@ -43,7 +63,7 @@ export function guildChannelFromInternal(json: InternalGuildChannel): GuildChann
     } else if (json.kind === "PublicThread") {
         return new PublicThread(json);
     } else {
-        return new UnknownChannel(json);
+        return new UnknownChannel(json as IUnknownChannel);
     }
 }
 
@@ -52,13 +72,28 @@ export function threadChannelFromInternal(json: InternalGuildChannel): Thread {
     if (channel.isThread()) {
         return channel
     } else {
-        throw new Error(`Channel is not thread: id: ${json.id}, kind: ${json.kind}`)
+        throw new Error(`Channel is not thread: id: ${json.id}, kind: ${JSON.stringify(json.kind)}`)
     }
 }
 
 export abstract class BaseChannel {
     id: string;
     kind: ChannelType;
+
+    /**
+     * The raw discord channel type id, compare against {@link ChannelTypes}.
+     *
+     * Unlike {@link kind} this is also meaningful for channel types botloader doesn't have a name for yet.
+     *
+     * @example
+     * ```ts
+     * if (channel.kindId === ChannelTypes.Forum) {
+     *     // ...
+     * }
+     * ```
+     */
+    kindId: number;
+
     name: string;
     permissionOverwrites: IPermissionOverwrite[];
 
@@ -68,6 +103,7 @@ export abstract class BaseChannel {
     constructor(json: InternalGuildChannel) {
         this.id = json.id;
         this.kind = json.kind;
+        this.kindId = json.kindId;
         if ('name' in json) {
             this.name = json.name;
         } else {
@@ -123,7 +159,25 @@ export abstract class BaseChannel {
     }
 }
 
-export class UnknownChannel extends BaseChannel { }
+/**
+ * A channel of a type botloader doesn't know about yet (e.g a new channel type discord added).
+ *
+ * `kind` will be `"Unknown"`, use {@link BaseChannel.kindId} to tell what type of channel it is.
+ */
+export class UnknownChannel extends BaseChannel {
+    kind: "Unknown" = "Unknown";
+    parentId: string | null;
+    position: number | null;
+
+    /**
+     * @internal
+     */
+    constructor(json: IUnknownChannel) {
+        super(json);
+        this.parentId = json.parentId;
+        this.position = json.position;
+    }
+}
 
 export class CategoryChannel extends BaseChannel {
     kind: "Category" = "Category";
@@ -140,7 +194,7 @@ export class CategoryChannel extends BaseChannel {
 }
 
 export class TextChannel extends BaseChannel {
-    kind: "Text" | "News" | "Forum" | "GuildDirectory";
+    kind: "Text" | "News" | "Forum" | "Media" | "GuildDirectory";
     lastPinTimestamp: number | null;
     nsfw: boolean;
     parentId: string | null;

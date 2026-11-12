@@ -22,6 +22,10 @@ use super::{
 pub struct InteractionPartialChannel {
     pub id: String,
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -42,7 +46,8 @@ impl TryFrom<twilight_model::application::interaction::InteractionChannel>
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             name: v.name,
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             permissions_raw: v.permissions.bits().to_string(),

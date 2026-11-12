@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    discord::channel::ChannelType,
+    discord::channel::AnyChannelType,
     util::{NotBigI64, NotBigU64, PluginId},
 };
 
@@ -113,6 +113,7 @@ impl From<Command> for twilight_model::application::command::CommandOption {
             choices: None,
             kind: twilight_model::application::command::CommandOptionType::SubCommand,
             max_length: None,
+            file_types: None,
             max_value: None,
             min_length: None,
             min_value: None,
@@ -182,7 +183,7 @@ pub struct ExtraCommandOptions {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    pub channel_types: Option<Vec<ChannelType>>,
+    pub channel_types: Option<Vec<AnyChannelType>>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -251,6 +252,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                     .map(|iv| iv.into_iter().map(Into::into).collect()),
                 description_localizations: None,
                 max_length: None,
+                file_types: None,
                 max_value: None,
                 min_length: None,
                 min_value: None,
@@ -266,6 +268,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                     .extra_options
                     .min_value
                     .map(|v| CommandOptionValue::Integer(v as i64)),
+                file_types: None,
                 max_value: v
                     .extra_options
                     .max_value
@@ -293,6 +296,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 channel_types: None,
                 choices: None,
                 max_length: None,
+                file_types: None,
                 max_value: None,
                 min_length: None,
                 min_value: None,
@@ -309,6 +313,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 channel_types: None,
                 choices: None,
                 max_length: None,
+                file_types: None,
                 max_value: None,
                 min_length: None,
                 min_value: None,
@@ -324,7 +329,8 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                         .channel_types
                         .unwrap_or_default()
                         .into_iter()
-                        .map(Into::into)
+                        // only fails for the "Unknown" name, which can't be deserialized
+                        .filter_map(|v| v.try_into().ok())
                         .collect(),
                 ),
                 description_localizations: Default::default(),
@@ -332,6 +338,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 autocomplete: None,
                 choices: None,
                 max_length: None,
+                file_types: None,
                 max_value: None,
                 min_length: None,
                 min_value: None,
@@ -349,6 +356,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 channel_types: None,
                 choices: None,
                 max_length: None,
+                file_types: None,
                 max_value: None,
                 min_length: None,
                 min_value: None,
@@ -365,6 +373,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 channel_types: None,
                 choices: None,
                 max_length: None,
+                file_types: None,
                 max_value: None,
                 min_length: None,
                 min_value: None,
@@ -376,6 +385,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 required: Some(v.required),
                 kind: twilight_model::application::command::CommandOptionType::Number,
                 min_value: v.extra_options.min_value.map(CommandOptionValue::Number),
+                file_types: None,
                 max_value: v.extra_options.max_value.map(CommandOptionValue::Number),
                 autocomplete: Some(v.autocomplete_enabled),
                 channel_types: None,
@@ -395,6 +405,7 @@ impl From<CommandOption> for twilight_model::application::command::CommandOption
                 required: Some(v.required),
                 kind: twilight_model::application::command::CommandOptionType::Attachment,
                 min_value: None,
+                file_types: None,
                 max_value: None,
                 autocomplete: None,
                 channel_types: None,
@@ -453,10 +464,10 @@ pub enum SettingsOptionType {
         min_selected: Option<u32>,
     },
     Channel {
-        types: Option<Vec<ChannelType>>,
+        types: Option<Vec<AnyChannelType>>,
     },
     Channels {
-        types: Option<Vec<ChannelType>>,
+        types: Option<Vec<AnyChannelType>>,
         max_length: Option<u32>,
         min_length: Option<u32>,
     },

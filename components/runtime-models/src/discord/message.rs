@@ -140,15 +140,16 @@ pub enum MessageType {
     GuildIncidentReportRaidFalseAlarm,
     PurchaseNotification,
     PollResult,
+    /// A message type botloader doesn't know about yet, see the `kindId` field for the raw
+    /// discord message type id.
+    Unknown,
 }
 
-impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
-    type Error = anyhow::Error;
-
-    fn try_from(v: twilight_model::channel::message::MessageType) -> Result<Self, Self::Error> {
+impl From<twilight_model::channel::message::MessageType> for MessageType {
+    fn from(v: twilight_model::channel::message::MessageType) -> Self {
         use twilight_model::channel::message::MessageType as TwilightMessageType;
 
-        Ok(match v {
+        match v {
             TwilightMessageType::Regular => Self::Regular,
             TwilightMessageType::RecipientAdd => Self::RecipientAdd,
             TwilightMessageType::RecipientRemove => Self::RecipientRemove,
@@ -196,17 +197,10 @@ impl TryFrom<twilight_model::channel::message::MessageType> for MessageType {
             TwilightMessageType::GuildIncidentReportRaidFalseAlarm => {
                 Self::GuildIncidentReportRaidFalseAlarm
             }
-            TwilightMessageType::Unknown(n) => match n {
-                44 => Self::PurchaseNotification,
-                46 => Self::PollResult,
-                _ => {
-                    return Err(anyhow::anyhow!("unknown message type: {}", n));
-                }
-            },
-            _ => {
-                return Err(anyhow::anyhow!("unknown message type: {}", u8::from(v)));
-            }
-        })
+            TwilightMessageType::PurchaseNotification => Self::PurchaseNotification,
+            TwilightMessageType::PollResult => Self::PollResult,
+            _ => Self::Unknown,
+        }
     }
 }
 
@@ -218,6 +212,10 @@ pub struct ChannelMention {
     pub guild_id: String,
     pub id: String,
     pub kind: ChannelType,
+    /// The raw discord channel type id, see `ChannelTypes` for named constants.
+    ///
+    /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
+    pub kind_id: u8,
     pub name: String,
 }
 
@@ -228,7 +226,8 @@ impl TryFrom<twilight_model::channel::ChannelMention> for ChannelMention {
         Ok(Self {
             guild_id: v.guild_id.to_string(),
             id: v.id.to_string(),
-            kind: v.kind.try_into()?,
+            kind: v.kind.into(),
+            kind_id: v.kind.into(),
             name: v.name,
         })
     }
@@ -415,9 +414,9 @@ pub struct MessageFlags {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub is_voice_message: Option<bool>, // 1 << 13	this message is a voice message
-    //#[serde(default, skip_serializing_if = "Option::is_none")]
-    //#[ts(optional)]
-    //pub has_snapshot: Option<bool>, // 1 << 14	this message has a snapshot (via Message Forwarding)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub has_snapshot: Option<bool>, // 1 << 14	this message has a snapshot (via Message Forwarding)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub is_components_v2: Option<bool>, // 1 << 15	allows you to create fully component-driven messages
@@ -441,8 +440,8 @@ impl From<twilight_model::channel::message::MessageFlags> for MessageFlags {
             ),
             suppress_notifications: Some(v.contains(TwilightMessageFlags::SUPPRESS_NOTIFICATIONS)),
             is_voice_message: Some(v.contains(TwilightMessageFlags::IS_VOICE_MESSAGE)),
-            //has_snapshot: Some(v.contains(TwilightMessageFlags::HAS_SNAPSHOT)),
-            is_components_v2: Some(v.contains(TwilightMessageFlags::SUPPRESS_NOTIFICATIONS)),
+            has_snapshot: Some(v.contains(TwilightMessageFlags::HAS_SNAPSHOT)),
+            is_components_v2: Some(v.contains(TwilightMessageFlags::IS_COMPONENTS_V2)),
         }
     }
 }
@@ -482,6 +481,9 @@ impl From<MessageFlags> for twilight_model::channel::message::MessageFlags {
         }
         if matches!(v.is_voice_message, Some(true)) {
             out |= Self::IS_VOICE_MESSAGE
+        }
+        if matches!(v.has_snapshot, Some(true)) {
+            out |= Self::HAS_SNAPSHOT;
         }
         if matches!(v.is_components_v2, Some(true)) {
             out |= Self::IS_COMPONENTS_V2;
