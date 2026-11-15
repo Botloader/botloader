@@ -32,6 +32,8 @@ using a `YEAR.MAJOR.MINOR` version scheme (e.g. `2026.5.1`):
 
 ## [Unreleased]
 
+## [2026.1.1] - 2026-11-15
+
 ### Added
 
 - `MessageFlags.hasSnapshot` for forwarded messages.
