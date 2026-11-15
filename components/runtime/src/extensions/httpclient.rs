@@ -15,6 +15,8 @@ use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 use tokio_util::io::StreamReader;
 use tracing::info;
 use url::Url;
+use crate::error::OpError;
+use deno_error::JsErrorBox;
 use vm::AnyError;
 
 use crate::limits::RateLimiters;
@@ -35,7 +37,7 @@ deno_core::extension!(
 
 #[op2]
 #[serde]
-pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<(ResourceId, ResourceId), AnyError> {
+pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<(ResourceId, ResourceId), OpError> {
     let (tx, rx) = mpsc::channel(2);
 
     let sender = RequestBodySender {
@@ -50,12 +52,12 @@ pub fn op_bl_http_client_stream(state: &mut OpState) -> Result<(ResourceId, Reso
     Ok((s_rid, r_rid))
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_bl_http_request_send(
     state_rc: Rc<RefCell<OpState>>,
     #[serde] args: ClientHttpRequest,
-) -> Result<ClientHttpResponse, AnyError> {
+) -> Result<ClientHttpResponse, OpError> {
     RateLimiters::user_http(&state_rc).await;
 
     // lookup the body stream resource
@@ -69,7 +71,7 @@ pub async fn op_bl_http_request_send(
     let parsed_url = Url::parse(&args.path)?;
 
     let client = { state_rc.borrow_mut().borrow::<reqwest::Client>().clone() };
-    let mut builder = client.request(reqwest::Method::from_str(&args.method)?, parsed_url);
+    let mut builder = client.request(reqwest::Method::from_str(&args.method).map_err(anyhow::Error::from)?, parsed_url);
 
     // add headers
     for (k, v) in args.headers {
@@ -85,7 +87,7 @@ pub async fn op_bl_http_request_send(
 
     let res = builder.send().await;
 
-    handle_response(state_rc, res?)
+    Ok(handle_response(state_rc, res?)?)
 }
 
 fn handle_response(
@@ -158,7 +160,7 @@ impl Resource for RequestBodySender {
             body.send(Ok(data))
                 .or_cancel(cancel)
                 .await?
-                .map_err(|_| anyhow::anyhow!("body is closed"))?;
+                .map_err(|_| JsErrorBox::generic("body is closed"))?;
 
             Ok(WriteOutcome::Full { nwritten: len })
         })
@@ -189,7 +191,7 @@ impl Resource for RequestReponseBodyResource {
 
             let buf_size = if limit < 1024 { limit } else { 1024 };
             let mut buf = vec![0; buf_size];
-            let read = reader.read(&mut buf).try_or_cancel(cancel).await?;
+            let read = reader.read(&mut buf).try_or_cancel(cancel).await.map_err(JsErrorBox::from_err)?;
             buf.truncate(read);
 
             Ok(buf.into())
@@ -204,7 +206,7 @@ impl Resource for RequestReponseBodyResource {
             let mut reader = RcRef::map(&self, |r| &r.body).borrow_mut().await;
 
             let cancel = RcRef::map(self, |r| &r.cancel);
-            let read = reader.read(&mut buf).try_or_cancel(cancel).await?;
+            let read = reader.read(&mut buf).try_or_cancel(cancel).await.map_err(JsErrorBox::from_err)?;
             Ok((read, buf))
         })
     }

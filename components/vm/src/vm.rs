@@ -1,11 +1,11 @@
 use crate::moduleloader::{ModuleEntry, ModuleManager};
 use crate::{
-    bl_core, AnyError, ScriptLoadState, ScriptState, ScriptStateStoreWrapper, ScriptsStateStore,
-    ScriptsStateStoreHandle,
+    bl_core, AnyError, ScriptLoadState, ScriptState, ScriptsStateStore, ScriptsStateStoreHandle,
 };
 use chrono::Utc;
 use common::dispatch_event::VmDispatchEvent;
 use cpu_time::ThreadTime;
+use deno_core::error::CoreError;
 use deno_core::v8::{self, CreateParams, IsolateHandle};
 use deno_core::{Extension, FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions};
 use futures::{future::LocalBoxFuture, FutureExt};
@@ -154,15 +154,12 @@ impl Vm {
 
         extensions.insert(
             0,
-            bl_core::init_ops_and_esm(crate::BlCoreOptions { cloned_load_states }),
+            bl_core::init(crate::BlCoreOptions { cloned_load_states }),
         );
 
         let options = RuntimeOptions {
             extensions,
             module_loader: Some(module_manager),
-            get_error_class_fn: Some(&|err| {
-                deno_core::error::get_custom_error_class(err).unwrap_or("Error")
-            }),
             // yeah i have no idea what these values needs to be aligned to, but this seems to work so whatever
             // if it breaks when you update deno or v8 try different values until it works, if only they'd document the alignment requirements somewhere...
             create_params: Some(
@@ -171,8 +168,7 @@ impl Vm {
                     .allow_atomics_wait(false),
             ),
             startup_snapshot: Some(crate::BOTLOADER_CORE_SNAPSHOT),
-            // js_error_create_fn: Some(create_err_fn),
-            source_map_getter: Some(Rc::new(ScriptStateStoreWrapper(script_load_states))),
+            // source maps are provided by the module loader (ModuleManager::get_source_map)
             ..Default::default()
         };
 
@@ -399,14 +395,11 @@ impl Vm {
             name: event.name.to_string(),
         };
 
-        let global_ctx = self.runtime.main_context();
-        let ctx = global_ctx.open(self.runtime.v8_isolate());
-
-        let mut scope = self.runtime.handle_scope();
-        let globals = ctx.global(&mut scope);
+        deno_core::scope!(scope, self.runtime);
+        let globals = scope.get_current_context().global(scope);
 
         let core_obj: v8::Local<v8::Object> =
-            if let Some(obj) = Self::get_property(&mut scope, globals, "BotloaderCore") {
+            if let Some(obj) = Self::get_property(scope, globals, "BotloaderCore") {
                 if let Ok(v) = TryFrom::try_from(obj) {
                     v
                 } else {
@@ -419,7 +412,7 @@ impl Vm {
             };
 
         let dispatch_fn: v8::Local<v8::Function> = if let Some(field) =
-            Self::get_property(&mut scope, core_obj, "dispatchWrapper")
+            Self::get_property(scope, core_obj, "dispatchWrapper")
         {
             if let Ok(v) = TryFrom::try_from(field) {
                 v
@@ -434,8 +427,8 @@ impl Vm {
             return;
         };
 
-        let v = deno_core::serde_v8::to_v8(&mut scope, &data).unwrap();
-        let _ = dispatch_fn.call(&mut scope, globals.into(), &[v]);
+        let v = deno_core::serde_v8::to_v8(scope, &data).unwrap();
+        let _ = dispatch_fn.call(scope, globals.into(), &[v]);
 
         let elapsed = Utc::now().signed_duration_since(event.source_timestamp);
         let millis = elapsed.num_milliseconds();
@@ -448,7 +441,7 @@ impl Vm {
     }
 
     fn get_property<'a>(
-        scope: &mut v8::HandleScope<'a>,
+        scope: &mut v8::PinScope<'a, '_>,
         object: v8::Local<v8::Object>,
         key: &str,
     ) -> Option<v8::Local<'a, v8::Value>> {
@@ -458,8 +451,7 @@ impl Vm {
 
     fn _dump_heap_stats(&mut self) {
         let iso = self.runtime.v8_isolate();
-        let mut stats = v8::HeapStatistics::default();
-        iso.get_heap_statistics(&mut stats);
+        let stats = iso.get_heap_statistics();
         dbg!(stats.total_heap_size());
         dbg!(stats.total_heap_size_executable());
         dbg!(stats.total_physical_size());
@@ -507,8 +499,8 @@ impl Vm {
         }
     }
 
-    async fn complete_module_eval(&mut self, fut: impl Future<Output = Result<(), AnyError>>) {
-        let mut pinned: Pin<&mut dyn Future<Output = Result<(), AnyError>>> = pin!(fut);
+    async fn complete_module_eval(&mut self, fut: impl Future<Output = Result<(), CoreError>>) {
+        let mut pinned: Pin<&mut dyn Future<Output = Result<(), CoreError>>> = pin!(fut);
         loop {
             let fut = CompleteModuleEval {
                 rt: &mut self.runtime,
@@ -528,7 +520,7 @@ impl Vm {
         }
     }
 
-    fn log_guild_err(&self, err: AnyError) {
+    fn log_guild_err(&self, err: impl std::fmt::Display) {
         self.guild_logger.log(CreateLogEntry::error(format!(
             "Script error occurred: {}",
             err
@@ -571,7 +563,7 @@ impl Vm {
 }
 
 pub enum TickResult {
-    VmError(AnyError),
+    VmError(CoreError),
     Completed,
     Command(Option<VmCommand>),
     Continue,
@@ -621,7 +613,7 @@ struct RunUntilCompletion<'a> {
 }
 
 impl<'a> core::future::Future for RunUntilCompletion<'a> {
-    type Output = Result<(), AnyError>;
+    type Output = Result<(), CoreError>;
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
@@ -638,12 +630,12 @@ impl<'a> core::future::Future for RunUntilCompletion<'a> {
 // future that drives the vm to completion, acquiring the isolate guard when needed
 struct CompleteModuleEval<'a, 'b, 'c> {
     rt: &'a mut JsRuntime,
-    fut: &'c mut Pin<&'b mut dyn Future<Output = Result<(), AnyError>>>,
+    fut: &'c mut Pin<&'b mut dyn Future<Output = Result<(), CoreError>>>,
 }
 
 enum CompleteModuleEvalResult {
-    Completed(Result<(), AnyError>),
-    VmError(AnyError),
+    Completed(Result<(), CoreError>),
+    VmError(CoreError),
 }
 
 impl<'a, 'b, 'c> core::future::Future for CompleteModuleEval<'a, 'b, 'c> {

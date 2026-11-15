@@ -13,10 +13,12 @@ use tokio::sync::mpsc;
 use tracing::info;
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
+use error::OpError;
 use vm::{AnyError, JsValue};
 
 use crate::limits::RateLimiters;
 
+pub mod error;
 pub mod extensions;
 pub mod jsmodules;
 pub mod limits;
@@ -54,25 +56,25 @@ pub fn create_extensions(ctx: CreateRuntimeContext) -> Vec<Extension> {
         };
 
         vec![
-            bl_script_core::init_ops_and_esm(core_ctx, rt_ctx, http_client, premium_tier),
-            extensions::storage::bl_storage::init_ops_and_esm(),
-            extensions::base64::bl_base64::init_ops_and_esm(),
-            extensions::discord::bl_discord::init_ops_and_esm(),
-            extensions::console::bl_console::init_ops_and_esm(),
-            extensions::httpclient::bl_http::init_ops_and_esm(),
-            extensions::tasks::bl_tasks::init_ops_and_esm(),
-            extensions::image::bl_image::init_ops_and_esm(),
+            bl_script_core::init(core_ctx, rt_ctx, http_client, premium_tier),
+            extensions::storage::bl_storage::init(),
+            extensions::base64::bl_base64::init(),
+            extensions::discord::bl_discord::init(),
+            extensions::console::bl_console::init(),
+            extensions::httpclient::bl_http::init(),
+            extensions::tasks::bl_tasks::init(),
+            extensions::image::bl_image::init(),
         ]
     } else {
         vec![
-            bl_script_core_no_guild::init_ops_and_esm(core_ctx, http_client, premium_tier),
-            extensions::storage::bl_storage::init_ops_and_esm(),
-            extensions::base64::bl_base64::init_ops_and_esm(),
-            extensions::discord::bl_discord::init_ops_and_esm(),
-            extensions::console::bl_console::init_ops_and_esm(),
-            extensions::httpclient::bl_http::init_ops_and_esm(),
-            extensions::tasks::bl_tasks::init_ops_and_esm(),
-            extensions::image::bl_image::init_ops_and_esm(),
+            bl_script_core_no_guild::init(core_ctx, http_client, premium_tier),
+            extensions::storage::bl_storage::init(),
+            extensions::base64::bl_base64::init(),
+            extensions::discord::bl_discord::init(),
+            extensions::console::bl_console::init(),
+            extensions::httpclient::bl_http::init(),
+            extensions::tasks::bl_tasks::init(),
+            extensions::image::bl_image::init(),
         ]
     }
 }
@@ -91,13 +93,6 @@ deno_core::extension!(
         rt_ctx: RuntimeContext,
         http_client: reqwest::Client,
         premium_tier: Option<PremiumSlotTier>,
-    },
-    middleware = |op_decl|match op_decl.name {
-        // we have our own custom print function
-        "op_print" => disabled_op(),
-        "op_wasm_streaming_feed" => disabled_op(),
-        "op_wasm_streaming_set_url" => disabled_op(),
-        _ => op_decl,
     },
     state = |state, options| {
         state.put(options.ctx);
@@ -122,13 +117,6 @@ deno_core::extension!(
         http_client: reqwest::Client,
         premium_tier: Option<PremiumSlotTier>,
     },
-    middleware = |op_decl|match op_decl.name {
-        // we have our own custom print function
-        "op_print" => disabled_op(),
-        "op_wasm_streaming_feed" => disabled_op(),
-        "op_wasm_streaming_set_url" => disabled_op(),
-        _ => op_decl,
-    },
     state = |state, options| {
         state.put(options.ctx);
         state.put(options.http_client);
@@ -139,11 +127,6 @@ deno_core::extension!(
 
 pub fn in_mem_source_load_fn(src: &'static str) -> Box<dyn Fn() -> Result<String, AnyError>> {
     Box::new(move || Ok(src.to_string()))
-}
-
-#[op2(fast)]
-pub fn disabled_op() -> Result<(), AnyError> {
-    Err(anyhow::anyhow!("this op is disabled"))
 }
 
 #[derive(Clone)]
@@ -191,14 +174,14 @@ pub struct ScriptSettingsValues {
 #[serde]
 pub fn op_get_current_bot_user(
     state: &mut OpState,
-) -> Result<runtime_models::internal::user::User, AnyError> {
+) -> Result<runtime_models::internal::user::User, OpError> {
     let ctx = state.borrow::<RuntimeContext>();
     Ok(ctx.discord_config.bot_user.clone().into())
 }
 
 #[op2]
 #[string]
-pub fn op_get_current_guild_id(state: &mut OpState) -> Result<String, AnyError> {
+pub fn op_get_current_guild_id(state: &mut OpState) -> Result<String, OpError> {
     let ctx = state.borrow::<RuntimeContext>();
     Ok(ctx.guild_id.to_string())
 }
@@ -217,7 +200,7 @@ pub fn op_get_run_mode(state: &mut OpState) -> String {
 pub fn op_botloader_script_start(
     state: &mut OpState,
     #[serde] args: JsValue,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let des: ScriptMeta = serde_json::from_value(args)?;
 
     info!(
@@ -235,7 +218,7 @@ pub fn op_botloader_script_start(
             format!("{}", des.script_id),
             None,
         ));
-        return Err(err);
+        return Err(err.into());
     }
 
     let _ = ctx.event_tx.send(RuntimeEvent::ScriptStarted(des));
@@ -248,7 +231,7 @@ pub fn op_botloader_script_start(
 pub fn op_get_settings(
     state: &mut OpState,
     #[number] script_id: u64,
-) -> Result<Vec<SettingsOptionValue>, AnyError> {
+) -> Result<Vec<SettingsOptionValue>, OpError> {
     let core_ctx = state.borrow::<CoreRuntimeContext>();
     let Some(script_settings_entry) = core_ctx
         .settings_values

@@ -6,7 +6,7 @@ use runtime_models::{
     internal::tasks::{CreateScheduledTask, GetGuildTasksFilter, ScheduledTask},
     util::PluginId,
 };
-use vm::AnyError;
+use crate::error::OpError;
 
 use crate::{get_rt_ctx, limits::RateLimiters, RuntimeEvent};
 
@@ -23,12 +23,12 @@ deno_core::extension!(
     ],
 );
 
-#[op2(async)]
+#[op2]
 #[serde]
 async fn op_bl_schedule_task(
     state: Rc<RefCell<OpState>>,
     #[serde] opts: CreateScheduledTask,
-) -> Result<ScheduledTask, AnyError> {
+) -> Result<ScheduledTask, OpError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
 
@@ -43,7 +43,7 @@ async fn op_bl_schedule_task(
     if data_serialized.len() as u64 > limit_data_len {
         return Err(anyhow::anyhow!(
             "data cannot be over {limit_data_len}bytes on your guild's plan"
-        ));
+        ).into());
     }
 
     // TODO: make a more efficient check
@@ -52,7 +52,7 @@ async fn op_bl_schedule_task(
     if current > limit_num_tasks {
         return Err(anyhow::anyhow!(
             "max {limit_num_tasks} can be scheduled on this guild's plan"
-        ));
+        ).into());
     }
 
     let res = rt_ctx
@@ -73,11 +73,11 @@ async fn op_bl_schedule_task(
     Ok(res)
 }
 
-#[op2(async)]
+#[op2]
 async fn op_bl_del_task(
     state: Rc<RefCell<OpState>>,
     #[number] task_id: u64,
-) -> Result<bool, AnyError> {
+) -> Result<bool, OpError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
 
@@ -85,13 +85,13 @@ async fn op_bl_del_task(
     Ok(del > 0)
 }
 
-#[op2(async)]
+#[op2]
 async fn op_bl_del_task_by_key(
     state: Rc<RefCell<OpState>>,
     #[serde] plugin_id: Option<PluginId>,
     #[string] name: String,
     #[string] key: String,
-) -> Result<bool, AnyError> {
+) -> Result<bool, OpError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
 
@@ -103,13 +103,13 @@ async fn op_bl_del_task_by_key(
     Ok(del > 0)
 }
 
-#[op2(async)]
+#[op2]
 #[number]
 async fn op_bl_del_all_tasks(
     state: Rc<RefCell<OpState>>,
     #[serde] plugin_id: Option<PluginId>,
     #[string] name: String,
-) -> Result<u64, AnyError> {
+) -> Result<u64, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     RateLimiters::task_ops(&state).await;
@@ -121,12 +121,12 @@ async fn op_bl_del_all_tasks(
     Ok(del)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 async fn op_bl_get_task(
     state: Rc<RefCell<OpState>>,
     #[number] id: u64,
-) -> Result<Option<ScheduledTask>, AnyError> {
+) -> Result<Option<ScheduledTask>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     RateLimiters::task_ops(&state).await;
@@ -138,14 +138,14 @@ async fn op_bl_get_task(
         .map(Into::into))
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 async fn op_bl_get_task_by_key(
     state: Rc<RefCell<OpState>>,
     #[serde] plugin_id: Option<PluginId>,
     #[string] name: String,
     #[string] key: String,
-) -> Result<Option<ScheduledTask>, AnyError> {
+) -> Result<Option<ScheduledTask>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
 
@@ -156,13 +156,13 @@ async fn op_bl_get_task_by_key(
         .map(Into::into))
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 async fn op_bl_get_all_tasks(
     state: Rc<RefCell<OpState>>,
     #[serde] filter: GetGuildTasksFilter,
     #[number] after_id: u64,
-) -> Result<Vec<ScheduledTask>, AnyError> {
+) -> Result<Vec<ScheduledTask>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
     RateLimiters::task_ops(&state).await;
 

@@ -1,7 +1,9 @@
 use std::io::Cursor;
 
 use anyhow::anyhow;
-use deno_core::{error::AnyError, op2};
+use deno_core::op2;
+use crate::error::OpError;
+use vm::AnyError;
 use image::{
     codecs::{
         gif::{GifDecoder, GifEncoder},
@@ -22,13 +24,13 @@ deno_core::extension!(
 
 #[op2]
 #[serde]
-fn op_bl_image_properties(#[arraybuffer] input: &[u8]) -> Result<ImageProperties, AnyError> {
+fn op_bl_image_properties(#[arraybuffer] input: &[u8]) -> Result<ImageProperties, OpError> {
     let buf = Cursor::new(&input);
     let reader = image::ImageReader::new(buf).with_guessed_format()?;
 
     let Some(format) = reader.format() else {
         // Don't think this is reachable as the above will return an error if it fails
-        return Err(anyhow!("could not guess image format"));
+        return Err(anyhow!("could not guess image format").into());
     };
 
     let translated_format = SupportedImageFormat::try_from(format)
@@ -51,12 +53,12 @@ fn op_bl_image_transcode(
     #[serde] out_format: SupportedEncodeImageFormat,
     width: Option<u32>,
     height: Option<u32>,
-) -> Result<Vec<u8>, AnyError> {
+) -> Result<Vec<u8>, OpError> {
     let resize = match (width, height) {
         (Some(width), Some(height)) => Some(Dimensions { width, height }),
         (None, None) => None,
         _ => {
-            return Err(anyhow!("Both width and height need to specified to resize"));
+            return Err(anyhow!("Both width and height need to specified to resize").into());
         }
     };
 

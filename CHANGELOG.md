@@ -51,11 +51,15 @@ using a `YEAR.MAJOR.MINOR` version scheme (e.g. `2026.5.1`):
 ### Changed
 
 - Updated twilight to 0.18.
+- Updated deno_core to 0.413 (V8 15.0).
 - `Webhook.channelId` is now `string | null`, since Discord can return webhooks
   without a channel.
 
 ### Fixed
 
+- Scripts could abort the vm worker process they run in by calling the internal `op_panic` op
+  through `Deno.core.ops`. This and other internal deno_core ops scripts have no use for are now
+  disabled.
 - `MessageFlags.isComponentsV2` on received messages reflected the
   `suppressNotifications` flag instead of the components v2 flag.
 - Media channels are now `TextChannel`s in scripts (they were `UnknownChannel`),

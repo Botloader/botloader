@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use deno_core::{v8_set_flags, JsRuntime, SourceMapGetter};
+use deno_core::{v8_set_flags, JsRuntime, OpDecl};
 use stores::config::Script;
 use tscompiler::CompiledItem;
 use url::Url;
@@ -15,7 +15,9 @@ pub mod vmthread;
 pub type JsValue = serde_json::Value;
 
 /// Polymorphic error type able to represent different error domains.
-pub type AnyError = deno_core::error::AnyError;
+///
+/// Ops can't return this directly, they return `runtime::error::OpError` instead.
+pub type AnyError = anyhow::Error;
 
 pub static BOTLOADER_CORE_SNAPSHOT: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/BOTLOADER_SNAPSHOT.bin"));
@@ -172,30 +174,6 @@ impl Default for ScriptsStateStore {
     }
 }
 
-pub(crate) struct ScriptStateStoreWrapper(pub(crate) ScriptsStateStoreHandle);
-
-impl SourceMapGetter for ScriptStateStoreWrapper {
-    fn get_source_map(&self, file_name: &str) -> Option<Vec<u8>> {
-        let state = self.0.borrow();
-        if let Some(script_load) = state
-            .scripts
-            .iter()
-            .find(|v| v.url.as_str() == file_name)
-            .cloned()
-        {
-            if let Some(compiled) = script_load.compiled {
-                return Some(compiled.source_map_raw.as_bytes().into());
-            }
-        }
-
-        None
-    }
-
-    fn get_source_line(&self, file_name: &str, line_number: usize) -> Option<String> {
-        Some(format!("{file_name}:{line_number}"))
-    }
-}
-
 fn script_url(script: &Script, suffix: &str) -> Url {
     if let Some(plugin_id) = &script.plugin_id {
         return Url::parse(&format!(
@@ -217,10 +195,50 @@ deno_core::extension!(bl_core,
   options = {
     options: BlCoreOptions,
   },
+  middleware = disable_unsafe_builtin_ops,
   state = |state, options| {
     state.put::<Rc<RefCell<ScriptsStateStore>>>(options.options.cloned_load_states);
   },
 );
+
+/// Built in deno_core ops that scripts must not be able to call.
+///
+/// Scripts have access to `Deno.core.ops`, so every op deno_core registers is callable by user
+/// code. Review the builtin op list (`ops_builtin.rs` and `ops_builtin_v8.rs` in deno_core) for
+/// new ops whenever deno_core is updated.
+///
+/// Ops in here must not be used by the deno_core JS that botloader relies on, as they throw when
+/// called (fast calls become no-ops).
+pub const DISABLED_BUILTIN_OPS: &[&str] = &[
+    // panics, which aborts the whole worker process
+    "op_panic",
+    // writes straight to the worker process stdout/stderr, scripts use our own console
+    "op_print",
+    // wasm streaming compilation, botloader doesn't support it
+    "op_wasm_streaming_feed",
+    "op_wasm_streaming_set_url",
+    // synchronous module loading for node's require(), the `_with_source` variant compiles and
+    // evaluates arbitrary source under any module specifier, bypassing the module loader
+    "op_import_sync",
+    "op_import_sync_with_source",
+    // node:vm support, also panics on unexpected arguments
+    "op_compile_function",
+    // lazily loaded extension scripts, botloader has none. `op_set_captured_bootstrap` would let
+    // scripts replace the `__bootstrap` object those scripts get evaluated with.
+    "op_load_ext_script",
+    "op_set_captured_bootstrap",
+    // stores stack traces in rust memory that is not covered by the v8 heap limit
+    "op_leak_tracing_enable",
+    "op_leak_tracing_submit",
+];
+
+fn disable_unsafe_builtin_ops(op: OpDecl) -> OpDecl {
+    if DISABLED_BUILTIN_OPS.contains(&op.name) {
+        op.disable()
+    } else {
+        op
+    }
+}
 
 pub fn init_v8_platform() {
     JsRuntime::init_platform(None);

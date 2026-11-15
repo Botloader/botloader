@@ -1,6 +1,10 @@
+use std::borrow::Cow;
+
 use deno_core::{
-    ModuleLoadResponse, ModuleLoader, ModuleSource, ModuleType, RequestedModuleType, ResolutionKind,
+    error::ModuleLoaderError, ModuleLoadOptions, ModuleLoadReferrer, ModuleLoadResponse,
+    ModuleLoader, ModuleSource, ModuleType, ResolutionKind,
 };
+use deno_error::JsErrorBox;
 use url::Url;
 
 use crate::{ScriptLoadState, ScriptsStateStoreHandle};
@@ -63,7 +67,7 @@ impl ModuleLoader for ModuleManager {
         mut specifier: &str,
         referrer: &str,
         _kind: ResolutionKind,
-    ) -> Result<deno_core::ModuleSpecifier, deno_core::error::AnyError> {
+    ) -> Result<deno_core::ModuleSpecifier, ModuleLoaderError> {
         // info!("resolving module: {} - {}", specifier, referrer);
         if let Ok(u) = Url::parse(specifier) {
             return Ok(u);
@@ -75,17 +79,18 @@ impl ModuleLoader for ModuleManager {
         }
 
         let parsed_referrer = Url::parse(referrer).map_err(|e| {
-            anyhow::anyhow!(
-                "failed parsing referrer url: {} ({} - {})",
-                e,
-                specifier,
-                referrer
-            )
+            JsErrorBox::generic(format!(
+                "failed parsing referrer url: {e} ({specifier} - {referrer})"
+            ))
         })?;
 
         let resolved = parsed_referrer
             .join(format!("{specifier}.js").as_str())
-            .unwrap();
+            .map_err(|e| {
+                JsErrorBox::generic(format!(
+                    "failed resolving module: {e} ({specifier} - {referrer})"
+                ))
+            })?;
 
         Ok(resolved)
     }
@@ -93,9 +98,8 @@ impl ModuleLoader for ModuleManager {
     fn load(
         &self,
         module_specifier: &deno_core::ModuleSpecifier,
-        _maybe_referrer: Option<&deno_core::ModuleSpecifier>,
-        _is_dyn_import: bool,
-        _requested_module_type: RequestedModuleType,
+        _maybe_referrer: Option<&ModuleLoadReferrer>,
+        _options: ModuleLoadOptions,
     ) -> ModuleLoadResponse {
         ModuleLoadResponse::Sync(
             if let Some(l) = self.try_load_std_module(module_specifier) {
@@ -103,12 +107,26 @@ impl ModuleLoader for ModuleManager {
             } else if let Some(l) = self.try_load_script_module(module_specifier) {
                 Ok(l)
             } else {
-                Err(anyhow::anyhow!(
-                    "failed finding module {:?}",
-                    module_specifier
-                ))
+                Err(JsErrorBox::generic(format!(
+                    "failed finding module {module_specifier:?}"
+                )))
             },
         )
+    }
+
+    fn get_source_map(&self, file_name: &str) -> Option<Cow<'_, [u8]>> {
+        let store = self.guild_scripts.borrow();
+        let script = store
+            .scripts
+            .iter()
+            .find(|v| v.url.as_str() == file_name)?;
+
+        let compiled = script.compiled.as_ref()?;
+        Some(Cow::Owned(compiled.source_map_raw.as_bytes().to_vec()))
+    }
+
+    fn get_source_mapped_source_line(&self, file_name: &str, line_number: usize) -> Option<String> {
+        Some(format!("{file_name}:{line_number}"))
     }
 }
 

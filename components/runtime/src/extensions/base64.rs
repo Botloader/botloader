@@ -1,10 +1,12 @@
-use deno_core::{error::AnyError, op2, ToJsBuffer};
+use deno_core::{op2, ToJsBuffer};
+use crate::error::OpError;
+use vm::AnyError;
 
 deno_core::extension!(bl_base64, ops = [op_base64_decode, op_base64_encode]);
 
 #[op2]
 #[serde]
-fn op_base64_decode(#[string] input: String) -> Result<ToJsBuffer, AnyError> {
+fn op_base64_decode(#[string] input: String) -> Result<ToJsBuffer, OpError> {
     let mut s = input.into_bytes();
     let decoded_len = forgiving_base64_decode_inplace(&mut s)?;
     s.truncate(decoded_len);

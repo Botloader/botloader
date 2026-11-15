@@ -1,10 +1,7 @@
 use anyhow::anyhow;
 use chrono::TimeZone;
 use common::DiscordConfig;
-use deno_core::{
-    error::{custom_error, get_custom_error_class},
-    op2, OpState,
-};
+use deno_core::{op2, OpState};
 use futures::TryFutureExt;
 use pin_project::pin_project;
 use runtime_models::{
@@ -72,6 +69,7 @@ use twilight_model::{
         GenericMarker, InteractionMarker, MessageMarker, RoleMarker, TagMarker, WebhookMarker,
     },
 };
+use crate::error::{custom_error, error_class, OpError};
 use vm::AnyError;
 
 use super::{get_guild_channel, parse_discord_id, parse_get_guild_channel, parse_str_snowflake_id};
@@ -419,14 +417,14 @@ pub fn not_found_error(message: impl Into<Cow<'static, str>>) -> AnyError {
     custom_error(DISCORD_NOT_FOUND_CLASS_NAME, message)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_easyops_async(
     state: Rc<RefCell<OpState>>,
     #[serde] op: EasyOpsASync,
-) -> Result<serde_json::Value, AnyError> {
+) -> Result<serde_json::Value, OpError> {
     let handler = EasyOpsHandler { state };
-    handle_async_op(&handler, op).await
+    Ok(handle_async_op(&handler, op).await?)
 }
 
 struct EasyOpsHandler {
@@ -1688,11 +1686,11 @@ impl EasyOpsHandlerASync for EasyOpsHandler {
     }
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_invites(
     state: Rc<RefCell<OpState>>,
-) -> Result<Vec<runtime_models::internal::invite::Invite>, AnyError> {
+) -> Result<Vec<runtime_models::internal::invite::Invite>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let resp = discord_request(&state, async move {
@@ -1706,17 +1704,20 @@ pub async fn op_discord_get_invites(
     .model()
     .await?;
 
-    resp.into_iter().map(TryInto::try_into).collect()
+    Ok(resp
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, AnyError>>()?)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_invite(
     state: Rc<RefCell<OpState>>,
     #[string] code: String,
     with_counts: bool,
     with_expiration: bool,
-) -> Result<runtime_models::internal::invite::Invite, AnyError> {
+) -> Result<runtime_models::internal::invite::Invite, OpError> {
     RateLimiters::discord_get_public_invite(&state).await;
 
     let rt_ctx = get_rt_ctx(&state);
@@ -1736,14 +1737,15 @@ pub async fn op_discord_get_invite(
     .model()
     .await?
     .try_into()
+    .map_err(OpError::from)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_delete_invite(
     state: Rc<RefCell<OpState>>,
     #[string] code: String,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let code_cloned = code.clone();
@@ -1768,7 +1770,7 @@ pub async fn op_discord_delete_invite(
 
     // someone tried to be sneaky...
     if !is_correct_guild {
-        return Err(anyhow!("This invite does not belong to your server."));
+        return Err(anyhow!("This invite does not belong to your server.").into());
     }
     discord_request(&state, async move {
         rt_ctx.discord_config.client.delete_invite(&code).await
@@ -1778,11 +1780,11 @@ pub async fn op_discord_delete_invite(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_voice_states(
     state: Rc<RefCell<OpState>>,
-) -> Result<Vec<VoiceState>, AnyError> {
+) -> Result<Vec<VoiceState>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let voice_states = rt_ctx
@@ -1796,11 +1798,11 @@ pub async fn op_discord_get_voice_states(
         .collect())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_interaction_callback(
     state: Rc<RefCell<OpState>>,
     #[serde] args: InteractionCallback,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let interaction_id: Id<InteractionMarker> = parse_discord_id(&args.interaction_id)?;
@@ -1819,12 +1821,12 @@ pub async fn op_discord_interaction_callback(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_interaction_get_original_response(
     state: Rc<RefCell<OpState>>,
     #[string] token: String,
-) -> Result<Message, AnyError> {
+) -> Result<Message, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request(&state, async move {
@@ -1835,14 +1837,15 @@ pub async fn op_discord_interaction_get_original_response(
     .model()
     .await?
     .try_into()
+    .map_err(OpError::from)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_interaction_edit_original_response(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpCreateFollowUpMessage,
-) -> Result<Message, AnyError> {
+) -> Result<Message, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let maybe_embeds = args
@@ -1889,13 +1892,14 @@ pub async fn op_discord_interaction_edit_original_response(
     .model()
     .await?
     .try_into()
+    .map_err(OpError::from)
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_interaction_delete_original(
     state: Rc<RefCell<OpState>>,
     #[string] token: String,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request(&state, async move {
@@ -1907,13 +1911,13 @@ pub async fn op_discord_interaction_delete_original(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_interaction_get_followup_message(
     state: Rc<RefCell<OpState>>,
     #[string] token: String,
     #[serde] id: Id<MessageMarker>,
-) -> Result<Message, AnyError> {
+) -> Result<Message, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request(&state, async move {
@@ -1924,14 +1928,15 @@ pub async fn op_discord_interaction_get_followup_message(
     .model()
     .await?
     .try_into()
+    .map_err(OpError::from)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_interaction_followup_message(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpCreateFollowUpMessage,
-) -> Result<Message, AnyError> {
+) -> Result<Message, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let maybe_embeds = args
@@ -1981,15 +1986,16 @@ pub async fn op_discord_interaction_followup_message(
     .model()
     .await?
     .try_into()
+    .map_err(OpError::from)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_interaction_edit_followup_message(
     state: Rc<RefCell<OpState>>,
     #[serde] message_id: Id<MessageMarker>,
     #[serde] args: OpCreateFollowUpMessage,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let maybe_embeds = args
@@ -2032,12 +2038,12 @@ pub async fn op_discord_interaction_edit_followup_message(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_interaction_delete_followup_message(
     state: Rc<RefCell<OpState>>,
     #[string] token: String,
     #[serde] id: Id<MessageMarker>,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request(&state, async move {
@@ -2050,25 +2056,25 @@ pub async fn op_discord_interaction_delete_followup_message(
 }
 
 // Roles
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_role(
     state: Rc<RefCell<OpState>>,
     #[serde] role_id: Id<RoleMarker>,
-) -> Result<runtime_models::discord::role::Role, AnyError> {
+) -> Result<runtime_models::discord::role::Role, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     match rt_ctx.bot_state.get_role(rt_ctx.guild_id, role_id).await? {
         Some(c) => Ok(c.into()),
-        _ => Err(not_found_error(format!("role `{role_id}` not found"))),
+        _ => Err(not_found_error(format!("role `{role_id}` not found")).into()),
     }
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_roles(
     state: Rc<RefCell<OpState>>,
-) -> Result<Vec<runtime_models::discord::role::Role>, AnyError> {
+) -> Result<Vec<runtime_models::discord::role::Role>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let roles = rt_ctx.bot_state.get_roles(rt_ctx.guild_id).await?;
@@ -2076,12 +2082,12 @@ pub async fn op_discord_get_roles(
 }
 
 // Reactions
-#[op2(async)]
+#[op2]
 pub async fn op_discord_create_reaction(
     state: Rc<RefCell<OpState>>,
     #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     #[serde] emoji: SendEmoji,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
@@ -2099,12 +2105,12 @@ pub async fn op_discord_create_reaction(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_delete_own_reaction(
     state: Rc<RefCell<OpState>>,
     #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     #[serde] emoji: SendEmoji,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
@@ -2122,7 +2128,7 @@ pub async fn op_discord_delete_own_reaction(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_delete_user_reaction(
     state: Rc<RefCell<OpState>>,
     #[serde] (channel_id, message_id, user_id): (
@@ -2131,7 +2137,7 @@ pub async fn op_discord_delete_user_reaction(
         Id<UserMarker>,
     ),
     #[serde] emoji: SendEmoji,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the ctx guild
@@ -2149,13 +2155,13 @@ pub async fn op_discord_delete_user_reaction(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_reactions(
     state: Rc<RefCell<OpState>>,
     #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     #[serde] fields: GetReactionsFields,
-) -> Result<Vec<User>, AnyError> {
+) -> Result<Vec<User>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
@@ -2185,11 +2191,11 @@ pub async fn op_discord_get_reactions(
     .collect())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_delete_all_reactions(
     state: Rc<RefCell<OpState>>,
     #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
@@ -2206,12 +2212,12 @@ pub async fn op_discord_delete_all_reactions(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_delete_all_reactions_for_emoji(
     state: Rc<RefCell<OpState>>,
     #[serde] (channel_id, message_id): (Id<ChannelMarker>, Id<MessageMarker>),
     #[serde] emoji: SendEmoji,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let _ = get_guild_channel(&state, &rt_ctx, channel_id).await?;
@@ -2229,23 +2235,23 @@ pub async fn op_discord_delete_all_reactions_for_emoji(
 }
 
 // Channels
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_channel(
     state: Rc<RefCell<OpState>>,
     #[string] channel_id_str: String,
-) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
+) -> Result<runtime_models::internal::channel::GuildChannel, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let channel = parse_get_guild_channel(&state, &rt_ctx, &channel_id_str).await?;
     Ok(channel.try_into()?)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_channels(
     state: Rc<RefCell<OpState>>,
-) -> Result<Vec<runtime_models::internal::channel::GuildChannel>, AnyError> {
+) -> Result<Vec<runtime_models::internal::channel::GuildChannel>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let channels = rt_ctx.bot_state.get_channels(rt_ctx.guild_id).await?;
@@ -2255,13 +2261,13 @@ pub async fn op_discord_get_channels(
         .collect::<Result<_, _>>()?)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_edit_channel(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
     #[serde] params: EditChannel,
-) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
+) -> Result<runtime_models::internal::channel::GuildChannel, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the channel exists on the guild
@@ -2279,12 +2285,12 @@ pub async fn op_discord_edit_channel(
     .try_into()?)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_create_channel(
     state: Rc<RefCell<OpState>>,
     #[serde] params: CreateChannel,
-) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
+) -> Result<runtime_models::internal::channel::GuildChannel, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     Ok(discord_request_with_extra_error(&state, async move {
@@ -2302,12 +2308,12 @@ pub async fn op_discord_create_channel(
     .try_into()?)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_delete_channel(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
-) -> Result<runtime_models::internal::channel::GuildChannel, AnyError> {
+) -> Result<runtime_models::internal::channel::GuildChannel, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the channel exists on the guild
@@ -2326,12 +2332,12 @@ pub async fn op_discord_delete_channel(
     .try_into()?)
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_update_channel_permission(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
     #[serde] permission_overwrite: PermissionOverwrite,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the channel exists on the guild
@@ -2353,12 +2359,12 @@ pub async fn op_discord_update_channel_permission(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_delete_channel_permission(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
     #[serde] (kind, overwrite_id): (PermissionOverwriteType, Id<GenericMarker>),
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the channel exists on the guild
@@ -2380,12 +2386,12 @@ pub async fn op_discord_delete_channel_permission(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_channel_invites(
     state: Rc<RefCell<OpState>>,
     #[string] channel_id_str: String,
-) -> Result<Vec<runtime_models::internal::invite::Invite>, AnyError> {
+) -> Result<Vec<runtime_models::internal::invite::Invite>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
     let channel = parse_get_guild_channel(&state, &rt_ctx, &channel_id_str).await?;
 
@@ -2402,16 +2408,19 @@ pub async fn op_discord_get_channel_invites(
     .model()
     .await?;
 
-    resp.into_iter().map(TryInto::try_into).collect()
+    Ok(resp
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, AnyError>>()?)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_create_channel_invite(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
     #[serde] fields: CreateInviteFields,
-) -> Result<runtime_models::internal::invite::Invite, AnyError> {
+) -> Result<runtime_models::internal::invite::Invite, OpError> {
     let rt_ctx = get_rt_ctx(&state);
     let channel = get_guild_channel(&state, &rt_ctx, channel_id).await?;
 
@@ -2446,15 +2455,16 @@ pub async fn op_discord_create_channel_invite(
     .model()
     .await?
     .try_into()
+    .map_err(OpError::from)
 }
 
 // Pins
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_channel_pins(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
-) -> Result<Vec<Message>, AnyError> {
+) -> Result<Vec<Message>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the guild
@@ -2467,17 +2477,19 @@ pub async fn op_discord_get_channel_pins(
     .model()
     .await?;
 
-    pins.items.into_iter()
+    Ok(pins
+        .items
+        .into_iter()
         .map(|s| s.message.try_into())
-        .collect::<Result<_, _>>()
+        .collect::<Result<_, AnyError>>()?)
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_create_pin(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
     #[serde] message_id: Id<MessageMarker>,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the guild
@@ -2495,12 +2507,12 @@ pub async fn op_discord_create_pin(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_delete_pin(
     state: Rc<RefCell<OpState>>,
     #[serde] channel_id: Id<ChannelMarker>,
     #[serde] message_id: Id<MessageMarker>,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     // ensure the provided channel is on the guild
@@ -2519,16 +2531,16 @@ pub async fn op_discord_delete_pin(
 }
 
 // Members
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_members(
     state: Rc<RefCell<OpState>>,
     #[serde] user_ids: Vec<String>,
-) -> Result<Vec<Option<runtime_models::internal::member::Member>>, AnyError> {
+) -> Result<Vec<Option<runtime_models::internal::member::Member>>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     if user_ids.len() > 100 {
-        return Err(anyhow!("too many user ids provided, max 100"));
+        return Err(anyhow!("too many user ids provided, max 100").into());
     }
 
     if user_ids.is_empty() {
@@ -2593,11 +2605,11 @@ async fn fetch_members_through_api(
                     res.push(Some(member.into()))
                 }
                 Err(err) => {
-                    let class = get_custom_error_class(&err);
+                    let class = error_class(&err);
 
                     // Handle unknown members by pushing null results
-                    if !matches!(class, Some(DISCORD_NOT_FOUND_CLASS_NAME),) {
-                        return Err(err);
+                    if class.as_deref() != Some(DISCORD_NOT_FOUND_CLASS_NAME) {
+                        return Err(err.into());
                     }
 
                     res.push(None);
@@ -2611,12 +2623,12 @@ async fn fetch_members_through_api(
     Ok(res)
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_add_member_role(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
     #[serde] role_id: Id<RoleMarker>,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request(&state, async move {
@@ -2631,12 +2643,12 @@ pub async fn op_discord_add_member_role(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_remove_member_role(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
     #[serde] role_id: Id<RoleMarker>,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request(&state, async move {
@@ -2651,13 +2663,13 @@ pub async fn op_discord_remove_member_role(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_update_member(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
     #[serde] fields: UpdateGuildMemberFields,
-) -> Result<runtime_models::internal::member::Member, AnyError> {
+) -> Result<runtime_models::internal::member::Member, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     Ok(discord_request_with_extra_error(&state, async move {
@@ -2702,12 +2714,12 @@ pub async fn op_discord_update_member(
 }
 
 // Bans
-#[op2(async)]
+#[op2]
 pub async fn op_discord_create_ban(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
     #[serde] extras: CreateBanFields,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request_with_extra_error(&state, async move {
@@ -2731,12 +2743,12 @@ pub async fn op_discord_create_ban(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_ban(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
-) -> Result<Ban, AnyError> {
+) -> Result<Ban, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     Ok(discord_request(&state, async move {
@@ -2752,9 +2764,9 @@ pub async fn op_discord_get_ban(
     .into())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
-pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>, AnyError> {
+pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>, OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let result = discord_request(&state, async move {
@@ -2767,12 +2779,12 @@ pub async fn op_discord_get_bans(state: Rc<RefCell<OpState>>) -> Result<Vec<Ban>
     Ok(result.into_iter().map(Into::into).collect())
 }
 
-#[op2(async)]
+#[op2]
 pub async fn op_discord_delete_ban(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
     #[serde] extras: AuditLogExtras,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request_with_extra_error(&state, async move {
@@ -2793,12 +2805,12 @@ pub async fn op_discord_delete_ban(
 }
 
 // Other
-#[op2(async)]
+#[op2]
 pub async fn op_discord_remove_member(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
     #[serde] extras: AuditLogExtras,
-) -> Result<(), AnyError> {
+) -> Result<(), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     discord_request_with_extra_error(&state, async move {
@@ -2818,13 +2830,13 @@ pub async fn op_discord_remove_member(
     Ok(())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_discord_get_member_permissions(
     state: Rc<RefCell<OpState>>,
     #[serde] user_id: Id<UserMarker>,
     #[serde] (roles, channel_id): (Option<Vec<Id<RoleMarker>>>, Option<Id<ChannelMarker>>),
-) -> Result<(String, Option<String>), AnyError> {
+) -> Result<(String, Option<String>), OpError> {
     let rt_ctx = get_rt_ctx(&state);
 
     let member_roles = if let Some(roles) = roles {
@@ -2845,7 +2857,7 @@ pub async fn op_discord_get_member_permissions(
     let guild = if let Some(guild) = rt_ctx.bot_state.get_guild(rt_ctx.guild_id).await? {
         guild
     } else {
-        return Err(anyhow!("guild not in state"));
+        return Err(anyhow!("guild not in state").into());
     };
 
     let role_perms_pair = member_roles

@@ -23,7 +23,10 @@ tokio = { version = "1.35.1", features = ["full"] }
 thiserror = "1.0"
 clap = { version = "4.1.4", features = ["derive", "env"] }
 anyhow = "1.0"
-deno_core = "0.283"
+# include_icu_data used to be a default feature, it is needed for Intl and locale aware formatting
+deno_core = { version = "0.413", features = ["include_icu_data"] }
+# must match the version deno_core depends on
+deno_error = "=0.7.1"
 axum = { version = "0.8", features = ["ws", "multipart", "macros"] }
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"

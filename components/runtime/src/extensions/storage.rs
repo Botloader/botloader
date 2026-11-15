@@ -12,6 +12,7 @@ use runtime_models::{
 };
 use tracing::{info, instrument};
 use twilight_model::id::{marker::GuildMarker, Id};
+use crate::error::OpError;
 use vm::AnyError;
 
 use crate::RuntimeContext;
@@ -70,12 +71,12 @@ struct StorageState {
     hit_limit: bool,
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_botloader_bucket_storage_set(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpStorageBucketSetValue,
-) -> Result<OpStorageBucketEntry, AnyError> {
+) -> Result<OpStorageBucketEntry, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -100,12 +101,12 @@ pub async fn op_botloader_bucket_storage_set(
     Ok(entry.into())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_botloader_bucket_storage_set_if(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpStorageBucketSetIf,
-) -> Result<Option<OpStorageBucketEntry>, AnyError> {
+) -> Result<Option<OpStorageBucketEntry>, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -131,12 +132,12 @@ pub async fn op_botloader_bucket_storage_set_if(
     Ok(entry.map(Into::into))
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_botloader_bucket_storage_get(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpStorageBucketEntryId,
-) -> Result<Option<OpStorageBucketEntry>, AnyError> {
+) -> Result<Option<OpStorageBucketEntry>, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -155,12 +156,12 @@ pub async fn op_botloader_bucket_storage_get(
     Ok(entry.map(Into::into))
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_botloader_bucket_storage_del(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpStorageBucketEntryId,
-) -> Result<Option<OpStorageBucketEntry>, AnyError> {
+) -> Result<Option<OpStorageBucketEntry>, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -187,14 +188,14 @@ pub async fn op_botloader_bucket_storage_del(
     Ok(entry.map(Into::into))
 }
 
-#[op2(async)]
+#[op2]
 #[number]
 pub async fn op_botloader_bucket_storage_del_many(
     state: Rc<RefCell<OpState>>,
     #[serde] plugin_id: Option<PluginId>,
     #[string] bucket_name: String,
     #[string] key_pattern: String,
-) -> Result<u64, AnyError> {
+) -> Result<u64, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -221,12 +222,12 @@ pub async fn op_botloader_bucket_storage_del_many(
     Ok(res)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_botloader_bucket_storage_list(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpStorageBucketList,
-) -> Result<Vec<OpStorageBucketEntry>, AnyError> {
+) -> Result<Vec<OpStorageBucketEntry>, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -257,14 +258,14 @@ pub async fn op_botloader_bucket_storage_list(
     Ok(entries.into_iter().map(Into::into).collect())
 }
 
-#[op2(async)]
+#[op2]
 #[number]
 pub async fn op_botloader_bucket_storage_count(
     state: Rc<RefCell<OpState>>,
     #[serde] plugin_id: Option<PluginId>,
     #[string] bucket_name: String,
     #[string] key_pattern: String,
-) -> Result<u64, AnyError> {
+) -> Result<u64, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -283,12 +284,12 @@ pub async fn op_botloader_bucket_storage_count(
     Ok(res)
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_botloader_bucket_storage_incr(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpStorageBucketIncr,
-) -> Result<OpStorageBucketEntry, AnyError> {
+) -> Result<OpStorageBucketEntry, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
@@ -311,12 +312,12 @@ pub async fn op_botloader_bucket_storage_incr(
     Ok(entry.into())
 }
 
-#[op2(async)]
+#[op2]
 #[serde]
 pub async fn op_botloader_bucket_storage_sorted_list(
     state: Rc<RefCell<OpState>>,
     #[serde] args: OpStorageBucketSortedList,
-) -> Result<Vec<OpStorageBucketEntry>, AnyError> {
+) -> Result<Vec<OpStorageBucketEntry>, OpError> {
     let rt_ctx = {
         let state = state.borrow();
         state.borrow::<RuntimeContext>().clone()
