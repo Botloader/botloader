@@ -29,6 +29,31 @@ export type ButtonStyle =
   | "Link"
   | "Premium";
 
+export type ChannelFlags = {
+  /**
+   * 1 << 1: This thread is pinned to the top of its parent forum or media channel.
+   */
+  pinned: boolean;
+  /**
+   * 1 << 4: A tag is required to be specified when creating a thread in this forum or media channel.
+   */
+  requireTag: boolean;
+  /**
+   * 1 << 15: The download options for media are hidden in this media channel.
+   */
+  hideMediaDownloadOptions: boolean;
+  /**
+   * 1 << 17: This channel's metadata has been obfuscated because the bot cannot view it.
+   *
+   * Only ever set on channels received over the gateway.
+   */
+  channelObfuscated: boolean;
+  /**
+   * 1 << 21: This channel is a spoiler channel, users must opt in to view its contents.
+   */
+  isSpoilerChannel: boolean;
+};
+
 export type ChannelMention = {
   guildId: string;
   id: string;
@@ -563,6 +588,8 @@ export type SystemChannelFlags = {
   suppressPremiumSubscriptions: boolean;
   suppressGuildReminderNotifications: boolean;
   suppressJoinNotificationReplies: boolean;
+  suppressRoleSubscriptionPurchaseNotifications: boolean;
+  suppressRoleSubscriptionPurchaseNotificationReplies: boolean;
 };
 
 export type TextInputStyle = "Short" | "Paragraph";

@@ -273,6 +273,8 @@ pub struct SystemChannelFlags {
     pub(crate) suppress_premium_subscriptions: bool, // 1 << 1	Suppress server boost notifications
     pub(crate) suppress_guild_reminder_notifications: bool, // 1 << 2	Suppress server setup tips
     pub(crate) suppress_join_notification_replies: bool, // 1 << 3	Hide member join sticker reply buttons
+    pub(crate) suppress_role_subscription_purchase_notifications: bool, // 1 << 4	Suppress role subscription purchase and renewal notifications
+    pub(crate) suppress_role_subscription_purchase_notification_replies: bool, // 1 << 5	Hide role subscription sticker reply buttons
 }
 
 impl From<twilight_model::guild::SystemChannelFlags> for SystemChannelFlags {
@@ -288,6 +290,12 @@ impl From<twilight_model::guild::SystemChannelFlags> for SystemChannelFlags {
                 .contains(twilight_model::guild::SystemChannelFlags::SUPPRESS_JOIN_NOTIFICATIONS),
             suppress_premium_subscriptions: v.contains(
                 twilight_model::guild::SystemChannelFlags::SUPPRESS_PREMIUM_SUBSCRIPTIONS,
+            ),
+            suppress_role_subscription_purchase_notifications: v.contains(
+                twilight_model::guild::SystemChannelFlags::SUPPRESS_ROLE_SUBSCRIPTION_PURCHASE_NOTIFICATIONS,
+            ),
+            suppress_role_subscription_purchase_notification_replies: v.contains(
+                twilight_model::guild::SystemChannelFlags::SUPPRESS_ROLE_SUBSCRIPTION_PURCHASE_NOTIFICATION_REPLIES,
             ),
         }
     }

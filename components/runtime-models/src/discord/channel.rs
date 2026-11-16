@@ -31,6 +31,38 @@ impl From<VideoQualityMode> for twilight_model::channel::VideoQualityMode {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "bindings/discord/ChannelFlags.ts")]
+#[serde(rename_all = "camelCase")]
+pub struct ChannelFlags {
+    /// 1 << 1: This thread is pinned to the top of its parent forum or media channel.
+    pub pinned: bool,
+    /// 1 << 4: A tag is required to be specified when creating a thread in this forum or media channel.
+    pub require_tag: bool,
+    /// 1 << 15: The download options for media are hidden in this media channel.
+    pub hide_media_download_options: bool,
+    /// 1 << 17: This channel's metadata has been obfuscated because the bot cannot view it.
+    ///
+    /// Only ever set on channels received over the gateway.
+    pub channel_obfuscated: bool,
+    /// 1 << 21: This channel is a spoiler channel, users must opt in to view its contents.
+    pub is_spoiler_channel: bool,
+}
+
+impl From<twilight_model::channel::ChannelFlags> for ChannelFlags {
+    fn from(v: twilight_model::channel::ChannelFlags) -> Self {
+        use twilight_model::channel::ChannelFlags as F;
+        Self {
+            pinned: v.contains(F::PINNED),
+            require_tag: v.contains(F::REQUIRE_TAG),
+            hide_media_download_options: v.contains(F::HIDE_MEDIA_DOWNLOAD_OPTIONS),
+            channel_obfuscated: v.contains(F::CHANNEL_OBFUSCATED),
+            is_spoiler_channel: v.contains(F::IS_SPOILER_CHANNEL),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "bindings/discord/ThreadMetadata.ts")]

@@ -4,6 +4,7 @@ import type { IPermissionOverwrite } from "../generated/discord";
 import type { ThreadMetadata } from "../generated/discord";
 import type { VideoQualityMode } from "../generated/discord";
 import type { ChannelType } from "../generated/discord";
+import type { ChannelFlags } from "../generated/discord";
 
 import type { InternalGuildChannel } from "../generated/internal";
 import type { IPrivateThread } from "../generated/internal";
@@ -94,6 +95,12 @@ export abstract class BaseChannel {
      */
     kindId: number;
 
+    /**
+     * Channel flags, e.g whether this channel is a spoiler channel, a pinned forum post,
+     * or if its metadata was obfuscated because the bot can't view it.
+     */
+    flags: ChannelFlags;
+
     name: string;
     permissionOverwrites: IPermissionOverwrite[];
 
@@ -104,6 +111,7 @@ export abstract class BaseChannel {
         this.id = json.id;
         this.kind = json.kind;
         this.kindId = json.kindId;
+        this.flags = json.flags;
         if ('name' in json) {
             this.name = json.name;
         } else {

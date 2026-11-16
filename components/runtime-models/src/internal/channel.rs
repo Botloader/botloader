@@ -6,7 +6,7 @@ use twilight_model::id::{marker::ChannelMarker, Id};
 use twilight_validate::channel::ChannelValidationError;
 
 use crate::{
-    discord::channel::{AnyChannelType, ChannelType, PermissionOverwrite, ThreadMetadata, VideoQualityMode},
+    discord::channel::{AnyChannelType, ChannelFlags, ChannelType, PermissionOverwrite, ThreadMetadata, VideoQualityMode},
     internal::member::Member,
     util::NotBigU64,
 };
@@ -70,6 +70,7 @@ pub struct UnknownChannel {
     ///
     /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
     pub kind_id: u8,
+    pub flags: ChannelFlags,
     pub name: String,
     pub parent_id: Option<String>,
     pub position: Option<i32>,
@@ -82,6 +83,7 @@ impl From<twilight_model::channel::Channel> for UnknownChannel {
             id: v.id.to_string(),
             kind: ChannelType::Unknown,
             kind_id: v.kind.into(),
+            flags: v.flags.map(Into::into).unwrap_or_default(),
             name: v.name.unwrap_or_default(),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             position: v.position,
@@ -108,6 +110,7 @@ pub struct VoiceChannel {
     ///
     /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
     pub kind_id: u8,
+    pub flags: ChannelFlags,
     pub name: String,
     pub parent_id: Option<String>,
     pub permission_overwrites: Vec<PermissionOverwrite>,
@@ -126,6 +129,7 @@ impl TryFrom<twilight_model::channel::Channel> for VoiceChannel {
             id: v.id.to_string(),
             kind: v.kind.into(),
             kind_id: v.kind.into(),
+            flags: v.flags.map(Into::into).unwrap_or_default(),
             name: v.name.unwrap_or_default(),
             parent_id: v.parent_id.as_ref().map(ToString::to_string),
             permission_overwrites: v
@@ -154,6 +158,7 @@ pub struct TextChannel {
     ///
     /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
     pub kind_id: u8,
+    pub flags: ChannelFlags,
     pub last_pin_timestamp: Option<NotBigU64>,
     pub name: String,
     pub nsfw: bool,
@@ -172,6 +177,7 @@ impl TryFrom<twilight_model::channel::Channel> for TextChannel {
             id: v.id.to_string(),
             kind: v.kind.into(),
             kind_id: v.kind.into(),
+            flags: v.flags.map(Into::into).unwrap_or_default(),
             last_pin_timestamp: v
                 .last_pin_timestamp
                 .map(|e| NotBigU64(e.as_micros() as u64 / 1000)),
@@ -204,6 +210,7 @@ pub struct PublicThread {
     ///
     /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
     pub kind_id: u8,
+    pub flags: ChannelFlags,
     pub member: Option<SelfThreadMember>,
     pub member_count: i8,
     pub message_count: u32,
@@ -225,6 +232,7 @@ impl TryFrom<twilight_model::channel::Channel> for PublicThread {
             id: v.id.to_string(),
             kind: v.kind.into(),
             kind_id: v.kind.into(),
+            flags: v.flags.map(Into::into).unwrap_or_default(),
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -251,6 +259,7 @@ pub struct PrivateThread {
     ///
     /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
     pub kind_id: u8,
+    pub flags: ChannelFlags,
     pub member: Option<SelfThreadMember>,
     pub member_count: i8,
     pub message_count: u32,
@@ -273,6 +282,7 @@ impl TryFrom<twilight_model::channel::Channel> for PrivateThread {
             id: v.id.to_string(),
             kind: v.kind.into(),
             kind_id: v.kind.into(),
+            flags: v.flags.map(Into::into).unwrap_or_default(),
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -305,6 +315,7 @@ pub struct NewsThread {
     ///
     /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
     pub kind_id: u8,
+    pub flags: ChannelFlags,
     pub member: Option<SelfThreadMember>,
     pub member_count: i8,
     pub message_count: u32,
@@ -326,6 +337,7 @@ impl TryFrom<twilight_model::channel::Channel> for NewsThread {
             id: v.id.to_string(),
             kind: v.kind.into(),
             kind_id: v.kind.into(),
+            flags: v.flags.map(Into::into).unwrap_or_default(),
             member: v.member.map(Into::into),
             member_count: v.member_count.unwrap_or_default(),
             message_count: v.message_count.unwrap_or_default(),
@@ -399,6 +411,7 @@ pub struct CategoryChannel {
     ///
     /// Unlike `kind` this is also meaningful for channel types botloader doesn't know about yet.
     pub kind_id: u8,
+    pub flags: ChannelFlags,
     pub name: String,
     pub permission_overwrites: Vec<PermissionOverwrite>,
     pub position: i32,
@@ -411,6 +424,7 @@ impl TryFrom<twilight_model::channel::Channel> for CategoryChannel {
         Ok(Self {
             kind: v.kind.into(),
             kind_id: v.kind.into(),
+            flags: v.flags.map(Into::into).unwrap_or_default(),
             id: v.id.to_string(),
             name: v.name.unwrap_or_default(),
             position: v.position.unwrap_or_default(),

@@ -32,6 +32,13 @@ using a `YEAR.MAJOR.MINOR` version scheme (e.g. `2026.5.1`):
 
 ## [Unreleased]
 
+### Added
+
+- `flags` on all channels (`ChannelFlags`): `pinned`, `requireTag`,
+  `hideMediaDownloadOptions`, `channelObfuscated` and `isSpoilerChannel`.
+- `SystemChannelFlags.suppressRoleSubscriptionPurchaseNotifications` and
+  `SystemChannelFlags.suppressRoleSubscriptionPurchaseNotificationReplies`.
+
 ## [2026.1.1] - 2026-11-15
 
 ### Added
