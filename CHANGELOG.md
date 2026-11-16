@@ -32,6 +32,8 @@ using a `YEAR.MAJOR.MINOR` version scheme (e.g. `2026.5.1`):
 
 ## [Unreleased]
 
+## [2026.1.2] - 2026-11-16
+
 ### Added
 
 - `flags` on all channels (`ChannelFlags`): `pinned`, `requireTag`,
